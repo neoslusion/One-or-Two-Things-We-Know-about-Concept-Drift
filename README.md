@@ -1,6 +1,6 @@
 # One or Two Things We know about Concept Drift -- A Survey on Monitoring Evolving Environments
 
-Experimental code of survey paper. [Paper](https://arxiv.org/abs/2310.15826)
+Experimental code of survey paper. [Part A](https://www.frontiersin.org/journals/artificial-intelligence/articles/10.3389/frai.2024.1330257/pdf) [Part B](https://www.frontiersin.org/journals/artificial-intelligence/articles/10.3389/frai.2024.1330258/pdf)
 
 ## Abstract
 
@@ -20,7 +20,35 @@ This survey provides a taxonomy of existing work on drift detection. Besides, it
 
 ## Cite
 
-Cite our [ArXive version](https://arxiv.org/abs/2310.15826)
+Cite our Papers:
+
+Part A
+```
+@article{hinder2024one,
+  title={One or two things we know about concept drift—a survey on monitoring in evolving environments. Part A: detecting concept drift},
+  author={Hinder, Fabian and Vaquet, Valerie and Hammer, Barbara},
+  journal={Frontiers in Artificial Intelligence},
+  volume={7},
+  pages={1330257},
+  year={2024},
+  publisher={Frontiers Media SA}
+}
+```
+
+Part B
+```
+@article{hinder2024one,
+  title={One or two things we know about concept drift—a survey on monitoring in evolving environments. Part B: locating and explaining concept drift},
+  author={Hinder, Fabian and Vaquet, Valerie and Hammer, Barbara},
+  journal={Frontiers in Artificial Intelligence},
+  volume={7},
+  pages={1330258},
+  year={2024},
+  publisher={Frontiers Media SA}
+}
+```
+
+[ArXiv version](https://arxiv.org/abs/2310.15826)
 ```
 @misc{hinder2023things,
       title={One or Two Things We know about Concept Drift -- A Survey on Monitoring Evolving Environments}, 
