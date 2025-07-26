@@ -1,0 +1,155 @@
+\chapter{Literature Review}
+
+\section{Introduction to Concept Drift}
+
+The phenomenon of concept drift has been recognized as a fundamental challenge in machine learning since the early work of Schlimmer and Granger \cite{schlimmer1986incremental}. The term ``concept drift'' refers to the temporal evolution of the underlying data distribution, which can manifest in various forms and affect different aspects of the learning problem.
+
+\subsection{Definitions and Terminology}
+
+Formally, concept drift occurs when the joint probability distribution $P(X, Y)$ changes over time, where $X$ represents the feature space and $Y$ the target variable. This change can be decomposed into several components:
+
+\begin{equation}
+P_t(X, Y) = P_t(Y|X) \cdot P_t(X)
+\end{equation}
+
+Where the subscript $t$ denotes time. Changes in $P_t(Y|X)$ represent \textit{real concept drift}, while changes in $P_t(X)$ constitute \textit{virtual concept drift} or \textit{covariate shift} \cite{moreno2012unifying}.
+
+\subsection{Types of Concept Drift}
+
+The literature distinguishes several types of concept drift based on their temporal characteristics:
+
+\textbf{Sudden Drift:} An abrupt change in the concept at a specific time point. This type of drift is characterized by a step function in the concept evolution.
+
+\textbf{Gradual Drift:} A smooth transition from one concept to another over an extended period. The change follows a continuous function, often modeled as sigmoid or linear transitions.
+
+\textbf{Incremental Drift:} Small, continuous changes in the concept over time. Unlike gradual drift, there may not be a clear start and end point for the transition.
+
+\textbf{Recurring Drift:} The reappearance of previously seen concepts. This type of drift suggests cyclical patterns in the data-generating process.
+
+\section{Concept Drift Detection Methods}
+
+The detection of concept drift is crucial for maintaining model performance in non-stationary environments. The literature presents numerous approaches, which can be broadly categorized into several classes.
+
+\subsection{Statistical Methods}
+
+Statistical drift detection methods monitor changes in data distribution using statistical tests or measures of distribution distance.
+
+\textbf{CUSUM-based Methods:} The Cumulative Sum (CUSUM) algorithm and its variants detect changes by monitoring the cumulative sum of deviations from a reference value \cite{basseville1993detection}. The Page-Hinkley test is a popular adaptation for concept drift detection.
+
+\textbf{Kolmogorov-Smirnov Test:} This non-parametric test compares the empirical distribution functions of two samples to detect distributional changes \cite{reis2016detecting}.
+
+\textbf{Drift Detection Method (DDM):} Proposed by Gama et al. \cite{gama2004learning}, DDM monitors the error rate and its standard deviation to detect concept drift. When the error rate increases significantly, drift is signaled.
+
+\subsection{Model-based Methods}
+
+Model-based approaches detect drift by monitoring changes in model performance or parameters.
+
+\textbf{ADWIN:} The Adaptive Windowing algorithm maintains a variable-size window and detects change when the average of recent data differs significantly from the overall average \cite{bifet2007learning}.
+
+\textbf{Learning with Drift Detection (LDD):} This method combines drift detection with model adaptation by monitoring classifier performance and rebuilding the model when drift is detected \cite{klinkenberg2004learning}.
+
+\textbf{Ensemble-based Detection:} Methods like Dynamic Weighted Majority (DWM) use ensemble voting patterns to detect concept drift \cite{kolter2007dynamic}.
+
+\subsection{Information-theoretic Methods}
+
+These methods use information-theoretic measures to quantify changes in data distribution.
+
+\textbf{Kullback-Leibler Divergence:} Measures the difference between probability distributions to detect drift \cite{dries2009adaptive}.
+
+\textbf{Mutual Information:} Monitors changes in the dependency between features and target variables \cite{ross2012exponentially}.
+
+\section{Adaptation Strategies}
+
+Once concept drift is detected, appropriate adaptation strategies must be employed to maintain model performance.
+
+\subsection{Model Retraining}
+
+\textbf{Complete Retraining:} Rebuilding the model from scratch using recent data. While effective, this approach is computationally expensive and may lose valuable historical information.
+
+\textbf{Incremental Learning:} Updating the existing model with new data without complete retraining. Methods include online gradient descent and incremental decision trees.
+
+\subsection{Ensemble Methods}
+
+\textbf{Weighted Ensembles:} Maintain multiple models and adjust their weights based on recent performance. Examples include DWM and Accuracy Weighted Ensemble (AWE) \cite{wang2003mining}.
+
+\textbf{Chunk-based Ensembles:} Train models on sequential data chunks and combine their predictions. The Streaming Ensemble Algorithm (SEA) is a representative method \cite{street2001streaming}.
+
+\subsection{Window-based Approaches}
+
+\textbf{Fixed Windows:} Use a fixed-size sliding window to maintain recent data for model training.
+
+\textbf{Adaptive Windows:} Dynamically adjust window size based on detected drift patterns. ADWIN is a prominent example.
+
+\section{Evaluation Metrics and Benchmarks}
+
+Evaluating concept drift detection and adaptation methods requires specialized metrics that account for temporal aspects and detection performance.
+
+\subsection{Detection Performance Metrics}
+
+\textbf{False Positive Rate:} The fraction of non-drift periods incorrectly identified as drift.
+
+\textbf{True Positive Rate:} The fraction of actual drift periods correctly detected.
+
+\textbf{Detection Delay:} The time lag between actual drift occurrence and its detection.
+
+\textbf{Mean Time Between False Alarms (MTBFA):} Average time between false drift detections.
+
+\subsection{Adaptation Performance Metrics}
+
+\textbf{Prequential Accuracy:} Test-then-train evaluation that provides a realistic assessment of model performance in streaming scenarios \cite{gama2009evaluating}.
+
+\textbf{Area Under the Learning Curve:} Measures the cumulative performance over time, accounting for adaptation speed.
+
+\textbf{Recovery Time:} Time required for the model to regain acceptable performance after drift occurs.
+
+\section{Benchmark Datasets and Generators}
+
+\subsection{Synthetic Data Generators}
+
+\textbf{SEA Concepts:} Simple synthetic dataset with three attributes and concept drift between different decision boundaries \cite{street2001streaming}.
+
+\textbf{STAGGER Concepts:} Three different concepts based on geometric shapes, commonly used for evaluating drift detection \cite{schlimmer1986incremental}.
+
+\textbf{Rotating Hyperplane:} Gradually rotating decision boundary in multi-dimensional space \cite{hulten2001mining}.
+
+\subsection{Real-world Datasets}
+
+\textbf{Electricity Market:} Predicting electricity price changes in the Australian New South Wales market \cite{harries1999splice}.
+
+\textbf{Weather Prediction:} Predicting rain in Australian weather stations with seasonal and long-term climate changes.
+
+\textbf{Spam Detection:} Email spam classification with evolving spam characteristics over time.
+
+\section{Current Limitations and Research Gaps}
+
+Despite significant progress in concept drift research, several limitations and research gaps remain:
+
+\subsection{Theoretical Limitations}
+
+\begin{itemize}
+    \item Lack of unified theoretical frameworks for characterizing different types of drift
+    \item Limited understanding of the relationship between drift characteristics and optimal detection/adaptation strategies
+    \item Insufficient theoretical analysis of detection delay and adaptation performance trade-offs
+\end{itemize}
+
+\subsection{Methodological Gaps}
+
+\begin{itemize}
+    \item Most methods are designed for specific types of drift and lack generalizability
+    \item Limited consideration of computational constraints in real-time applications
+    \item Insufficient handling of multi-dimensional and multi-label drift scenarios
+\end{itemize}
+
+\subsection{Evaluation Challenges}
+
+\begin{itemize}
+    \item Lack of standardized evaluation protocols and metrics
+    \item Limited availability of annotated real-world datasets with known drift points
+    \item Insufficient consideration of application-specific requirements and constraints
+\end{itemize}
+
+\section{Summary}
+
+This literature review has presented a comprehensive overview of the current state of research in concept drift detection and adaptation. While significant progress has been made in developing various detection methods and adaptation strategies, the field still faces several challenges.
+
+The diversity of proposed methods reflects the complexity of the concept drift problem, but also highlights the lack of unified frameworks for understanding when and why different approaches are effective. The next chapter will present our methodology for addressing some of these limitations through the development of novel theoretical frameworks and empirical evaluation approaches. 
