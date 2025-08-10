@@ -2,92 +2,132 @@
 
 \section{Research Approach}
 
-This chapter presents the methodological framework developed for investigating concept drift detection and adaptation. Our approach combines theoretical analysis, algorithm development, and comprehensive empirical evaluation to advance understanding of concept drift phenomena.
+This chapter presents the methodological framework for investigating concept drift detection using the Shape Drift Detector (ShapeDD) method. Our approach focuses on understanding the theoretical foundations of ShapeDD, implementing the algorithm for various drift scenarios, and conducting comprehensive empirical evaluation to assess its effectiveness across different types of concept drift.
 
-\section{Drift Taxonomy Development}
+The research methodology consists of three main components: (1) theoretical analysis of the ShapeDD algorithm and its underlying Maximum Mean Discrepancy (MMD) foundations, (2) implementation and optimization of the detection system for synthetic and real-world datasets, and (3) comprehensive experimental evaluation across different drift patterns and parameter configurations.
 
-\subsection{Theoretical Framework}
+\section{Theoretical Foundations of Shape Drift Detector}
 
-We propose a multi-dimensional taxonomy that characterizes concept drift along several key dimensions:
+\subsection{Maximum Mean Discrepancy (MMD)}
 
-\textbf{Temporal Dimension:} Captures the speed and pattern of change over time.
-\begin{itemize}
-    \item \textit{Suddenness}: Abrupt vs. gradual transitions
-    \item \textit{Frequency}: One-time vs. recurring changes
-    \item \textit{Periodicity}: Regular vs. irregular timing patterns
-\end{itemize}
+The Shape Drift Detector (ShapeDD) is fundamentally based on Maximum Mean Discrepancy (MMD), a statistical measure used to compare two probability distributions $P$ and $Q$. The core idea is to map data from the original space into a high-dimensional feature space where the comparison becomes more sensitive to distributional differences.
 
-\textbf{Distributional Dimension:} Describes which aspects of the data distribution change.
-\begin{itemize}
-    \item \textit{Real drift}: Changes in $P(Y|X)$
-    \item \textit{Virtual drift}: Changes in $P(X)$
-    \item \textit{Mixed drift}: Changes in both components
-\end{itemize}
-
-\textbf{Spatial Dimension:} Identifies which features or regions are affected.
-\begin{itemize}
-    \item \textit{Global}: Affecting the entire feature space
-    \item \textit{Local}: Affecting specific regions or features
-    \item \textit{Contextual}: Conditional on certain feature values
-\end{itemize}
-
-\subsection{Mathematical Formalization}
-
-Let $\mathcal{D}_t = \{(x_i, y_i)\}_{i=1}^{n_t}$ represent the data observed at time $t$. We define concept drift as a function $\Delta: \mathcal{T} \times \mathcal{X} \times \mathcal{Y} \rightarrow \mathbb{R}$ that quantifies the magnitude of change:
-
+MMD is formally defined as:
 \begin{equation}
-\Delta(t_1, t_2) = \int_{\mathcal{X}} |P_{t_1}(X, Y) - P_{t_2}(X, Y)| dx
+\text{MMD}(P, Q) = \sup_{f \in \mathcal{F}} \left| \mathbb{E}_{X \sim P}[f(X)] - \mathbb{E}_{Y \sim Q}[f(Y)] \right|
 \end{equation}
 
-For practical computation, we approximate this using sample-based estimates:
+where:
+\begin{itemize}
+    \item $P$ and $Q$ are the two distributions to be compared
+    \item $X \sim P$ represents a random variable sampled from distribution $P$
+    \item $Y \sim Q$ represents a random variable sampled from distribution $Q$
+    \item $\mathcal{F}$ is a class of functions $f$ such that $\|f\|_{\mathcal{H}} \leq 1$ in the Reproducing Kernel Hilbert Space (RKHS)
+    \item $\sup$ denotes the supremum (least upper bound)
+\end{itemize}
+
+In practice, finding the supremum over $\mathcal{F}$ is computationally intractable. Therefore, MMD is typically implemented in RKHS using the kernel trick with a kernel function $k(x, y)$:
 
 \begin{equation}
-\hat{\Delta}(t_1, t_2) = \frac{1}{2}\sum_{i=1}^{k} |P_{t_1}(X_i, Y_i) - P_{t_2}(X_i, Y_i)|
+k(x, y) = \langle \phi(x), \phi(y) \rangle_{\mathcal{H}}
 \end{equation}
 
-where $k$ is the number of discrete bins or samples used for estimation.
+where $\phi(x)$ maps point $x$ into RKHS $\mathcal{H}$ and $\langle \cdot, \cdot \rangle_{\mathcal{H}}$ is the inner product in $\mathcal{H}$.
+
+The squared MMD in RKHS becomes:
+\begin{equation}
+\text{MMD}^2(P, Q) = \mathbb{E}_{X, X' \sim P}[k(X, X')] + \mathbb{E}_{Y, Y' \sim Q}[k(Y, Y')] - 2\mathbb{E}_{X \sim P, Y \sim Q}[k(X, Y)]
+\end{equation}
+
+For empirical estimation with samples $\{x_i\}_{i=1}^n$ from $P$ and $\{y_j\}_{j=1}^m$ from $Q$:
+
+\begin{equation}
+\widehat{\text{MMD}}^2 = \frac{1}{n(n-1)} \sum_{i \neq j} k(x_i, x_j) + \frac{1}{m(m-1)} \sum_{i \neq j} k(y_i, y_j) - \frac{2}{nm} \sum_{i,j} k(x_i, y_j)
+\end{equation}
+
+\subsection{Shape Drift Detector Algorithm}
+
+The Shape Drift Detector (ShapeDD) is a meta-statistic-based drift detector that operates through a multi-stage process to identify concept drift in data streams. The algorithm employs MMD as its core statistical measure and follows a systematic approach consisting of four main stages.
+
+\subsubsection{Stage 1: Data Collection}
+
+The first stage involves collecting data using sliding window techniques. Multiple window strategies can be employed:
+
+\begin{itemize}
+    \item \textbf{Fixed-size sliding windows}: Maintain a constant window size $w$ that slides over the data stream
+    \item \textbf{Adaptive windows}: Dynamically adjust window size based on data characteristics
+    \item \textbf{Overlapping windows}: Use overlapping segments to ensure smooth transitions
+\end{itemize}
+
+For a data stream $\mathcal{S} = \{x_1, x_2, \ldots, x_n\}$, we maintain a sliding window $W_t$ of size $l_1$ at time $t$:
+\begin{equation}
+W_t = \{x_{t-l_1+1}, x_{t-l_1+2}, \ldots, x_t\}
+\end{equation}
+
+\subsubsection{Stage 2: Feature Construction}
+
+In this stage, we construct a similarity matrix using a kernel function to capture the relationships between data points. The Gaussian RBF kernel is commonly used:
+
+\begin{equation}
+k(x_i, x_j) = \exp\left(-\frac{\|x_i - x_j\|^2}{2\sigma^2}\right)
+\end{equation}
+
+This results in a kernel matrix $K \in \mathbb{R}^{n \times n}$ where $K_{ij} = k(x_i, x_j)$ represents the similarity between data points $x_i$ and $x_j$.
+
+\subsubsection{Stage 3: Difference Computation}
+
+The core of ShapeDD involves computing the statistical difference between consecutive data segments using MMD. We define a weight function $w(t)$ that creates contrasting weights for different halves of the sliding window:
+
+\begin{equation}
+w(t) = \begin{cases}
+\frac{1}{l_1} & \text{if } t \in [1, l_1] \\
+-\frac{1}{l_1} & \text{if } t \in [l_1+1, 2l_1]
+\end{cases}
+\end{equation}
+
+The MMD statistic is then computed as:
+\begin{equation}
+\text{MMD}^2_t = \sum_{i,j=1}^{2l_1} w_i w_j K_{ij}
+\end{equation}
+
+This computation is performed across the entire data stream using a sliding window approach, resulting in a sequence of MMD values $\{\text{MMD}^2_1, \text{MMD}^2_2, \ldots, \text{MMD}^2_T\}$.
+
+\subsubsection{Stage 4: Statistical Validation}
+
+The final stage involves normalizing the MMD statistics and identifying potential change points through zero-crossing detection. The shape values are computed using convolution:
+
+\begin{equation}
+\text{shape\_values}_t = \sum_{i} \text{MMD}^2_{t+i} \cdot h_i
+\end{equation}
+
+where $h$ is a convolution kernel (typically $[1, -1]$ for simple edge detection).
+
+Potential change points are identified where consecutive shape values have opposite signs. These candidates are then validated using permutation tests to compute p-values and determine statistical significance.
 
 \section{Enhanced Drift Detection Algorithms}
 
-\subsection{Adaptive Statistical Test (AST)}
+\subsection{ShapeDD Implementation Details}
 
-We propose the Adaptive Statistical Test (AST), which combines multiple statistical measures to improve detection reliability:
+The complete ShapeDD algorithm can be summarized in the following steps:
 
-\begin{algorithm}[H]
-\caption{Adaptive Statistical Test (AST)}
-\begin{algorithmic}[1]
-\State Initialize reference window $W_{\text{ref}}$
-\State Initialize test window $W_{\text{test}}$
-\State Set detection threshold $\tau$
-\While{new data point $x_t$ arrives}
-    \State Add $x_t$ to $W_{\text{test}}$
-    \State $p_{\text{ks}} \leftarrow$ KolmogorovSmirnov($W_{\text{ref}}$, $W_{\text{test}}$)
-    \State $p_{\text{mw}} \leftarrow$ MannWhitney($W_{\text{ref}}$, $W_{\text{test}}$)
-    \State $p_{\text{combined}} \leftarrow$ FisherCombination($p_{\text{ks}}$, $p_{\text{mw}}$)
-    \If{$p_{\text{combined}} < \tau$}
-        \State Signal drift detection
-        \State $W_{\text{ref}} \leftarrow W_{\text{test}}$
-        \State Reset $W_{\text{test}}$
-    \EndIf
-\EndWhile
-\end{algorithmic}
-\end{algorithm}
+\textbf{Algorithm: Shape Drift Detector (ShapeDD)}
+\begin{enumerate}
+    \item \textbf{Initialize parameters:} Set window size $l_1$, kernel bandwidth $\sigma$, significance threshold $\alpha$
+    \item \textbf{Data collection:} Maintain sliding window $W_t$ of size $2l_1$
+    \item \textbf{Kernel computation:} Compute similarity matrix $K$ using Gaussian RBF kernel
+    \item \textbf{MMD calculation:} Apply weight function and compute MMD statistics across the sliding window
+    \item \textbf{Shape analysis:} Apply convolution to identify potential change points via zero-crossing
+    \item \textbf{Statistical validation:} Use permutation tests to validate detected change points with p-values
+    \item \textbf{Drift signal:} Output drift detection signal when p-value $< \alpha$
+\end{enumerate}
 
-\subsection{Dynamic Ensemble Detector (DED)}
-
-The Dynamic Ensemble Detector maintains multiple detection algorithms and combines their outputs using weighted voting:
-
-\begin{equation}
-D(t) = \sum_{i=1}^{m} w_i(t) \cdot d_i(t)
-\end{equation}
-
-where $d_i(t)$ is the drift signal from detector $i$ and $w_i(t)$ is its dynamic weight based on recent performance.
-
-The weights are updated using an exponential decay mechanism:
-
-\begin{equation}
-w_i(t+1) = \alpha \cdot w_i(t) + (1-\alpha) \cdot \text{accuracy}_i(t)
-\end{equation}
+\textbf{Computational Complexity:}
+\begin{itemize}
+    \item Kernel matrix computation: $O(n^2)$ where $n$ is window size
+    \item MMD calculation: $O(n^2)$ per sliding window position
+    \item Permutation testing: $O(k \cdot n^2)$ where $k$ is number of permutations
+    \item Overall complexity: $O(T \cdot n^2)$ for stream of length $T$
+\end{itemize}
 
 \section{Adaptation Strategy Framework}
 
@@ -123,44 +163,54 @@ where $w_{\text{base}}$ is the base window size, $\lambda$ is a decay parameter,
 
 \section{Experimental Design}
 
-\subsection{Dataset Preparation}
+\subsection{Synthetic Dataset Generation}
 
-\textbf{Synthetic Datasets:} We generate controlled synthetic datasets with known drift characteristics:
+To evaluate the effectiveness of ShapeDD across different drift scenarios, we generate controlled synthetic datasets with precisely defined drift characteristics. This approach allows us to assess algorithm performance under known conditions and analyze the impact of various parameters.
+
+\textbf{Abrupt Drift Dataset:} We generate datasets with sudden, instantaneous changes in data distribution. The dataset consists of 10,000 data points with uniform sampling within a unit space. Drift is introduced by shifting the distribution parameters at randomly selected time points:
 
 \begin{itemize}
-    \item \textit{Linear Drift}: Gradual rotation of decision boundaries
-    \item \textit{Sudden Drift}: Abrupt changes at specific time points
-    \item \textit{Recurring Drift}: Cyclical concept changes
-    \item \textit{Mixed Drift}: Combinations of different drift types
+    \item Dataset size: 10,000 data points
+    \item Drift magnitude: 0.5 (standard deviation shift)
+    \item Number of drift points: 10 randomly distributed locations
+    \item Distribution type: Uniform distribution with sudden parameter shifts
 \end{itemize}
 
-\textbf{Real-world Datasets:} We collect and preprocess several real-world datasets:
+\textbf{Incremental Drift Dataset:} We create datasets exhibiting gradual, continuous changes in distribution parameters over time. This represents slow-evolving drift patterns commonly found in real-world applications:
 
 \begin{itemize}
-    \item Financial time series data
-    \item Social media sentiment streams
-    \item Network intrusion detection logs
-    \item Weather prediction data
-    \item E-commerce recommendation data
+    \item Dataset size: 10,000 data points  
+    \item Drift progression: Continuous linear parameter evolution
+    \item Distribution type: Gaussian or uniform with gradually changing parameters
+    \item Drift speed: Configurable rate of parameter change per time unit
+\end{itemize}
+
+The synthetic data generation process ensures reproducibility and allows for systematic evaluation of detection performance across varying drift intensities and patterns.
+
+\textbf{Parameter Variations:} For each drift type, we generate multiple dataset variants with different:
+\begin{itemize}
+    \item Drift magnitudes (0.1, 0.3, 0.5, 0.7, 0.9)
+    \item Dimensionalities (2D, 5D, 10D, 20D)
+    \item Noise levels (0\%, 5\%, 10\%, 15\%, 20\%)
+    \item Drift frequencies (sparse vs. frequent drift occurrences)
 \end{itemize}
 
 \subsection{Evaluation Protocol}
 
 \textbf{Prequential Evaluation:} We use the test-then-train approach for realistic streaming evaluation:
 
-\begin{algorithm}[H]
-\caption{Prequential Evaluation Protocol}
-\begin{algorithmic}[1]
-\State Initialize model $M$
-\State Initialize performance metrics
-\For{each data point $(x_t, y_t)$ in stream}
-    \State $\hat{y}_t \leftarrow M.\text{predict}(x_t)$
-    \State Update metrics with $(\hat{y}_t, y_t)$
-    \State $M.\text{update}(x_t, y_t)$
-    \State Apply drift detection and adaptation if needed
-\EndFor
-\end{algorithmic}
-\end{algorithm}
+\textbf{Evaluation Protocol Steps:}
+\begin{enumerate}
+    \item Initialize model $M$ and performance metrics
+    \item For each data point $(x_t, y_t)$ in the stream:
+    \begin{enumerate}
+        \item Make prediction: $\hat{y}_t \leftarrow M.\text{predict}(x_t)$
+        \item Update performance metrics with $(\hat{y}_t, y_t)$
+        \item Update model: $M.\text{update}(x_t, y_t)$
+        \item Apply drift detection and adaptation if needed
+    \end{enumerate}
+    \item Report cumulative performance metrics
+\end{enumerate}
 
 \textbf{Performance Metrics:} We employ multiple metrics to assess different aspects of performance:
 

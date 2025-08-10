@@ -1,14 +1,14 @@
 \chapter*{Abstract}
 \addcontentsline{toc}{chapter}{Abstract}
 
-Concept drift is a fundamental challenge in machine learning where the underlying data distribution changes over time, causing model performance to degrade. This thesis investigates the current state of knowledge about concept drift, focusing on detection methods, adaptation strategies, and evaluation metrics.
+Concept drift is a fundamental challenge in machine learning where the underlying data distribution changes over time, causing model performance to degrade. This thesis investigates the detection of concept drift using the Shape Drift Detector (ShapeDD) method, with a specific focus on its theoretical foundations, practical implementation, and effectiveness across different drift scenarios.
 
-We present a comprehensive analysis of existing concept drift detection algorithms, categorizing them into statistical methods, model-based approaches, and ensemble techniques. Our research identifies key limitations in current methodologies and proposes novel approaches for handling different types of drift patterns.
+We present a comprehensive study of the ShapeDD algorithm, which employs Maximum Mean Discrepancy (MMD) in Reproducing Kernel Hilbert Space (RKHS) to detect distributional changes in data streams. Our research includes detailed analysis of the theoretical foundations of MMD, the multi-stage detection process of ShapeDD, and its performance characteristics across various drift patterns.
 
-Through extensive experimental evaluation on both synthetic and real-world datasets, we demonstrate that no single approach works universally across all drift scenarios. We introduce a framework for characterizing drift patterns and matching them with appropriate detection and adaptation strategies.
+Through extensive experimental evaluation on both synthetic and real-world datasets, we demonstrate ShapeDD's effectiveness in detecting different types of concept drift, including abrupt drift, incremental drift, and gradual drift. We analyze the impact of critical parameters such as window size, kernel selection, and statistical significance thresholds on detection performance.
 
-The main contributions of this work include: (1) a taxonomy of concept drift types and their characteristics, (2) a comparative analysis of state-of-the-art detection methods, (3) novel metrics for evaluating drift detection performance, and (4) guidelines for practitioners on selecting appropriate methods for specific application domains.
+The main contributions of this work include: (1) a detailed theoretical analysis of the Shape Drift Detector and its mathematical foundations, (2) comprehensive experimental evaluation on synthetic datasets with controlled drift characteristics, (3) analysis of parameter sensitivity and optimization strategies for ShapeDD, and (4) practical guidelines for implementing drift detection systems in real-world applications.
 
-Our findings suggest that future research should focus on developing adaptive meta-learning approaches that can automatically select and configure drift handling methods based on the observed data characteristics.
+Our findings reveal that ShapeDD performs exceptionally well for abrupt drift scenarios but requires careful parameter tuning for incremental drift detection. We propose ensemble methods and adaptive windowing strategies as potential improvements for enhanced robustness across diverse drift patterns.
 
 \textbf{Keywords:} concept drift, machine learning, adaptive systems, data stream mining, non-stationary environments 

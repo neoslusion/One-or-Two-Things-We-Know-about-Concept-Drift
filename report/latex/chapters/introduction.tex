@@ -23,39 +23,39 @@ The title of this thesis, ``One or Two Things We Know about Concept Drift,'' ref
 
 \section{Research Objectives}
 
-The primary objective of this research is to advance our understanding of concept drift through comprehensive analysis and novel methodological contributions. Specifically, this thesis aims to:
+The primary objective of this research is to investigate and advance the understanding of concept drift detection through the comprehensive study of the Shape Drift Detector (ShapeDD) method. Specifically, this thesis aims to:
 
 \begin{enumerate}
-    \item Develop a comprehensive taxonomy of concept drift types based on their temporal and distributional characteristics
-    \item Conduct a systematic comparative analysis of state-of-the-art drift detection methods
-    \item Propose novel evaluation metrics that better capture the practical performance of drift detection systems
-    \item Design adaptive frameworks that can automatically select appropriate drift handling strategies
-    \item Provide evidence-based guidelines for practitioners working with non-stationary data streams
+    \item Investigate the theoretical foundations and operational mechanisms of the ShapeDD method for concept drift detection
+    \item Evaluate the effectiveness of ShapeDD through comprehensive experiments on synthetic datasets with controlled drift patterns
+    \item Analyze the accuracy and performance of ShapeDD across different types of concept drift scenarios, including abrupt and incremental drift patterns
+    \item Examine the impact of critical parameters such as window size, kernel selection, and statistical thresholds on detection performance
+    \item Develop practical guidelines and recommendations for implementing ShapeDD in real-world drift detection systems
 \end{enumerate}
 
 \section{Research Contributions}
 
-This thesis makes several significant contributions to the field of concept drift:
+This thesis makes several significant contributions to the field of concept drift detection:
 
 \textbf{Theoretical Contributions:}
 \begin{itemize}
-    \item A formal taxonomy of concept drift patterns that captures both temporal dynamics and distributional changes
-    \item Novel theoretical analysis of the relationship between drift characteristics and detection performance
-    \item Mathematical frameworks for quantifying drift severity and adaptation requirements
+    \item Comprehensive analysis of the Shape Drift Detector (ShapeDD) theoretical foundations, including detailed examination of Maximum Mean Discrepancy (MMD) in Reproducing Kernel Hilbert Space (RKHS)
+    \item Mathematical formalization of the multi-stage ShapeDD detection process, including data collection, feature construction, difference computation, and statistical validation
+    \item Theoretical analysis of kernel selection and window management strategies for optimal drift detection performance
 \end{itemize}
 
 \textbf{Methodological Contributions:}
 \begin{itemize}
-    \item Enhanced drift detection algorithms that combine statistical and model-based approaches
-    \item Adaptive meta-learning framework for automatic method selection
-    \item Novel evaluation metrics that account for detection delay and false alarm rates
+    \item Detailed implementation and optimization of the ShapeDD algorithm for different drift scenarios
+    \item Development of comprehensive synthetic dataset generation methods for controlled evaluation of abrupt and incremental drift patterns
+    \item Analysis of parameter sensitivity and optimization strategies for window size, kernel parameters, and statistical significance thresholds
 \end{itemize}
 
 \textbf{Empirical Contributions:}
 \begin{itemize}
-    \item Comprehensive experimental evaluation on diverse real-world and synthetic datasets
-    \item Comparative analysis revealing strengths and limitations of existing methods
-    \item Evidence-based recommendations for method selection in different application domains
+    \item Extensive experimental evaluation on synthetic datasets demonstrating ShapeDD's effectiveness across different drift types
+    \item Comparative analysis of ShapeDD performance under varying conditions, including different window sizes and drift magnitudes
+    \item Practical guidelines for implementing ShapeDD in real-world applications, including parameter selection and performance optimization strategies
 \end{itemize}
 
 \section{Thesis Organization}
