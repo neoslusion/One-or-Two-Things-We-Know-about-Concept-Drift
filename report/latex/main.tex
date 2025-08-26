@@ -1,66 +1,126 @@
 \documentclass[12pt,a4paper,oneside]{report}
 
-% Packages
+% Essential packages for Vietnamese thesis
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
+\usepackage[vietnamese,english]{babel} % Vietnamese as main language
+\usepackage{vntex} % Vietnamese fonts and typography
 \usepackage{setspace}
 \usepackage{geometry}
 \usepackage{graphicx}
-\usepackage{amsmath,amssymb}
+\usepackage{amsmath,amssymb,amsthm}
 \usepackage{algorithm}
 \usepackage{algorithmic}
+\usepackage{url}
+\usepackage{cite}
+\usepackage{natbib}
 \usepackage{hyperref}
 \usepackage{fancyhdr}
 \usepackage{titlesec}
 \usepackage{tocloft}
-\usepackage{lipsum} % For dummy text, remove in actual thesis
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{indentfirst}
 
-% Page geometry
+% Page geometry following Vietnamese university standards
 \geometry{
-    left=1.25in,
-    right=1in,
-    top=1in,
-    bottom=1in
+    left=3cm,
+    right=2cm,
+    top=2.5cm,
+    bottom=2.5cm
 }
 
 % Line spacing
 \onehalfspacing
 
-% Header and Footer
+% Vietnamese paragraph formatting
+\setlength{\parindent}{1.25cm}
+\setlength{\parskip}{6pt}
+
+% Header and Footer formatting for Vietnamese thesis
 \pagestyle{fancy}
 \fancyhf{}
-\fancyhead[L]{\leftmark}
-\fancyhead[R]{\thepage}
+\fancyhead[C]{\thepage}
+\renewcommand{\headrulewidth}{0pt}
 \setlength{\headheight}{14.5pt}
 
-% Chapter title formatting
-\titleformat{\chapter}[hang]{\bfseries\LARGE}{\thechapter.}{2em}{}
-\titlespacing*{\chapter}{0pt}{-20pt}{40pt}
+% Chapter title formatting - Vietnamese style
+\titleformat{\chapter}[block]
+{\centering\bfseries\LARGE}
+{CHƯƠNG \thechapter}
+{0.5em}
+{\MakeUppercase}
+\titlespacing*{\chapter}{0pt}{-20pt}{30pt}
+
+% Section formatting
+\titleformat{\section}[block]
+{\bfseries\Large}
+{\thesection.}
+{0.5em}
+{}
+
+\titleformat{\subsection}[block]
+{\bfseries\large}
+{\thesubsection.}
+{0.5em}
+{}
 
 % Table of contents formatting
+\renewcommand{\contentsname}{MỤC LỤC}
+\renewcommand{\listfigurename}{DANH SÁCH HÌNH VẼ}
+\renewcommand{\listtablename}{DANH SÁCH BẢNG BIỂU}
+\renewcommand{\bibname}{TÀI LIỆU THAM KHẢO}
+
 \renewcommand{\cftchapfont}{\bfseries}
 \renewcommand{\cftsecfont}{}
 \renewcommand{\cftchappagefont}{\bfseries}
 \renewcommand{\cftsecpagefont}{}
+\renewcommand{\cftchappresnum}{CHƯƠNG }
+\renewcommand{\cftchapaftersnum}{.}
+\setlength{\cftchapnumwidth}{2.5cm}
 
 \begin{document}
+
+% Vietnamese page numbering setup
+\pagenumbering{roman}
+\setcounter{page}{1}
 
 % Title page
 \input{titlepage}
 
-% Declaration
+% Declaration in Vietnamese
 \input{declaration}
 
-% Abstract
+% Vietnamese Abstract first
+\input{abstract_vietnamese}
+
+% English Abstract
 \input{abstract}
 
 % Acknowledgements
 \input{acknowledgements}
 
 % Table of Contents, List of Figures, List of Tables
+\newpage
 \tableofcontents
+
+\newpage
 \listoffigures
+\addcontentsline{toc}{chapter}{DANH SÁCH HÌNH VẼ}
+
+\newpage
 \listoftables
+\addcontentsline{toc}{chapter}{DANH SÁCH BẢNG BIỂU}
+
+% Start main content with Arabic numbering
+\newpage
+\pagenumbering{arabic}
+\setcounter{page}{1}
 
 % Main chapters
 \input{chapters/introduction}
@@ -70,12 +130,15 @@
 \input{chapters/conclusion_future_work}
 
 % References
-\addcontentsline{toc}{chapter}{References}
-\bibliographystyle{plain}
+\newpage
+\addcontentsline{toc}{chapter}{TÀI LIỆU THAM KHẢO}
+\bibliographystyle{ieeetr}
 \bibliography{references}
 
 % Appendices
+\newpage
 \appendix
+\addcontentsline{toc}{chapter}{PHỤ LỤC}
 \input{appendix}
 
 \end{document}
