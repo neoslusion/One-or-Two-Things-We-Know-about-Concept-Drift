@@ -26,13 +26,16 @@
 \usepackage{enumitem}
 \usepackage{xcolor}
 \usepackage{indentfirst}
+\usepackage{times} % Times New Roman font
+\usepackage{anyfontsize} % For custom font sizes
 
 % Page geometry following Vietnamese university standards
 \geometry{
     left=3cm,
     right=2cm,
     top=2.5cm,
-    bottom=2.5cm
+    bottom=2.5cm,
+    footskip=1cm
 }
 
 % Line spacing
@@ -42,39 +45,66 @@
 \setlength{\parindent}{1.25cm}
 \setlength{\parskip}{6pt}
 
+% Font settings
+\renewcommand{\rmdefault}{ptm} % Times New Roman
+\fontfamily{ptm}\selectfont
+
 % Header and Footer formatting for Vietnamese thesis
 \pagestyle{fancy}
 \fancyhf{}
-\fancyhead[C]{\thepage}
+\fancyfoot[C]{\thepage}
 \renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
 \setlength{\headheight}{14.5pt}
 
 % Chapter title formatting - Vietnamese style
-\titleformat{\chapter}[block]
-{\centering\bfseries\LARGE}
+\titleformat{\chapter}[display]
+{\centering\bfseries\fontsize{14}{16}\selectfont}
 {CHƯƠNG \thechapter}
 {0.5em}
 {\MakeUppercase}
-\titlespacing*{\chapter}{0pt}{-20pt}{30pt}
+\titlespacing*{\chapter}{0pt}{0pt}{30pt}
+
+% Special formatting for unnumbered chapters
+\titleformat{name=\chapter,numberless}[display]
+{\centering\bfseries\fontsize{14}{16}\selectfont}
+{}
+{0em}
+{\MakeUppercase}
+\titlespacing*{name=\chapter,numberless}{0pt}{0pt}{30pt}
 
 % Section formatting
 \titleformat{\section}[block]
-{\bfseries\Large}
+{\bfseries\fontsize{13}{15}\selectfont}
 {\thesection.}
 {0.5em}
 {}
+\titlespacing*{\section}{0pt}{18pt}{12pt}
 
 \titleformat{\subsection}[block]
-{\bfseries\large}
+{\bfseries\fontsize{12}{14}\selectfont}
 {\thesubsection.}
 {0.5em}
 {}
+\titlespacing*{\subsection}{0pt}{12pt}{6pt}
+
+\titleformat{\subsubsection}[block]
+{\bfseries\fontsize{12}{14}\selectfont}
+{\thesubsubsection.}
+{0.5em}
+{}
+\titlespacing*{\subsubsection}{0pt}{12pt}{6pt}
 
 % Table of contents formatting
 \renewcommand{\contentsname}{MỤC LỤC}
 \renewcommand{\listfigurename}{DANH SÁCH HÌNH VẼ}
 \renewcommand{\listtablename}{DANH SÁCH BẢNG BIỂU}
 \renewcommand{\bibname}{TÀI LIỆU THAM KHẢO}
+
+% TOC formatting
+\renewcommand{\cfttoctitlefont}{\centering\bfseries\fontsize{14}{16}\selectfont\MakeUppercase}
+\renewcommand{\cftloftitlefont}{\centering\bfseries\fontsize{14}{16}\selectfont\MakeUppercase}
+\renewcommand{\cftlottitlefont}{\centering\bfseries\fontsize{14}{16}\selectfont\MakeUppercase}
 
 \renewcommand{\cftchapfont}{\bfseries}
 \renewcommand{\cftsecfont}{}
@@ -83,42 +113,64 @@
 \renewcommand{\cftchappresnum}{CHƯƠNG }
 \renewcommand{\cftchapaftersnum}{.}
 \setlength{\cftchapnumwidth}{2.5cm}
+\setlength{\cftbeforesecskip}{6pt}
+\setlength{\cftbeforesubsecskip}{3pt}
+
+% Dot leaders for TOC
+\renewcommand{\cftchapleader}{\cftdotfill{\cftdotsep}}
+\renewcommand{\cftsecleader}{\cftdotfill{\cftdotsep}}
+\renewcommand{\cftsubsecleader}{\cftdotfill{\cftdotsep}}
 
 \begin{document}
 
-% Vietnamese page numbering setup
+% Set up hyperref properties
+\hypersetup{
+    pdftitle={Phát hiện Concept Drift sử dụng Shape Drift Detector trong giai đoạn xử lý dữ liệu},
+    pdfauthor={Lê Phúc Đức},
+    pdfkeywords={concept drift, machine learning, adaptive systems, data stream mining},
+    linkcolor=black,
+    citecolor=black,
+    urlcolor=blue,
+    filecolor=black
+}
+
+% Front matter with roman numbering
 \pagenumbering{roman}
 \setcounter{page}{1}
 
-% Title page
+% Title page (no page number)
 \input{titlepage}
 
 % Declaration in Vietnamese
+\cleardoublepage
 \input{declaration}
 
 % Vietnamese Abstract first
+\cleardoublepage
 \input{abstract_vietnamese}
 
 % English Abstract
+\cleardoublepage
 \input{abstract}
 
 % Acknowledgements
+\cleardoublepage
 \input{acknowledgements}
 
 % Table of Contents, List of Figures, List of Tables
-\newpage
+\cleardoublepage
 \tableofcontents
 
-\newpage
+\cleardoublepage
 \listoffigures
 \addcontentsline{toc}{chapter}{DANH SÁCH HÌNH VẼ}
 
-\newpage
+\cleardoublepage
 \listoftables
 \addcontentsline{toc}{chapter}{DANH SÁCH BẢNG BIỂU}
 
-% Start main content with Arabic numbering
-\newpage
+% Main matter with Arabic numbering
+\cleardoublepage
 \pagenumbering{arabic}
 \setcounter{page}{1}
 
@@ -130,13 +182,13 @@
 \input{chapters/conclusion_future_work}
 
 % References
-\newpage
+\cleardoublepage
 \addcontentsline{toc}{chapter}{TÀI LIỆU THAM KHẢO}
 \bibliographystyle{ieeetr}
 \bibliography{references}
 
 % Appendices
-\newpage
+\cleardoublepage
 \appendix
 \addcontentsline{toc}{chapter}{PHỤ LỤC}
 \input{appendix}

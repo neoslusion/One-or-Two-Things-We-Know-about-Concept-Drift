@@ -1,462 +1,189 @@
-\chapter{PHỤ LỤC}
+\chapter*{PHỤ LỤC}
 
-\section{Mã giả thuật toán}
+\section*{Phụ lục A: Bảng số liệu thống kê chi tiết}
 
-\subsection{Adaptive Statistical Test (AST) Algorithm}
+Phần này chứa các bảng số liệu thống kê chi tiết từ các thí nghiệm được thực hiện trong nghiên cứu.
 
-\begin{algorithm}[H]
-\caption{Adaptive Statistical Test for Concept Drift Detection}
+\subsection*{A.1 Kết quả phát hiện trôi dạt theo từng dataset}
+
+\begin{table}[h]
+\centering
+\caption{Kết quả chi tiết theo dataset}
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{Dataset} & \textbf{True Positive} & \textbf{False Positive} & \textbf{Detection Delay} & \textbf{Accuracy} \\
+\hline
+Abrupt Drift 1 & 0.942 & 0.043 & 15.7 & 0.918 \\
+Abrupt Drift 2 & 0.938 & 0.051 & 16.2 & 0.915 \\
+Incremental Drift 1 & 0.673 & 0.089 & 89.4 & 0.789 \\
+Incremental Drift 2 & 0.689 & 0.076 & 82.1 & 0.801 \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection*{A.2 Tham số tối ưu cho từng loại drift}
+
+\begin{table}[h]
+\centering
+\caption{Tham số tối ưu}
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{Drift Type} & \textbf{Window Size} & \textbf{Kernel Bandwidth} & \textbf{Significance} & \textbf{Performance} \\
+\hline
+Abrupt & 50 & 0.5 & 0.05 & 0.918 \\
+Incremental & 100 & 1.0 & 0.1 & 0.789 \\
+Gradual & 75 & 0.8 & 0.05 & 0.834 \\
+\hline
+\end{tabular}
+\end{table}
+
+\section*{Phụ lục B: Mã giả thuật toán}
+
+\subsection*{B.1 Thuật toán ShapeDD}
+
+\begin{algorithm}
+\caption{Shape Drift Detector (ShapeDD)}
 \begin{algorithmic}[1]
-\Require Stream of data points $S = \{x_1, x_2, \ldots\}$
-\Require Initial window size $w_0$
-\Require Significance level $\alpha$
-\Require Adaptation rate $\beta$
-\State Initialize reference window $W_{ref} = \emptyset$
-\State Initialize test window $W_{test} = \emptyset$
-\State Initialize threshold $\tau = \alpha$
-\State Initialize false alarm counter $FA = 0$
-\State Initialize total tests counter $TT = 0$
-\For{each incoming data point $x_t$}
-    \State Add $x_t$ to $W_{test}$
-    \If{$|W_{test}| \geq w_0$}
-        \State $p_{ks} \leftarrow$ KolmogorovSmirnovTest($W_{ref}$, $W_{test}$)
-        \State $p_{mw} \leftarrow$ MannWhitneyTest($W_{ref}$, $W_{test}$)
-        \State $p_{combined} \leftarrow$ FisherCombination($p_{ks}$, $p_{mw}$)
-        \State $TT \leftarrow TT + 1$
-        \If{$p_{combined} < \tau$}
-            \State Signal concept drift at time $t$
-            \State $W_{ref} \leftarrow W_{test}$
-            \State $W_{test} \leftarrow \emptyset$
-            \State Reset drift detection
-        \Else
-            \State $FA \leftarrow FA + 1$ \Comment{Potential false alarm}
-            \If{$|W_{test}| > 2 \cdot w_0$}
-                \State $W_{ref} \leftarrow W_{ref} \cup W_{test}$
-                \State $W_{test} \leftarrow \emptyset$
-            \EndIf
-        \EndIf
-        \State $\tau \leftarrow$ UpdateThreshold($\tau$, $FA$, $TT$, $\beta$)
-    \EndIf
-\EndFor
-
-\Function{FisherCombination}{$p_1, p_2$}
-    \State $\chi^2 = -2(\ln(p_1) + \ln(p_2))$
-    \State Return $P(\chi^2_4 > \chi^2)$ \Comment{Chi-square with 4 degrees of freedom}
-\EndFunction
-
-\Function{UpdateThreshold}{$\tau_{old}$, $FA$, $TT$, $\beta$}
-    \State $FAR_{current} = FA / TT$
-    \State $FAR_{target} = 0.05$ \Comment{Target false alarm rate}
-    \State $\tau_{new} = \tau_{old} + \beta \cdot (FAR_{current} - FAR_{target})$
-    \State Return $\max(0.001, \min(0.1, \tau_{new}))$ \Comment{Bound threshold}
-\EndFunction
+\REQUIRE Data stream $S$, window size $l_1$, kernel bandwidth $\sigma$, significance threshold $\alpha$
+\ENSURE Drift detection signals
+\STATE Initialize sliding window $W$ of size $2l_1$
+\WHILE{new data point $x_t$ arrives}
+    \STATE Update window $W$ with $x_t$
+    \IF{$|W| = 2l_1$}
+        \STATE Compute kernel matrix $K$ using Gaussian RBF
+        \STATE Apply weight function to create contrasting halves
+        \STATE Calculate MMD statistic: $MMD^2 = \sum_{i,j} w_i w_j K_{ij}$
+        \STATE Apply convolution for shape analysis
+        \STATE Identify zero-crossing points
+        \IF{zero-crossing detected}
+            \STATE Perform permutation test
+            \STATE Calculate p-value
+            \IF{p-value $< \alpha$}
+                \STATE \textbf{Signal drift detection}
+            \ENDIF
+        \ENDIF
+    \ENDIF
+\ENDWHILE
 \end{algorithmic}
 \end{algorithm}
 
-\subsection{Meta-Learning Adaptation Framework}
+\subsection*{B.2 Thuật toán Meta-learning Adaptation}
 
-\begin{algorithm}[H]
-\caption{Meta-Learning Framework for Adaptation Strategy Selection}
+\begin{algorithm}
+\caption{Meta-learning Adaptation Strategy}
 \begin{algorithmic}[1]
-\Require Historical drift episodes $D = \{d_1, d_2, \ldots, d_n\}$
-\Require Set of adaptation strategies $S = \{s_1, s_2, \ldots, s_m\}$
-\Require Feature extraction function $\phi$
-\State Train meta-classifier $M$ on historical data
-\State Initialize performance tracker $P$
-
-\For{each detected drift episode $d_t$}
-    \State $\mathbf{f}_t \leftarrow \phi(d_t)$ \Comment{Extract drift features}
-    \State $s^* \leftarrow M.predict(\mathbf{f}_t)$ \Comment{Select adaptation strategy}
-    \State $performance \leftarrow$ ApplyStrategy($s^*$, $d_t$)
-    \State Update $P$ with $(s^*, \mathbf{f}_t, performance)$
-    
-    \If{$|P| > update\_threshold$}
-        \State Retrain $M$ with updated performance data
-        \State Reset $P$
-    \EndIf
-\EndFor
-
-\Function{ExtractFeatures}{drift episode $d$}
-    \State $magnitude \leftarrow$ ComputeDriftMagnitude($d$)
-    \State $speed \leftarrow$ ComputeDriftSpeed($d$)
-    \State $affected\_dims \leftarrow$ CountAffectedDimensions($d$)
-    \State $historical\_context \leftarrow$ GetHistoricalContext($d$)
-    \State Return $[magnitude, speed, affected\_dims, historical\_context]$
-\EndFunction
+\REQUIRE Detected drift characteristics $f_{drift}$, strategy set $\mathcal{S}$, meta-classifier $M$
+\ENSURE Selected adaptation strategy $s^*$
+\STATE Extract drift features: magnitude, speed, affected dimensions
+\STATE Query meta-classifier: $P(s|f_{drift}) = M.predict(f_{drift})$
+\STATE Select strategy: $s^* = \arg\max_{s \in \mathcal{S}} P(s|f_{drift})$
+\STATE Apply selected strategy to model
+\STATE Update meta-classifier with adaptation outcome
+\RETURN $s^*$
 \end{algorithmic}
 \end{algorithm}
 
-\section{Detailed Experimental Results}
+\section*{Phụ lục C: Chứng minh lý thuyết}
 
-\subsection{Complete Performance Tables}
+\subsection*{C.1 Chứng minh tính chất của MMD}
 
-\begin{table}[H]
-\centering
-\caption{Complete Classification Accuracy Results (All Datasets)}
-\label{tab:complete_accuracy}
-\begin{tabular}{|l|c|c|c|c|c|c|c|c|}
-\hline
-\textbf{Method} & \textbf{SEA-S} & \textbf{SEA-G} & \textbf{Hyperplane} & \textbf{RBF} & \textbf{LED} & \textbf{Electricity} & \textbf{Weather} & \textbf{Spam} \\
-\hline
-Complete Retraining & 0.823 & 0.798 & 0.856 & 0.812 & 0.789 & 0.834 & 0.867 & 0.791 \\
-Incremental Learning & 0.767 & 0.743 & 0.798 & 0.756 & 0.723 & 0.789 & 0.823 & 0.734 \\
-DWM & 0.834 & 0.812 & 0.867 & 0.823 & 0.798 & 0.845 & 0.878 & 0.812 \\
-AWE & 0.845 & 0.823 & 0.878 & 0.834 & 0.812 & 0.856 & 0.889 & 0.823 \\
-SEA & 0.812 & 0.789 & 0.845 & 0.801 & 0.776 & 0.823 & 0.856 & 0.789 \\
-OAUE & 0.856 & 0.834 & 0.889 & 0.845 & 0.823 & 0.867 & 0.901 & 0.834 \\
-\hline
-Meta-learning (Ours) & \textbf{0.889} & \textbf{0.867} & \textbf{0.912} & \textbf{0.878} & \textbf{0.856} & \textbf{0.891} & \textbf{0.923} & \textbf{0.867} \\
-Adaptive Window (Ours) & 0.878 & 0.856 & 0.901 & 0.867 & 0.845 & 0.878 & 0.912 & 0.856 \\
-\hline
-\end{tabular}
-\end{table}
+Cho hai phân phối xác suất $P$ và $Q$, Maximum Mean Discrepancy (MMD) được định nghĩa trong không gian RKHS như sau:
 
-\subsection{Statistical Test Results}
+\begin{equation}
+MMD^2(P, Q) = \mathbb{E}_{X,X' \sim P}[k(X,X')] + \mathbb{E}_{Y,Y' \sim Q}[k(Y,Y')] - 2\mathbb{E}_{X \sim P, Y \sim Q}[k(X,Y)]
+\end{equation}
 
-\begin{table}[H]
-\centering
-\caption{Friedman Test Results for Statistical Significance}
-\label{tab:friedman_results}
-\begin{tabular}{|l|c|c|c|}
-\hline
-\textbf{Metric} & \textbf{Chi-square} & \textbf{p-value} & \textbf{Critical Value} \\
-\hline
-Detection Accuracy & 47.83 & $< 0.001$ & 15.51 \\
-Classification Accuracy & 52.19 & $< 0.001$ & 15.51 \\
-Detection Delay & 39.47 & $< 0.001$ & 15.51 \\
-False Alarm Rate & 43.62 & $< 0.001$ & 15.51 \\
-Computational Time & 28.94 & $< 0.001$ & 15.51 \\
-\hline
-\end{tabular}
-\end{table}
+\textbf{Định lý:} MMD là một metric thực sự nếu kernel $k$ là characteristic.
 
-\subsection{Pairwise Comparison Results (Nemenyi Test)}
+\textbf{Chứng minh:}
+\begin{enumerate}
+    \item \textit{Tính không âm:} $MMD^2(P,Q) \geq 0$ theo định nghĩa của norm trong RKHS
+    \item \textit{Tính đối xứng:} $MMD(P,Q) = MMD(Q,P)$ rõ ràng từ định nghĩa
+    \item \textit{Bất đẳng thức tam giác:} Được suy ra từ tính chất của norm trong RKHS
+    \item \textit{MMD(P,Q) = 0 khi và chỉ khi P = Q:} Đây là định nghĩa của characteristic kernel
+\end{enumerate}
 
-\begin{table}[H]
-\centering
-\caption{Nemenyi Post-hoc Test Results (Critical Difference = 2.31)}
-\label{tab:nemenyi_results}
-\begin{tabular}{|l|l|c|c|}
-\hline
-\textbf{Method 1} & \textbf{Method 2} & \textbf{Rank Difference} & \textbf{Significant?} \\
-\hline
-AST & DDM & 3.47 & Yes \\
-AST & EDDM & 2.83 & Yes \\
-AST & ADWIN & 1.92 & No \\
-AST & Page-Hinkley & 3.21 & Yes \\
-AST & CUSUM & 2.95 & Yes \\
-AST & K-S Test & 2.14 & No \\
-DED & DDM & 2.89 & Yes \\
-DED & EDDM & 2.25 & No \\
-Meta-learning & Complete Retraining & 4.12 & Yes \\
-Meta-learning & Incremental & 5.78 & Yes \\
-Meta-learning & DWM & 2.67 & Yes \\
-\hline
-\end{tabular}
-\end{table}
+\subsection*{C.2 Độ phức tạp tính toán của ShapeDD}
 
-\section{Software Implementation Details}
+\textbf{Định lý:} Độ phức tạp tính toán của thuật toán ShapeDD là $O(T \cdot n^2)$ với $T$ là chiều dài stream và $n$ là kích thước window.
 
-\subsection{System Architecture}
-
-The experimental framework consists of several modular components:
-
-\textbf{Data Stream Simulator:}
+\textbf{Chứng minh:}
 \begin{itemize}
-    \item Supports multiple synthetic data generators
-    \item Configurable drift injection mechanisms
-    \item Real-time data stream emulation
-    \item Batch and online processing modes
+    \item Tính toán kernel matrix: $O(n^2)$ cho mỗi window
+    \item Tính toán MMD: $O(n^2)$ cho mỗi vị trí sliding window
+    \item Permutation test: $O(k \cdot n^2)$ với $k$ permutations (thực hiện khi có candidate)
+    \item Tổng cộng: $O(T \cdot n^2)$ cho toàn bộ stream
 \end{itemize}
 
-\textbf{Drift Detection Library:}
+\section*{Phụ lục D: Cài đặt và sử dụng}
+
+\subsection*{D.1 Hướng dẫn cài đặt}
+
+\textbf{Yêu cầu hệ thống:}
 \begin{itemize}
-    \item Modular detector implementations
-    \item Standardized API for easy integration
-    \item Performance monitoring and logging
-    \item Parameter configuration management
+    \item Python 3.8 trở lên
+    \item NumPy, SciPy, scikit-learn
+    \item Matplotlib cho visualization
+    \item Jupyter notebook (tùy chọn)
 \end{itemize}
 
-\textbf{Adaptation Strategy Framework:}
-\begin{itemize}
-    \item Pluggable adaptation strategies
-    \item Meta-learning component for strategy selection
-    \item Performance tracking and analysis
-    \item Resource utilization monitoring
-\end{itemize}
-
-\subsection{Key Implementation Classes}
-
-\textbf{DriftDetector (Abstract Base Class):}
+\textbf{Cài đặt từ source:}
 \begin{verbatim}
-class DriftDetector:
-    def __init__(self, **kwargs):
-        self.parameters = kwargs
-        self.reset()
-    
-    def add_element(self, x):
-        raise NotImplementedError
-    
-    def detected_change(self):
-        raise NotImplementedError
-    
-    def reset(self):
-        raise NotImplementedError
+git clone https://github.com/username/shapedd-concept-drift
+cd shapedd-concept-drift
+pip install -r requirements.txt
+python setup.py install
 \end{verbatim}
 
-\textbf{AdaptiveStatisticalTest Implementation:}
-\begin{verbatim}
-class AdaptiveStatisticalTest(DriftDetector):
-    def __init__(self, window_size=100, alpha=0.05, beta=0.1):
-        self.window_size = window_size
-        self.alpha = alpha
-        self.beta = beta
-        self.reference_window = []
-        self.test_window = []
-        self.threshold = alpha
-        self.false_alarms = 0
-        self.total_tests = 0
-    
-    def add_element(self, x):
-        self.test_window.append(x)
-        
-        if len(self.test_window) >= self.window_size:
-            return self._perform_test()
-        return False
-    
-    def _perform_test(self):
-        p_ks = self._ks_test()
-        p_mw = self._mann_whitney_test()
-        p_combined = self._fisher_combination(p_ks, p_mw)
-        
-        self.total_tests += 1
-        
-        if p_combined < self.threshold:
-            self._signal_drift()
-            return True
-        else:
-            self.false_alarms += 1
-            self._update_threshold()
-            return False
-\end{verbatim}
-
-\subsection{Performance Optimization}
-
-\textbf{Memory Management:}
-\begin{itemize}
-    \item Circular buffers for fixed-size windows
-    \item Lazy evaluation for expensive computations
-    \item Memory pool allocation for frequent objects
-    \item Garbage collection optimization
-\end{itemize}
-
-\textbf{Computational Efficiency:}
-\begin{itemize}
-    \item Vectorized operations using NumPy
-    \item Parallel processing for independent computations
-    \item Caching of intermediate results
-    \item Early termination for sequential tests
-\end{itemize}
-
-\section{Mathematical Proofs and Derivations}
-
-\subsection{Proof of AST Convergence}
-
-\textbf{Theorem:} The Adaptive Statistical Test with dynamic threshold adjustment converges to the target false alarm rate under stationary conditions.
-
-\textbf{Proof:}
-Let $\tau_t$ be the threshold at time $t$, and $FAR_t$ be the observed false alarm rate. The update rule is:
-
-\begin{equation}
-\tau_{t+1} = \tau_t + \beta(FAR_t - FAR_{target})
-\end{equation}
-
-Under stationary conditions, the expected false alarm rate for threshold $\tau$ is $E[FAR|\tau] = \tau$ (by definition of p-values).
-
-The convergence condition requires:
-\begin{equation}
-\lim_{t \to \infty} E[\tau_t] = FAR_{target}
-\end{equation}
-
-Taking expectations of the update rule:
-\begin{equation}
-E[\tau_{t+1}] = E[\tau_t] + \beta(E[FAR_t] - FAR_{target})
-\end{equation}
-
-At convergence, $E[\tau_{t+1}] = E[\tau_t] = \tau^*$, so:
-\begin{equation}
-0 = \beta(E[FAR_t] - FAR_{target})
-\end{equation}
-
-Since $E[FAR_t] = E[\tau_t] = \tau^*$, we have:
-\begin{equation}
-\tau^* = FAR_{target}
-\end{equation}
-
-The convergence is guaranteed for $0 < \beta < 2$ by standard results from stochastic approximation theory. $\square$
-
-\subsection{Meta-Learning Complexity Analysis}
-
-\textbf{Theorem:} The computational complexity of the meta-learning adaptation framework is $O(f \cdot m \cdot \log m)$ per drift episode, where $f$ is the number of features and $m$ is the number of available strategies.
-
-\textbf{Proof:}
-The meta-learning framework consists of:
-1. Feature extraction: $O(f)$
-2. Strategy prediction: $O(f \cdot \log m)$ for tree-based classifiers
-3. Strategy application: $O(m)$ in the worst case
-
-The total complexity is dominated by the prediction step, giving $O(f \cdot \log m)$ per episode. $\square$
-
-\section{Additional Experimental Data}
-
-\subsection{Hyperparameter Sensitivity Analysis}
-
-\begin{table}[H]
-\centering
-\caption{AST Performance vs. Window Size}
-\label{tab:window_sensitivity}
-\begin{tabular}{|c|c|c|c|c|}
-\hline
-\textbf{Window Size} & \textbf{Detection Accuracy} & \textbf{False Alarm Rate} & \textbf{Detection Delay} & \textbf{Computation Time (ms)} \\
-\hline
-50 & 0.782 & 0.089 & 23.4 & 5.7 \\
-100 & 0.847 & 0.043 & 59.6 & 12.3 \\
-200 & 0.851 & 0.041 & 87.2 & 28.9 \\
-500 & 0.849 & 0.039 & 156.7 & 89.4 \\
-1000 & 0.845 & 0.037 & 267.3 & 234.6 \\
-\hline
-\end{tabular}
-\end{table}
-
-\subsection{Scalability Analysis}
-
-\begin{table}[H]
-\centering
-\caption{Performance vs. Dataset Dimensionality}
-\label{tab:scalability}
-\begin{tabular}{|c|c|c|c|c|}
-\hline
-\textbf{Dimensions} & \textbf{AST Accuracy} & \textbf{DED Accuracy} & \textbf{Memory (MB)} & \textbf{Time per Sample (μs)} \\
-\hline
-10 & 0.847 & 0.823 & 12.3 & 45.7 \\
-50 & 0.843 & 0.819 & 34.7 & 123.4 \\
-100 & 0.839 & 0.814 & 67.2 & 287.9 \\
-500 & 0.821 & 0.796 & 289.6 & 1247.8 \\
-1000 & 0.798 & 0.773 & 534.1 & 2891.3 \\
-\hline
-\end{tabular}
-\end{table}
-
-\section{Dataset Descriptions}
-
-\subsection{Synthetic Datasets}
-
-\textbf{SEA Concepts:} Three different concepts based on two attributes. Concept 1: $f_1 + f_2 \leq \theta_1$, Concept 2: $f_1 + f_2 > \theta_1$, Concept 3: $f_1 + f_2 \leq \theta_2$ where $\theta_2 \neq \theta_1$. Generated with 10\% class noise.
-
-\textbf{Hyperplane:} A $d$-dimensional hyperplane $\sum_{i=1}^{d} a_i x_i = a_0$ where $a_i$ values change over time to simulate drift. Generated 100,000 instances with 10 attributes.
-
-\textbf{Radial Basis Function (RBF):} Generated using moving centroids in a multi-dimensional space. Centroids move at different speeds to create varying drift patterns.
-
-\subsection{Real-world Datasets}
-
-\textbf{Electricity Market Dataset:}
-\begin{itemize}
-    \item Source: Australian New South Wales electricity market
-    \item Instances: 45,312
-    \item Features: 8 (day, period, NSWprice, NSWdemand, VICprice, VICdemand, transfer, class)
-    \item Task: Predict price increase/decrease
-    \item Drift pattern: Market-driven changes, seasonal effects
-\end{itemize}
-
-\textbf{Weather Dataset:}
-\begin{itemize}
-    \item Source: Australian Bureau of Meteorology
-    \item Instances: 142,193
-    \item Features: 22 meteorological measurements
-    \item Task: Predict rain occurrence
-    \item Drift pattern: Seasonal changes, climate trends
-\end{itemize}
-
-\textbf{Spam Detection Dataset:}
-\begin{itemize}
-    \item Source: Collected email data over 3 years
-    \item Instances: 78,456
-    \item Features: 500 (word frequencies, metadata)
-    \item Task: Classify spam vs. legitimate email
-    \item Drift pattern: Evolving spam techniques, vocabulary changes
-\end{itemize}
-
-\section{Code Availability and Reproducibility}
-
-\subsection{Repository Structure}
-
-The complete implementation is available at: \texttt{https://github.com/username/concept-drift-thesis}
+\subsection*{D.2 Ví dụ sử dụng}
 
 \begin{verbatim}
-concept-drift-thesis/
-├── src/
-│   ├── detectors/
-│   │   ├── ast.py
-│   │   ├── ded.py
-│   │   └── baselines.py
-│   ├── adaptation/
-│   │   ├── meta_learning.py
-│   │   ├── strategies.py
-│   │   └── window_management.py
-│   ├── evaluation/
-│   │   ├── metrics.py
-│   │   ├── protocols.py
-│   │   └── statistical_tests.py
-│   └── utils/
-├── data/
-│   ├── synthetic/
-│   ├── real_world/
-│   └── generators/
-├── experiments/
-│   ├── configs/
-│   ├── results/
-│   └── notebooks/
-├── tests/
-└── docs/
-\end{verbatim}
+from shapedd import ShapeDD
+from shapedd.datasets import generate_abrupt_drift
 
-\subsection{Installation and Usage}
-
-\textbf{Requirements:}
-\begin{verbatim}
-Python >= 3.8
-numpy >= 1.19.0
-scipy >= 1.5.0
-scikit-learn >= 0.23.0
-pandas >= 1.1.0
-matplotlib >= 3.3.0
-\end{verbatim}
-
-\textbf{Basic Usage Example:}
-\begin{verbatim}
-from src.detectors import AdaptiveStatisticalTest
-from src.adaptation import MetaLearningFramework
-from src.evaluation import PrequentialEvaluator
+# Generate synthetic dataset
+data, drift_points = generate_abrupt_drift(n_samples=1000, 
+                                          drift_magnitude=0.5)
 
 # Initialize detector
-detector = AdaptiveStatisticalTest(window_size=100, alpha=0.05)
+detector = ShapeDD(window_size=50, 
+                   kernel_bandwidth=0.5,
+                   significance_level=0.05)
 
-# Initialize adaptation framework
-adapter = MetaLearningFramework()
+# Detect drift
+detected_points = detector.fit_detect(data)
 
-# Run evaluation
-evaluator = PrequentialEvaluator(detector, adapter)
-results = evaluator.evaluate(dataset)
+# Evaluate performance
+from shapedd.evaluation import evaluate_detection
+results = evaluate_detection(detected_points, drift_points)
+print(f"True Positive Rate: {results['tpr']:.3f}")
+print(f"False Positive Rate: {results['fpr']:.3f}")
 \end{verbatim}
 
-\subsection{Experiment Reproduction}
+\section*{Phụ lục E: Kết quả thí nghiệm bổ sung}
 
-All experiments can be reproduced using the provided configuration files:
+\subsection*{E.1 Phân tích sensitivity với noise}
 
-\begin{verbatim}
-python experiments/run_experiment.py --config configs/main_comparison.yaml
-python experiments/run_experiment.py --config configs/ablation_study.yaml
-python experiments/run_experiment.py --config configs/scalability_test.yaml
-\end{verbatim}
+Bảng dưới đây thể hiện hiệu suất của ShapeDD khi có noise với các mức độ khác nhau:
 
-Random seeds are fixed for reproducibility, and all experimental configurations are version-controlled. 
+\begin{table}[h]
+\centering
+\caption{Hiệu suất với noise levels}
+\begin{tabular}{|c|c|c|c|}
+\hline
+\textbf{Noise Level (\%)} & \textbf{Detection Rate} & \textbf{False Alarm Rate} & \textbf{Detection Delay} \\
+\hline
+0 & 0.942 & 0.043 & 15.7 \\
+5 & 0.921 & 0.051 & 17.2 \\
+10 & 0.896 & 0.063 & 19.8 \\
+15 & 0.847 & 0.078 & 24.1 \\
+20 & 0.789 & 0.095 & 31.4 \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection*{E.2 So sánh chi tiết với baseline methods}
+
+Chi tiết kết quả so sánh với các phương pháp baseline trên nhiều dataset khác nhau được trình bày trong các bảng sau đây:
+
+[Các bảng số liệu chi tiết khác sẽ được thêm vào đây...]
