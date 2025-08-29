@@ -1,26 +1,45 @@
-\chapter{GIỚI THIỆU CHUNG}
+\chapter{GIỚI THIỆU ĐỀ TÀI}
 
-\section{Đặt vấn đề}
+\section{Thực trạng chung}
 
-Trong những năm gần đây, lĩnh vực trí tuệ nhân tạo ngày càng phát triển nhanh chóng. Việc ứng dụng thành quả của trí tuệ nhân tạo ngày càng được phổ biến rộng rãi, không chỉ trong đời sống hằng ngày mà cả trong công việc. Khi các ứng dụng học máy không còn bị giới hạn trong phòng thí nghiệm nữa để được ứng dụng vào trong đời sống trong các lĩnh vực sản xuất như bảo trì thông minh và kiểm soát chất lượng. Khi đó, các câu hỏi liên quan đến độ tin cậy và độ bền liên tục của chúng nảy sinh. 
-Các tập dữ liệu tĩnh được sử dụng để huấn luyện các mô hình học máy chỉ có thể nắm bắt được một phần nhỏ các điều kiện có thể xảy ra trong thế giới thực. Các trường hợp trôi dạt khái niệm (concept drift), chẳng hạn như thay đổi điều kiện môi trường, thiết bị và vận hành có thể, theo thời gian, làm giảm đáng kể hiệu suất của các mô hình học máy, gây ảnh hưởng đến sự an toàn, độ tin cậy của mô hình và kinh tế nếu không được giải quyết đúng cách. Nội dung của đề cương này được trình bày như sau:
+Trong thế kỷ 21, cuộc cách mạng số hóa đã tạo ra một lượng lớn dữ liệu mới được tạo ra mỗi giây từ nhiều nguồn khác nhau như cảm biến, thiết bị di động, máy chủ web, và nhiều hệ thống khác. Trong số này, dữ liệu streaming đang nổi lên như một nguồn tài nguyên vô giá, cung cấp thông tin một cách tức thì về các sự kiện và hành vi của người dùng, thiết bị và quá trình sản xuất.
+
+Tuy nhiên, một trong những thách thức lớn nhất khi làm việc với dữ liệu streaming là việc xử lý dữ liệu khi nó liên tục được tạo ra và chuyển động. Dữ liệu streaming thường chứa những lỗ hổng, thiếu sót hoặc mất mát do nhiều nguyên nhân như lỗi cảm biến, mạng truyền thông tin không ổn định, hoặc quá trình thu thập và truyền dữ liệu không hoàn hảo. Đặc biệt, hiện tượng concept drift - sự thay đổi trong phân phối dữ liệu hoặc mối quan hệ giữa các biến theo thời gian - là một thách thức quan trọng cần được giải quyết.
+
+Việc giải quyết vấn đề concept drift trong dữ liệu streaming không chỉ là một yêu cầu cấp bách mà còn là một phần quan trọng của quy trình xử lý dữ liệu. Sự thiếu sót của dữ liệu có thể dẫn đến những phân tích sai lầm và quyết định không chính xác, ảnh hưởng đến hiệu suất và hiệu quả của các hệ thống và ứng dụng dựa trên dữ liệu.
+
+Với sự phát triển nhanh chóng của công nghệ và các ứng dụng của dữ liệu streaming, việc tìm ra giải pháp hiệu quả để phát hiện concept drift trở thành một vấn đề cấp bách và đòi hỏi sự chú ý đặc biệt từ cộng đồng nghiên cứu và doanh nghiệp.
+
+\section{Tổng quan về bài toán}
+
+Trong lĩnh vực xử lý dữ liệu, việc xử lý và phân tích dữ liệu streaming đang trở thành một thách thức lớn do tính phức tạp và sự đặc biệt của dữ liệu này. Một thách thức lớn trong quá trình xử lý dữ liệu streaming là việc xử lý concept drift - hiện tượng thay đổi trong phân phối dữ liệu hoặc mối quan hệ giữa các biến theo thời gian.
+
+Đối với nhiều ứng dụng và hệ thống, việc phát hiện concept drift trong thời gian thực hoặc gần thời gian thực là một yêu cầu quan trọng để đảm bảo chất lượng và độ tin cậy của kết quả phân tích, từ đó đưa ra các quyết định chính xác. Tuy nhiên, việc thực hiện điều này trong môi trường streaming đòi hỏi phải xử lý dữ liệu nhanh chóng và hiệu quả, với khả năng mở rộng và cập nhật liên tục.
+
+Trong đề tài này, luận văn tập trung vào việc nghiên cứu và phát triển phương pháp phát hiện concept drift sử dụng Shape Drift Detector (ShapeDD) dựa trên Maximum Mean Discrepancy (MMD) để giải quyết bài toán phát hiện concept drift trong dữ liệu streaming. Điều này đòi hỏi sự kết hợp giữa sức mạnh của MMD trong việc so sánh phân phối dữ liệu và các kỹ thuật tối ưu hóa để xử lý dữ liệu streaming một cách hiệu quả và linh hoạt.
 
 
-\section{Mục tiêu nghiên cứu}
+\section{Mục tiêu đề tài}
 
-Trong bối cảnh dữ liệu lớn và học máy ngày càng phát triển, các hệ thống học máy thường đối mặt với thách thức khi dữ liệu thay đổi theo thời gian, dẫn đến hiện tượng concept drift. Hiện tượng này xảy ra khi phân phối dữ liệu hoặc mối quan hệ giữa dữ liệu đầu vào và đầu ra thay đổi, làm giảm hiệu suất của các mô hình dự đoán.
+\subsection{Nghiên cứu và phân tích Shape Drift Detector}
 
-Việc phát hiện kịp thời và chính xác concept drift đóng vai trò quan trọng trong việc đảm bảo độ tin cậy và hiệu quả của các hệ thống học máy trong các ứng dụng thực tiễn như phân tích tài chính, y tế, và giám sát hệ thống.
+Mục tiêu đầu tiên của đề tài là tiến hành một nghiên cứu chi tiết và phân tích sâu về phương pháp Shape Drift Detector (ShapeDD) hiện đại. Luận văn sẽ xem xét cơ sở lý thuyết của ShapeDD, bao gồm Maximum Mean Discrepancy (MMD) trong không gian Reproducing Kernel Hilbert Space (RKHS), các phương pháp triển khai, cũng như cấu trúc và tính linh hoạt của chúng trong việc phát hiện concept drift. Bằng cách này, luận văn sẽ làm rõ hơn về sức mạnh và giới hạn của ShapeDD để làm cơ sở cho việc tinh chỉnh, cải tiến mô hình phát hiện.
 
-Đề tài này tập trung vào việc xem xét một phương pháp phát hiện concept drift dựa trên đánh giá sự thay đổi phân phối, đánh giá hiệu quả của nó và đề xuất giải pháp tối ưu nhằm nâng cao khả năng thích ứng của các mô hình học máy trong môi trường dữ liệu động.
+\subsection{Ứng dụng mô hình ShapeDD cho dữ liệu streaming}
 
-Về mặt mục tiêu, đề tài này sẽ đề ra 3 mục tiêu cần đạt được:
+Sau khi hiểu rõ về cơ sở lý thuyết của ShapeDD, luận văn sẽ tiến hành ứng dụng với mô hình ShapeDD được tinh chỉnh đặc biệt cho việc xử lý dữ liệu streaming và phát hiện concept drift. Mô hình này sẽ được thiết kế để đảm bảo khả năng mở rộng, linh hoạt và hiệu suất cao trong môi trường streaming dữ liệu, bao gồm khả năng tự động học và điều chỉnh để thích nghi với sự biến đổi của dữ liệu theo thời gian.
 
-\begin{enumerate}
-    \item Tìm hiểu cơ sở lý thuyết và cách hoạt động của phương pháp ShapeDD
-    \item Thử nghiệm phương pháp với tập dữ liệu synthetic
-    \item Đánh giá độ chính xác của phương pháp trong các trường hợp trôi dạt khác nhau
-\end{enumerate}
+\subsection{Kết hợp các kỹ thuật từ MMD để phát hiện concept drift}
+
+Luận văn sẽ nghiên cứu và áp dụng các kỹ thuật tiên tiến từ Maximum Mean Discrepancy (MMD) để nâng cao khả năng phát hiện concept drift. Điều này bao gồm việc tối ưu hóa các tham số kernel, quản lý cửa sổ trượt, và kết hợp với các phương pháp thống kê để tăng độ chính xác và giảm false alarm trong quá trình phát hiện.
+
+\subsection{Tùy chỉnh và tối ưu hóa mô hình}
+
+Dựa trên kết quả nghiên cứu và thử nghiệm, luận văn sẽ tiến hành tùy chỉnh và tối ưu hóa mô hình ShapeDD để phù hợp với các đặc điểm riêng biệt của dữ liệu streaming và các loại concept drift khác nhau. Quá trình này sẽ bao gồm việc điều chỉnh các tham số, cải thiện thuật toán, và phát triển các chiến lược thích ứng để đạt được hiệu suất tối ưu trong việc phát hiện concept drift.
+
+\subsection{Triển khai và đánh giá}
+
+Cuối cùng, luận văn sẽ triển khai mô hình đã được tối ưu hóa và tiến hành đánh giá toàn diện trên các tập dữ liệu synthetic và thực tế. Quá trình đánh giá sẽ bao gồm việc so sánh hiệu suất với các phương pháp hiện có, phân tích độ chính xác, thời gian phát hiện, và khả năng thích ứng của mô hình trong các điều kiện khác nhau.
 
 \section{Đóng góp của nghiên cứu}
 
@@ -47,19 +66,61 @@ Nghiên cứu này mang lại những đóng góp quan trọng trong lĩnh vực
     \item Hướng dẫn thực tiễn để triển khai ShapeDD trong các ứng dụng thực tế, bao gồm lựa chọn tham số và các chiến lược tối ưu hiệu suất
 \end{itemize}
 
+\section{Giới hạn đề tài và đối tượng nghiên cứu}
+
+\subsection{Phạm vi đề tài}
+
+Nghiên cứu này tập trung vào các phạm vi cụ thể sau:
+
+\textbf{Phạm vi về phương pháp:}
+\begin{itemize}
+    \item Nghiên cứu sâu về thuật toán Shape Drift Detector (ShapeDD) dựa trên Maximum Mean Discrepancy (MMD)
+    \item Tập trung vào phát hiện concept drift trong môi trường dữ liệu streaming
+    \item Không bao gồm các phương pháp adaptation sau khi phát hiện drift
+\end{itemize}
+
+\textbf{Phạm vi về dữ liệu:}
+\begin{itemize}
+    \item Chủ yếu sử dụng tập dữ liệu synthetic có kiểm soát để đánh giá hiệu suất
+    \item Tập trung vào dữ liệu số với các loại concept drift: đột ngột, tăng dần, và tuần hoàn
+    \item Không bao gồm dữ liệu phi cấu trúc như text, image hoặc audio
+\end{itemize}
+
+\textbf{Phạm vi về đánh giá:}
+\begin{itemize}
+    \item Đánh giá hiệu suất phát hiện drift về mặt độ chính xác, thời gian phát hiện và tỷ lệ false alarm
+    \item So sánh với các baseline methods cơ bản
+    \item Không bao gồm đánh giá về computational complexity chi tiết hoặc scalability trên big data
+\end{itemize}
+
+\subsection{Đối tượng nghiên cứu}
+
+\textbf{Đối tượng chính:} Thuật toán Shape Drift Detector (ShapeDD) và ứng dụng của nó trong phát hiện concept drift
+
+\textbf{Các đối tượng cụ thể bao gồm:}
+\begin{itemize}
+    \item Cơ sở lý thuyết Maximum Mean Discrepancy (MMD) trong RKHS
+    \item Các thành phần của thuật toán ShapeDD: kernel selection, window management, statistical validation
+    \item Phương pháp tối ưu hóa tham số cho ShapeDD
+    \item Tập dữ liệu synthetic mô phỏng các loại concept drift khác nhau
+    \item Metrics đánh giá hiệu suất phát hiện drift
+\end{itemize}
+
 \section{Cấu trúc luận văn}
 
-Luận văn được tổ chức thành năm chương chính:
+Luận văn được tổ chức thành sáu chương chính:
 
 \textbf{Chương 1: Giới thiệu đề tài} trình bày tổng quan về nghiên cứu, bao gồm đặt vấn đề, mục tiêu nghiên cứu, đóng góp của nghiên cứu và cấu trúc luận văn.
 
 \textbf{Chương 2: Các công trình liên quan} cung cấp khảo sát toàn diện về nghiên cứu hiện có trong lĩnh vực phát hiện và thích ứng concept drift. Chúng tôi xem xét sự phát triển của lĩnh vực, phân loại các phương pháp hiện có và xác định các hạn chế hiện tại cũng như khoảng trống nghiên cứu.
 
-\textbf{Chương 3: Cơ sở lý thuyết} trình bày phương pháp nghiên cứu của chúng tôi, bao gồm phát triển phân loại trôi dạt, thiết kế các thuật toán phát hiện mới và khung thực nghiệm được sử dụng để đánh giá.
+\textbf{Chương 3: Cơ sở lý thuyết} trình bày nền tảng lý thuyết của nghiên cứu, bao gồm phân tích chi tiết về Maximum Mean Discrepancy (MMD), thuật toán Shape Drift Detector (ShapeDD) và các khái niệm toán học liên quan.
 
-\textbf{Chương 4: Kết quả và thảo luận} báo cáo các phát hiện từ đánh giá thực nghiệm mở rộng của chúng tôi. Chúng tôi phân tích hiệu suất của các phương pháp khác nhau trên các tình huống trôi dạt khác nhau và thảo luận về ý nghĩa của kết quả.
+\textbf{Chương 4: Mô hình đề xuất} trình bày chi tiết về mô hình phát hiện concept drift được đề xuất, bao gồm kiến trúc thuật toán, chiến lược tối ưu hóa tham số và khung triển khai thực tế.
 
-\textbf{Chương 5: Kết luận và hướng phát triển} tóm tắt các đóng góp chính của nghiên cứu này, thảo luận về các hạn chế và phác thảo các hướng đầy hứa hẹn cho nghiên cứu tương lai.
+\textbf{Chương 5: Thực nghiệm và đánh giá} báo cáo các kết quả từ đánh giá thực nghiệm mở rộng trên tập dữ liệu synthetic và thực tế. Chúng tôi phân tích hiệu suất của phương pháp đề xuất và so sánh với các phương pháp hiện có.
+
+\textbf{Chương 6: Kết luận và hướng phát triển} tóm tắt các đóng góp chính của nghiên cứu này, thảo luận về các hạn chế và phác thảo các hướng đầy hứa hẹn cho nghiên cứu tương lai.
 
 Luận văn kết thúc với các phụ lục chứa tài liệu bổ sung, bao gồm kết quả thực nghiệm chi tiết, mã giả thuật toán và các chứng minh lý thuyết bổ sung.
 

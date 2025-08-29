@@ -12,7 +12,7 @@
 \usepackage{algorithm}
 \usepackage{algorithmic}
 \usepackage{url}
-\usepackage[sort]{natbib}
+\usepackage[sort,numbers]{natbib}
 \usepackage{hyperref}
 \usepackage{fancyhdr}
 \usepackage{titlesec}
@@ -44,9 +44,11 @@
 \setlength{\parindent}{1.25cm}
 \setlength{\parskip}{6pt}
 
-% Font settings
+% Font settings - Times New Roman as in reference
 \renewcommand{\rmdefault}{ptm} % Times New Roman
 \fontfamily{ptm}\selectfont
+% Set default font size to 12pt for body text
+\renewcommand{\normalsize}{\fontsize{12}{14.4}\selectfont}
 
 % Header and Footer formatting for Vietnamese thesis
 \pagestyle{fancy}
@@ -56,39 +58,41 @@
 \renewcommand{\footrulewidth}{0pt}
 \setlength{\headheight}{14.5pt}
 
-% Chapter title formatting - Vietnamese style
+% Chapter title formatting - Vietnamese style (14pt, bold, uppercase, centered)
 \titleformat{\chapter}[display]
-{\centering\bfseries\fontsize{14}{16}\selectfont}
+{\centering\bfseries\fontsize{14}{16.8}\selectfont}
 {CHƯƠNG \thechapter}
 {0.5em}
 {\MakeUppercase}
 \titlespacing*{\chapter}{0pt}{0pt}{30pt}
 
-% Special formatting for unnumbered chapters
+% Special formatting for unnumbered chapters (14pt, bold, uppercase, centered)
 \titleformat{name=\chapter,numberless}[display]
-{\centering\bfseries\fontsize{14}{16}\selectfont}
+{\centering\bfseries\fontsize{14}{16.8}\selectfont}
 {}
 {0em}
 {\MakeUppercase}
 \titlespacing*{name=\chapter,numberless}{0pt}{0pt}{30pt}
 
-% Section formatting
+% Section formatting (13pt, bold)
 \titleformat{\section}[block]
-{\bfseries\fontsize{13}{15}\selectfont}
+{\bfseries\fontsize{13}{15.6}\selectfont}
 {\thesection.}
 {0.5em}
 {}
 \titlespacing*{\section}{0pt}{18pt}{12pt}
 
+% Subsection formatting (12pt, bold)
 \titleformat{\subsection}[block]
-{\bfseries\fontsize{12}{14}\selectfont}
+{\bfseries\fontsize{12}{14.4}\selectfont}
 {\thesubsection.}
 {0.5em}
 {}
 \titlespacing*{\subsection}{0pt}{12pt}{6pt}
 
+% Subsubsection formatting (12pt, bold)
 \titleformat{\subsubsection}[block]
-{\bfseries\fontsize{12}{14}\selectfont}
+{\bfseries\fontsize{12}{14.4}\selectfont}
 {\thesubsubsection.}
 {0.5em}
 {}
@@ -100,10 +104,10 @@
 \renewcommand{\listtablename}{DANH SÁCH BẢNG BIỂU}
 \renewcommand{\bibname}{TÀI LIỆU THAM KHẢO}
 
-% TOC formatting
-\renewcommand{\cfttoctitlefont}{\centering\bfseries\fontsize{14}{16}\selectfont\MakeUppercase}
-\renewcommand{\cftloftitlefont}{\centering\bfseries\fontsize{14}{16}\selectfont\MakeUppercase}
-\renewcommand{\cftlottitlefont}{\centering\bfseries\fontsize{14}{16}\selectfont\MakeUppercase}
+% TOC formatting (14pt, bold, uppercase, centered)
+\renewcommand{\cfttoctitlefont}{\centering\bfseries\fontsize{14}{16.8}\selectfont\MakeUppercase}
+\renewcommand{\cftloftitlefont}{\centering\bfseries\fontsize{14}{16.8}\selectfont\MakeUppercase}
+\renewcommand{\cftlottitlefont}{\centering\bfseries\fontsize{14}{16.8}\selectfont\MakeUppercase}
 
 \renewcommand{\cftchapfont}{\bfseries}
 \renewcommand{\cftsecfont}{}
