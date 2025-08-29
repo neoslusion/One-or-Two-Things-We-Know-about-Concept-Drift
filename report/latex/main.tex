@@ -58,42 +58,42 @@
 \renewcommand{\footrulewidth}{0pt}
 \setlength{\headheight}{14.5pt}
 
-% Chapter title formatting - Vietnamese style (14pt, bold, uppercase, centered)
+% Chapter title formatting - Vietnamese style (follow DOCX format)
 \titleformat{\chapter}[display]
-{\centering\bfseries\fontsize{14}{16.8}\selectfont}
-{CHƯƠNG \thechapter}
+{\raggedright\bfseries\fontsize{14}{16.8}\selectfont}
+{CHƯƠNG\thechapter}
 {0.5em}
-{\MakeUppercase}
-\titlespacing*{\chapter}{0pt}{0pt}{30pt}
+{}
+\titlespacing*{\chapter}{0pt}{20pt}{15pt}
 
-% Special formatting for unnumbered chapters (14pt, bold, uppercase, centered)
+% Special formatting for unnumbered chapters (follow DOCX format)
 \titleformat{name=\chapter,numberless}[display]
-{\centering\bfseries\fontsize{14}{16.8}\selectfont}
+{\raggedright\bfseries\fontsize{14}{16.8}\selectfont}
 {}
 {0em}
-{\MakeUppercase}
-\titlespacing*{name=\chapter,numberless}{0pt}{0pt}{30pt}
+{}
+\titlespacing*{name=\chapter,numberless}{0pt}{20pt}{15pt}
 
-% Section formatting (13pt, bold)
+% Section formatting (13pt, bold, left aligned - follow DOCX)
 \titleformat{\section}[block]
-{\bfseries\fontsize{13}{15.6}\selectfont}
-{\thesection.}
+{\raggedright\bfseries\fontsize{13}{15.6}\selectfont}
+{\thesection}
 {0.5em}
 {}
 \titlespacing*{\section}{0pt}{18pt}{12pt}
 
-% Subsection formatting (12pt, bold)
+% Subsection formatting (12pt, bold, left aligned - follow DOCX)
 \titleformat{\subsection}[block]
-{\bfseries\fontsize{12}{14.4}\selectfont}
-{\thesubsection.}
+{\raggedright\bfseries\fontsize{12}{14.4}\selectfont}
+{\thesubsection}
 {0.5em}
 {}
 \titlespacing*{\subsection}{0pt}{12pt}{6pt}
 
-% Subsubsection formatting (12pt, bold)
+% Subsubsection formatting (12pt, bold, left aligned)
 \titleformat{\subsubsection}[block]
-{\bfseries\fontsize{12}{14.4}\selectfont}
-{\thesubsubsection.}
+{\raggedright\bfseries\fontsize{12}{14.4}\selectfont}
+{\thesubsubsection}
 {0.5em}
 {}
 \titlespacing*{\subsubsection}{0pt}{12pt}{6pt}
@@ -104,17 +104,17 @@
 \renewcommand{\listtablename}{DANH SÁCH BẢNG BIỂU}
 \renewcommand{\bibname}{TÀI LIỆU THAM KHẢO}
 
-% TOC formatting (14pt, bold, uppercase, centered)
-\renewcommand{\cfttoctitlefont}{\centering\bfseries\fontsize{14}{16.8}\selectfont\MakeUppercase}
-\renewcommand{\cftloftitlefont}{\centering\bfseries\fontsize{14}{16.8}\selectfont\MakeUppercase}
-\renewcommand{\cftlottitlefont}{\centering\bfseries\fontsize{14}{16.8}\selectfont\MakeUppercase}
+% TOC formatting (12pt, bold, centered - no uppercase for titles)
+\renewcommand{\cfttoctitlefont}{\centering\bfseries\fontsize{12}{14.4}\selectfont}
+\renewcommand{\cftloftitlefont}{\centering\bfseries\fontsize{12}{14.4}\selectfont}
+\renewcommand{\cftlottitlefont}{\centering\bfseries\fontsize{12}{14.4}\selectfont}
 
 \renewcommand{\cftchapfont}{\bfseries}
 \renewcommand{\cftsecfont}{}
 \renewcommand{\cftchappagefont}{\bfseries}
 \renewcommand{\cftsecpagefont}{}
-\renewcommand{\cftchappresnum}{CHƯƠNG }
-\renewcommand{\cftchapaftersnum}{.}
+\renewcommand{\cftchappresnum}{}
+\renewcommand{\cftchapaftersnum}{}
 \setlength{\cftchapnumwidth}{2.5cm}
 \setlength{\cftbeforesecskip}{6pt}
 \setlength{\cftbeforesubsecskip}{3pt}
