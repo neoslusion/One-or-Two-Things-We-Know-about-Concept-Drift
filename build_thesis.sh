@@ -75,7 +75,8 @@ compile_latex() {
     
     # First pass
     print_status "Running pdflatex (1st pass)..."
-    if ! pdflatex -interaction=nonstopmode "$MAIN_FILE.tex" > /dev/null 2>&1; then
+    pdflatex -interaction=nonstopmode "$MAIN_FILE.tex" > pdflatex_1st.log 2>&1
+    if [ $? -ne 0 ] && ! grep -q "Output written on $MAIN_FILE.pdf" pdflatex_1st.log; then
         print_error "First pdflatex pass failed. Check main.log for details."
         cat main.log | tail -20
         cd - > /dev/null

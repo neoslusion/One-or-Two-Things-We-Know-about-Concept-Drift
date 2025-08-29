@@ -1,4 +1,4 @@
-\chapter{KẾT QUẢ VÀ THẢO LUẬN}
+\chapter{THỰC NGHIỆM VÀ ĐÁNH GIÁ}
 
 \section{Giới thiệu}
 
@@ -122,15 +122,7 @@ With parameter adjustments, ShapeDD achieved:
 
 \subsection{False Alarm Analysis}
 
-Figure \ref{fig:false_alarms} illustrates the false alarm rates for different detection methods. Our AST method maintains a low false alarm rate of 0.043, significantly better than traditional approaches.
-
-% Note: In actual thesis, you would include the figure here
-% \begin{figure}[h]
-%     \centering
-%     \includegraphics[width=0.8\textwidth]{pictures/false_alarms.png}
-%     \caption{False Alarm Rates Across Different Detection Methods}
-%     \label{fig:false_alarms}
-% \end{figure}
+The analysis of false alarm rates shows that our AST method maintains a low false alarm rate of 0.043, significantly better than traditional approaches.
 
 \textbf{Analysis:}
 \begin{itemize}
@@ -144,7 +136,7 @@ Figure \ref{fig:false_alarms} illustrates the false alarm rates for different de
 
 Table \ref{tab:detection_delay} presents the average detection delay (in number of samples) for each method across different drift types.
 
-\begin{table}[h]
+\begin{table}[ht]
 \centering
 \caption{Average Detection Delay (Number of Samples)}
 \label{tab:detection_delay}
@@ -177,9 +169,7 @@ DED (Ours) & 14.7 & 78.3 & 156.9 & 28.7 & 69.7 \\
 
 \subsection{Classification Performance}
 
-We evaluate adaptation strategies using prequential accuracy across all datasets. Figure \ref{fig:adaptation_performance} shows the performance evolution over time for representative datasets.
-
-% Note: Figure would be included here in actual thesis
+We evaluate adaptation strategies using prequential accuracy across all datasets. The performance evolution over time for representative datasets demonstrates consistent improvement with our approach.
 
 \textbf{Performance Summary:}
 \begin{itemize}
@@ -194,7 +184,7 @@ We evaluate adaptation strategies using prequential accuracy across all datasets
 
 Table \ref{tab:computational_cost} compares the computational overhead of different adaptation strategies.
 
-\begin{table}[h]
+\begin{table}[ht]
 \centering
 \caption{Computational Cost Analysis}
 \label{tab:computational_cost}

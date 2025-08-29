@@ -4,7 +4,7 @@
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage[vietnamese,english]{babel} % Vietnamese as main language
-\usepackage{vntex} % Vietnamese fonts and typography
+\usepackage[utf8]{vntex} % Vietnamese fonts and typography with explicit encoding
 \usepackage{setspace}
 \usepackage{geometry}
 \usepackage{graphicx}
@@ -12,8 +12,7 @@
 \usepackage{algorithm}
 \usepackage{algorithmic}
 \usepackage{url}
-\usepackage{cite}
-\usepackage{natbib}
+\usepackage[sort]{natbib}
 \usepackage{hyperref}
 \usepackage{fancyhdr}
 \usepackage{titlesec}
@@ -176,9 +175,10 @@
 
 % Main chapters
 \input{chapters/introduction}
-\input{chapters/literature_review}
-\input{chapters/methodology}
-\input{chapters/results_discussion}
+\input{chapters/related_works}
+\input{chapters/theoretical_foundation}
+\input{chapters/proposed_model}
+\input{chapters/experiments_evaluation}
 \input{chapters/conclusion_future_work}
 
 % References

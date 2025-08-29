@@ -1,0 +1,280 @@
+\chapter{MÔ HÌNH ĐỀ XUẤT CHO GIẢI PHÁP PHÁT HIỆN CONCEPT DRIFT}
+
+\section{Tổng quan mô hình đề xuất}
+
+This chapter presents our proposed model for concept drift detection in data streams. Building upon the theoretical foundations established in the previous chapter, we introduce a comprehensive framework that combines the Shape Drift Detector (ShapeDD) with adaptive windowing strategies and statistical validation techniques.
+
+Our proposed approach addresses key limitations in existing drift detection methods by providing:
+\begin{itemize}
+    \item Enhanced sensitivity to both sudden and gradual drift patterns
+    \item Reduced false alarm rates through multi-stage validation
+    \item Adaptive parameter selection based on data characteristics
+    \item Computational efficiency suitable for real-time applications
+\end{itemize}
+
+\section{Shape Drift Detector (ShapeDD) Implementation}
+
+\subsection{Core Algorithm Architecture}
+
+The ShapeDD algorithm operates through a four-stage pipeline designed to maximize detection accuracy while minimizing computational overhead:
+
+\textbf{Stage 1: Sliding Window Data Collection}
+\begin{itemize}
+    \item Maintains a sliding window of size $2l_1$ over the incoming data stream
+    \item Implements efficient buffer management for continuous operation
+    \item Supports multiple window overlap strategies for smoother detection
+\end{itemize}
+
+\textbf{Stage 2: Kernel-based Feature Construction}
+\begin{itemize}
+    \item Computes similarity matrix using Gaussian RBF kernel
+    \item Applies bandwidth selection strategies for optimal discrimination
+    \item Handles high-dimensional data through dimensionality reduction when needed
+\end{itemize}
+
+\textbf{Stage 3: MMD Statistical Computation}
+\begin{itemize}
+    \item Applies contrasting weight functions to window halves
+    \item Computes Maximum Mean Discrepancy statistics efficiently
+    \item Generates temporal sequence of MMD values for trend analysis
+\end{itemize}
+
+\textbf{Stage 4: Statistical Validation and Change Point Detection}
+\begin{itemize}
+    \item Performs convolution-based shape analysis for change point candidates
+    \item Applies permutation tests for statistical significance validation
+    \item Outputs drift detection signals with confidence measures
+\end{itemize}
+
+\subsection{Mathematical Formulation}
+
+The complete ShapeDD formulation integrates the theoretical MMD framework with practical implementation considerations:
+
+\begin{equation}
+\text{ShapeDD}(X_t) = \begin{cases}
+1 & \text{if } \text{MMD}^2_{\text{shape}}(t) > \tau \text{ and } p\text{-value} < \alpha \\
+0 & \text{otherwise}
+\end{cases}
+\end{equation}
+
+where:
+\begin{itemize}
+    \item $X_t$ represents the data window at time $t$
+    \item $\text{MMD}^2_{\text{shape}}(t)$ is the shape-transformed MMD statistic
+    \item $\tau$ is the adaptive threshold based on historical performance
+    \item $\alpha$ is the statistical significance level
+\end{itemize}
+
+The shape transformation applies convolution to enhance edge detection:
+\begin{equation}
+\text{MMD}^2_{\text{shape}}(t) = \sum_{i=-k}^{k} h_i \cdot \text{MMD}^2(t+i)
+\end{equation}
+
+where $h = [1, -1]$ represents the edge detection kernel.
+
+\section{Adaptive Parameter Selection Framework}
+
+\subsection{Dynamic Window Sizing}
+
+Traditional fixed window approaches fail to adapt to varying drift characteristics. Our adaptive windowing strategy adjusts window size based on detected drift patterns and data characteristics:
+
+\begin{equation}
+l_1(t) = l_{\text{base}} \cdot \begin{cases}
+\beta_{\text{expand}} & \text{if stable period detected} \\
+\beta_{\text{contract}} & \text{if high drift frequency detected} \\
+1 & \text{otherwise}
+\end{cases}
+\end{equation}
+
+where $\beta_{\text{expand}} > 1$ and $\beta_{\text{contract}} < 1$ are expansion and contraction factors.
+
+\subsection{Kernel Bandwidth Optimization}
+
+The Gaussian RBF kernel bandwidth significantly affects detection sensitivity. We implement an adaptive bandwidth selection strategy:
+
+\begin{equation}
+\sigma(t) = \sigma_{\text{base}} \cdot \exp\left(-\lambda \cdot \frac{\text{Var}(\text{MMD}^2_{t-w:t})}{|\text{Mean}(\text{MMD}^2_{t-w:t})|}\right)
+\end{equation}
+
+This formulation increases bandwidth (reducing sensitivity) when MMD statistics show high variance relative to their mean, indicating potential noise dominance.
+
+\subsection{Threshold Adaptation}
+
+Static thresholds lead to suboptimal performance across different data domains. Our adaptive threshold mechanism adjusts based on historical false alarm rates:
+
+\begin{equation}
+\tau(t) = \tau_{\text{base}} + \alpha_{\text{adapt}} \cdot \left(\text{FAR}_{\text{target}} - \text{FAR}_{\text{observed}}(t)\right)
+\end{equation}
+
+where $\text{FAR}_{\text{target}}$ is the desired false alarm rate and $\text{FAR}_{\text{observed}}(t)$ is the observed rate over a recent window.
+
+\section{Multi-Stage Validation Architecture}
+
+\subsection{Primary Detection Stage}
+
+The primary detection stage applies the core ShapeDD algorithm with conservative parameters to identify strong drift candidates:
+
+\begin{algorithm}
+\caption{Primary Detection Stage}
+\begin{algorithmic}[1]
+\REQUIRE Data stream $\mathcal{S}$, window size $l_1$, kernel bandwidth $\sigma$
+\ENSURE Primary drift candidates $\mathcal{C}_{\text{primary}}$
+\STATE Initialize sliding window $W$ of size $2l_1$
+\WHILE{new data available}
+    \STATE Update window $W$ with new data point
+    \STATE Compute kernel matrix $K$ for window $W$
+    \STATE Apply weight function and compute $\text{MMD}^2$
+    \STATE Apply convolution for shape analysis
+    \IF{zero-crossing detected}
+        \STATE Add candidate to $\mathcal{C}_{\text{primary}}$
+    \ENDIF
+\ENDWHILE
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Statistical Validation Stage}
+
+Detected candidates undergo rigorous statistical validation using permutation tests:
+
+\begin{algorithm}
+\caption{Statistical Validation Stage}
+\begin{algorithmic}[1]
+\REQUIRE Primary candidates $\mathcal{C}_{\text{primary}}$, significance level $\alpha$
+\ENSURE Validated drift points $\mathcal{D}_{\text{validated}}$
+\FOR{each candidate $c \in \mathcal{C}_{\text{primary}}$}
+    \STATE Extract data segments before and after $c$
+    \STATE Compute observed MMD statistic $\text{MMD}_{\text{obs}}$
+    \STATE Generate $n$ permutations of combined data
+    \FOR{each permutation $i$}
+        \STATE Compute permuted MMD statistic $\text{MMD}_{\text{perm},i}$
+    \ENDFOR
+    \STATE Compute p-value: $p = \frac{|\{i: \text{MMD}_{\text{perm},i} \geq \text{MMD}_{\text{obs}}\}|}{n}$
+    \IF{$p < \alpha$}
+        \STATE Add $c$ to $\mathcal{D}_{\text{validated}}$
+    \ENDIF
+\ENDFOR
+\end{algorithmic}
+\end{algorithm}
+
+\section{Computational Optimization Strategies}
+
+\subsection{Efficient Kernel Matrix Updates}
+
+For real-time applications, we implement incremental kernel matrix updates that avoid complete recomputation:
+
+\begin{equation}
+K_{t+1} = \begin{bmatrix}
+K_t^{(2:end,2:end)} & k_{\text{new}} \\
+k_{\text{new}}^T & k(x_{\text{new}}, x_{\text{new}})
+\end{bmatrix}
+\end{equation}
+
+This reduces computational complexity from $O(n^2)$ to $O(n)$ per time step.
+
+\subsection{Approximation Techniques}
+
+For very large datasets, we implement several approximation strategies:
+
+\textbf{Random Sampling:} Select representative subsets for MMD computation
+\begin{equation}
+\text{MMD}^2_{\text{approx}} \approx \text{MMD}^2(\text{Sample}(X, m), \text{Sample}(Y, m))
+\end{equation}
+
+\textbf{Kernel Approximation:} Use random Fourier features for kernel approximation
+\begin{equation}
+k(x, y) \approx \langle z(x), z(y) \rangle
+\end{equation}
+where $z(x) = \sqrt{\frac{2}{D}} \cos(\omega^T x + b)$ with $\omega \sim \mathcal{N}(0, \sigma^{-2}I)$.
+
+\section{Integration with Streaming Frameworks}
+
+\subsection{Apache Kafka Integration}
+
+Our implementation provides seamless integration with Apache Kafka for production deployment:
+
+\begin{itemize}
+    \item Kafka consumer for real-time data ingestion
+    \item Configurable batch processing for efficiency
+    \item Producer for drift detection alerts and model updates
+    \item Support for multiple data formats (JSON, Avro, Parquet)
+\end{itemize}
+
+\subsection{Memory Management}
+
+Efficient memory management ensures stable long-term operation:
+
+\begin{itemize}
+    \item Circular buffer implementation for sliding windows
+    \item Garbage collection optimization for high-frequency data
+    \item Configurable memory limits with graceful degradation
+    \item Persistent storage for historical statistics and model states
+\end{itemize}
+
+\section{Model Configuration and Deployment}
+
+\subsection{Configuration Management}
+
+The system supports flexible configuration management for different deployment scenarios:
+
+\textbf{Default Configuration:} Optimized for general-purpose drift detection
+\begin{itemize}
+    \item Window size: $l_1 = 100$
+    \item Kernel bandwidth: $\sigma = 1.0$
+    \item Significance level: $\alpha = 0.05$
+    \item Adaptation rate: $\lambda = 0.1$
+\end{itemize}
+
+\textbf{High-Sensitivity Configuration:} For applications requiring early drift detection
+\begin{itemize}
+    \item Smaller window size: $l_1 = 50$
+    \item Higher significance level: $\alpha = 0.1$
+    \item Faster adaptation: $\lambda = 0.2$
+\end{itemize}
+
+\textbf{Low-Latency Configuration:} For real-time applications with strict timing constraints
+\begin{itemize}
+    \item Reduced permutation tests: $n = 100$
+    \item Approximation techniques enabled
+    \item Simplified validation pipeline
+\end{itemize}
+
+\subsection{Monitoring and Alerting}
+
+The deployment framework includes comprehensive monitoring capabilities:
+
+\begin{itemize}
+    \item Real-time performance metrics dashboard
+    \item Automated alerting for drift detection events
+    \item Historical trend analysis and reporting
+    \item Model performance tracking and degradation alerts
+\end{itemize}
+
+\section{Validation and Testing Framework}
+
+\subsection{Unit Testing}
+
+Comprehensive unit tests ensure reliability of individual components:
+
+\begin{itemize}
+    \item MMD computation accuracy validation
+    \item Kernel matrix operations correctness
+    \item Statistical test implementation verification
+    \item Edge case handling and error recovery
+\end{itemize}
+
+\subsection{Integration Testing}
+
+End-to-end integration tests validate complete system behavior:
+
+\begin{itemize}
+    \item Synthetic data stream processing
+    \item Performance under various drift scenarios
+    \item Memory and computational resource usage
+    \item Fault tolerance and recovery mechanisms
+\end{itemize}
+
+\section{Summary}
+
+This chapter has presented our comprehensive proposed model for concept drift detection, integrating theoretical foundations with practical implementation considerations. The ShapeDD algorithm provides the core detection mechanism, enhanced by adaptive parameter selection, multi-stage validation, and computational optimization strategies.
+
+The proposed framework addresses key limitations in existing approaches while maintaining computational efficiency suitable for real-world deployment. The next chapter will present comprehensive experimental evaluation of this proposed model across various synthetic and real-world scenarios.
