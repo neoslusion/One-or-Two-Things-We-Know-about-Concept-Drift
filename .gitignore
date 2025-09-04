@@ -13,6 +13,8 @@
 *.nav
 *.snm
 *.vrb
+*.bcf
+*.run.xml
 
 # LaTeX build directories
 build/
@@ -29,7 +31,7 @@ output/
 *~
 
 # Generated PDFs (optional - uncomment if you don't want to track PDFs)
-# *.pdf
+*.pdf
 
 # OS generated files
 .DS_Store
