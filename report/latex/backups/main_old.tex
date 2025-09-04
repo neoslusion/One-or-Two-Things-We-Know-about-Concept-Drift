@@ -1,0 +1,200 @@
+\documentclass[12pt,a4paper,oneside]{report}
+
+% Essential packages for Vietnamese thesis
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[vietnamese,english]{babel} % Vietnamese as main language
+\usepackage[utf8]{vntex} % Vietnamese fonts and typography with explicit encoding
+\usepackage{setspace}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{url}
+\usepackage[sort,numbers]{natbib}
+\usepackage{hyperref}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{tocloft}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{indentfirst}
+\usepackage{times} % Times New Roman font
+\usepackage{anyfontsize} % For custom font sizes
+
+% Page geometry following Vietnamese university standards
+\geometry{
+    left=3cm,
+    right=2cm,
+    top=2.5cm,
+    bottom=2.5cm,
+    footskip=1cm
+}
+
+% Line spacing
+\onehalfspacing
+
+% Vietnamese paragraph formatting
+\setlength{\parindent}{1.25cm}
+\setlength{\parskip}{6pt}
+
+% Font settings - Times New Roman as in reference
+\renewcommand{\rmdefault}{ptm} % Times New Roman
+\fontfamily{ptm}\selectfont
+% Set default font size to 12pt for body text
+\renewcommand{\normalsize}{\fontsize{12}{14.4}\selectfont}
+
+% Header and Footer formatting for Vietnamese thesis
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+\setlength{\headheight}{14.5pt}
+
+% Chapter title formatting - Vietnamese style (follow DOCX format)
+\titleformat{\chapter}[display]
+{\raggedright\bfseries\fontsize{14}{16.8}\selectfont}
+{CHƯƠNG\thechapter}
+{0.5em}
+{}
+\titlespacing*{\chapter}{0pt}{20pt}{15pt}
+
+% Special formatting for unnumbered chapters (follow DOCX format)
+\titleformat{name=\chapter,numberless}[display]
+{\raggedright\bfseries\fontsize{14}{16.8}\selectfont}
+{}
+{0em}
+{}
+\titlespacing*{name=\chapter,numberless}{0pt}{20pt}{15pt}
+
+% Section formatting (13pt, bold, left aligned - follow DOCX)
+\titleformat{\section}[block]
+{\raggedright\bfseries\fontsize{13}{15.6}\selectfont}
+{\thesection}
+{0.5em}
+{}
+\titlespacing*{\section}{0pt}{18pt}{12pt}
+
+% Subsection formatting (12pt, bold, left aligned - follow DOCX)
+\titleformat{\subsection}[block]
+{\raggedright\bfseries\fontsize{12}{14.4}\selectfont}
+{\thesubsection}
+{0.5em}
+{}
+\titlespacing*{\subsection}{0pt}{12pt}{6pt}
+
+% Subsubsection formatting (12pt, bold, left aligned)
+\titleformat{\subsubsection}[block]
+{\raggedright\bfseries\fontsize{12}{14.4}\selectfont}
+{\thesubsubsection}
+{0.5em}
+{}
+\titlespacing*{\subsubsection}{0pt}{12pt}{6pt}
+
+% Table of contents formatting
+\renewcommand{\contentsname}{MỤC LỤC}
+\renewcommand{\listfigurename}{DANH SÁCH HÌNH VẼ}
+\renewcommand{\listtablename}{DANH SÁCH BẢNG BIỂU}
+\renewcommand{\bibname}{TÀI LIỆU THAM KHẢO}
+
+% TOC formatting (12pt, bold, centered - no uppercase for titles)
+\renewcommand{\cfttoctitlefont}{\centering\bfseries\fontsize{12}{14.4}\selectfont}
+\renewcommand{\cftloftitlefont}{\centering\bfseries\fontsize{12}{14.4}\selectfont}
+\renewcommand{\cftlottitlefont}{\centering\bfseries\fontsize{12}{14.4}\selectfont}
+
+\renewcommand{\cftchapfont}{\bfseries}
+\renewcommand{\cftsecfont}{}
+\renewcommand{\cftchappagefont}{\bfseries}
+\renewcommand{\cftsecpagefont}{}
+\renewcommand{\cftchappresnum}{}
+\renewcommand{\cftchapaftersnum}{}
+\setlength{\cftchapnumwidth}{2.5cm}
+\setlength{\cftbeforesecskip}{6pt}
+\setlength{\cftbeforesubsecskip}{3pt}
+
+% Dot leaders for TOC
+\renewcommand{\cftchapleader}{\cftdotfill{\cftdotsep}}
+\renewcommand{\cftsecleader}{\cftdotfill{\cftdotsep}}
+\renewcommand{\cftsubsecleader}{\cftdotfill{\cftdotsep}}
+
+\begin{document}
+
+% Set up hyperref properties
+\hypersetup{
+    pdftitle={Phát hiện Concept Drift sử dụng Shape Drift Detector trong giai đoạn xử lý dữ liệu},
+    pdfauthor={Lê Phúc Đức},
+    pdfkeywords={concept drift, machine learning, adaptive systems, data stream mining},
+    linkcolor=black,
+    citecolor=black,
+    urlcolor=blue,
+    filecolor=black
+}
+
+% Front matter with roman numbering
+\pagenumbering{roman}
+\setcounter{page}{1}
+
+% Title page (no page number)
+\input{titlepage}
+
+% Declaration in Vietnamese
+\cleardoublepage
+\input{declaration}
+
+% Vietnamese Abstract first
+\cleardoublepage
+\input{abstract_vietnamese}
+
+% English Abstract
+\cleardoublepage
+\input{abstract}
+
+% Acknowledgements
+\cleardoublepage
+\input{acknowledgements}
+
+% Table of Contents, List of Figures, List of Tables
+\cleardoublepage
+\tableofcontents
+
+\cleardoublepage
+\listoffigures
+\addcontentsline{toc}{chapter}{DANH SÁCH HÌNH VẼ}
+
+\cleardoublepage
+\listoftables
+\addcontentsline{toc}{chapter}{DANH SÁCH BẢNG BIỂU}
+
+% Main matter with Arabic numbering
+\cleardoublepage
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+% Main chapters
+\input{chapters/introduction}
+\input{chapters/related_works}
+\input{chapters/theoretical_foundation}
+\input{chapters/proposed_model}
+\input{chapters/experiments_evaluation}
+\input{chapters/conclusion_future_work}
+
+% References
+\cleardoublepage
+\addcontentsline{toc}{chapter}{TÀI LIỆU THAM KHẢO}
+\bibliographystyle{ieeetr}
+\bibliography{references}
+
+% Appendices
+\cleardoublepage
+\appendix
+\addcontentsline{toc}{chapter}{PHỤ LỤC}
+\input{appendix}
+
+\end{document}

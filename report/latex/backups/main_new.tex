@@ -1,0 +1,261 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage[a4paper, left =3cm, right=2cm, top=2cm, bottom=2cm, headsep=30pt]{geometry}
+\usepackage[utf8]{vietnam}
+\usepackage{mathptmx}
+\usepackage{graphicx}
+\usepackage{biblatex}
+\usepackage{fancyhdr}
+\usepackage{multicol}
+\usepackage{mathtools}
+\usepackage{enumerate}
+\usepackage{hyperref}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{forest}
+\usepackage{subcaption}
+\usepackage{anyfontsize}
+\usepackage{xurl}
+\usepackage{minted}
+\hypersetup{urlcolor=blue,linkcolor=black,citecolor=black,colorlinks=true}
+
+\pagestyle{fancy}
+
+%Viet
+\usepackage{multirow}
+\usepackage{makecell}
+\renewcommand\theadalign{bc}
+\renewcommand\theadfont{\bfseries}
+\renewcommand\theadgape{\Gape[4pt]}
+\renewcommand\cellgape{\Gape[4pt]}
+%Viet
+
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{color}
+\usepackage{textcomp}
+
+\usepackage{chngcntr}
+\counterwithin{figure}{section}
+
+\colorlet{punct}{red!60!black}
+\definecolor{background}{HTML}{EEEEEE}
+\definecolor{delim}{RGB}{20,105,176}
+\colorlet{numb}{magenta!60!black}
+
+\let\OLDthebibliography\thebibliography
+\renewcommand\thebibliography[1]{
+  \OLDthebibliography{#1}
+  \setlength{\parskip}{10pt}
+  \setlength{\itemsep}{10pt plus 0.3ex}
+}
+\addbibresource{references.bib}
+
+\lstdefinelanguage{json}{
+    basicstyle=\normalfont\ttfamily,
+    numbers=left,
+    numberstyle=\scriptsize,
+    stepnumber=1,
+    numbersep=5pt,
+    showstringspaces=false,
+    breaklines=true,
+    frame=lines,
+    backgroundcolor=\color{background},
+    literate=
+     *{0}{{\color{numb}0}}{1}
+      {1}{{\color{numb}1}}{1}
+      {2}{{\color{numb}2}}{1}
+      {3}{{\color{numb}3}}{1}
+      {4}{{\color{numb}4}}{1}
+      {5}{{\color{numb}5}}{1}
+      {6}{{\color{numb}6}}{1}
+      {7}{{\color{numb}7}}{1}
+      {8}{{\color{numb}8}}{1}
+      {9}{{\color{numb}9}}{1}
+      {:}{{\color{punct}{:}}}{1}
+      {,}{{\color{punct}{,}}}{1}
+      {\{}{{\color{delim}{\{}}}{1}
+      {\}}{{\color{delim}{\}}}}{1}
+      {[}{{\color{delim}{[}}}{1}
+      {]}{{\color{delim}{]}}}{1},
+}
+
+
+\lstdefinestyle{CStyle}{
+    commentstyle=\color[rgb]{0,0.7,0.3},
+    keywordstyle=\color[rgb]{0.25, 0, 1},
+    numberstyle=\tiny\color[rgb]{0.5,0.3,0.6},
+    stringstyle=\color{red},
+    basicstyle=\footnotesize,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    upquote=true,
+    keepspaces=true,
+    numbers=left,
+    numbersep=5pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=4,
+    language=C
+}
+
+\lstset{style=CStyle}
+
+% Style Code %
+\setlength{\parskip}{5pt}
+\usepackage{indentfirst}
+
+\fancyhead{} % clear all header fields
+\fancyhead[L]{
+	\begin{tabular}{rl}
+		\begin{picture}(15,15)(0,0)
+		\put(0,-8){\includegraphics[width=8mm, height=9mm]{image/hcmut.jpg}}
+		\end{picture}&
+		%\includegraphics[width=8mm, height=8mm]{hcmut.png} & %
+		\begin{tabular}{l}
+            Đại học Bách khoa - Đại học Quốc gia TP.HCM\\
+			Khoa Khoa học \& Kỹ thuật máy tính
+		\end{tabular}
+	\end{tabular}
+}
+
+\renewcommand{\footrulewidth}{0.4pt}% default is 0pt
+\fancyfoot{}
+\fancyfoot[R]{\thepage}
+\fancyfoot[L]{Luận văn tốt nghiệp - CO4313}
+
+\usepackage{tikz}
+
+\begin{document}
+	\begin{titlepage}
+	    \begin{tikzpicture}[remember picture, overlay]
+            \draw[line width = 3pt] (-2,0) rectangle (16,-26);
+        \end{tikzpicture}
+	
+		\begin{center}
+		    \textbf{{\fontsize{15pt}{15pt}\selectfont ĐẠI HỌC QUỐC GIA THÀNH PHỐ HỒ CHÍ MINH}} \\
+			\textbf{{\fontsize{15pt}{15pt}\selectfont TRƯỜNG ĐẠI HỌC BÁCH KHOA}} \\
+			\textbf{{\fontsize{15pt}{15pt}\selectfont KHOA KHOA HỌC VÀ KỸ THUẬT MÁY TÍNH}}
+		\end{center}
+		
+
+		\begin{figure}[h!]
+			\begin{center}
+				\includegraphics[width=5cm]{image/hcmut.jpg}
+			\end{center}
+		\end{figure}
+		
+		\vspace{0.5cm}
+		
+		
+		\begin{center}
+		    \textbf{{\fontsize{15pt}{15pt}\selectfont LUẬN VĂN TỐT NGHIỆP}}
+		\end{center}
+		
+		\begin{center}
+		    \textbf{{\fontsize{18pt}{18pt}\selectfont PHÁT HIỆN CONCEPT DRIFT SỬ DỤNG SHAPE DRIFT DETECTOR TRONG GIAI ĐOẠN XỬ LÝ DỮ LIỆU}}
+		\end{center}
+		
+		\hspace{2cm} \textbf{{\fontsize{14pt}{14pt}\selectfont NGÀNH: }}
+		\hspace{1cm} {\fontsize{15pt}{15pt}\selectfont Khoa Học Máy Tính}
+		
+		\vspace{3cm}
+		
+		\begin{table}[h]
+			\begin{tabular}{rll}
+                \hspace{7cm} \textbf{GVHD}: & [Tên giảng viên hướng dẫn] & \\[0.2cm]
+                \hspace{7cm} \textbf{GVPB}: & [Tên giảng viên phản biện] & \\[0.2cm]
+                & \hspace{1cm} ---o0o---& \\[0.2cm]
+			\textbf{Sinh Viên}: & Lê Phúc Đức & - [MSSV]\\
+			\end{tabular}
+		\end{table}
+		
+		\begin{center}
+		    \vspace{2cm}
+			{\footnotesize Thành phố Hồ Chí Minh, [Tháng/Năm]}
+		\end{center}
+
+	\end{titlepage}
+	
+    \vspace*{2cm}
+	\begin{center}
+	    \textbf{\Huge Lời cam đoan}
+	\end{center}
+    
+    \vspace{1cm}
+    
+    Tôi xin cam đoan đây là công trình nghiên cứu khoa học độc lập của bản thân. Các hình ảnh, số liệu sử dụng phân tích trong luận văn có nguồn gốc rõ ràng, đã công bố theo đúng quy định. Các kết quả nghiên cứu trong đề tài do tôi tự tìm hiểu, phân tích một cách trung thực và khách quan.
+    
+    \vspace{1cm}
+    
+    \hspace{9cm} TP. Hồ Chí Minh, [tháng năm] \\
+    
+    \hspace{10.5cm} \textbf{Sinh viên thực hiện}
+    
+    \newpage
+    \vspace*{2cm}
+	\begin{center}
+	    \textbf{\Huge Lời ngỏ}
+	\end{center}
+	
+	\vspace{1cm}
+	
+	Trước tiên, tôi xin bày tỏ lòng biết ơn chân thành và sâu sắc nhất tới [Tên giảng viên hướng dẫn] đã tạo điều kiện về kiến thức cũng như các tài nguyên tính toán để tôi thực hiện nghiên cứu đề tài khoa học này và tận tình hướng dẫn tôi trong suốt quá trình thực hiện đề tài.\\
+	
+    Tôi xin gửi lời cảm ơn sâu sắc tới quý Thầy Cô trong Khoa Khoa Học Và Kỹ Thuật Máy Tính và Trường Đại Học Bách Khoa đã truyền đạt những kiến thức quý báu của mình trong suốt những năm học vừa qua. \\
+    
+    Sau cùng, tôi kính chúc [Tên giảng viên hướng dẫn] và quý Thầy Cô trong Khoa Khoa Học \& Kỹ Thuật Máy Tính thật dồi dào sức khỏe, niềm vui để tiếp tục thực hiện sứ mệnh cao đẹp của mình truyền đạt kiến thức cho các thế hệ mai sau để phát triển và xây dựng nước nhà.\\
+    
+    Tôi xin chân thành cảm ơn!
+	
+	\vspace{1cm}
+    
+    \hspace{9cm} TP. Hồ Chí Minh, [tháng năm] \\
+    
+    \hspace{10.5cm} \textbf{Sinh viên thực hiện}
+    
+	
+	\newpage
+	\vspace*{0.2cm}
+	\begin{center}
+	    \textbf{\Huge Tóm tắt}
+	\end{center}
+	
+	\vspace{0.2cm}
+
+    [Nội dung tóm tắt luận văn về phát hiện Concept Drift sử dụng Shape Drift Detector trong giai đoạn xử lý dữ liệu]
+	
+	\noindent \underline{\textbf{Bố cục luận văn được chia thành các chương:}}
+	\begin{itemize}
+	    \item \textbf{Chương 1:} Giới thiệu
+	    \item \textbf{Chương 2:} Các nghiên cứu liên quan
+	    \item \textbf{Chương 3:} Cơ sở lý thuyết
+	    \item \textbf{Chương 4:} Mô hình đề xuất
+	    \item \textbf{Chương 5:} Thực nghiệm và đánh giá
+	    \item \textbf{Chương 6:} Kết luận và hướng phát triển
+	\end{itemize}
+	
+    \clearpage
+    
+    \setcounter{tocdepth}{4}
+	\tableofcontents
+	\clearpage
+    \listoffigures
+    
+    % ------------ MAIN CONTENT: ------------
+\input{chapters/introduction}
+\input{chapters/related_works}
+\input{chapters/theoretical_foundation}
+\input{chapters/proposed_model}
+\input{chapters/experiments_evaluation}
+\input{chapters/conclusion_future_work}
+
+   \newpage
+   \begingroup
+   \setlength\bibitemsep{10pt}
+   \printbibliography[title={Tài liệu tham khảo}]
+   \endgroup
+\input{appendix}
+
+\end{document}

@@ -2,13 +2,9 @@
 
 \section{Thực trạng chung}
 
-Trong thế kỷ 21, cuộc cách mạng số hóa đã tạo ra một lượng lớn dữ liệu mới được tạo ra mỗi giây từ nhiều nguồn khác nhau như cảm biến, thiết bị di động, máy chủ web, và nhiều hệ thống khác. Trong số này, dữ liệu streaming đang nổi lên như một nguồn tài nguyên vô giá, cung cấp thông tin một cách tức thì về các sự kiện và hành vi của người dùng, thiết bị và quá trình sản xuất.
+Trong những năm gần đây, lĩnh vực trí tuệ nhân tạo ngày càng phát triển nhanh chóng. Việc ứng dụng thành quả của trí tuệ nhân tạo ngày càng được phổ biến rộng rãi, không chỉ trong đời sống hằng ngày mà cả trong công việc. Khi các ứng dụng học máy không còn bị giới hạn trong phòng thí nghiệm nữa để được ứng dụng vào trong đời sống trong các lĩnh vực sản xuất như bảo trì thông minh và kiểm soát chất lượng. Khi đó, các câu hỏi liên quan đến độ tin cậy và độ bền liên tục của chúng nảy sinh.
 
-Tuy nhiên, một trong những thách thức lớn nhất khi làm việc với dữ liệu streaming là việc xử lý dữ liệu khi nó liên tục được tạo ra và chuyển động. Dữ liệu streaming thường chứa những lỗ hổng, thiếu sót hoặc mất mát do nhiều nguyên nhân như lỗi cảm biến, mạng truyền thông tin không ổn định, hoặc quá trình thu thập và truyền dữ liệu không hoàn hảo. Đặc biệt, hiện tượng concept drift - sự thay đổi trong phân phối dữ liệu hoặc mối quan hệ giữa các biến theo thời gian - là một thách thức quan trọng cần được giải quyết.
-
-Việc giải quyết vấn đề concept drift trong dữ liệu streaming không chỉ là một yêu cầu cấp bách mà còn là một phần quan trọng của quy trình xử lý dữ liệu. Sự thiếu sót của dữ liệu có thể dẫn đến những phân tích sai lầm và quyết định không chính xác, ảnh hưởng đến hiệu suất và hiệu quả của các hệ thống và ứng dụng dựa trên dữ liệu.
-
-Với sự phát triển nhanh chóng của công nghệ và các ứng dụng của dữ liệu streaming, việc tìm ra giải pháp hiệu quả để phát hiện concept drift trở thành một vấn đề cấp bách và đòi hỏi sự chú ý đặc biệt từ cộng đồng nghiên cứu và doanh nghiệp.
+Các tập dữ liệu tĩnh được sử dụng để huấn luyện các mô hình học máy chỉ có thể nắm bắt được một phần nhỏ các điều kiện có thể xảy ra trong thế giới thực. Các trường hợp trôi dạt khái niệm (concept drift), chẳng hạn như thay đổi điều kiện môi trường, thiết bị và vận hành có thể, theo thời gian, làm giảm đáng kể hiệu suất của các mô hình học máy, gây ảnh hưởng đến sự an toàn, độ tin cậy của mô hình và kinh tế nếu không được giải quyết đúng cách. Do đó, cần phải (1) phát hiện sự trôi dạt sớm nhất có thể và (2) điều chỉnh hiệu quả mô hình theo các điều kiện thay đổi động.
 
 \section{Tổng quan về bài toán}
 
