@@ -31,14 +31,16 @@ class ShapeDD(DriftDetector):
         window_size_l1=50,
         window_size_l2=100,
         n_perm=2500,
-        number_of_elements=0,
     ):
         super().__init__()
         self.window_size_l1 = window_size_l1
         self.window_size_l2 = window_size_l2 
         self.n_perm = n_perm
-        self.number_of_elements = number_of_elements
-        self.drift_detected = False
+        self.number_of_elements = 0
+        self.drift_detected = None
+
+        super().reset()
+
 
     def calculate_mmd(self, X):
         w = np.array(self.window_size_l1*[1.]+self.window_size_l1*[-1.]) / float(self.window_size_l1)
@@ -69,6 +71,8 @@ class ShapeDD(DriftDetector):
 
         if np.any(res[:,2] < 0.05):
             self.drift_detected = True
+        else:
+            self.drift_detected = False
 
         return res
 
