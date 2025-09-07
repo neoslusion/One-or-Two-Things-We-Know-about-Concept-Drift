@@ -20,9 +20,12 @@ import time
 
 from gen_data import gen_random
 
-
+from mmd import mmd
+from ks import ks
+from dawidd import dawidd
 from shape_dd import shape
-
+from kernel_dd import kernel_dd
+from d3 import d3
 
 
 def batch(X, chunk_size, overlap=100):
@@ -32,12 +35,20 @@ def batch(X, chunk_size, overlap=100):
         res.append( X[i*shift : min(chunk_size + i*shift, X.shape[0])] )
     return res
 
+def time_it(f,x):
+    t0 = time.time()
+    y = f(x)
+    t1 = time.time()
+    return t1-t0, y
+
 def run_exp(task, value, chunk_size, dist, alt, exp_id):
     X,y=gen_random(**dict([("dist",dist),("alt",alt),(task,value)  ,  ("length",750),("min_dist",10)]))
     
     t0 = time.time()
     shp = shape(X, 50,chunk_size, 2500)[:,2]
     t1 = time.time()
+    kdd = kernel_dd(X)
+    t2 = time.time()
     
     res = []
     batches = batch(np.arange(X.shape[0]), chunk_size=chunk_size)
@@ -47,6 +58,15 @@ def run_exp(task, value, chunk_size, dist, alt, exp_id):
         drift_score = (y[b][None,:] != y[b][:,None]).sum()/( b.shape[0]*(b.shape[0]-1) )
         res += [{"task":task, "value":value, "dist":dist, "alt":alt, "drift_score":drift_score, "exp_id":exp_id, "method":method, "estimate":estimate, "chunk_size": chunk_size, "comp_time": comp_time} for method,(comp_time,estimate) in 
                {
+                   "mmd":          time_it(lambda x:float("%.5f"%mmd(x)[1]),x_),
+                   "d3 (lin)":     time_it(lambda x:float("%.5f"%d3(x)),x_),
+                   "d3 (ET)":      time_it(lambda x:float("%.5f"%d3(x, ExtraTreesClassifier(max_depth=5))),x_),
+                   "d3 (RF)":      time_it(lambda x:float("%.5f"%d3(x, RandomForestClassifier(max_depth=5))),x_),
+                   "d3 (kNN)":     time_it(lambda x:float("%.5f"%d3(x, KNeighborsClassifier())),x_),
+                   "ks":           time_it(lambda x:float("%.5f"%ks(x)),x_),
+                   "dawidd (rbf)": time_it(lambda x:float("%.5f"%dawidd(x,"rbf")[1]),x_),
+                   "kdd (loc)":    time_it(lambda x:float("%.5f"%kernel_dd(x).min()),x_),
+                   "kdd (glob)":   ((t2-t1)/batch_count,float("%.5f"%kdd[b].min())),
                    "shape":        ((t1-t0)/batch_count,float("%.5f"%shp[b].min()))
                }.items()]
     return res

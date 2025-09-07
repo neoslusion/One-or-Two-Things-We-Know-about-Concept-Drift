@@ -8,7 +8,18 @@ the true positives while keeping the number of false positives to a minimum.
 """
 
 from .new_d3 import D3
-from .dawidd import dawidd
-from .new_shape_dd import ShapeDD
 
-__all__ = ["D3", "dawidd", "ShapeDD"]
+# Try to import other modules if available
+__all__ = ["D3"]
+
+try:
+    from .dawidd import dawidd
+    __all__.append("dawidd")
+except ImportError:
+    pass
+
+try:
+    from .shape_dd import ShapeDD
+    __all__.append("ShapeDD")
+except ImportError:
+    pass
