@@ -1,155 +1,134 @@
 \chapter{Công trình liên quan}
 
-\section{Giới thiệu về Concept Drift}
+\section{Giới thiệu về hiện tượng trôi dạt}
 
-Hiện tượng trôi dạt khái niệm (concept drift) đã được nhận thức là một thách thức cơ bản trong học máy từ những nghiên cứu sớm nhất của Schlimmer và Granger \cite{schlimmer1986incremental}. Cụm từ ``concept drift'' đề cập đến sự biến đổi theo thời gian của phân phối dữ liệu nền, có thể hiện hình ở nhiều dạng khác nhau và ảnh hưởng đến các khía cạnh khác nhau của bài toán học.
+Thế giới không ngừng thay đổi đặt ra những thách thức cho các hệ thống tự động, ví dụ như các hệ thống liên quan đến cơ sở hạ tầng quan trọng, sản xuất và kiểm soát chất lượng.
+Việc vận hành đáng tin cậy các quy trình tự động và thuật toán giám sát đòi hỏi khả năng phát hiện, phản hồi và thích ứng với những thay đổi này (Ditzler và cộng sự, 2015; 
+Reppa và cộng sự, 2016; Chen và Boning, 2017; Vrachimis và cộng sự, 2022; Gabbar và cộng sự, 2023).
 
-\subsection{Definitions and Terminology}
+Về mặt hình thức, những thay đổi trong phân phối tạo dữ liệu được gọi là trôi khái niệm (Gama và cộng sự, 2014). 
+Những thay đổi này có thể do các sửa đổi trong quy trình, môi trường hoặc cảm biến thu thập dữ liệu được quan sát. 
+Việc phát hiện các bất thường trong quy trình được quan sát là cần thiết để xác định các sản phẩm bị lỗi hoặc các loại lỗi không mong muốn khác. 
+Ngược lại, việc phát hiện những thay đổi trong cảm biến và môi trường là rất quan trọng để các quy trình tự động thực hiện các hành động phù hợp, chẳng hạn như thay 
+thế cảm biến bị lỗi hoặc sửa đổi hệ thống xử lý dữ liệu thu thập được để phù hợp với một kịch bản mới (Gama và cộng sự, 2004, 2014; Gonçalves và cộng sự, 2014).
 
-Formally, concept drift occurs when the joint probability distribution $P(X, Y)$ changes over time, where $X$ represents the feature space and $Y$ the target variable. This change can be decomposed into several components:
+Thông thường, độ trôi được nghiên cứu trong các thiết lập luồng, trong đó những thay đổi trong
+phân phối dữ liệu cơ bản đòi hỏi phải điều chỉnh mô hình hoặc
+cảnh báo người vận hành để có hành động khắc phục (Ditzler và cộng sự,
+2015; Lu và cộng sự, 2018; Delange và cộng sự, 2021). Điều này liên quan chặt chẽ
+đến sự phát triển của các khái niệm trong học liên tục, một chủ đề phổ biến
+trong học sâu, nơi các khái niệm có thể xuất hiện hoặc biến mất. Độ trôi
+mở rộng ra ngoài các luồng dữ liệu và xuất hiện trong dữ liệu chuỗi thời gian với
+các quan sát phụ thuộc lẫn nhau. Độ trôi như vậy thường biểu hiện dưới dạng
+xu hướng, và sự vắng mặt của nó được gọi là tính dừng (Esling và Agon,
+2012; Aminikhanghahi và Cook, 2017).
+Trong các bối cảnh mà dữ liệu được quan sát theo thời gian, chẳng hạn như
+sản xuất và kiểm soát chất lượng, dữ liệu thường được thu thập
+trên nhiều địa điểm và được áp dụng các kỹ thuật học liên kết
+(Zhang và cộng sự, 2021). Thay vì hợp nhất tất cả dữ liệu trên một máy chủ toàn cầu, xử lý cục bộ được triển khai và kết quả được tích hợp vào một mô hình tổng thể. Tương tự như học theo luồng, điều quan trọng là phải giải quyết sự khác biệt hoặc độ trôi của dữ liệu từ các vị trí khác nhau để xây dựng một mô hình toàn cầu mạnh mẽ (Liu và cộng sự, 2020). Hơn nữa, độ trôi cần được tính đến trong học chuyển giao, một kỹ thuật học sâu (Pan và Yang, 2010), trong đó mô hình được huấn luyện trước trên một tác vụ tương tự với tập dữ liệu mở rộng hơn trước khi được tinh chỉnh trên tác vụ mục tiêu bằng cách sử dụng một tập dữ liệu hạn chế. Mặc dù trọng tâm chính của nghiên cứu này là các luồng dữ liệu, các chiến lược được trình bày ở đây cũng áp dụng cho các tác vụ khác.
+
+Việc xử lý các luồng dữ liệu trôi dạt bao gồm hai nhiệm vụ chính:
+thiết lập một mô hình mạnh mẽ cho các tác vụ dự đoán, tức là học trực tuyến hoặc
+học theo luồng, và giám sát các hệ thống để phát hiện hành vi bất ngờ.
+Trong trường hợp trước, trọng tâm là nhãn và mối quan hệ của nó với các
+tính năng khác, trong khi trường hợp sau liên quan đến bất kỳ thay đổi nào cho thấy
+hành vi hoặc trạng thái bất ngờ của hệ thống. Do đó, phát hiện trôi dạt
+tập trung vào các mục tiêu khác nhau, tương tự như học tập chung được gọi là
+có giám sát cho trường hợp trước và không giám sát cho trường hợp sau. Nghiên cứu này
+bỏ qua học trực tuyến vì nó đã được khám phá rộng rãi trong các
+khảo sát trước đây (Ditzler và cộng sự, 2015; Losing và cộng sự, 2018; Lu và cộng sự, 2018) và
+hộp công cụ (Bifet và cộng sự, 2010; Montiel và cộng sự, 2018, 2021).
+Thay vào đó, nghiên cứu này tập trung vào việc phát hiện trôi dạt không giám sát và
+giám sát các tình huống trong đó trôi dạt được dự đoán do việc sử dụng cảm biến
+hoặc nhạy cảm với những thay đổi của môi trường. Cụ thể, trọng tâm là phát hiện trôi dạt không giám sát, một yếu tố quan trọng để giám sát và hiểu rõ hiện tượng trôi dạt. Một số ứng dụng điển hình là phát hiện trôi dạt cho các ứng dụng an ninh (Yang và cộng sự, 2021) và sử dụng phát hiện trôi dạt để phát hiện rò rỉ trong mạng lưới phân phối nước (Vaquet và cộng sự, 2024a,b). Ngoài ra, còn có các kỹ thuật để phân tích trôi dạt sâu hơn (Webb và cộng sự, 2017, 2018; Hinder và cộng sự, 2023a), mà chúng tôi sẽ không đề cập chi tiết trong nghiên cứu này. Đối với độc giả quan tâm, chúng tôi cung cấp một phiên bản mở rộng bao gồm các chủ đề này cũng như nội dung của nghiên cứu này (Hinder và cộng sự, 2023b). Lưu ý rằng các phương pháp phát hiện trôi dạt không giám sát được thảo luận ở đây khác với các phương pháp được thiết kế cho học tập trực tuyến, như đã được thảo luận bởi Gemaque và cộng sự (2020). Trong Phần 2.2, chúng tôi mô tả chi tiết hơn về sự tương phản giữa phát hiện trôi dạt có giám sát. Giám sát bao gồm việc quan sát một hệ thống và cung cấp thông tin cần thiết cho cả người vận hành và các tác vụ tự động để đảm bảo hệ thống hoạt động bình thường. Thông tin cần thiết sẽ khác nhau tùy thuộc vào từng tác vụ cụ thể (Goldenberg và Webb, 2019; Verma, 2021). Nhìn chung, có những câu hỏi quan trọng cần trả lời liên quan đến trôi dạt (Lu và cộng sự, 2018):
 
 \begin{equation}
-P_t(X, Y) = P_t(Y|X) \cdot P_t(X)
+  P_t(X,Y) \;\neq\; P_{t+\Delta}(X,Y).
 \end{equation}
-
-Where the subscript $t$ denotes time. Changes in $P_t(Y|X)$ represent \textit{real concept drift}, while changes in $P_t(X)$ constitute \textit{virtual concept drift} or \textit{covariate shift} \cite{moreno2012unifying}.
-
-\subsection{Types of Concept Drift}
-
-The literature distinguishes several types of concept drift based on their temporal characteristics:
-
-\textbf{Sudden Drift:} An abrupt change in the concept at a specific time point. This type of drift is characterized by a step function in the concept evolution.
-
-\textbf{Gradual Drift:} A smooth transition from one concept to another over an extended period. The change follows a continuous function, often modeled as sigmoid or linear transitions.
-
-\textbf{Incremental Drift:} Small, continuous changes in the concept over time. Unlike gradual drift, there may not be a clear start and end point for the transition.
-
-\textbf{Recurring Drift:} The reappearance of previously seen concepts. This type of drift suggests cyclical patterns in the data-generating process.
-
-\section{Concept Drift Detection Methods}
-
-The detection of concept drift is crucial for maintaining model performance in non-stationary environments. The literature presents numerous approaches, which can be broadly categorized into several classes.
-
-\subsection{Statistical Methods}
-
-Statistical drift detection methods monitor changes in data distribution using statistical tests or measures of distribution distance.
-
-\textbf{CUSUM-based Methods:} The Cumulative Sum (CUSUM) algorithm and its variants detect changes by monitoring the cumulative sum of deviations from a reference value \cite{basseville1993detection}. The Page-Hinkley test is a popular adaptation for concept drift detection.
-
-\textbf{Kolmogorov-Smirnov Test:} This non-parametric test compares the empirical distribution functions of two samples to detect distributional changes \cite{reis2016detecting}.
-
-\textbf{Drift Detection Method (DDM):} Proposed by Gama et al. \cite{gama2004learning}, DDM monitors the error rate and its standard deviation to detect concept drift. When the error rate increases significantly, drift is signaled.
-
-\subsection{Model-based Methods}
-
-Model-based approaches detect drift by monitoring changes in model performance or parameters.
-
-\textbf{ADWIN:} The Adaptive Windowing algorithm maintains a variable-size window and detects change when the average of recent data differs significantly from the overall average \cite{bifet2007learning}.
-
-\textbf{Learning with Drift Detection (LDD):} This method combines drift detection with model adaptation by monitoring classifier performance and rebuilding the model when drift is detected \cite{klinkenberg2004learning}.
-
-\textbf{Ensemble-based Detection:} Methods like Dynamic Weighted Majority (DWM) use ensemble voting patterns to detect concept drift \cite{kolter2007dynamic}.
-
-\subsection{Information-theoretic Methods}
-
-These methods use information-theoretic measures to quantify changes in data distribution.
-
-\textbf{Kullback-Leibler Divergence:} Measures the difference between probability distributions to detect drift \cite{dries2009adaptive}.
-
-\textbf{Mutual Information:} Monitors changes in the dependency between features and target variables \cite{ross2012exponentially}.
-
-\section{Adaptation Strategies}
-
-Once concept drift is detected, appropriate adaptation strategies must be employed to maintain model performance.
-
-\subsection{Model Retraining}
-
-\textbf{Complete Retraining:} Rebuilding the model from scratch using recent data. While effective, this approach is computationally expensive and may lose valuable historical information.
-
-\textbf{Incremental Learning:} Updating the existing model with new data without complete retraining. Methods include online gradient descent and incremental decision trees.
-
-\subsection{Ensemble Methods}
-
-\textbf{Weighted Ensembles:} Maintain multiple models and adjust their weights based on recent performance. Examples include DWM and Accuracy Weighted Ensemble (AWE) \cite{wang2003mining}.
-
-\textbf{Chunk-based Ensembles:} Train models on sequential data chunks and combine their predictions. The Streaming Ensemble Algorithm (SEA) is a representative method \cite{street2001streaming}.
-
-\subsection{Window-based Approaches}
-
-\textbf{Fixed Windows:} Use a fixed-size sliding window to maintain recent data for model training.
-
-\textbf{Adaptive Windows:} Dynamically adjust window size based on detected drift patterns. ADWIN is a prominent example.
-
-\section{Evaluation Metrics and Benchmarks}
-
-Evaluating concept drift detection and adaptation methods requires specialized metrics that account for temporal aspects and detection performance.
-
-\subsection{Detection Performance Metrics}
-
-\textbf{False Positive Rate:} The fraction of non-drift periods incorrectly identified as drift.
-
-\textbf{True Positive Rate:} The fraction of actual drift periods correctly detected.
-
-\textbf{Detection Delay:} The time lag between actual drift occurrence and its detection.
-
-\textbf{Mean Time Between False Alarms (MTBFA):} Average time between false drift detections.
-
-\subsection{Adaptation Performance Metrics}
-
-\textbf{Prequential Accuracy:} Test-then-train evaluation that provides a realistic assessment of model performance in streaming scenarios \cite{gama2009evaluating}.
-
-\textbf{Area Under the Learning Curve:} Measures the cumulative performance over time, accounting for adaptation speed.
-
-\textbf{Recovery Time:} Time required for the model to regain acceptable performance after drift occurs.
-
-\section{Benchmark Datasets and Generators}
-
-\subsection{Synthetic Data Generators}
-
-\textbf{SEA Concepts:} Simple synthetic dataset with three attributes and concept drift between different decision boundaries \cite{street2001streaming}.
-
-\textbf{STAGGER Concepts:} Three different concepts based on geometric shapes, commonly used for evaluating drift detection \cite{schlimmer1986incremental}.
-
-\textbf{Rotating Hyperplane:} Gradually rotating decision boundary in multi-dimensional space \cite{hulten2001mining}.
-
-\subsection{Real-world Datasets}
-
-\textbf{Electricity Market:} Predicting electricity price changes in the Australian New South Wales market \cite{harries1999splice}.
-
-\textbf{Weather Prediction:} Predicting rain in Australian weather stations with seasonal and long-term climate changes.
-
-\textbf{Spam Detection:} Email spam classification with evolving spam characteristics over time.
-
-\section{Current Limitations and Research Gaps}
-
-Despite significant progress in concept drift research, several limitations and research gaps remain:
-
-\subsection{Theoretical Limitations}
-
+Hệ quả là một mô hình dự đoán $f$ huấn luyện tại thời điểm trước có thể suy giảm hiệu năng về sau nếu thiếu cơ chế \emph{phát hiện} và \emph{thích ứng} drift \citep{survey_partA_2024,process_monitoring_2022,deep_survey_mdpi_2023}. Dựa trên phân rã Bayes $P(X,Y)=P(Y\!\mid\!X)P(X)$, ta thường phân biệt:
 \begin{itemize}
-    \item Lack of unified theoretical frameworks for characterizing different types of drift
-    \item Limited understanding of the relationship between drift characteristics and optimal detection/adaptation strategies
-    \item Insufficient theoretical analysis of detection delay and adaptation performance trade-offs
+  \item \textbf{Real (concept) drift}: thay đổi trong $P(Y\!\mid\!X)$ --- tức mối quan hệ đầu vào--đầu ra thay đổi.
+  \item \textbf{Virtual drift} (prior/covariate shift): thay đổi trong $P(X)$ hoặc $P(Y)$ trong khi hàm ánh xạ mục tiêu không đổi, nhưng phân phối đến khác biệt làm mô hình suy giảm \citep{survey_partA_2024}.
 \end{itemize}
 
-\subsection{Methodological Gaps}
+\section{Phân loại (taxonomy) concept drift}
+\subsection{Theo mẫu thời gian}
+\textbf{Đột ngột (abrupt/sudden)}: chuyển pha nhanh quanh thời điểm $t^\star$. \textbf{Dần dần (gradual)}: xác suất gặp khái niệm cũ/mới chuyển đổi từ từ trong một khoảng. \textbf{Tiệm tiến (incremental)}: ranh giới quyết định trượt liên tục theo thời gian (không có pha rõ ràng). \textbf{Lặp lại (recurring/seasonal)}: khái niệm cũ tái xuất theo chu kỳ hay theo bối cảnh \citep{msw_type_2022,survey_partA_2024}. Các định nghĩa có thể lượng hoá bằng cường độ, tốc độ, thời lượng và chu kỳ drift \citep{survey_partA_2024}.
 
+\subsection{Theo mức tác động phân phối}
+\textbf{Prior drift} (đổi $P(Y)$), \textbf{covariate shift} (đổi $P(X)$), và \textbf{concept shift} (đổi $P(Y\!\mid\!X)$). Detector dựa lỗi nhạy với concept shift; detector dựa phân phối có thể phát hiện cả prior/covariate \citep{survey_partA_2024}.
+
+\subsection{Theo nội dung phát sinh}
+\textbf{Concept evolution}: xuất hiện lớp mới/khái niệm mới; liên quan chặt với phát hiện \textit{novelty}/OOD và bối cảnh bán giám sát \citep{semi_supervised_recurring_2011,ussm_ssl_2021}.
+
+\section{Mục tiêu phát hiện và lượng hoá}
+Một hệ phát hiện hữu dụng thường cần: (i) \textbf{định vị} thời điểm/độ dài thay đổi; (ii) \textbf{định cỡ} (severity) để cân nhắc hành động; (iii) \textbf{nhận dạng loại drift} nhằm chọn chiến lược thích ứng phù hợp; và (iv) đảm bảo \textbf{độ tin cậy} (kiểm soát \textit{false alarm} và \textit{detection delay}) trong môi trường có tương quan theo thời gian \citep{survey_partA_2024,deep_survey_ijcai_2022}.
+
+\section{Đánh giá trong bối cảnh dòng dữ liệu}
+\subsection{Quy trình \textit{prequential} (test-then-train)}
+Tại thời điểm $t$, dự đoán trước rồi mới cập nhật mô hình, cho phép theo dõi độ chính xác/lỗi \emph{prequential} theo thời gian và đo phản ứng của detector/adaptor \citep{survey_partA_2024}.
+
+\subsection{Chỉ số cho detector}
+\textbf{MTTD} (Mean Time/Delay to Detection), \textbf{TP/FP/FN} trên tập drift biết trước (synthetic), \textbf{tỷ lệ báo động giả}, \textbf{tỷ lệ bỏ sót}, kèm \textbf{thời gian/ bộ nhớ} \citep{survey_partA_2024,deep_survey_mdpi_2023}.
+
+\section{Gia đình phương pháp (dẫn dắt từ lý thuyết)}
+
+\subsection{Dựa trên lỗi mô hình (supervised error-rate)}
+Theo dõi chuỗi lỗi $e_t\in\{0,1\}$ của mô hình nền và phát hiện khi thống kê vượt ngưỡng.
 \begin{itemize}
-    \item Most methods are designed for specific types of drift and lack generalizability
-    \item Limited consideration of computational constraints in real-time applications
-    \item Insufficient handling of multi-dimensional and multi-label drift scenarios
+  \item \textbf{DDM} \citep{ddm_2004}: kiểm soát tần suất lỗi $p_t$ và độ lệch $s_t=\sqrt{p_t(1-p_t)/t}$; kích hoạt mức \emph{warning/drift} khi $p_t+s_t$ vượt ngưỡng so với cực trị đã quan sát.
+  \item \textbf{EDDM} \citep{eddm_2006}: theo dõi \emph{khoảng cách giữa các lỗi liên tiếp}, nhạy hơn với \emph{gradual drift}.
+\end{itemize}
+Ưu: đơn giản, sát \emph{hiệu năng}. Nhược: đòi \emph{nhãn tức thời} --- thường khó trong công nghiệp/thực địa \citep{survey_partA_2024}.
+
+\subsection{Kiểm định phân phối/cửa sổ (unsupervised distributional)}
+So sánh thống kê giữa \emph{cửa sổ tham chiếu} và \emph{cửa sổ hiện tại}; không cần nhãn.
+\begin{itemize}
+  \item \textbf{ADWIN} \citep{adwin_2007}: cửa sổ \emph{tự thích ứng}; tách hai bán cửa sổ và dùng bất đẳng thức Hoeffding để kiểm định chênh trung bình; có bảo đảm lý thuyết về báo động giả.
+  \item \textbf{FHDDM/FHDDMS} \citep{fhddms_2018}: dùng Hoeffding trên cửa sổ trượt và \emph{xếp chồng đa cửa sổ} để vừa nhạy drift ngắn hạn vừa bền trước nhiễu dài hạn.
+  \item \textbf{MDDM} \citep{mddm_2017}: dùng bất đẳng thức \emph{McDiarmid} với \emph{trọng số lớn hơn cho quan sát gần hiện tại}, giảm độ trễ trong khi kiểm soát sai số.
 \end{itemize}
 
-\subsection{Evaluation Challenges}
-
+\subsection{Phân biệt hai-mẫu (two-sample discriminative)}
+Huấn luyện một bộ \emph{phân loại phân biệt} giữa $W_{\text{ref}}$ và $W_{\text{cur}}$; nếu phân biệt dễ (AUC/accuracy cao), coi là drift.
 \begin{itemize}
-    \item Lack of standardized evaluation protocols and metrics
-    \item Limited availability of annotated real-world datasets with known drift points
-    \item Insufficient consideration of application-specific requirements and constraints
+  \item \textbf{D3} \citep{d3_2019}: một đại diện tiêu biểu, áp dụng tốt cho dữ liệu nhiều chiều; cần kiểm soát \emph{overfitting} và phụ thuộc động lực học cửa sổ.
 \end{itemize}
 
-\section{Summary}
+\subsection{Độc lập/không tham số}
+Liên hệ ``có drift'' $\Leftrightarrow$ ``mất độc lập'' của biến ngẫu nhiên trong quá trình; kiểm định độc lập trên cửa sổ thích ứng.
+\begin{itemize}
+  \item \textbf{DAWIDD} \citep{dawidd}: thiết lập tương đương toán học và đề xuất detector \emph{không tham số} bất nhãn.
+\end{itemize}
 
-This literature review has presented a comprehensive overview of the current state of research in concept drift detection and adaptation. While significant progress has been made in developing various detection methods and adaptation strategies, the field still faces several challenges.
+\subsection{Hình thái tín hiệu (shape-based) \& đa thang}
+\begin{itemize}
+  \item \textbf{ShapeDD} \citep{shapedd_2021}: trích \emph{hình dạng} chuỗi thời gian kèm \emph{khử nhiễu}, làm nổi bật thay đổi cấu trúc trong dữ liệu cảm biến ồn.
+  \item \textbf{Nhận dạng loại drift} bằng multi-sliding windows (CDT\_MSW) \citep{msw_type_2022}: pipeline phát hiện $\rightarrow$ ước lượng độ dài $\rightarrow$ phân loại \emph{abrupt/gradual/incremental/recurring}.
+\end{itemize}
 
-The diversity of proposed methods reflects the complexity of the concept drift problem, but also highlights the lack of unified frameworks for understanding when and why different approaches are effective. The next chapter will present our methodology for addressing some of these limitations through the development of novel theoretical frameworks and empirical evaluation approaches. 
+\subsection{Bán giám sát \& tiến hoá khái niệm}
+Khi nhãn khan hiếm, các khung \emph{semi-supervised} xử lý đồng thời drift lặp lại và xuất hiện lớp mới (concept evolution). Ví dụ \citep{semi_supervised_recurring_2011,ussm_ssl_2021}.
+
+\section{Bất đẳng thức nòng cốt}
+\textbf{Hoeffding} (dùng trong ADWIN/FHDDM/S):
+\begin{equation}
+  \Pr(\overline{X}-\mu \ge \epsilon) \le \exp(-2n\epsilon^2).
+\end{equation}
+\textbf{McDiarmid} (dùng trong MDDM):
+\begin{equation}
+  \Pr(f(X)-\mathbb{E}f(X) \ge \epsilon) \le \exp\!\Big(-\frac{2\epsilon^2}{\sum_i c_i^2}\Big),
+\end{equation}
+với $c_i$ là biên độ ảnh hưởng khi thay đổi phần tử thứ $i$.
+
+\section{Dòng thời gian phát triển (2004--2025) và ứng dụng miền}
+\paragraph{2004--2007:} \textbf{DDM} \citep{ddm_2004}, \textbf{EDDM} \citep{eddm_2006} đặt nền ``giám sát lỗi có nhãn''; \textbf{ADWIN} \citep{adwin_2007} mở kỷ nguyên ``không nhãn với cửa sổ thích ứng''.\\
+\paragraph{2017--2019:} \textbf{FHDDMS} \citep{fhddms_2018} (đa cửa sổ) và \textbf{MDDM} \citep{mddm_2017} (McDiarmid + trọng số) giảm độ trễ và tăng ổn định; \textbf{D3} \citep{d3_2019} đại diện hướng phân biệt hai-mẫu.\\
+\paragraph{2020--2022:} \textbf{DAWIDD} \citep{dawidd} (độc lập không tham số); \textbf{CDT\_MSW} \citep{msw_type_2022} (nhận dạng loại drift).\\
+\paragraph{2021--2025:} \textbf{ShapeDD} \citep{shapedd_2021} cho dữ liệu cảm biến ồn; các \emph{review} về thích ứng trong \emph{Deep Learning} \citep{deep_survey_ijcai_2022,deep_survey_mdpi_2023} và khung ứng dụng: giám sát quy trình \citep{process_monitoring_2022}, IoT \citep{ilstm_2020}, dự báo điện năng với Transformer/meta-learning \citep{transformer_energy_2023}, và giám sát máy công cụ với GMM \citep{gmm_monitoring}.
+
+\section{Tổng hợp \& khoảng trống}
+Văn liệu hội tụ vào hai trục: (i) \emph{phát hiện drift tin cậy} trong điều kiện thiếu nhãn (từ kiểm định cửa sổ đến phân biệt hai-mẫu, kiểm định độc lập, shape-based, nhận dạng loại drift), và (ii) \emph{thích ứng mô hình} (retrain/ensemble/uncertainty-triggered updates) trong khung học sâu. Khoảng trống bao gồm: đánh đổi \textbf{độ trễ--báo động giả}, chuẩn hoá \textbf{đánh giá trực tuyến đa tiêu chí} (MTTD, TP/FP/FN, thời gian/bộ nhớ, chi phí nhãn), và thiết kế \textbf{semi-/unsupervised} mạnh cho tình huống drift lặp lại hay tiến hoá \citep{survey_partA_2024,deep_survey_mdpi_2023}.
+
+\section{Ghi chú biên tập}
+Các mục tài liệu tham khảo dưới đây được rút ra từ các tệp PDF bạn đã cung cấp. Bạn có thể chuyển chúng sang Bib\TeX\ chính thức (với DOI/venue) trong bước biên tập cuối cùng của luận văn.
