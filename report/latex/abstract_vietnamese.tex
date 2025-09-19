@@ -1,16 +1,7 @@
 \chapter*{Tóm tắt luận văn}
 \addcontentsline{toc}{chapter}{Tóm tắt luận văn}
 
-Đề tài này tập trung tìm hiểu về việc nghiêng cứu giải thuật ShapeDD dùng để phát hiện sự trôi dạt khái niệm (concept drift), điều thường xảy ra nhiều trong các ứng dụng học máy trong cuộc sống và công nghiệp cùng với những vấn đề gặp phải trong thực tế của các mô hình học máy khi gặp phải concept drift – yếu tố làm ảnh hưởng đến độ chính xác và hiệu năng của các mạng nơ-ron khi áp dụng trong môi trường có dữ liệu biến đổi liên tục về thời gian.
+Hiện nay, trong lĩnh vực học máy và khai thác dữ liệu, việc xử lý các luồng dữ liệu (data stream) đang trở thành một thách thức quan trọng do tính chất liên tục và biến đổi của dữ liệu theo thời gian. Một trong những vấn đề nổi bật là sự trôi dạt khái niệm (concept drift), khi phân phối dữ liệu thay đổi theo thời gian, dẫn đến suy giảm hiệu suất của các mô hình học máy được huấn luyện trên dữ liệu lịch sử. Điều này đặc biệt quan trọng trong các ứng dụng thực tế như phát hiện gian lận, dự báo tài chính, và giám sát hệ thống, nơi mà dữ liệu liên tục thay đổi và mô hình cần phải thích nghi nhanh chóng để duy trì độ chính xác.
 
-Mục tiêu của đề tài là ứng dụng phương pháp ShapeDD để phát hiện trôi dạt, tìm hiểu cơ sở lý thuyết, cách hoạt động cũng như ứng dụng lên một số tập dữ liệu bao gồm cả thực tế và dữ liệu synthetic để đánh giá về mức độ hiệu quả và tính ứng dụng của giải thuật.
-
-Luận văn trình bày một nghiên cứu toàn diện về thuật toán ShapeDD, sử dụng Maximum Mean Discrepancy (MMD) trong không gian Reproducing Kernel Hilbert Space (RKHS) để phát hiện các thay đổi phân phối trong luồng dữ liệu. Nghiên cứu bao gồm phân tích chi tiết các nền tảng lý thuyết của MMD, quy trình phát hiện đa giai đoạn của ShapeDD, và đặc điểm hiệu suất của nó trên các mẫu trôi dạt khác nhau.
-
-Thông qua đánh giá thực nghiệm mở rộng trên cả tập dữ liệu tổng hợp và thực tế, chúng tôi chứng minh hiệu quả của ShapeDD trong việc phát hiện các loại concept drift khác nhau, bao gồm trôi dạt đột ngột, trôi dạt tăng dần và trôi dạt dần dần. Chúng tôi phân tích tác động của các tham số quan trọng như kích thước cửa sổ, lựa chọn kernel và ngưỡng ý nghĩa thống kê đối với hiệu suất phát hiện.
-
-Những đóng góp chính của nghiên cứu này bao gồm: (1) phân tích lý thuyết chi tiết về Shape Drift Detector và các nền tảng toán học của nó, (2) đánh giá thực nghiệm toàn diện trên các tập dữ liệu synthetic với các đặc điểm trôi dạt được kiểm soát, (3) phân tích độ nhạy tham số và các chiến lược tối ưu hóa cho ShapeDD, và (4) hướng dẫn thực tiễn để triển khai hệ thống phát hiện trôi dạt trong các ứng dụng thực tế.
-
-Kết quả nghiên cứu cho thấy ShapeDD hoạt động cực kỳ tốt cho các tình huống trôi dạt đột ngột nhưng cần điều chỉnh tham số cẩn thận để phát hiện trôi dạt tăng dần. Chúng tôi đề xuất các phương pháp tổng hợp và các chiến lược cửa sổ thích ứng như những cải tiến tiềm năng để tăng cường độ mạnh mẽ trên các mẫu trôi dạt đa dạng.
-
-\textbf{Từ khóa:} concept drift, học máy, hệ thống thích ứng, khai thác luồng dữ liệu, môi trường không dừng
+Đề tài này tập trung tìm hiểu về việc nghiên cứu giải thuật dùng để phát hiện sự trôi dạt, điều thường xảy ra nhiều trong các ứng dụng học máy trong cuộc sống và công nghiệp cùng với những vấn đề gặp phải trong thực tế của các mô hình học máy khi gặp phải concept drift – yếu tố làm ảnh hưởng đến độ chính xác và hiệu năng của các mạng nơ-ron khi áp dụng trong môi trường có dữ liệu biến đổi liên tục về thời gian.
+Mục tiêu của đề tài là ứng dụng một giải thuật về phát hiện trôi dạt, tìm hiểu cơ sở lý thuyết, cách hoạt động cũng như ứng dụng lên một số tập dữ liệu bao gồm cả thực tế và dữ liệu synthetic để đánh giá về mức độ hiệu quả và ứng dụng.
