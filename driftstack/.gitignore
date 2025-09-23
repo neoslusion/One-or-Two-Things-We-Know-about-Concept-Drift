@@ -1,0 +1,12 @@
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.env
+# Data/Artifacts
+artifacts/
+logs/
+mlruns/
+# OS
+.DS_Store

@@ -1,0 +1,29 @@
+
+version: "3.8"
+services:
+  driftstack:
+    build: ..
+    image: driftstack:latest
+    container_name: driftstack
+    volumes:
+      - ../:/app
+    command: ["python", "-m", "src.pipeline.run_stream", "--config", "configs/pipeline.yaml"]
+    # Uncomment and add Redpanda/Kafka/MinIO services below when you wire real streams
+    # depends_on:
+    #   - kafka
+    #   - minio
+
+  # kafka:
+  #   image: bitnami/kafka:latest
+  #   environment:
+  #     - ALLOW_PLAINTEXT_LISTENER=yes
+  #     - KAFKA_ENABLE_KRAFT=yes
+  #   ports: ["9092:9092"]
+
+  # minio:
+  #   image: minio/minio
+  #   command: server /data --console-address ":9001"
+  #   environment:
+  #     - MINIO_ACCESS_KEY=minio
+  #     - MINIO_SECRET_KEY=minio123
+  #   ports: ["9000:9000", "9001:9001"]
