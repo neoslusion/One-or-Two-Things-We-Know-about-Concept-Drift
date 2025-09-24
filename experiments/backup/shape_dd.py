@@ -26,39 +26,56 @@ def shape(X, l1, l2, n_perm):
             res[pos,1:] = mmd(X[a:b], pos-a, n_perm)
     return res
 
-def shape_improved(X, l1, l2, n_perm, 
-                  shape_threshold=0.1,      # Minimum shape statistic value
-                  persistence_window=3,     # Require detection persistence
-                  adaptive_alpha=True,      # Use adaptive significance level
-                  temporal_smoothing=True,  # Apply temporal smoothing
-                  min_separation=50):       # Minimum separation between detections
+def shape_adaptive(X, l1, l2, n_perm, 
+                  sensitivity_mode='balanced',
+                  auto_tune_parameters=True):
     """
-    Improved ShapeDD with reduced false positives while maintaining sensitivity.
+    Adaptive ShapeDD that preserves the original algorithm's strengths while fixing key issues.
     
     Key improvements:
-    1. Adaptive thresholding based on local statistics
-    2. Temporal persistence requirements  
-    3. Smoothing to reduce noise sensitivity
-    4. Minimum separation between detections
-    5. Context-aware MMD testing
+    1. Auto-parameter tuning based on data characteristics
+    2. Adaptive thresholds without overly restrictive filtering
+    3. Smarter candidate selection
+    4. Preserves the original MMD-based drift detection logic
     """
     
-    w = np.array(l1*[1.]+l1*[-1.]) / float(l1)
+    # Auto-tune parameters based on data characteristics if requested
+    if auto_tune_parameters:
+        n_samples = X.shape[0]
+        # Scale l1 based on data size (but keep reasonable bounds)
+        l1 = max(20, min(100, n_samples // 60))  # ~1.5% of data, bounded
+        # l2 should be larger than l1 for meaningful test windows
+        l2 = max(l1 * 2, min(300, n_samples // 20))  # ~5% of data, bounded
+        # Adjust permutations based on required precision vs speed
+        n_perm = max(500, min(n_perm, 2000))
+    
+    w = np.array(l1*[1.] + l1*[-1.]) / float(l1)
     n = X.shape[0]
     
-    # Compute kernel matrix
-    K = apply_kernel(X, metric="rbf")
-    W = np.zeros((n-2*l1, n))
+    # Ensure we have enough data
+    if n < 4 * l1:
+        res = np.zeros((n, 3))
+        res[:, 2] = 1.0
+        return res
     
-    for i in range(n-2*l1):
-        W[i, i:i+2*l1] = w    
+    # Compute kernel matrix with bandwidth selection
+    try:
+        K = apply_kernel(X, metric="rbf", gamma='scale')
+    except:
+        K = apply_kernel(X, metric="rbf")
     
+    # Build convolution matrix
+    W = np.zeros((n - 2*l1, n))
+    for i in range(n - 2*l1):
+        W[i, i:i+2*l1] = w
+    
+    # Compute shape statistics
     stat = np.einsum('ij,ij->i', np.dot(W, K), W)
     shape = np.convolve(stat, w)
     
-    # Apply temporal smoothing to reduce noise
-    if temporal_smoothing and len(shape) > 5:
-        shape_smoothed = uniform_filter1d(shape, size=3)
+    # Apply light temporal smoothing (less aggressive than improved version)
+    if len(shape) > 7:
+        shape_smoothed = uniform_filter1d(shape, size=3, mode='nearest')
     else:
         shape_smoothed = shape
     
@@ -66,102 +83,104 @@ def shape_improved(X, l1, l2, n_perm,
     
     # Initialize results
     res = np.zeros((n, 3))
-    res[:, 2] = 1  # Default p-value = 1 (no drift)
+    res[:, 2] = 1.0  # Default: no drift detected
     
-    # Find potential drift points (negative shape_prime)
-    candidate_points = np.where(shape_prime < 0)[0]
+    # Find zero-crossings (potential drift points)
+    zero_crossings = np.where(shape_prime < 0)[0]
     
-    if len(candidate_points) == 0:
+    if len(zero_crossings) == 0:
         return res
     
-    # Filter candidates by shape threshold (must be sufficiently strong)
-    strong_candidates = []
-    for pos in candidate_points:
-        if shape_smoothed[pos] > shape_threshold:
-            strong_candidates.append(pos)
+    # Adaptive thresholding based on data characteristics
+    shape_values = shape_smoothed[shape_smoothed > 0]
+    if len(shape_values) > 0:
+        if sensitivity_mode == 'high':
+            # More sensitive - lower threshold
+            shape_threshold = max(0.0, np.percentile(shape_values, 25))
+        elif sensitivity_mode == 'conservative':
+            # Less sensitive - higher threshold  
+            shape_threshold = max(0.05, np.percentile(shape_values, 75))
+        else:  # balanced
+            # Moderate sensitivity
+            shape_threshold = max(0.01, np.percentile(shape_values, 50))
+    else:
+        shape_threshold = 0.01
     
-    if len(strong_candidates) == 0:
-        return res
+    # Process candidates with smart filtering
+    processed_positions = set()
     
-    # Apply persistence filtering: require multiple consecutive detections
-    if persistence_window > 1:
-        persistent_candidates = []
-        for pos in strong_candidates:
-            # Count nearby candidates within persistence window
-            nearby = sum(1 for p in strong_candidates 
-                        if abs(p - pos) <= persistence_window // 2)
-            if nearby >= persistence_window:
-                persistent_candidates.append(pos)
-        strong_candidates = persistent_candidates
-    
-    if len(strong_candidates) == 0:
-        return res
-    
-    # Apply minimum separation constraint
-    if min_separation > 0:
-        separated_candidates = []
-        last_detection = -min_separation - 1
-        
-        for pos in sorted(strong_candidates):
-            if pos - last_detection >= min_separation:
-                separated_candidates.append(pos)
-                last_detection = pos
-        
-        strong_candidates = separated_candidates
-    
-    # Perform MMD tests only on filtered candidates
-    for pos in strong_candidates:
-        res[pos, 0] = shape_smoothed[pos]
-        
-        # Define test windows around drift point
-        a = max(0, pos - int(l2/2))
-        b = min(n, pos + int(l2/2))
-        
-        # Ensure sufficient data for MMD test
-        if b - a < 2 * l1:
+    for pos in zero_crossings:
+        # Skip if already processed nearby
+        if any(abs(pos - p) < l1//2 for p in processed_positions):
             continue
             
-        # Adaptive significance level based on local variance
-        if adaptive_alpha:
-            # Estimate local noise level
-            local_shape = shape_smoothed[max(0, pos-20):min(len(shape_smoothed), pos+20)]
-            local_std = np.std(local_shape) if len(local_shape) > 1 else 1.0
-            
-            # Adjust number of permutations based on required precision
-            # For gradual drifts, we can be less strict
-            adjusted_n_perm = max(100, min(n_perm, int(n_perm / max(1, local_std))))
-        else:
-            adjusted_n_perm = n_perm
+        shape_val = shape_smoothed[pos]
         
-        # Perform MMD test with adjusted parameters
+        # Only test candidates with sufficient shape statistic
+        if shape_val <= shape_threshold:
+            continue
+        
+        # Define test window around potential drift
+        window_start = max(0, pos - l2//2)
+        window_end = min(n, pos + l2//2)
+        
+        # Ensure minimum window size for meaningful test
+        if window_end - window_start < 2 * l1:
+            # Expand window if possible
+            needed = 2 * l1 - (window_end - window_start)
+            expand_left = min(needed//2, window_start)
+            expand_right = min(needed - expand_left, n - window_end)
+            window_start = max(0, window_start - expand_left)
+            window_end = min(n, window_end + expand_right)
+            
+            # Skip if still insufficient
+            if window_end - window_start < 2 * l1:
+                continue
+        
+        # Perform MMD test
         try:
-            mmd_result = mmd(X[a:b], pos-a, adjusted_n_perm)
-            res[pos, 1:] = mmd_result
+            X_window = X[window_start:window_end]
+            split_point = pos - window_start
+            
+            # Ensure split point is valid
+            if split_point <= l1//2 or split_point >= len(X_window) - l1//2:
+                split_point = len(X_window) // 2
+            
+            mmd_stat, p_value = mmd(X_window, split_point, n_perm)
+            
+            # Store results
+            res[pos, 0] = shape_val
+            res[pos, 1] = mmd_stat
+            res[pos, 2] = p_value
+            
+            processed_positions.add(pos)
+            
         except Exception as e:
-            print(f"MMD test failed at position {pos}: {e}")
-            res[pos, 1] = 0.0
-            res[pos, 2] = 1.0
+            # Skip this candidate on error
+            continue
     
     return res
 
-def shape_conservative(X, l1, l2, n_perm, alpha=0.01):
+def shape_smart(X, l1=None, l2=None, n_perm=1000):
     """
-    Conservative version of ShapeDD for very low false positive rate.
+    Smart wrapper that automatically selects good parameters and sensitivity.
     """
-    return shape_improved(X, l1, l2, n_perm,
-                         shape_threshold=0.2,      # Higher threshold
-                         persistence_window=5,     # More persistence required
-                         adaptive_alpha=True,
-                         temporal_smoothing=True,
-                         min_separation=100)       # Larger separation
+    return shape_adaptive(X, l1, l2, n_perm, 
+                         sensitivity_mode='balanced',
+                         auto_tune_parameters=True)
 
-def shape_balanced(X, l1, l2, n_perm, alpha=0.05):
+def shape_sensitive(X, l1=None, l2=None, n_perm=1500):
     """
-    Balanced version of ShapeDD for moderate false positive rate.
+    High-sensitivity version for detecting subtle drifts.
     """
-    return shape_improved(X, l1, l2, n_perm,
-                         shape_threshold=0.1,      # Moderate threshold
-                         persistence_window=3,     # Some persistence required
-                         adaptive_alpha=True,
-                         temporal_smoothing=True,
-                         min_separation=50)        # Moderate separation
+    return shape_adaptive(X, l1, l2, n_perm,
+                         sensitivity_mode='high', 
+                         auto_tune_parameters=True)
+
+def shape_robust(X, l1=None, l2=None, n_perm=800):
+    """
+    Robust version for noisy data with lower false positive rate.
+    """
+    return shape_adaptive(X, l1, l2, n_perm,
+                         sensitivity_mode='conservative',
+                         auto_tune_parameters=True)
