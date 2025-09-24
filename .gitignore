@@ -64,7 +64,7 @@ venv.bak/
 .ipynb_checkpoints
 
 # Data files (large datasets)
-*.csv
+# *.csv
 *.json
 *.pkl
 *.pickle
