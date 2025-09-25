@@ -1,24 +1,126 @@
-\chapter{Mô hình đề xuất cho giải pháp phát hiện concept drift}
+\chapter{Mô hình đề xuất cho hệ thống phát hiện và thích ứng concept drift}
 
-\section{Tổng quan mô hình đề xuất}
+\section{Tổng quan hệ thống đề xuất}
 
-This chapter presents our proposed model for concept drift detection in data streams. Building upon the theoretical foundations established in the previous chapter, we introduce a comprehensive framework that combines the Shape Drift Detector (ShapeDD) with adaptive windowing strategies and statistical validation techniques.
+Chương này trình bày mô hình tổng thể mà chúng tôi đề xuất cho việc phát hiện concept drift và thích ứng mô hình trong luồng dữ liệu. Dựa trên các nền tảng lý thuyết đã được thiết lập ở chương trước, chúng tôi giới thiệu một khung làm việc toàn diện kết hợp Shape Drift Detector (ShapeDD) được cải tiến với các chiến lược thích ứng mô hình thông minh.
 
-Our proposed approach addresses key limitations in existing drift detection methods by providing:
+Hệ thống đề xuất của chúng tôi giải quyết các hạn chế chính trong các phương pháp phát hiện drift hiện có bằng cách cung cấp:
 \begin{itemize}
-    \item Enhanced sensitivity to both sudden and gradual drift patterns
-    \item Reduced false alarm rates through multi-stage validation
-    \item Adaptive parameter selection based on data characteristics
-    \item Computational efficiency suitable for real-time applications
+    \item Khả năng phát hiện nâng cao cho cả drift đột ngột và từ từ
+    \item Giảm tỷ lệ báo động giả thông qua xác thực đa giai đoạn
+    \item Lựa chọn tham số thích ứng dựa trên đặc điểm dữ liệu
+    \item Hiệu quả tính toán phù hợp cho ứng dụng thời gian thực
+    \item Khung thích ứng mô hình tự động sau khi phát hiện drift
+\end{itemize}
+\section{Triển khai Shape Drift Detector (ShapeDD) được cải tiến}
+
+\subsection{Kiến trúc thuật toán cốt lõi}
+
+Thuật toán ShapeDD hoạt động thông qua pipeline bốn giai đoạn được thiết kế để tối đa hóa độ chính xác phát hiện đồng thời tối thiểu hóa chi phí tính toán:
+
+\textbf{Giai đoạn 1: Thu thập dữ liệu cửa sổ trượt}
+\begin{itemize}
+    \item Duy trì cửa sổ trượt kích thước $2l_1$ trên luồng dữ liệu đến
+    \item Triển khai quản lý bộ đệm hiệu quả cho hoạt động liên tục
+    \item Hỗ trợ nhiều chiến lược chồng lấp cửa sổ để phát hiện mượt mà hơn
 \end{itemize}
 
-\section{Shape Drift Detector (ShapeDD) Implementation}
+\textbf{Giai đoạn 2: Xây dựng đặc trưng dựa trên kernel}
+\begin{itemize}
+    \item Tính ma trận tương tự sử dụng Gaussian RBF kernel
+    \item Áp dụng chiến lược lựa chọn bandwidth để phân biệt tối ưu
+    \item Xử lý dữ liệu nhiều chiều thông qua giảm chiều khi cần thiết
+\end{itemize}
 
-\subsection{Core Algorithm Architecture}
+\textbf{Giai đoạn 3: Tính toán thống kê MMD}
+\begin{itemize}
+    \item Áp dụng hàm trọng số tương phản lên các nửa cửa sổ
+    \item Tính toán thống kê Maximum Mean Discrepancy hiệu quả
+    \item Sinh ra chuỗi thời gian các giá trị MMD cho phân tích xu hướng
+\end{itemize}
 
-The ShapeDD algorithm operates through a four-stage pipeline designed to maximize detection accuracy while minimizing computational overhead:
+\textbf{Giai đoạn 4: Xác thực thống kê và phát hiện điểm thay đổi}
+\begin{itemize}
+    \item Thực hiện phân tích shape dựa trên convolution cho các ứng viên điểm thay đổi
+    \item Áp dụng kiểm định hoán vị cho xác thực ý nghĩa thống kê
+    \item Xuất tín hiệu phát hiện drift với các độ đo tin cậy
+\end{itemize}
 
-\textbf{Stage 1: Sliding Window Data Collection}
+\subsection{Công thức hóa toán học}
+
+Các công thức toán học chi tiết cho ba biến thể ShapeDD (Balanced, Conservative, Smart) hiện đang trong quá trình phát triển và sẽ được bổ sung trong phiên bản hoàn chỉnh.
+
+\textbf{Khung lý thuyết cơ bản:}
+ShapeDD sử dụng Maximum Mean Discrepancy (MMD) kết hợp với biến đổi shape để phát hiện drift:
+
+\begin{equation}
+\text{ShapeDD}(X_t) = \begin{cases}
+1 & \text{nếu phát hiện drift} \\
+0 & \text{ngược lại}
+\end{cases}
+\end{equation}
+
+Biến đổi shape áp dụng convolution để tăng cường phát hiện biên và các chi tiết triển khai cụ thể cho từng biến thể sẽ được trình bày sau khi hoàn tất quá trình phát triển.
+
+\section{Hệ thống thích ứng mô hình tự động}
+
+\subsection{Kiến trúc module thích ứng}
+
+Sau khi phát hiện drift, hệ thống tự động kích hoạt module thích ứng với kiến trúc ba tầng:
+
+\textbf{Tầng đánh giá drift (Drift Assessment Layer):}
+\begin{itemize}
+    \item Phân loại loại drift: abrupt, gradual, recurring
+    \item Đo lường mức độ nghiêm trọng của drift
+    \item Ước tính thời gian ổn định dự kiến
+\end{itemize}
+
+\textbf{Tầng quyết định strategy (Strategy Decision Layer):}
+\begin{itemize}
+    \item Lựa chọn chiến lược thích ứng dựa trên drift characteristics
+    \item Incremental update cho drift nhẹ
+    \item Full retraining cho drift nặng
+    \item Ensemble management cho drift phức tạp
+\end{itemize}
+
+\textbf{Tầng thực thi (Execution Layer):}
+\begin{itemize}
+    \item Thực hiện strategy đã chọn
+    \item Monitor hiệu suất sau adaptation
+    \item Rollback nếu adaptation không thành công
+\end{itemize}
+
+\subsection{Thuật toán thích ứng thông minh}
+
+\begin{algorithm}
+\caption{Adaptive Model Update Strategy}
+\begin{algorithmic}[1]
+\STATE \textbf{Input:} Drift detection signal, current model $M$, recent data $D_{\text{recent}}$
+\STATE \textbf{Output:} Updated model $M'$
+\STATE 
+\STATE // Đánh giá mức độ drift
+\STATE $\text{severity} \leftarrow \text{assessDriftSeverity}(D_{\text{recent}})$
+\STATE $\text{type} \leftarrow \text{classifyDriftType}(D_{\text{recent}})$
+\STATE
+\IF{$\text{severity} < 0.3$ AND $\text{type} = \text{gradual}$}
+    \STATE // Drift nhẹ: Incremental update
+    \STATE $M' \leftarrow \text{incrementalUpdate}(M, D_{\text{recent}})$
+\ELSIF{$\text{severity} > 0.7$ OR $\text{type} = \text{abrupt}$}
+    \STATE // Drift nặng: Full retraining
+    \STATE $M' \leftarrow \text{fullRetrain}(D_{\text{recent}}, \text{historical\_buffer})$
+\ELSE
+    \STATE // Drift trung bình: Ensemble approach
+    \STATE $M' \leftarrow \text{ensembleUpdate}(M, D_{\text{recent}})$
+\ENDIF
+\STATE
+\STATE // Validation và rollback nếu cần
+\IF{$\text{validatePerformance}(M', D_{\text{validation}}) < \text{threshold}$}
+    \STATE $M' \leftarrow M$ // Rollback to previous model
+    \STATE $\text{logFailure}(\text{adaptation\_strategy})$
+\ENDIF
+\STATE \textbf{return} $M'$
+\end{algorithmic}
+\end{algorithm}
 \begin{itemize}
     \item Maintains a sliding window of size $2l_1$ over the incoming data stream
     \item Implements efficient buffer management for continuous operation

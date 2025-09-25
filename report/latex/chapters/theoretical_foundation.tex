@@ -2,314 +2,314 @@
 
 \section{Cách tiếp cận nghiên cứu}
 
-This chapter presents the methodological framework for investigating concept drift detection using the Shape Drift Detector (ShapeDD) method. Our approach focuses on understanding the theoretical foundations of ShapeDD, implementing the algorithm for various drift scenarios, and conducting comprehensive empirical evaluation to assess its effectiveness across different types of concept drift.
+Chương này trình bày khung phương pháp luận để điều tra phát hiện concept drift sử dụng phương pháp Shape Drift Detector (ShapeDD). Cách tiếp cận của chúng tôi tập trung vào việc hiểu các nền tảng lý thuyết của ShapeDD, triển khai thuật toán cho các kịch bản drift khác nhau, và thực hiện đánh giá thực nghiệm toàn diện để đánh giá hiệu quả của nó trên các loại concept drift khác nhau.
 
-The research methodology consists of three main components: (1) theoretical analysis of the ShapeDD algorithm and its underlying Maximum Mean Discrepancy (MMD) foundations, (2) implementation and optimization of the detection system for synthetic and real-world datasets, and (3) comprehensive experimental evaluation across different drift patterns and parameter configurations.
+Phương pháp luận nghiên cứu bao gồm ba thành phần chính: (1) phân tích lý thuyết của thuật toán ShapeDD và các nền tảng Maximum Mean Discrepancy (MMD) cơ bản, (2) triển khai và tối ưu hóa hệ thống phát hiện cho các bộ dữ liệu tổng hợp và thực tế, và (3) đánh giá thực nghiệm toàn diện trên các mẫu drift và cấu hình tham số khác nhau.
 
-\section{Theoretical Foundations of Shape Drift Detector}
+\section{Nền tảng lý thuyết của Shape Drift Detector}
 
 \subsection{Maximum Mean Discrepancy (MMD)}
 
-The Shape Drift Detector (ShapeDD) is fundamentally based on Maximum Mean Discrepancy (MMD), a statistical measure used to compare two probability distributions $P$ and $Q$. The core idea is to map data from the original space into a high-dimensional feature space where the comparison becomes more sensitive to distributional differences.
+Shape Drift Detector (ShapeDD) dựa trên Maximum Mean Discrepancy (MMD), một thước đo thống kê được sử dụng để so sánh hai phân phối xác suất $P$ và $Q$. Ý tưởng cốt lõi là ánh xạ dữ liệu từ không gian gốc vào không gian feature cao chiều nơi việc so sánh trở nên nhạy cảm hơn với sự khác biệt phân phối.
 
-MMD is formally defined as:
+MMD được định nghĩa chính thức như:
 \begin{equation}
 \text{MMD}(P, Q) = \sup_{f \in \mathcal{F}} \left| \mathbb{E}_{X \sim P}[f(X)] - \mathbb{E}_{Y \sim Q}[f(Y)] \right|
 \end{equation}
 
-where:
+trong đó:
 \begin{itemize}
-    \item $P$ and $Q$ are the two distributions to be compared
-    \item $X \sim P$ represents a random variable sampled from distribution $P$
-    \item $Y \sim Q$ represents a random variable sampled from distribution $Q$
-    \item $\mathcal{F}$ is a class of functions $f$ such that $\|f\|_{\mathcal{H}} \leq 1$ in the Reproducing Kernel Hilbert Space (RKHS)
-    \item $\sup$ denotes the supremum (least upper bound)
+    \item $P$ và $Q$ là hai phân phối cần được so sánh
+    \item $X \sim P$ đại diện cho biến ngẫu nhiên được lấy mẫu từ phân phối $P$
+    \item $Y \sim Q$ đại diện cho biến ngẫu nhiên được lấy mẫu từ phân phối $Q$
+    \item $\mathcal{F}$ là một lớp hàm $f$ sao cho $\|f\|_{\mathcal{H}} \leq 1$ trong Reproducing Kernel Hilbert Space (RKHS)
+    \item $\sup$ biểu thị supremum (cận trên nhỏ nhất)
 \end{itemize}
 
-In practice, finding the supremum over $\mathcal{F}$ is computationally intractable. Therefore, MMD is typically implemented in RKHS using the kernel trick with a kernel function $k(x, y)$:
+Trong thực tế, việc tìm supremum trên $\mathcal{F}$ là không khả thi về mặt tính toán. Do đó, MMD thường được triển khai trong RKHS sử dụng kernel trick với hàm kernel $k(x, y)$:
 
 \begin{equation}
 k(x, y) = \langle \phi(x), \phi(y) \rangle_{\mathcal{H}}
 \end{equation}
 
-where $\phi(x)$ maps point $x$ into RKHS $\mathcal{H}$ and $\langle \cdot, \cdot \rangle_{\mathcal{H}}$ is the inner product in $\mathcal{H}$.
+trong đó $\phi(x)$ ánh xạ điểm $x$ vào RKHS $\mathcal{H}$ và $\langle \cdot, \cdot \rangle_{\mathcal{H}}$ là tích vô hướng trong $\mathcal{H}$.
 
-The squared MMD in RKHS becomes:
+MMD bình phương trong RKHS trở thành:
 \begin{equation}
 \text{MMD}^2(P, Q) = \mathbb{E}_{X, X' \sim P}[k(X, X')] + \mathbb{E}_{Y, Y' \sim Q}[k(Y, Y')] - 2\mathbb{E}_{X \sim P, Y \sim Q}[k(X, Y)]
 \end{equation}
 
-For empirical estimation with samples $\{x_i\}_{i=1}^n$ from $P$ and $\{y_j\}_{j=1}^m$ from $Q$:
+Để ước tính thực nghiệm với mẫu $\{x_i\}_{i=1}^n$ từ $P$ và $\{y_j\}_{j=1}^m$ từ $Q$:
 
 \begin{equation}
 \widehat{\text{MMD}}^2 = \frac{1}{n(n-1)} \sum_{i \neq j} k(x_i, x_j) + \frac{1}{m(m-1)} \sum_{i \neq j} k(y_i, y_j) - \frac{2}{nm} \sum_{i,j} k(x_i, y_j)
 \end{equation}
 
-\subsection{Shape Drift Detector Algorithm}
+\subsection{Thuật toán Shape Drift Detector}
 
-The Shape Drift Detector (ShapeDD) is a meta-statistic-based drift detector that operates through a multi-stage process to identify concept drift in data streams. The algorithm employs MMD as its core statistical measure and follows a systematic approach consisting of four main stages.
+Shape Drift Detector (ShapeDD) là một detector drift dựa trên meta-statistic hoạt động thông qua quá trình đa giai đoạn để xác định concept drift trong luồng dữ liệu. Thuật toán sử dụng MMD như thước đo thống kê cốt lõi và theo một cách tiếp cận có hệ thống bao gồm bốn giai đoạn chính.
 
-\subsubsection{Stage 1: Data Collection}
+\subsubsection{Giai đoạn 1: Thu thập dữ liệu}
 
-The first stage involves collecting data using sliding window techniques. Multiple window strategies can be employed:
+Giai đoạn đầu tiên bao gồm thu thập dữ liệu sử dụng kỹ thuật cửa sổ trượt. Nhiều chiến lược cửa sổ có thể được sử dụng:
 
 \begin{itemize}
-    \item \textbf{Fixed-size sliding windows}: Maintain a constant window size $w$ that slides over the data stream
-    \item \textbf{Adaptive windows}: Dynamically adjust window size based on data characteristics
-    \item \textbf{Overlapping windows}: Use overlapping segments to ensure smooth transitions
+    \item \textbf{Cửa sổ trượt kích thước cố định}: Duy trì kích thước cửa sổ không đổi $w$ trượt trên luồng dữ liệu
+    \item \textbf{Cửa sổ thích ứng}: Điều chỉnh động kích thước cửa sổ dựa trên đặc trưng dữ liệu
+    \item \textbf{Cửa sổ chồng chéo}: Sử dụng các đoạn chồng chéo để đảm bảo chuyển tiếp mượt mà
 \end{itemize}
 
-For a data stream $\mathcal{S} = \{x_1, x_2, \ldots, x_n\}$, we maintain a sliding window $W_t$ of size $l_1$ at time $t$:
+Đối với luồng dữ liệu $\mathcal{S} = \{x_1, x_2, \ldots, x_n\}$, chúng ta duy trì cửa sổ trượt $W_t$ có kích thước $l_1$ tại thời điểm $t$:
 \begin{equation}
 W_t = \{x_{t-l_1+1}, x_{t-l_1+2}, \ldots, x_t\}
 \end{equation}
 
-\subsubsection{Stage 2: Feature Construction}
+\subsubsection{Giai đoạn 2: Xây dựng feature}
 
-In this stage, we construct a similarity matrix using a kernel function to capture the relationships between data points. The Gaussian RBF kernel is commonly used:
+Trong giai đoạn này, chúng ta xây dựng ma trận tương đồng sử dụng hàm kernel để nắm bắt mối quan hệ giữa các điểm dữ liệu. Gaussian RBF kernel thường được sử dụng:
 
 \begin{equation}
 k(x_i, x_j) = \exp\left(-\frac{\|x_i - x_j\|^2}{2\sigma^2}\right)
 \end{equation}
 
-This results in a kernel matrix $K \in \mathbb{R}^{n \times n}$ where $K_{ij} = k(x_i, x_j)$ represents the similarity between data points $x_i$ and $x_j$.
+Điều này tạo ra ma trận kernel $K \in \mathbb{R}^{n \times n}$ trong đó $K_{ij} = k(x_i, x_j)$ biểu thị sự tương đồng giữa các điểm dữ liệu $x_i$ và $x_j$.
 
-\subsubsection{Stage 3: Difference Computation}
+\subsubsection{Giai đoạn 3: Tính toán sự khác biệt}
 
-The core of ShapeDD involves computing the statistical difference between consecutive data segments using MMD. We define a weight function $w(t)$ that creates contrasting weights for different halves of the sliding window:
+Cốt lõi của ShapeDD bao gồm tính toán sự khác biệt thống kê giữa các đoạn dữ liệu liên tiếp sử dụng MMD. Chúng ta định nghĩa hàm trọng số $w(t)$ tạo ra trọng số tương phản cho các nửa khác nhau của cửa sổ trượt:
 
 \begin{equation}
 w(t) = \begin{cases}
-\frac{1}{l_1} & \text{if } t \in [1, l_1] \\
--\frac{1}{l_1} & \text{if } t \in [l_1+1, 2l_1]
+\frac{1}{l_1} & \text{nếu } t \in [1, l_1] \\
+-\frac{1}{l_1} & \text{nếu } t \in [l_1+1, 2l_1]
 \end{cases}
 \end{equation}
 
-The MMD statistic is then computed as:
+Thống kê MMD sau đó được tính như:
 \begin{equation}
 \text{MMD}^2_t = \sum_{i,j=1}^{2l_1} w_i w_j K_{ij}
 \end{equation}
 
-This computation is performed across the entire data stream using a sliding window approach, resulting in a sequence of MMD values $\{\text{MMD}^2_1, \text{MMD}^2_2, \ldots, \text{MMD}^2_T\}$.
+Tính toán này được thực hiện trên toàn bộ luồng dữ liệu sử dụng phương pháp cửa sổ trượt, tạo ra chuỗi các giá trị MMD $\{\text{MMD}^2_1, \text{MMD}^2_2, \ldots, \text{MMD}^2_T\}$.
 
-\subsubsection{Stage 4: Statistical Validation}
+\subsubsection{Giai đoạn 4: Xác thực thống kê}
 
-The final stage involves normalizing the MMD statistics and identifying potential change points through zero-crossing detection. The shape values are computed using convolution:
+Giai đoạn cuối cùng bao gồm chuẩn hóa các thống kê MMD và xác định các điểm thay đổi tiềm năng thông qua phát hiện zero-crossing. Các giá trị shape được tính bằng convolution:
 
 \begin{equation}
 \text{shape\_values}_t = \sum_{i} \text{MMD}^2_{t+i} \cdot h_i
 \end{equation}
 
-where $h$ is a convolution kernel (typically $[1, -1]$ for simple edge detection).
+trong đó $h$ là kernel convolution (thường là $[1, -1]$ cho phát hiện biên đơn giản).
 
-Potential change points are identified where consecutive shape values have opposite signs. These candidates are then validated using permutation tests to compute p-values and determine statistical significance.
+Các điểm thay đổi tiềm năng được xác định khi các giá trị shape liên tiếp có dấu trái ngược. Những ứng cử viên này sau đó được xác thực bằng permutation test để tính p-value và xác định ý nghĩa thống kê.
 
-\section{Enhanced Drift Detection Algorithms}
+\section{Thuật toán phát hiện drift cải tiến}
 
-\subsection{ShapeDD Implementation Details}
+\subsection{Chi tiết triển khai ShapeDD}
 
-The complete ShapeDD algorithm can be summarized in the following steps:
+Thuật toán ShapeDD hoàn chỉnh có thể được tóm tắt trong các bước sau:
 
-\textbf{Algorithm: Shape Drift Detector (ShapeDD)}
+\textbf{Thuật toán: Shape Drift Detector (ShapeDD)}
 \begin{enumerate}
-    \item \textbf{Initialize parameters:} Set window size $l_1$, kernel bandwidth $\sigma$, significance threshold $\alpha$
-    \item \textbf{Data collection:} Maintain sliding window $W_t$ of size $2l_1$
-    \item \textbf{Kernel computation:} Compute similarity matrix $K$ using Gaussian RBF kernel
-    \item \textbf{MMD calculation:} Apply weight function and compute MMD statistics across the sliding window
-    \item \textbf{Shape analysis:} Apply convolution to identify potential change points via zero-crossing
-    \item \textbf{Statistical validation:} Use permutation tests to validate detected change points with p-values
-    \item \textbf{Drift signal:} Output drift detection signal when p-value $< \alpha$
+    \item \textbf{Khởi tạo tham số:} Đặt kích thước cửa sổ $l_1$, băng thông kernel $\sigma$, ngưỡng ý nghĩa $\alpha$
+    \item \textbf{Thu thập dữ liệu:} Duy trì cửa sổ trượt $W_t$ có kích thước $2l_1$
+    \item \textbf{Tính toán kernel:} Tính ma trận tương đồng $K$ sử dụng Gaussian RBF kernel
+    \item \textbf{Tính toán MMD:} Áp dụng hàm trọng số và tính thống kê MMD trên cửa sổ trượt
+    \item \textbf{Phân tích shape:} Áp dụng convolution để xác định điểm thay đổi tiềm năng qua zero-crossing
+    \item \textbf{Xác thực thống kê:} Sử dụng permutation test để xác thực các điểm thay đổi được phát hiện với p-value
+    \item \textbf{Tín hiệu drift:} Xuất tín hiệu phát hiện drift khi p-value $< \alpha$
 \end{enumerate}
 
-\textbf{Computational Complexity:}
+\textbf{Độ phức tạp tính toán:}
 \begin{itemize}
-    \item Kernel matrix computation: $O(n^2)$ where $n$ is window size
-    \item MMD calculation: $O(n^2)$ per sliding window position
-    \item Permutation testing: $O(k \cdot n^2)$ where $k$ is number of permutations
-    \item Overall complexity: $O(T \cdot n^2)$ for stream of length $T$
+    \item Tính toán ma trận kernel: $O(n^2)$ trong đó $n$ là kích thước cửa sổ
+    \item Tính toán MMD: $O(n^2)$ mỗi vị trí cửa sổ trượt
+    \item Permutation testing: $O(k \cdot n^2)$ trong đó $k$ là số lượng permutation
+    \item Độ phức tạp tổng thể: $O(T \cdot n^2)$ cho luồng có độ dài $T$
 \end{itemize}
 
-\section{Adaptation Strategy Framework}
+\section{Khung chiến lược thích ứng}
 
-\subsection{Meta-Learning Approach}
+\subsection{Phương pháp Meta-Learning}
 
-We develop a meta-learning framework that automatically selects adaptation strategies based on detected drift characteristics:
+Chúng tôi phát triển khung meta-learning tự động lựa chọn chiến lược thích ứng dựa trên đặc trưng drift được phát hiện:
 
-\textbf{Feature Extraction:} For each detected drift episode, we extract features describing:
+\textbf{Trích xuất feature:} Đối với mỗi episode drift được phát hiện, chúng tôi trích xuất feature mô tả:
 \begin{itemize}
-    \item Drift magnitude: $|\Delta(t_1, t_2)|$
-    \item Drift speed: $\frac{|\Delta(t_1, t_2)|}{t_2 - t_1}$
-    \item Affected dimensions: Number of features showing significant change
-    \item Historical context: Previous drift patterns and adaptation outcomes
+    \item Mức độ drift: $|\Delta(t_1, t_2)|$
+    \item Tốc độ drift: $\frac{|\Delta(t_1, t_2)|}{t_2 - t_1}$
+    \item Chiều bị ảnh hưởng: Số lượng feature cho thấy thay đổi đáng kể
+    \item Ngữ cảnh lịch sử: Các mẫu drift trước đây và kết quả thích ứng
 \end{itemize}
 
-\textbf{Strategy Selection:} A meta-classifier trained on historical drift episodes predicts the most suitable adaptation strategy:
+\textbf{Lựa chọn chiến lược:} Meta-classifier được huấn luyện trên các episode drift lịch sử dự đoán chiến lược thích ứng phù hợp nhất:
 
 \begin{equation}
 s^* = \arg\max_{s \in \mathcal{S}} P(s|\mathbf{f}_{\text{drift}})
 \end{equation}
 
-where $\mathbf{f}_{\text{drift}}$ represents the extracted drift features and $\mathcal{S}$ is the set of available adaptation strategies.
+trong đó $\mathbf{f}_{\text{drift}}$ biểu thị các feature drift được trích xuất và $\mathcal{S}$ là tập hợp các chiến lược thích ứng có sẵn.
 
-\subsection{Adaptive Window Management}
+\subsection{Quản lý cửa sổ thích ứng}
 
-We propose an adaptive window management strategy that adjusts window size based on drift characteristics:
+Chúng tôi đề xuất chiến lược quản lý cửa sổ thích ứng điều chỉnh kích thước cửa sổ dựa trên đặc trưng drift:
 
 \begin{equation}
 w_{\text{size}}(t) = w_{\text{base}} \cdot \exp(-\lambda \cdot \Delta(t))
 \end{equation}
 
-where $w_{\text{base}}$ is the base window size, $\lambda$ is a decay parameter, and $\Delta(t)$ is the detected drift magnitude.
+trong đó $w_{\text{base}}$ là kích thước cửa sổ cơ sở, $\lambda$ là tham số suy giảm, và $\Delta(t)$ là mức độ drift được phát hiện.
 
-\section{Experimental Design}
+\section{Thiết kế thực nghiệm}
 
-\subsection{Synthetic Dataset Generation}
+\subsection{Tạo bộ dữ liệu tổng hợp}
 
-To evaluate the effectiveness of ShapeDD across different drift scenarios, we generate controlled synthetic datasets with precisely defined drift characteristics. This approach allows us to assess algorithm performance under known conditions and analyze the impact of various parameters.
+Để đánh giá hiệu quả của ShapeDD trên các kịch bản drift khác nhau, chúng tôi tạo ra các bộ dữ liệu tổng hợp được kiểm soát với đặc trưng drift được định nghĩa chính xác. Cách tiếp cận này cho phép chúng tôi đánh giá hiệu suất thuật toán dưới các điều kiện đã biết và phân tích tác động của các tham số khác nhau.
 
-\textbf{Abrupt Drift Dataset:} We generate datasets with sudden, instantaneous changes in data distribution. The dataset consists of 10,000 data points with uniform sampling within a unit space. Drift is introduced by shifting the distribution parameters at randomly selected time points:
-
-\begin{itemize}
-    \item Dataset size: 10,000 data points
-    \item Drift magnitude: 0.5 (standard deviation shift)
-    \item Number of drift points: 10 randomly distributed locations
-    \item Distribution type: Uniform distribution with sudden parameter shifts
-\end{itemize}
-
-\textbf{Incremental Drift Dataset:} We create datasets exhibiting gradual, continuous changes in distribution parameters over time. This represents slow-evolving drift patterns commonly found in real-world applications:
+\textbf{Bộ dữ liệu Abrupt Drift:} Chúng tôi tạo ra các bộ dữ liệu với thay đổi đột ngột, tức thời trong phân phối dữ liệu. Bộ dữ liệu bao gồm 10,000 điểm dữ liệu với sampling đồng nhất trong không gian đơn vị. Drift được giới thiệu bằng cách dịch chuyển các tham số phân phối tại các điểm thời gian được chọn ngẫu nhiên:
 
 \begin{itemize}
-    \item Dataset size: 10,000 data points  
-    \item Drift progression: Continuous linear parameter evolution
-    \item Distribution type: Gaussian or uniform with gradually changing parameters
-    \item Drift speed: Configurable rate of parameter change per time unit
+    \item Kích thước dataset: 10,000 điểm dữ liệu
+    \item Mức độ drift: 0.5 (dịch chuyển độ lệch chuẩn)
+    \item Số điểm drift: 10 vị trí được phân phối ngẫu nhiên
+    \item Loại phân phối: Phân phối đồng nhất với dịch chuyển tham số đột ngột
 \end{itemize}
 
-The synthetic data generation process ensures reproducibility and allows for systematic evaluation of detection performance across varying drift intensities and patterns.
+\textbf{Bộ dữ liệu Incremental Drift:} Chúng tôi tạo ra các bộ dữ liệu thể hiện thay đổi dần dần, liên tục trong các tham số phân phối theo thời gian. Điều này đại diện cho các mẫu drift tiến hóa chậm thường được tìm thấy trong các ứng dụng thực tế:
 
-\textbf{Parameter Variations:} For each drift type, we generate multiple dataset variants with different:
 \begin{itemize}
-    \item Drift magnitudes (0.1, 0.3, 0.5, 0.7, 0.9)
-    \item Dimensionalities (2D, 5D, 10D, 20D)
-    \item Noise levels (0\%, 5\%, 10\%, 15\%, 20\%)
-    \item Drift frequencies (sparse vs. frequent drift occurrences)
+    \item Kích thước dataset: 10,000 điểm dữ liệu  
+    \item Tiến triển drift: Tiến hóa tham số tuyến tính liên tục
+    \item Loại phân phối: Gaussian hoặc đồng nhất với tham số thay đổi dần dần
+    \item Tốc độ drift: Tỷ lệ thay đổi tham số có thể cấu hình mỗi đơn vị thời gian
 \end{itemize}
 
-\subsection{Evaluation Protocol}
+Quá trình tạo dữ liệu tổng hợp đảm bảo khả năng tái tạo và cho phép đánh giá có hệ thống hiệu suất phát hiện trên các cường độ và mẫu drift khác nhau.
 
-\textbf{Prequential Evaluation:} We use the test-then-train approach for realistic streaming evaluation:
+\textbf{Biến thiên tham số:} Đối với mỗi loại drift, chúng tôi tạo ra nhiều biến thể dataset với:
+\begin{itemize}
+    \item Mức độ drift khác nhau (0.1, 0.3, 0.5, 0.7, 0.9)
+    \item Chiều khác nhau (2D, 5D, 10D, 20D)
+    \item Mức nhiễu khác nhau (0\%, 5\%, 10\%, 15\%, 20\%)
+    \item Tần suất drift khác nhau (xuất hiện drift thưa thớt vs thường xuyên)
+\end{itemize}
 
-\textbf{Evaluation Protocol Steps:}
+\subsection{Giao thức đánh giá}
+
+\textbf{Đánh giá Prequential:} Chúng tôi sử dụng cách tiếp cận test-then-train để đánh giá streaming thực tế:
+
+\textbf{Các bước giao thức đánh giá:}
 \begin{enumerate}
-    \item Initialize model $M$ and performance metrics
-    \item For each data point $(x_t, y_t)$ in the stream:
+    \item Khởi tạo mô hình $M$ và các metric hiệu suất
+    \item Đối với mỗi điểm dữ liệu $(x_t, y_t)$ trong luồng:
     \begin{enumerate}
-        \item Make prediction: $\hat{y}_t \leftarrow M.\text{predict}(x_t)$
-        \item Update performance metrics with $(\hat{y}_t, y_t)$
-        \item Update model: $M.\text{update}(x_t, y_t)$
-        \item Apply drift detection and adaptation if needed
+        \item Thực hiện dự đoán: $\hat{y}_t \leftarrow M.\text{predict}(x_t)$
+        \item Cập nhật metric hiệu suất với $(\hat{y}_t, y_t)$
+        \item Cập nhật mô hình: $M.\text{update}(x_t, y_t)$
+        \item Áp dụng phát hiện drift và thích ứng nếu cần
     \end{enumerate}
-    \item Report cumulative performance metrics
+    \item Báo cáo metric hiệu suất tích lũy
 \end{enumerate}
 
-\textbf{Performance Metrics:} We employ multiple metrics to assess different aspects of performance:
+\textbf{Metric hiệu suất:} Chúng tôi sử dụng nhiều metric để đánh giá các khía cạnh khác nhau của hiệu suất:
 
 \begin{itemize}
-    \item \textit{Classification accuracy}: Overall prediction accuracy
-    \item \textit{Detection delay}: Time between drift occurrence and detection
-    \item \textit{False alarm rate}: Frequency of incorrect drift signals
-    \item \textit{Adaptation efficiency}: Performance recovery after drift
-    \item \textit{Computational cost}: Runtime and memory requirements
+    \item \textit{Độ chính xác phân loại}: Độ chính xác dự đoán tổng thể
+    \item \textit{Độ trễ phát hiện}: Thời gian giữa xuất hiện drift và phát hiện
+    \item \textit{Tỷ lệ báo động nhầm}: Tần suất tín hiệu drift không chính xác
+    \item \textit{Hiệu quả thích ứng}: Phục hồi hiệu suất sau drift
+    \item \textit{Chi phí tính toán}: Yêu cầu runtime và bộ nhớ
 \end{itemize}
 
-\subsection{Statistical Analysis}
+\subsection{Phân tích thống kê}
 
-\textbf{Significance Testing:} We use appropriate statistical tests to verify the significance of performance differences:
+\textbf{Kiểm định ý nghĩa:} Chúng tôi sử dụng các test thống kê phù hợp để xác minh ý nghĩa của sự khác biệt hiệu suất:
 
 \begin{itemize}
-    \item Friedman test for comparing multiple algorithms across datasets
-    \item Nemenyi post-hoc test for pairwise comparisons
-    \item McNemar test for comparing classification accuracies
+    \item Friedman test để so sánh nhiều thuật toán trên các dataset
+    \item Nemenyi post-hoc test để so sánh theo cặp
+    \item McNemar test để so sánh độ chính xác phân loại
 \end{itemize}
 
-\textbf{Effect Size Analysis:} Beyond statistical significance, we compute effect sizes to assess practical significance:
+\textbf{Phân tích Effect Size:} Ngoài ý nghĩa thống kê, chúng tôi tính effect size để đánh giá ý nghĩa thực tế:
 
 \begin{equation}
 \text{Cohen's d} = \frac{\mu_1 - \mu_2}{\sqrt{\frac{\sigma_1^2 + \sigma_2^2}{2}}}
 \end{equation}
 
-\section{Implementation Details}
+\section{Chi tiết triển khai}
 
-\subsection{Software Framework}
+\subsection{Framework phần mềm}
 
-We develop a comprehensive software framework for concept drift experimentation:
+Chúng tôi phát triển framework phần mềm toàn diện cho thí nghiệm concept drift:
 
-\textbf{Core Components:}
+\textbf{Các thành phần cốt lõi:}
 \begin{itemize}
-    \item Stream simulation engine for synthetic data generation
-    \item Modular drift detection library with pluggable algorithms
-    \item Adaptation strategy framework with multiple implemented strategies
-    \item Comprehensive evaluation suite with multiple metrics
+    \item Stream simulation engine để tạo dữ liệu tổng hợp
+    \item Thư viện phát hiện drift modular với các thuật toán pluggable
+    \item Framework chiến lược thích ứng với nhiều chiến lược được triển khai
+    \item Bộ đánh giá toàn diện với nhiều metric
 \end{itemize}
 
 \textbf{Technical Stack:}
 \begin{itemize}
-    \item Python 3.8+ with NumPy, SciPy, and scikit-learn
-    \item Apache Kafka for stream processing simulation
-    \item PostgreSQL for result storage and analysis
-    \item Jupyter notebooks for visualization and analysis
+    \item Python 3.8+ với NumPy, SciPy, và scikit-learn
+    \item Apache Kafka để mô phỏng stream processing
+    \item PostgreSQL để lưu trữ và phân tích kết quả
+    \item Jupyter notebook để trực quan hóa và phân tích
 \end{itemize}
 
-\subsection{Computational Infrastructure}
+\subsection{Hạ tầng tính toán}
 
-\textbf{Hardware Requirements:}
+\textbf{Yêu cầu phần cứng:}
 \begin{itemize}
-    \item Multi-core processors for parallel experiment execution
-    \item Sufficient RAM for large-scale dataset processing
-    \item Storage capacity for experimental results and datasets
+    \item Bộ xử lý đa lõi để thực thi thí nghiệm song song
+    \item RAM đủ để xử lý dataset quy mô lớn
+    \item Dung lượng lưu trữ cho kết quả thí nghiệm và dataset
 \end{itemize}
 
-\textbf{Experiment Management:}
+\textbf{Quản lý thí nghiệm:}
 \begin{itemize}
-    \item Version control for experimental configurations
-    \item Automated experiment scheduling and execution
-    \item Result reproducibility through random seed management
+    \item Version control cho cấu hình thí nghiệm
+    \item Lập lịch và thực thi thí nghiệm tự động
+    \item Khả năng tái tạo kết quả thông qua quản lý random seed
 \end{itemize}
 
-\section{Validation Strategy}
+\section{Chiến lược xác thực}
 
-\subsection{Cross-validation for Drift Detection}
+\subsection{Cross-validation cho phát hiện drift}
 
-Traditional cross-validation is not suitable for temporal data with drift. We employ temporal cross-validation:
+Cross-validation truyền thống không phù hợp cho dữ liệu thời gian có drift. Chúng tôi sử dụng temporal cross-validation:
 
 \begin{itemize}
-    \item \textit{Sliding window validation}: Use overlapping temporal windows
-    \item \textit{Blocked cross-validation}: Respect temporal ordering in folds
-    \item \textit{Prequential validation}: Test-then-train approach
+    \item \textit{Sliding window validation}: Sử dụng cửa sổ thời gian chồng chéo
+    \item \textit{Blocked cross-validation}: Tôn trọng thứ tự thời gian trong fold
+    \item \textit{Prequential validation}: Cách tiếp cận test-then-train
 \end{itemize}
 
-\subsection{Robustness Testing}
+\subsection{Kiểm tra độ bền vững}
 
-\textbf{Noise Sensitivity:} Test algorithm performance under different noise levels:
+\textbf{Độ nhạy nhiễu:} Kiểm tra hiệu suất thuật toán dưới các mức nhiễu khác nhau:
 
 \begin{equation}
-x_{\text{noisy}} = x + \epsilon \quad \text{where} \quad \epsilon \sim \mathcal{N}(0, \sigma^2)
+x_{\text{noisy}} = x + \epsilon \quad \text{trong đó} \quad \epsilon \sim \mathcal{N}(0, \sigma^2)
 \end{equation}
 
-\textbf{Parameter Sensitivity:} Analyze performance across different parameter settings using grid search and sensitivity analysis.
+\textbf{Độ nhạy tham số:} Phân tích hiệu suất trên các thiết lập tham số khác nhau sử dụng grid search và phân tích độ nhạy.
 
-\textbf{Scalability Testing:} Evaluate computational performance on datasets of varying sizes and dimensionalities.
+\textbf{Kiểm tra khả năng mở rộng:} Đánh giá hiệu suất tính toán trên dataset có kích thước và chiều khác nhau.
 
-\section{Ethical Considerations}
+\section{Cân nhắc đạo đức}
 
-\subsection{Data Privacy}
+\subsection{Quyền riêng tư dữ liệu}
 
-All real-world datasets used in this research are either publicly available or properly anonymized. We ensure compliance with relevant data protection regulations.
+Tất cả dataset thực tế được sử dụng trong nghiên cứu này hoặc được công khai hoặc được ẩn danh hóa đúng cách. Chúng tôi đảm bảo tuân thủ các quy định bảo vệ dữ liệu có liên quan.
 
-\subsection{Reproducibility}
+\subsection{Khả năng tái tạo}
 
-We commit to making our code, datasets, and experimental configurations publicly available to enable reproducibility and facilitate future research.
+Chúng tôi cam kết công khai code, dataset và cấu hình thí nghiệm để cho phép tái tạo và tạo thuận lợi cho nghiên cứu tương lai.
 
-\section{Summary}
+\section{Tóm tắt}
 
-This chapter has outlined the comprehensive methodology employed in this research. Our approach combines theoretical development with practical algorithm design and rigorous empirical evaluation. The next chapter presents the results of applying this methodology to investigate concept drift detection and adaptation across multiple domains and scenarios. 
+Chương này đã phác thảo phương pháp luận toàn diện được sử dụng trong nghiên cứu này. Cách tiếp cận của chúng tôi kết hợp phát triển lý thuyết với thiết kế thuật toán thực tế và đánh giá thực nghiệm nghiêm ngặt. Chương tiếp theo trình bày kết quả của việc áp dụng phương pháp luận này để điều tra phát hiện concept drift và thích ứng trên nhiều lĩnh vực và kịch bản. 

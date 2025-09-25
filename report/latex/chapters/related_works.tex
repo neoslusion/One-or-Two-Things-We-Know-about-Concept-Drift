@@ -139,5 +139,102 @@ với $c_i$ là biên độ ảnh hưởng khi thay đổi phần tử thứ $i$
 \section{Tổng hợp \& khoảng trống}
 Văn liệu hội tụ vào hai trục: (i) \emph{phát hiện drift tin cậy} trong điều kiện thiếu nhãn (từ kiểm định cửa sổ đến phân biệt hai-mẫu, kiểm định độc lập, shape-based, nhận dạng loại drift), và (ii) \emph{thích ứng mô hình} (retrain/ensemble/uncertainty-triggered updates) trong khung học sâu. Khoảng trống bao gồm: đánh đổi \textbf{độ trễ--báo động giả}, chuẩn hoá \textbf{đánh giá trực tuyến đa tiêu chí} (MTTD, TP/FP/FN, thời gian/bộ nhớ, chi phí nhãn), và thiết kế \textbf{semi-/unsupervised} mạnh cho tình huống drift lặp lại hay tiến hoá \citep{survey_partA_2024,deep_survey_mdpi_2023}.
 
+\section{Các phương pháp không dựa trên cửa sổ}
+
+Ngoài các phương pháp dựa trên cửa sổ, phát hiện concept drift bao gồm năm danh mục chính: kiểm soát quy trình thống kê, dựa trên hiệu suất, dựa trên phân phối dữ liệu, phương pháp ensemble, và phương pháp dựa trên mạng neural.
+
+\subsection{Phương pháp kiểm soát quy trình thống kê}
+
+\textbf{Cumulative Sum (CUSUM) / Page-Hinkley Test:}
+\begin{itemize}
+    \item Tích lũy độ lệch từ giá trị mục tiêu và kích hoạt khi vượt ngưỡng
+    \item Ưu điểm: Phát hiện nhanh thay đổi đột ngột, không cần tham số
+    \item Hạn chế: Gặp khó khăn với drift dần dần, nhạy cảm với nhiễu
+\end{itemize}
+
+\textbf{Change Finder:}
+\begin{itemize}
+    \item Sử dụng mô hình Auto Regression (AR) để biểu diễn hành vi chuỗi thời gian
+    \item Cập nhật tham số tăng dần với việc giảm trọng số các mẫu quá khứ
+    \item Ứng dụng: Phân tích thị trường tài chính, phát hiện bất thường chuỗi thời gian
+\end{itemize}
+
+\textbf{Kolmogorov-Smirnov Test-based Windowing (KSWIN):}
+\begin{itemize}
+    \item Kiểm định thống kê phi tham số so sánh phân phối
+    \item Được bao gồm trong các gói phát hiện drift toàn diện gần đây
+\end{itemize}
+
+\subsection{Phương pháp dựa trên hiệu suất}
+
+\textbf{Drift Detection Method (DDM) / Early Drift Detection Method (EDDM):}
+\begin{itemize}
+    \item DDM: Mô hình tỷ lệ lỗi như biến nhị thức, kích hoạt trên độ lệch thống kê
+    \item EDDM: Tập trung vào khoảng cách giữa các lỗi liên tiếp để phát hiện drift dần dần
+    \item RDDM: Phiên bản cải tiến với độ nhạy được cải thiện
+\end{itemize}
+
+\textbf{Hoeffding Drift Detection Methods (HDDM_A, HDDM_W):}
+\begin{itemize}
+    \item Sử dụng giới hạn Hoeffding để phát hiện thay đổi
+    \item HDDM_W kết hợp trọng số cho các quan sát gần đây
+\end{itemize}
+
+\subsection{Phương pháp dựa trên phân phối dữ liệu}
+
+\textbf{Các độ đo khoảng cách thống kê:}
+\begin{itemize}
+    \item Kullback-Leibler divergence
+    \item Wasserstein distance  
+    \item Maximum Mean Discrepancy (MMD)
+    \item Jensen-Shannon divergence
+\end{itemize}
+
+\subsection{Phương pháp ensemble và neural network}
+
+\textbf{Các phương pháp tiên tiến hiện tại:}
+\begin{itemize}
+    \item Deep learning representations (DriftLens)
+    \item Adversarial domain adaptation
+    \item Uncertainty-based detection (UDD, PUDD)
+    \item Hybrid transformer-autoencoder frameworks
+\end{itemize}
+
+Các phương pháp tiên tiến này cung cấp độ nhạy vượt trội, khả năng thời gian thực và độ bền vững so với các phương pháp thống kê truyền thống.
+
+\section{Taxonomy phương pháp dựa trên cửa sổ}
+
+Các detector dựa trên cửa sổ vẫn là nền tảng cho giám sát drift thời gian thực. Chúng được chia thành bốn họ chính: cố định, thích ứng, có trọng số, và đa cửa sổ.
+
+\subsection{Cửa sổ trượt kích thước cố định}
+\begin{itemize}
+    \item Duy trì một cửa sổ duy nhất có độ dài n
+    \item So sánh tỷ lệ lỗi hoặc phân phối trong cửa sổ hiện tại với ngưỡng lịch sử
+    \item Ví dụ: Sliding Window Change Detector cơ bản, FHDDM
+\end{itemize}
+
+\subsection{Cửa sổ thích ứng (kích thước biến đổi)}
+\begin{itemize}
+    \item Tự động mở rộng hoặc thu nhỏ cửa sổ để duy trì giới hạn tin cậy mong muốn về lỗi
+    \item Khi kiểm định thống kê không phát hiện drift, cửa sổ mở rộng
+    \item Khi phát hiện drift, dữ liệu cũ nhất bị loại bỏ
+    \item Ví dụ: ADWIN (ADaptive WINdow)
+\end{itemize}
+
+\subsection{Cửa sổ có trọng số}
+\begin{itemize}
+    \item Áp dụng trọng số cao hơn cho các instance gần đây
+    \item Ví dụ: MDDM với các biến thể MDDM-A, MDDM-G, MDDM-E
+    \item Sử dụng bất đẳng thức McDiarmid để so sánh trung bình có trọng số
+\end{itemize}
+
+\subsection{Đa cửa sổ và đa cửa sổ trượt}
+\begin{itemize}
+    \item Duy trì nhiều cửa sổ chồng chéo với độ dài khác nhau
+    \item Sử dụng cửa sổ "tham chiếu" vs "phát hiện" 
+    \item Nắm bắt hành vi ngắn hạn và dài hạn
+    \item Ví dụ: Multi-Sliding Window để nhận dạng loại drift
+\end{itemize}
+
 \section{Ghi chú biên tập}
 Các mục tài liệu tham khảo dưới đây được rút ra từ các tệp PDF bạn đã cung cấp. Bạn có thể chuyển chúng sang Bib\TeX\ chính thức (với DOI/venue) trong bước biên tập cuối cùng của luận văn.
