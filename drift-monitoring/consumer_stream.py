@@ -2,13 +2,22 @@ import json, os, time, csv
 from collections import deque
 import numpy as np
 from confluent_kafka import Consumer, Producer
-from consumer_shapedd import shape_adaptive
+import sys
+from pathlib import Path
+
+# Make experiments/backup importable for shape_dd
+REPO_ROOT = Path(__file__).resolve().parents[1]
+SHAPE_DD_DIR = REPO_ROOT / "experiments" / "backup"
+if str(SHAPE_DD_DIR) not in sys.path:
+    sys.path.append(str(SHAPE_DD_DIR))
+
+from shape_dd import shape
 
 BROKERS = os.getenv("BROKERS", "localhost:19092")
 TOPIC = os.getenv("TOPIC", "sensor.stream")
 GROUP_ID = os.getenv("GROUP_ID", "shapedd-detector")
-BATCH_SIZE = int(os.getenv("BATCH_SIZE", "250"))
-DRIFT_THRESHOLD = float(os.getenv("DRIFT_THRESHOLD", "0.05"))
+BUFFER_SIZE = int(os.getenv("BUFFER_SIZE", "10000"))  # Process every 10k samples
+CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "250"))     # Batch size for shape algorithm
 DRIFT_PVALUE = float(os.getenv("DRIFT_PVALUE", "0.05"))
 RESULT_TOPIC = os.getenv("RESULT_TOPIC", "drift.results")
 
@@ -24,13 +33,15 @@ def main():
     p = Producer({'bootstrap.servers': BROKERS})
     c.subscribe([TOPIC])
 
-    print(f"[shapedd-batch] Brokers={BROKERS} Topic={TOPIC} Group={GROUP_ID} Batch={BATCH_SIZE} Th={DRIFT_THRESHOLD} alpha={DRIFT_PVALUE}")
+    print(f"[shapedd] Brokers={BROKERS} Topic={TOPIC} Group={GROUP_ID} Buffer={BUFFER_SIZE} Chunk={CHUNK_SIZE} alpha={DRIFT_PVALUE}")
     # Prepare CSV log for visualization
     csv_path = os.getenv("SHAPEDD_LOG", "shapedd_batches.csv")
     csv_file = open(csv_path, "w", newline="")
     csv_writer = csv.writer(csv_file)
-    csv_writer.writerow(["batch_end_idx", "score", "p_min", "drift", "batch_size", "est_change_idx"])
-    buf = []
+    csv_writer.writerow(["detection_idx", "p_value", "drift", "buffer_end_idx"])
+    
+    buffer = []  # Accumulate 10k samples
+    sample_count = 0
     try:
         while True:
             msg = c.poll(1.0)
@@ -45,31 +56,61 @@ def main():
                 idx = data.get("idx", -1)
                 if not x_vec:
                     continue
-                buf.append(x_vec)
-                if len(buf) >= BATCH_SIZE:
-                    X = np.asarray(buf, dtype=float)
-                    # Align with experiment: l1=50, l2=BATCH_SIZE, n_perm=2500
-                    res = shape_adaptive(X, 50, BATCH_SIZE, 2500)
-                    # Use p-value rule (col 1): drift if min p-value < alpha
-                    peak_vals = res[:, 0]
-                    p_vals = res[:, 1]
-                    peak_pos = int(np.argmax(peak_vals))
-                    p_min_pos = int(np.argmin(p_vals))
-                    score = float(peak_vals[peak_pos])
-                    p_min = float(p_vals[p_min_pos])
-                    drift = p_min < DRIFT_PVALUE
-                    status = "DRIFT" if drift else "ok"
-                    # Map estimated change point to stream index using p_min location
-                    est_change_idx = int(idx - (BATCH_SIZE - 1) + p_min_pos)
-                    print(f"[shapedd-batch] idx={idx} n={len(buf)} score={score:.4f} p_min={p_min:.4g} status={status} est_cp={est_change_idx}")
-                    # Write batch summary for plotting
-                    csv_writer.writerow([idx, score, p_min, int(drift), len(buf), est_change_idx])
-                    csv_file.flush()
-                    # Emit to Kafka result topic for Console visualization
-                    out = {"batch_end_idx": idx, "score": score, "p_min": p_min, "alpha": DRIFT_PVALUE, "drift": bool(drift), "batch_size": len(X), "est_change_idx": est_change_idx, "ts": time.time()}
-                    p.produce(RESULT_TOPIC, json.dumps(out).encode("utf-8"))
-                    p.poll(0)
-                    buf.clear()
+                    
+                buffer.append({"idx": idx, "x": x_vec})
+                sample_count += 1
+                
+                # Process every BUFFER_SIZE samples (like experiment processes full dataset)
+                if len(buffer) >= BUFFER_SIZE:
+                    print(f"[shapedd] Processing buffer of {len(buffer)} samples...")
+                    
+                    # Extract data matrix
+                    X = np.array([item["x"] for item in buffer], dtype=float)
+                    indices = np.array([item["idx"] for item in buffer])
+                    
+                    # Run shape on entire buffer (like experiment)
+                    shp_full = shape(X, 50, CHUNK_SIZE, 2500)
+                    
+                    # Create batches like experiment
+                    n_samples = len(X)
+                    batches = []
+                    for i in range(0, n_samples - CHUNK_SIZE + 1, CHUNK_SIZE):
+                        batch_indices = np.arange(i, min(i + CHUNK_SIZE, n_samples))
+                        batches.append(batch_indices)
+                    
+                    # Process each batch and check for drift
+                    for b in batches:
+                        # Extract p-values for this batch (column 2 in ConceptDrift_Pipeline!)
+                        batch_pvals = shp_full[b, 2]  # Column 2 contains p-values
+                        p_min = float(batch_pvals.min())
+                        drift = p_min < DRIFT_PVALUE
+                        
+                        if drift:
+                            # Find detection position (argmin of p-values within batch)
+                            det_pos_in_batch = int(np.argmin(batch_pvals))
+                            det_idx = indices[b[det_pos_in_batch]]  # Map to original stream index
+                            
+                            status = "DRIFT"
+                            print(f"[shapedd] DRIFT detected at idx={det_idx} p_min={p_min:.6f}")
+                            
+                            # Log detection
+                            csv_writer.writerow([det_idx, p_min, 1, indices[-1]])
+                            csv_file.flush()
+                            
+                            # Emit to Kafka
+                            out = {
+                                "detection_idx": int(det_idx),
+                                "p_value": p_min,
+                                "alpha": DRIFT_PVALUE,
+                                "drift": True,
+                                "buffer_end_idx": int(indices[-1]),
+                                "ts": time.time()
+                            }
+                            p.produce(RESULT_TOPIC, json.dumps(out).encode("utf-8"))
+                            p.poll(0)
+                    
+                    print(f"[shapedd] Processed {len(batches)} batches from buffer")
+                    buffer.clear()
             except Exception as e:
                 print(f"[shapedd-batch] processing error: {e}")
     except KeyboardInterrupt:

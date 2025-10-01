@@ -1,11 +1,29 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Config
-BROKERS_HOST=${BROKERS:-localhost:19092}
-TOPIC=${TOPIC:-sensor.stream}
+# Default environment variables
+export BROKERS=${BROKERS:-localhost:19092}
+export TOPIC=${TOPIC:-sensor.stream}
+export BUFFER_SIZE=${BUFFER_SIZE:-10000}
+export CHUNK_SIZE=${CHUNK_SIZE:-250}
+export DRIFT_PVALUE=${DRIFT_PVALUE:-0.05}
+export RESULT_TOPIC=${RESULT_TOPIC:-drift.results}
+export SHAPEDD_LOG=${SHAPEDD_LOG:-shapedd_batches.csv}
 
-echo "[deploy] Starting docker services..."
+# Config for internal use
+BROKERS_HOST="$BROKERS"
+
+echo "[deploy] Environment:"
+echo "  BROKERS=$BROKERS"
+echo "  TOPIC=$TOPIC"
+echo "  BUFFER_SIZE=$BUFFER_SIZE"
+echo "  CHUNK_SIZE=$CHUNK_SIZE"
+echo "  DRIFT_PVALUE=$DRIFT_PVALUE"
+echo "  RESULT_TOPIC=$RESULT_TOPIC"
+echo "  SHAPEDD_LOG=$SHAPEDD_LOG"
+
+echo "[deploy] Restarting docker services..."
+docker compose down 2>/dev/null || true
 docker compose up -d
 
 echo "[deploy] Waiting for Redpanda to be healthy..."

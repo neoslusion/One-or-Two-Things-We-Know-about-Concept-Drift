@@ -11,7 +11,7 @@ if str(GEN_DATA_DIR) not in sys.path:
 
 from gen_data import gen_random
 
-BROKERS = os.getenv("BROKERS", "localhost:9092")
+BROKERS = os.getenv("BROKERS", "localhost:19092")
 TOPIC = os.getenv("TOPIC", "sensor.stream")
 
 
