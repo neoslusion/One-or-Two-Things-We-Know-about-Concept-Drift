@@ -28,48 +28,92 @@ def shape(X, l1, l2, n_perm):
     return res
 
 def shape_adaptive(X, l1, l2, n_perm):
+    """
+    Adaptive Shape Drift Detector with improved bandwidth selection and peak filtering.
+    
+    Improvements over baseline shape():
+    1. Data-driven bandwidth selection using Scott's rule
+    2. Adaptive smoothing based on window size and noise estimation
+    3. Statistical peak filtering to reduce false positives
+    
+    Parameters
+    ----------
+    X : ndarray of shape (n_samples, n_features)
+        Input data stream
+    l1 : int
+        Half-window size for drift detection
+    l2 : int
+        Window size for MMD computation
+    n_perm : int
+        Number of permutations for statistical test
+        
+    Returns
+    -------
+    res : ndarray of shape (n_samples, 3)
+        Column 0: Shape statistic value at detected peaks
+        Column 1: MMD p-value
+        Column 2: Always 1 (compatibility)
+    """
     w = np.array(l1*[1.]+l1*[-1.]) / float(l1)
     
     n = X.shape[0]
-    distances = pairwise_distances(X[:min(1000, n)], metric='euclidean')
-
-    # CHANGE 1: Make kernel bandwidth more conservative (less restrictive)
-    # median_dist = np.median(distances[distances > 0])
-    # gamma = 1.0 / (2 * median_dist**2) if median_dist > 0 else 1.0
-
-    # CHANGE 2: Use 75th percentile distance instead of median (larger bandwidth = more sensitive)
-    # percentile_75_dist = np.percentile(distances[distances > 0], 50)
-    # gamma = 1.0 / (4 * percentile_75_dist**2) if percentile_75_dist > 0 else 'scale'
-
-    # CHANGE 3:
-    distances_flat = distances[distances > 0]
-    percentile_dist = np.percentile(distances_flat, 75)
-    gamma = 1.0 / (15 * percentile_dist**2) if percentile_dist > 0 else 0.05
+    
+    # Adaptive bandwidth selection using Scott's rule
+    # Scott's rule: sigma = std * n^(-1/(d+4))
+    n_sample = min(1000, n)
+    X_sample = X[:n_sample]
+    d = X.shape[1]
+    
+    # Calculate data-driven bandwidth
+    data_std = np.std(X_sample, axis=0).mean()
+    if data_std > 0:
+        # Scott's rule for bandwidth selection
+        scott_factor = (n_sample ** (-1.0 / (d + 4)))
+        sigma = data_std * scott_factor
+        gamma = 1.0 / (2 * sigma**2)
+    else:
+        # Fallback: use median distance heuristic
+        distances = pairwise_distances(X_sample, metric='euclidean')
+        distances_flat = distances[distances > 0]
+        if len(distances_flat) > 0:
+            median_dist = np.median(distances_flat)
+            gamma = 1.0 / (2 * median_dist**2)
+        else:
+            gamma = 1.0  # Default fallback
     
     K = apply_kernel(X, metric="rbf", gamma=gamma)
-    W = np.zeros( (n-2*l1,n) )
+    W = np.zeros((n-2*l1, n))
     
     for i in range(n-2*l1):
         W[i,i:i+2*l1] = w    
     stat = np.einsum('ij,ij->i', np.dot(W, K), W)
 
-    # Smooth statistic to reduce noise
-    smooth_window = max(5, l1//2)
+    # Adaptive smoothing: reduce window for smaller l1 to maintain responsiveness
+    # Use sqrt scaling instead of linear to avoid over-smoothing
+    smooth_window = max(3, int(np.sqrt(l1)))
     stat_smooth = uniform_filter1d(stat, size=smooth_window, mode='nearest')
 
-    shape = np.convolve(stat_smooth,w)
+    shape = np.convolve(stat_smooth, w)
     shape_prime = shape[1:]*shape[:-1] 
     
     res = np.zeros((n,3))
     res[:,2] = 1
 
-    # Improvement: Peak filtering with prominence
+    # Improved peak filtering with statistical threshold
     potential_peaks = np.where(shape_prime < 0)[0]
+    
+    # Adaptive threshold based on shape distribution
+    # Use mean + k*std where k depends on desired false positive rate
+    # For FPR ~ 0.05, use k = 1.645 (z-score for 95% confidence)
+    shape_mean = np.mean(shape)
+    shape_std = np.std(shape)
+    threshold = shape_mean + 1.645 * shape_std
 
     for pos in potential_peaks:
-        if shape[pos] > 0:
-        # if shape[pos] > (np.std(shape) * 1.5):
+        # Apply statistical threshold to filter noise peaks
+        if shape[pos] > threshold:
             res[pos,0] = shape[pos]
-            a,b = max(0,pos-int(l2/2)),min(n,pos+int(l2/2))
+            a, b = max(0, pos-int(l2/2)), min(n, pos+int(l2/2))
             res[pos,1:] = mmd(X[a:b], pos-a, n_perm)
+    
     return res
