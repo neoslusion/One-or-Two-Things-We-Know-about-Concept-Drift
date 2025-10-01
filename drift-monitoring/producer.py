@@ -22,20 +22,25 @@ def emit(record):
     p.poll(0)
 
 def main():
-    # Generate a full sequence with change points using shared utility
-    n = 10000
-    X, y = gen_random(number=10,  # number of change points
-                      dims=2,     # number of dimensions
-                      intens=0.5, # intensity of drift
-                      dist="unif",# distribution type
-                      alt=True,   # alternating drift
-                      length=n)
+    # Stream forever in randomized segments with drift using gen_random
+    global_idx = 0
+    rng = np.random.default_rng(123)
+    while True:
+        # Randomize segment parameters similar to experiments
+        length = int(rng.integers(3000, 12000))
+        number = int(rng.integers(1, 6))
+        intens = float(rng.uniform(0.1, 0.6))
+        dims = 2
+        dist = "unif"
+        alt = True
+        X, y = gen_random(number=number, dims=dims, intens=intens, dist=dist, alt=alt, length=length)
 
-    for i in range(n):
-        x = X[i]
-        rec = {"ts": time.time(), "idx": i, "x": x.tolist()}
-        emit(rec)
-        time.sleep(0.002)
+        for i in range(length):
+            x = X[i]
+            rec = {"ts": time.time(), "idx": global_idx, "x": x.tolist()}
+            emit(rec)
+            global_idx += 1
+            time.sleep(0.002)
 
     p.flush()
 
