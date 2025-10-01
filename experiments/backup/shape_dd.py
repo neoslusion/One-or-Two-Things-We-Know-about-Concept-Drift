@@ -107,7 +107,7 @@ def shape_adaptive(X, l1, l2, n_perm):
     # For FPR ~ 0.05, use k = 1.645 (z-score for 95% confidence)
     shape_mean = np.mean(shape)
     shape_std = np.std(shape)
-    threshold = shape_mean + 1.645 * shape_std
+    threshold = shape_mean + 0.015 * shape_std
 
     for pos in potential_peaks:
         # Apply statistical threshold to filter noise peaks
