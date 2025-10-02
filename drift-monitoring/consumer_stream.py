@@ -15,7 +15,7 @@ SHAPE_DD_DIR = REPO_ROOT / "experiments" / "backup"
 if str(SHAPE_DD_DIR) not in sys.path:
     sys.path.append(str(SHAPE_DD_DIR))
 
-from shape_dd import shape
+from shape_dd import shape_adaptive as shape
 
 # Allow environment variable overrides
 BROKERS = os.getenv("BROKERS", BROKERS)
