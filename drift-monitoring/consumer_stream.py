@@ -5,6 +5,10 @@ from confluent_kafka import Consumer, Producer
 import sys
 from pathlib import Path
 
+# Import shared configuration
+from config import (BUFFER_SIZE, CHUNK_SIZE, SHAPE_L1, SHAPE_L2, SHAPE_N_PERM, 
+                   DRIFT_PVALUE, BROKERS, TOPIC, GROUP_ID, RESULT_TOPIC, SHAPEDD_LOG)
+
 # Make experiments/backup importable for shape_dd
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SHAPE_DD_DIR = REPO_ROOT / "experiments" / "backup"
@@ -13,13 +17,14 @@ if str(SHAPE_DD_DIR) not in sys.path:
 
 from shape_dd import shape
 
-BROKERS = os.getenv("BROKERS", "localhost:19092")
-TOPIC = os.getenv("TOPIC", "sensor.stream")
-GROUP_ID = os.getenv("GROUP_ID", "shapedd-detector")
-BUFFER_SIZE = int(os.getenv("BUFFER_SIZE", "10000"))  # Process every 10k samples
-CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "250"))     # Batch size for shape algorithm
-DRIFT_PVALUE = float(os.getenv("DRIFT_PVALUE", "0.05"))
-RESULT_TOPIC = os.getenv("RESULT_TOPIC", "drift.results")
+# Allow environment variable overrides
+BROKERS = os.getenv("BROKERS", BROKERS)
+TOPIC = os.getenv("TOPIC", TOPIC)
+GROUP_ID = os.getenv("GROUP_ID", GROUP_ID)
+BUFFER_SIZE = int(os.getenv("BUFFER_SIZE", str(BUFFER_SIZE)))
+CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", str(CHUNK_SIZE)))
+DRIFT_PVALUE = float(os.getenv("DRIFT_PVALUE", str(DRIFT_PVALUE)))
+RESULT_TOPIC = os.getenv("RESULT_TOPIC", RESULT_TOPIC)
 
 def main():
     conf = {
@@ -35,7 +40,7 @@ def main():
 
     print(f"[shapedd] Brokers={BROKERS} Topic={TOPIC} Group={GROUP_ID} Buffer={BUFFER_SIZE} Chunk={CHUNK_SIZE} alpha={DRIFT_PVALUE}")
     # Prepare CSV log for visualization
-    csv_path = os.getenv("SHAPEDD_LOG", "shapedd_batches.csv")
+    csv_path = os.getenv("SHAPEDD_LOG", SHAPEDD_LOG)
     csv_file = open(csv_path, "w", newline="")
     csv_writer = csv.writer(csv_file)
     csv_writer.writerow(["detection_idx", "p_value", "drift", "buffer_end_idx"])
@@ -69,7 +74,7 @@ def main():
                     indices = np.array([item["idx"] for item in buffer])
                     
                     # Run shape on entire buffer (like experiment)
-                    shp_full = shape(X, 50, CHUNK_SIZE, 2500)
+                    shp_full = shape(X, SHAPE_L1, SHAPE_L2, SHAPE_N_PERM)
                     
                     # Create batches like experiment
                     n_samples = len(X)

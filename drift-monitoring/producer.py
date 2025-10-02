@@ -3,6 +3,9 @@ import numpy as np
 from confluent_kafka import Producer
 from pathlib import Path
 
+# Import shared configuration
+from config import BROKERS, TOPIC
+
 # Make experiments/backup importable for gen_random
 REPO_ROOT = Path(__file__).resolve().parents[1]
 GEN_DATA_DIR = REPO_ROOT / "experiments" / "backup"
@@ -11,8 +14,9 @@ if str(GEN_DATA_DIR) not in sys.path:
 
 from gen_data import gen_random
 
-BROKERS = os.getenv("BROKERS", "localhost:19092")
-TOPIC = os.getenv("TOPIC", "sensor.stream")
+# Allow environment variable overrides
+BROKERS = os.getenv("BROKERS", BROKERS)
+TOPIC = os.getenv("TOPIC", TOPIC)
 
 
 p = Producer({"bootstrap.servers": BROKERS})
