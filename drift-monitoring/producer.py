@@ -41,7 +41,8 @@ def main():
 
         for i in range(length):
             x = X[i]
-            rec = {"ts": time.time(), "idx": global_idx, "x": x.tolist()}
+            drift_indicator = int(y[i])  # y is the drift indicator from gen_random
+            rec = {"ts": time.time(), "idx": global_idx, "x": x.tolist(), "drift": drift_indicator}
             emit(rec)
             global_idx += 1
             time.sleep(0.002)
