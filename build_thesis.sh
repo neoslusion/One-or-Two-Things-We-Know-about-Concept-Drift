@@ -261,13 +261,7 @@ main() {
                 ;;
         esac
     done
-    
-    # Header
-    echo "=================================="
-    echo "  Thesis PDF Build Script"
-    echo "=================================="
-    echo ""
-    
+
     # Check if we're in the right directory
     if [ ! -d "$LATEX_DIR" ]; then
         print_error "LaTeX directory '$LATEX_DIR' not found!"
