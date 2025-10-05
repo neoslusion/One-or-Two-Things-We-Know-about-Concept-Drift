@@ -58,6 +58,7 @@ def shape_adaptive(X, l1, l2, n_perm):
     
     n = X.shape[0]
     
+    # IMPROVEMENT 1: GAMMA CHOICE BASE ON DATA
     # Adaptive bandwidth selection using Scott's rule
     # Scott's rule: sigma = std * n^(-1/(d+4))
     n_sample = min(1000, n)
@@ -88,6 +89,7 @@ def shape_adaptive(X, l1, l2, n_perm):
         W[i,i:i+2*l1] = w    
     stat = np.einsum('ij,ij->i', np.dot(W, K), W)
 
+    # IMPROVEMENT 2: SMOOTHING THE DRIFT POINTS
     # Adaptive smoothing: reduce window for smaller l1 to maintain responsiveness
     # Use sqrt scaling instead of linear to avoid over-smoothing
     smooth_window = max(3, int(np.sqrt(l1)))
@@ -99,6 +101,7 @@ def shape_adaptive(X, l1, l2, n_perm):
     res = np.zeros((n,3))
     res[:,2] = 1
 
+    # IMPROVEMENT 3: THRESHOLD TO FILTER THE LOW VALUES
     # Improved peak filtering with statistical threshold
     potential_peaks = np.where(shape_prime < 0)[0]
     
@@ -107,13 +110,52 @@ def shape_adaptive(X, l1, l2, n_perm):
     # For FPR ~ 0.05, use k = 1.645 (z-score for 95% confidence)
     shape_mean = np.mean(shape)
     shape_std = np.std(shape)
-    threshold = shape_mean + 0.015 * shape_std
+    # Scale threshold with log(n) to control FPR
+    log_n_factor = np.log(max(n/1000, 1))
+    # threshold = shape_mean + (0.05 + 0.02 * log_n_factor) * shape_std
+    threshold = shape_mean + (0.015) * shape_std
+    
+    # Collect all p-values first
+    p_values = []
+    positions = []
 
     for pos in potential_peaks:
         # Apply statistical threshold to filter noise peaks
-        if shape[pos] > threshold:
+        # if shape[pos] > threshold:
+        if shape[pos] > 0:
             res[pos,0] = shape[pos]
             a, b = max(0, pos-int(l2/2)), min(n, pos+int(l2/2))
             res[pos,1:] = mmd(X[a:b], pos-a, n_perm)
+            _, p_val = mmd(X[a:b], pos-a, n_perm)
+            p_values.append(p_val)
+            positions.append(pos)
+    
+    # IMPROVEMENT 4: APPLY BENJAMI HOCHBERG TO LOWER FPR
+    # TODO: Uncomment to enable FDR correction
+    # Apply FDR correction
+    # if len(p_values) > 0:
+    #     p_values = np.array(p_values)
+    #     significant_indices = benjamini_hochberg_correction(p_values, alpha=0.05)
+        
+    #     for idx in significant_indices:
+    #         pos = positions[idx]
+    #         res[pos,0] = shape[pos]
+    #         res[pos,1] = p_values[idx]
     
     return res
+
+def benjamini_hochberg_correction(p_values, alpha=0.05):
+    """Benjamini-Hochberg FDR control"""
+    
+    sorted_indices = np.argsort(p_values)
+    sorted_p = p_values[sorted_indices]
+    m = len(p_values)
+    
+    # Find largest k such that P(k) <= (k/m) * alpha
+    for k in range(m-1, -1, -1):
+        if sorted_p[k] <= (k+1) / m * alpha:
+            # Reject hypotheses 0, 1, ..., k
+            significant_indices = sorted_indices[:k+1]
+            return significant_indices
+    
+    return np.array([])  # No rejections
