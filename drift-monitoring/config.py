@@ -4,7 +4,7 @@ Ensures consistency across all components.
 """
 
 # Buffer and batch settings
-BUFFER_SIZE = 10000  # Process every 10k samples as specified
+BUFFER_SIZE = 1000   # Process every 1k samples as specified
 CHUNK_SIZE = 250     # Batch size for shape algorithm
 WINDOW_SIZE = 200    # For sliding window methods (if needed)
 

@@ -9,6 +9,10 @@ from pathlib import Path
 from config import (BUFFER_SIZE, CHUNK_SIZE, SHAPE_L1, SHAPE_L2, SHAPE_N_PERM, 
                    DRIFT_PVALUE, BROKERS, TOPIC, GROUP_ID, RESULT_TOPIC, SHAPEDD_LOG)
 
+# Snapshot directory for saving drift windows
+SNAPSHOT_DIR = Path(os.getenv("SNAPSHOT_DIR", "./snapshots"))
+SNAPSHOT_DIR.mkdir(parents=True, exist_ok=True)
+
 # Make experiments/backup importable for shape_dd
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SHAPE_DD_DIR = REPO_ROOT / "experiments" / "backup"
@@ -84,6 +88,7 @@ def main():
                         batches.append(batch_indices)
                     
                     # Process each batch and check for drift
+                    detection_count = 0
                     for b in batches:
                         # Extract p-values for this batch (column 2 in ConceptDrift_Pipeline!)
                         batch_pvals = shp_full[b, 2]  # Column 2 contains p-values
@@ -102,19 +107,40 @@ def main():
                             csv_writer.writerow([det_idx, p_min, 1, indices[-1]])
                             csv_file.flush()
                             
-                            # Emit to Kafka
+                            # Save drift window snapshot for adaptor
+                            snapshot_filename = f"drift_window_{det_idx}_{int(time.time())}.npz"
+                            snapshot_path = SNAPSHOT_DIR / snapshot_filename
+                            
+                            # Extract window around drift point (use batch data)
+                            window_X = X[b]
+                            window_indices = indices[b]
+                            
+                            # Save snapshot with feature data (no labels for unsupervised drift detection)
+                            np.savez(
+                                snapshot_path,
+                                X=window_X,
+                                indices=window_indices,
+                                feature_names=np.array([f"f{i}" for i in range(window_X.shape[1])])
+                            )
+                            print(f"[shapedd] Saved snapshot to {snapshot_path}")
+                            
+                            # Emit to Kafka with proper format for adaptor
                             out = {
-                                "detection_idx": int(det_idx),
+                                "event": "drift_detected",
+                                "idx": int(det_idx),
                                 "p_value": p_min,
                                 "alpha": DRIFT_PVALUE,
                                 "drift": True,
+                                "detector": "shapedd",
+                                "window_path": str(snapshot_path),
                                 "buffer_end_idx": int(indices[-1]),
                                 "ts": time.time()
                             }
                             p.produce(RESULT_TOPIC, json.dumps(out).encode("utf-8"))
                             p.poll(0)
+                            detection_count += 1
                     
-                    print(f"[shapedd] Processed {len(batches)} batches from buffer")
+                    print(f"[shapedd] Processed {len(batches)} batches from buffer, {detection_count} drifts detected")
                     buffer.clear()
             except Exception as e:
                 print(f"[shapedd-batch] processing error: {e}")

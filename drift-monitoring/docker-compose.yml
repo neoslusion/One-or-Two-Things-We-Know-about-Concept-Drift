@@ -39,3 +39,25 @@ services:
       - CONSOLE_ALLOW_INSECURE=true
     ports:
       - "8080:8080"
+
+  adaptor:
+    build:
+      context: .
+      dockerfile: Dockerfile.adaptor
+    container_name: adaptor
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    environment:
+      - KAFKA_BOOTSTRAP=redpanda:9092
+      - RESULT_TOPIC=drift.results
+      - MODEL_UPDATED_TOPIC=model.updated
+      - GROUP_ID=adaptor-group
+      - SNAPSHOT_DIR=/data/snapshots
+      - MODEL_PATH=/models/current_model.pkl
+      - TASK_TYPE=classification
+      - ALLOW_UNLABELED_UPDATE=true
+    volumes:
+      - ./snapshots:/data/snapshots
+      - ./models:/models
+    restart: unless-stopped
