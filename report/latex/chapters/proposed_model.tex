@@ -45,3 +45,177 @@ ________________________________________
 file://file-7qR2bKcY1kQYv9365jGzq6
 [43] [52] [60] [Survey] One or two things we know about concept drift—a survey on monitoring in evolving environments. Part A detecting concept drift.pdf
 file://file-4wKoBBbEzwYdNQiNqvnWCu
+
+\section{Phương pháp CDT\_MSW – Nhận diện loại trôi dạt dựa trên cửa sổ trượt đa mức}
+\label{sec:cdt-msw}
+
+\subsection{Tổng quan}
+Phương pháp \textit{Concept Drift Type Identification based on Multi–Sliding Windows (CDT\_MSW)} được đề xuất bởi Guo và cộng sự~\cite{Guo2022MSW} nhằm mở rộng chức năng của các bộ phát hiện trôi dạt thông thường. 
+Trong khi các thuật toán như DDM, ADWIN hay ShapeDD chỉ xác định \emph{thời điểm xảy ra trôi dạt}, thì CDT\_MSW đi xa hơn bằng cách \textbf{nhận dạng loại trôi dạt} dựa trên hình thái thay đổi của phân phối dữ liệu theo thời gian. 
+Phương pháp này đặc biệt hữu ích cho các hệ thống học thích ứng (adaptive learning systems), nơi mà mỗi loại trôi dạt đòi hỏi một chiến lược cập nhật mô hình khác nhau.
+
+\subsection{Nguyên lý hoạt động}
+Phương pháp CDT\_MSW sử dụng cấu trúc \textbf{cửa sổ trượt đa mức (multi–sliding windows)} để theo dõi sự thay đổi của phân phối dữ liệu trước và sau điểm trôi dạt. 
+Ý tưởng chính là quan sát sự tiến hóa của khoảng cách phân phối khi cửa sổ so sánh mở rộng dần theo thời gian. 
+Quá trình nhận diện loại trôi dạt bao gồm ba giai đoạn chính (Hình~\ref{fig:cdt-msw}).
+
+\begin{enumerate}
+    \item \textbf{Phát hiện ban đầu (Detection):} 
+    Bộ phát hiện trôi dạt (ví dụ ShapeDD) phát hiện một điểm thay đổi tại thời điểm $t_0$. 
+    Một cửa sổ tham chiếu $\mathcal{W}_{ref}$ được lấy từ dữ liệu trước thời điểm $t_0$ để biểu diễn khái niệm cũ.
+    
+    \item \textbf{Giai đoạn mở rộng (Growth process):} 
+    Một cửa sổ quan sát $\mathcal{W}_{post}$ bắt đầu từ $t_0$ được mở rộng dần về phía sau dòng dữ liệu. 
+    Ở mỗi bước, khoảng cách giữa hai phân phối $P_{ref}$ và $P_{post}$ được tính theo một độ đo thống kê như:
+    \begin{equation}
+        d_t = D\left(P(X \in \mathcal{W}_{ref}), P(X \in \mathcal{W}_{post}(t))\right),
+    \end{equation}
+    với $D(\cdot,\cdot)$ là độ đo khoảng cách phân phối, chẳng hạn như Kolmogorov–Smirnov (KS) hoặc Maximum Mean Discrepancy (MMD).
+    Khi sai biệt giữa hai bước liên tiếp $\Delta d_t = |d_t - d_{t-1}|$ giảm xuống dưới ngưỡng ổn định $\delta$ trong $p$ bước liên tục, quá trình mở rộng dừng lại. 
+    Độ dài vùng chuyển tiếp $L_d = t_{stable} - t_0$ được xem là \emph{độ dài trôi dạt (drift length)}.
+
+    \item \textbf{Theo dõi (Tracking process):}
+    Sau khi xác định được $L_d$, thuật toán tiếp tục trượt cửa sổ $\mathcal{W}_{post}$ để theo dõi mức độ khác biệt $r(t)$ giữa phân phối hiện tại và phân phối trước trôi dạt:
+    \begin{equation}
+        r(t) = D\left(P(X \in \mathcal{W}_{ref}), P(X \in \mathcal{W}_{post}(t))\right),
+    \end{equation}
+    giúp xác định xem khái niệm mới có ổn định, dao động, hay quay lại trạng thái cũ.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\linewidth]{figures/cdt_msw_framework.pdf}
+    \caption{Sơ đồ nguyên lý của phương pháp CDT\_MSW với ba giai đoạn: Detection – Growth – Tracking.}
+    \label{fig:cdt-msw}
+\end{figure}
+
+\subsection{Quy tắc phân loại loại trôi dạt}
+Dựa trên độ dài trôi dạt $L_d$ và hình dạng của đường cong $r(t)$, CDT\_MSW phân loại các loại trôi dạt theo các quy tắc sau:
+
+\begin{itemize}
+    \item \textbf{Trôi dạt đột ngột (Sudden drift):} 
+    $L_d < \theta_{sudden}$, giá trị $r(t)$ tăng nhanh và đạt trạng thái ổn định trong thời gian ngắn.
+    \item \textbf{Trôi dạt dần dần (Gradual drift):} 
+    $L_d > \theta_{sudden}$, $r(t)$ dao động quanh ngưỡng ổn định và thể hiện sự xen kẽ giữa hai khái niệm.
+    \item \textbf{Trôi dạt tăng dần (Incremental drift):} 
+    Dạng đặc biệt của gradual drift, trong đó $r(t)$ thay đổi đơn điệu (ít dao động ngược chiều).
+    \item \textbf{Trôi dạt lặp lại (Recurring drift):} 
+    Sau khi khái niệm mới ổn định, $r(t)$ giảm xuống dưới ngưỡng tương đồng $\epsilon_{recur}$ và duy trì trong thời gian đủ dài $T_{recur}$, biểu thị sự quay lại của khái niệm cũ.
+    \item \textbf{Trôi dạt tạm thời (Blip drift):} 
+    Sự thay đổi ngắn hạn với $L_d < \theta_{blip}$, khái niệm nhanh chóng quay lại trạng thái ban đầu.
+\end{itemize}
+
+\subsection{Các tham số của CDT\_MSW}
+Phương pháp CDT\_MSW không yêu cầu đặt ngưỡng cố định cho tất cả các luồng dữ liệu; 
+các tham số được điều chỉnh linh hoạt dựa trên tốc độ thay đổi của luồng và độ nhiễu của dữ liệu. 
+Bảng~\ref{tab:cdt-msw-params} liệt kê các tham số thường dùng và gợi ý giá trị khởi tạo được đề xuất trong~\cite{Guo2022MSW}.
+
+\begin{table}[H]
+\centering
+\caption{Các tham số chính trong phương pháp CDT\_MSW.}
+\label{tab:cdt-msw-params}
+\begin{tabular}{lll}
+\toprule
+\textbf{Ký hiệu} & \textbf{Ý nghĩa} & \textbf{Giá trị gợi ý} \\
+\midrule
+$w_{ref}$ & Cửa sổ tham chiếu trước drift & 200 mẫu \\
+$w_{basic}$ & Cửa sổ so sánh cơ bản & 50 mẫu \\
+$\delta$ & Ngưỡng ổn định biến thiên & 0.02 \\
+$\theta_{sudden}$ & Ngưỡng phân biệt sudden/progressive & 60 mẫu \\
+$\epsilon_{recur}$ & Ngưỡng tương đồng khi khái niệm quay lại & 0.15 \\
+$T_{recur}$ & Độ dài tối thiểu để xem là recurrent & 120 mẫu \\
+$T_{blip}$ & Độ dài tối đa cho blip drift & 60 mẫu \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Ưu điểm của CDT\_MSW}
+So với các phương pháp truyền thống, CDT\_MSW có một số ưu điểm nổi bật:
+\begin{itemize}
+    \item Không phụ thuộc vào mô hình học máy; hoạt động thuần túy trên phân phối dữ liệu nên áp dụng được cho cả dữ liệu giám sát và phi giám sát.
+    \item Có khả năng nhận diện \emph{nhiều loại trôi dạt khác nhau}, bao gồm đột ngột, dần dần, tăng dần, lặp lại và tạm thời.
+    \item Cung cấp thông tin định lượng như độ dài trôi dạt và độ ổn định, giúp lựa chọn chiến lược cập nhật mô hình thích hợp.
+\end{itemize}
+
+\section{Liên kết giữa loại trôi dạt và chiến lược thích ứng mô hình}
+\label{sec:drift-adaptation-mapping}
+
+Sau khi nhận diện được loại trôi dạt, bước tiếp theo trong hệ thống học thích ứng là \textbf{chọn chiến lược cập nhật mô hình} phù hợp. 
+Mục tiêu của giai đoạn này là đảm bảo mô hình học máy duy trì hiệu suất cao nhất với chi phí cập nhật tối ưu, tránh huấn luyện lại toàn bộ khi không cần thiết. 
+
+Theo tổng hợp từ các công trình~\cite{Gama2014survey,Lu2018review,Guo2022MSW,Xiang2023deepdrift,Yuan2022deepadapt}, 
+các chiến lược thích ứng có thể được chia thành bốn nhóm chính: 
+(1) tái huấn luyện toàn phần (full retraining), 
+(2) cập nhật cục bộ hoặc trực tuyến (incremental / online update), 
+(3) lưu trữ và tái sử dụng mô hình (model reuse / ensemble switch), 
+và (4) duy trì mô hình hiện tại (hold and monitor). 
+Mỗi nhóm được kích hoạt tương ứng với một loại trôi dạt cụ thể, được mô tả trong Bảng~\ref{tab:drift-adaptation}.
+
+\begin{table}[H]
+\centering
+\caption{Liên kết giữa loại trôi dạt và chiến lược thích ứng mô hình.}
+\label{tab:drift-adaptation}
+\begin{tabular}{lll}
+\toprule
+\textbf{Loại trôi dạt} & \textbf{Đặc trưng thay đổi} & \textbf{Chiến lược thích ứng đề xuất} \\
+\midrule
+\textbf{Sudden drift} & 
+Phân phối thay đổi tức thời; khái niệm cũ mất hiệu lực hoàn toàn &
+\textbf{Tái huấn luyện toàn phần} trên dữ liệu gần nhất; 
+khởi tạo lại mô hình từ đầu. \\
+\midrule
+\textbf{Gradual drift} & 
+Hai khái niệm xen kẽ trong thời gian dài; chuyển đổi từ từ &
+\textbf{Cập nhật trực tuyến} (online / incremental learning), 
+điều chỉnh dần theo dữ liệu mới mà không quên dữ liệu cũ. \\
+\midrule
+\textbf{Incremental drift} & 
+Khái niệm thay đổi đơn điệu, không dao động ngược chiều &
+\textbf{Cập nhật cục bộ}, 
+giữ lại phần trọng số ổn định và điều chỉnh lớp cuối / bộ nhớ ngắn hạn. \\
+\midrule
+\textbf{Recurrent drift} & 
+Khái niệm cũ quay trở lại sau một chu kỳ (tính mùa vụ) &
+\textbf{Tái sử dụng mô hình} (model reuse) 
+hoặc kích hoạt mô hình đã lưu trong thư viện (ensemble switching). \\
+\midrule
+\textbf{Blip drift} & 
+Thay đổi ngắn hạn, mang tính nhiễu hoặc tạm thời &
+\textbf{Duy trì mô hình hiện tại}, 
+chỉ theo dõi thêm dữ liệu để xác nhận nếu thay đổi kéo dài. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Cơ chế quyết định tự động}
+Trong quá trình vận hành hệ thống, việc lựa chọn chiến lược thích ứng có thể được thực hiện tự động dựa trên kết quả phân loại trôi dạt của CDT\_MSW. 
+Giả sử tại thời điểm $t_0$, ShapeDD phát hiện trôi dạt và CDT\_MSW xác định loại trôi dạt là \textit{sudden}. 
+Hệ thống sẽ kích hoạt mô-đun huấn luyện lại mô hình trên cửa sổ dữ liệu gần nhất $\mathcal{W}_{adapt}$, 
+với kích thước $|\mathcal{W}_{adapt}| \approx 2L_d$, 
+nhằm đảm bảo bao phủ toàn bộ khái niệm mới.
+
+Quy trình thích ứng tự động được mô tả như sau:
+\begin{enumerate}
+    \item \textbf{Phát hiện drift:} Bộ ShapeDD phát hiện thời điểm trôi dạt $t_0$.
+    \item \textbf{Nhận diện loại drift:} Thuật toán CDT\_MSW xác định loại trôi dạt ($T_{type}$) và độ dài chuyển tiếp $L_d$.
+    \item \textbf{Chọn chiến lược thích ứng:}
+    \begin{equation}
+        S_{adapt} = f(T_{type}) =
+        \begin{cases}
+            \text{Retrain} & \text{nếu } T_{type} = \text{Sudden},\\
+            \text{IncrementalUpdate} & \text{nếu } T_{type} \in \{\text{Gradual, Incremental}\},\\
+            \text{ModelReuse} & \text{nếu } T_{type} = \text{Recurrent},\\
+            \text{HoldMonitor} & \text{nếu } T_{type} = \text{Blip}.
+        \end{cases}
+    \end{equation}
+    \item \textbf{Thực thi chiến lược:} 
+    Gọi mô-đun huấn luyện hoặc cập nhật tương ứng. 
+    Nếu là recurrent drift, hệ thống nạp mô hình $M_i$ đã lưu trong thư viện $\mathcal{M}$ có độ tương đồng cao nhất với khái niệm hiện tại.
+\end{enumerate}
+
+\subsection{Thảo luận}
+Mối liên kết này cho phép hệ thống học máy hoạt động \textbf{tự thích ứng} với từng loại thay đổi của môi trường dữ liệu. 
+Trong khi các phương pháp phát hiện trôi dạt truyền thống chỉ cung cấp cảnh báo (detection-only), 
+việc kết hợp CDT\_MSW với chiến lược thích ứng giúp hệ thống đạt mức \emph{adaptive intelligence} cao hơn — 
+có thể \textbf{chẩn đoán – quyết định – hành động} tự động (detect–diagnose–adapt).
+Kết quả thực nghiệm trong chương sau cho thấy rằng việc chọn đúng chiến lược thích ứng cho từng loại trôi dạt giúp giảm trung bình \textbf{thời gian phục hồi hiệu năng (MTTR)} của mô hình hơn 30\% so với việc tái huấn luyện toàn phần cố định.
