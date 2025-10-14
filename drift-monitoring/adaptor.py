@@ -29,6 +29,13 @@ TASK_TYPE = os.getenv("TASK_TYPE", "classification")  # "classification" | "regr
 # Nếu muốn bỏ qua update khi snapshot không có nhãn:
 ALLOW_UNLABELED_UPDATE = os.getenv("ALLOW_UNLABELED_UPDATE", "false").lower() == "true"
 
+# Drift-type-specific adaptation
+ENABLE_DRIFT_TYPE_ADAPTATION = os.getenv("ENABLE_DRIFT_TYPE_ADAPTATION", "true").lower() == "true"
+
+# Model cache directory for recurring drift
+MODEL_CACHE_DIR = Path(os.getenv("MODEL_CACHE_DIR", "./models/cache"))
+MODEL_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+
 # ------------------ utils ------------------
 
 def log(msg: str):
@@ -86,6 +93,150 @@ def learn_many(model, X: np.ndarray, y: Optional[np.ndarray], feature_names: Opt
     for xi, yi in zip(Xrecs, y):
         model = model.learn_one(xi, yi)
     return model
+
+
+def adapt_sudden_drift(model, X: np.ndarray, y: Optional[np.ndarray], feature_names: Optional[List[str]] = None):
+    """
+    Strategy for SUDDEN drift: Full model reset and retrain.
+
+    Sudden drift indicates abrupt change - best to start fresh.
+    """
+    log("Strategy: SUDDEN drift → Full model reset and retrain")
+
+    # Create fresh model
+    new_model = make_model()
+
+    # Warm start with drift window data
+    if y is not None:
+        new_model = learn_many(new_model, X, y, feature_names)
+        log(f"  Retrained on {len(X)} samples from drift window")
+    elif ALLOW_UNLABELED_UPDATE:
+        # Unsupervised: at least update scaler
+        new_model = learn_many(new_model, X, y, feature_names)
+        log(f"  Updated scaler with {len(X)} unlabeled samples")
+
+    return new_model
+
+
+def adapt_incremental_drift(model, X: np.ndarray, y: Optional[np.ndarray], feature_names: Optional[List[str]] = None):
+    """
+    Strategy for INCREMENTAL drift: Continue gradual online updates.
+
+    Incremental drift is monotonic and progressive - keep existing model and adapt gradually.
+    """
+    log("Strategy: INCREMENTAL drift → Gradual online updates (maintain model)")
+
+    # Continue incremental learning with existing model
+    model = learn_many(model, X, y, feature_names)
+    log(f"  Applied incremental updates with {len(X)} samples")
+
+    return model
+
+
+def adapt_gradual_drift(model, X: np.ndarray, y: Optional[np.ndarray], feature_names: Optional[List[str]] = None):
+    """
+    Strategy for GRADUAL drift: Weighted updates with sample decay.
+
+    Gradual drift is non-monotonic with oscillations - use weighted learning.
+    """
+    log("Strategy: GRADUAL drift → Weighted updates (recent samples prioritized)")
+
+    if y is None and not ALLOW_UNLABELED_UPDATE:
+        log("  No labels and unlabeled update disabled - skipping")
+        return model
+
+    # Apply weights: more recent samples get higher weight
+    n = len(X)
+    Xrecs = _to_records(X, feature_names)
+
+    if y is not None:
+        # Supervised: use weighted learning
+        # Simple linear weighting: earlier samples get lower weight
+        for i, (xi, yi) in enumerate(zip(Xrecs, y)):
+            weight = (i + 1) / n  # 0.0 to 1.0
+            # River doesn't directly support sample weights in learn_one
+            # Approximation: repeat recent samples more
+            if weight > 0.5:  # Focus on recent half
+                model = model.learn_one(xi, yi)
+        log(f"  Applied weighted updates focusing on recent {n//2} samples")
+    else:
+        # Unsupervised: update scaler with all samples
+        model = learn_many(model, X, y, feature_names)
+        log(f"  Updated scaler with {n} samples")
+
+    return model
+
+
+def adapt_recurrent_drift(model, X: np.ndarray, y: Optional[np.ndarray],
+                          feature_names: Optional[List[str]] = None,
+                          drift_idx: Optional[int] = None):
+    """
+    Strategy for RECURRENT drift: Use cached model if pattern repeats.
+
+    Recurrent drift means return to previous distribution - try to reuse old models.
+    """
+    log("Strategy: RECURRENT drift → Check for cached model")
+
+    # For now, simple implementation: check if we have any cached models
+    # In production, you'd implement pattern matching (e.g., using distribution similarity)
+
+    cached_models = list(MODEL_CACHE_DIR.glob("model_*.pkl"))
+
+    if cached_models and y is not None:
+        # TODO: Implement pattern matching to find best cached model
+        # For now, use most recent cache
+        latest_cache = max(cached_models, key=lambda p: p.stat().st_mtime)
+        log(f"  Found cached model: {latest_cache.name}")
+
+        try:
+            with open(latest_cache, "rb") as f:
+                cached_model = pickle.load(f)
+
+            # Fine-tune cached model with current drift window
+            cached_model = learn_many(cached_model, X, y, feature_names)
+            log(f"  Loaded cached model and fine-tuned with {len(X)} samples")
+            return cached_model
+
+        except Exception as e:
+            err(f"  Failed to load cached model: {e}")
+
+    # Fallback: treat as incremental if no suitable cache
+    log("  No suitable cached model found → fallback to incremental update")
+    return adapt_incremental_drift(model, X, y, feature_names)
+
+
+def adapt_blip_drift(model, X: np.ndarray, y: Optional[np.ndarray], feature_names: Optional[List[str]] = None):
+    """
+    Strategy for BLIP: Ignore or minimal update.
+
+    Blip is a very short temporary anomaly - likely noise, don't overreact.
+    """
+    log("Strategy: BLIP drift → Minimal update (likely temporary noise)")
+
+    # Option 1: Completely ignore
+    # return model
+
+    # Option 2: Very conservative update (only if labeled)
+    if y is not None:
+        # Only update with small subset to avoid overreaction
+        n_samples = min(5, len(X))
+        model = learn_many(model, X[:n_samples], y[:n_samples], feature_names)
+        log(f"  Conservative update with {n_samples} samples only")
+    else:
+        log("  Ignoring unlabeled blip")
+
+    return model
+
+
+def cache_model(model, drift_idx: int):
+    """Cache current model for potential reuse with recurring drift."""
+    cache_path = MODEL_CACHE_DIR / f"model_{drift_idx}_{int(time.time())}.pkl"
+    try:
+        with open(cache_path, "wb") as f:
+            pickle.dump(model, f)
+        log(f"  Cached model to {cache_path.name}")
+    except Exception as e:
+        err(f"  Failed to cache model: {e}")
 
 def load_snapshot(path: Path):
     """Đọc file .npz snapshot."""
@@ -152,6 +303,7 @@ def main():
     signal.signal(signal.SIGTERM, _stop)
 
     log(f"Listening events from topic '{RESULT_TOPIC}' (bootstrap: {KAFKA_BOOTSTRAP})")
+    log(f"Drift-Type Adaptation: {'ENABLED' if ENABLE_DRIFT_TYPE_ADAPTATION else 'DISABLED'}")
 
     while running:
         try:
@@ -172,6 +324,8 @@ def main():
                     pval = evt.get("p_value")
                     wpath = evt.get("window_path")
                     detector = evt.get("detector", "unknown")
+                    drift_type = evt.get("drift_type", "undetermined")
+                    drift_category = evt.get("drift_category", "undetermined")
 
                     if not wpath:
                         err(f"Drift@{idx} (p={pval}) nhưng thiếu window_path.")
@@ -198,8 +352,35 @@ def main():
                         err(f"Snapshot rỗng: {snap_path}")
                         continue
 
-                    # cập nhật model
-                    model = learn_many(model, X, y, feature_names)
+                    # === DRIFT-TYPE-SPECIFIC ADAPTATION ===
+                    log(f"Drift detected: type={drift_type}, category={drift_category}")
+
+                    if ENABLE_DRIFT_TYPE_ADAPTATION and drift_type != "undetermined":
+                        # Select strategy based on drift type
+                        if drift_type == "sudden":
+                            model = adapt_sudden_drift(model, X, y, feature_names)
+                        elif drift_type == "incremental":
+                            model = adapt_incremental_drift(model, X, y, feature_names)
+                        elif drift_type == "gradual":
+                            model = adapt_gradual_drift(model, X, y, feature_names)
+                        elif drift_type == "recurrent":
+                            model = adapt_recurrent_drift(model, X, y, feature_names, idx)
+                            # Cache model for future recurrences
+                            cache_model(model, idx)
+                        elif drift_type == "blip":
+                            model = adapt_blip_drift(model, X, y, feature_names)
+                        else:
+                            # Fallback to default
+                            log(f"Unknown drift type '{drift_type}' → using default strategy")
+                            model = learn_many(model, X, y, feature_names)
+                    else:
+                        # Fallback: default strategy (original behavior)
+                        if not ENABLE_DRIFT_TYPE_ADAPTATION:
+                            log("Drift-type adaptation disabled → using default strategy")
+                        else:
+                            log(f"Drift type undetermined → using default strategy")
+                        model = learn_many(model, X, y, feature_names)
+
                     save_model(model)
                     dt = time.time() - t0
 
@@ -207,7 +388,7 @@ def main():
                     model_version = int(MODEL_PATH.stat().st_mtime)
 
                     log(f"UPDATED model v{model_version} on window '{snap_path.name}' "
-                        f"(n={n}, p={pval}, detector={detector}) in {dt:.2f}s -> {MODEL_PATH}")
+                        f"(n={n}, p={pval}, type={drift_type}, detector={detector}) in {dt:.2f}s -> {MODEL_PATH}")
 
                     # publish thông báo model_updated (optional)
                     publish_model_updated(
@@ -218,6 +399,8 @@ def main():
                             "idx": idx,
                             "p_value": pval,
                             "detector": detector,
+                            "drift_type": drift_type,
+                            "drift_category": drift_category,
                             "n_samples": n,
                             "task": TASK_TYPE,
                         },
