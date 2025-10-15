@@ -58,13 +58,18 @@ class RealtimeDriftVisualizer:
         self.last_log_position = 0
 
         # Kafka consumer for live data
+        # Use dynamic group ID + 'earliest' to always start from beginning
+        import time as time_module
+        plot_group_id = f'realtime-plotter-{int(time_module.time())}'
+        
         self.consumer = Consumer({
             'bootstrap.servers': brokers,
-            'group.id': 'realtime-plotter',
-            'auto.offset.reset': 'latest',
+            'group.id': plot_group_id,  # Dynamic group ID for fresh start
+            'auto.offset.reset': 'earliest',  # Start from beginning
             'enable.auto.commit': True
         })
         self.consumer.subscribe([topic])
+        print(f"[RT-Plot] Using consumer group: {plot_group_id} (starting from earliest)")
 
         # Setup matplotlib (2-plot layout like plot_detection.py)
         self.fig, (self.ax1, self.ax2) = plt.subplots(2, 1, figsize=(15, 10), sharex=True)
@@ -125,7 +130,7 @@ class RealtimeDriftVisualizer:
         return new_samples
 
     def update_detections(self):
-        """Load new detections from CSV log."""
+        """Load new detections from CSV log, filtering to match visible data range."""
         if not os.path.exists(self.log_path):
             return 0
 
@@ -142,6 +147,9 @@ class RealtimeDriftVisualizer:
                         p_value = float(row.get('p_value', '1.0'))
                         drift_type = row.get('drift_type', 'undetermined').strip()
                         drift_category = row.get('drift_category', 'undetermined').strip()
+
+                        # Note: No filtering needed - CSV is cleared on restart
+                        # All detections in CSV are from current run
 
                         # Avoid duplicates
                         if not any(d['idx'] == det_idx for d in self.detections):

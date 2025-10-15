@@ -38,9 +38,22 @@ ENABLE_DRIFT_TYPE_CLASSIFICATION = os.getenv("ENABLE_DRIFT_TYPE_CLASSIFICATION",
 HISTORY_BUFFER_SIZE = int(os.getenv("HISTORY_BUFFER_SIZE", "500"))  # For drift type classification
 
 def main():
+    # Use dynamic group ID to reset offset on each run (optional - controlled by env var)
+    reset_offset = os.getenv("RESET_OFFSET_ON_RESTART", "true").lower() == "true"
+    
+    if reset_offset:
+        # Dynamic group ID ensures fresh start each time
+        import time
+        group_id = f"{GROUP_ID}-{int(time.time())}"
+        print(f"[shapedd] Using fresh consumer group: {group_id} (offset will start from earliest)")
+    else:
+        # Use persistent group ID to continue from last offset
+        group_id = GROUP_ID
+        print(f"[shapedd] Using persistent consumer group: {group_id} (will continue from last offset)")
+    
     conf = {
         'bootstrap.servers': BROKERS,
-        'group.id': GROUP_ID,
+        'group.id': group_id,
         'auto.offset.reset': 'earliest',
         'enable.auto.commit': True,
         'auto.commit.interval.ms': 1000,
@@ -52,11 +65,12 @@ def main():
     print(f"[shapedd] Brokers={BROKERS} Topic={TOPIC} Group={GROUP_ID} Buffer={BUFFER_SIZE} Chunk={CHUNK_SIZE} alpha={DRIFT_PVALUE}")
     print(f"[shapedd] Drift Type Classification: {'ENABLED' if ENABLE_DRIFT_TYPE_CLASSIFICATION else 'DISABLED'}")
 
-    # Prepare CSV log for visualization
+    # Prepare CSV log for visualization (overwrite mode to clear old data)
     csv_path = os.getenv("SHAPEDD_LOG", SHAPEDD_LOG)
-    csv_file = open(csv_path, "w", newline="")
+    csv_file = open(csv_path, "w", newline="")  # 'w' mode clears previous detections
     csv_writer = csv.writer(csv_file)
     csv_writer.writerow(["detection_idx", "p_value", "drift", "buffer_end_idx", "drift_type", "drift_category"])
+    print(f"[shapedd] CSV log initialized at {csv_path} (previous detections cleared)")
 
     # Initialize drift type classifier config
     drift_type_cfg = DriftTypeConfig(

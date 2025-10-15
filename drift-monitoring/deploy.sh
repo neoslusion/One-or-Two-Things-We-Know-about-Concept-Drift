@@ -51,14 +51,14 @@ mkdir -p ./snapshots ./models ./datas
 echo "[deploy] Directories ready: ./snapshots, ./models, ./datas"
 
 echo "[deploy] Launching shapedd consumer..."
-BROKERS="$BROKERS_HOST" TOPIC="$TOPIC" SNAPSHOT_DIR="./snapshots" nohup python3 consumer_stream.py 2>&1 &
+BROKERS="$BROKERS_HOST" TOPIC="$TOPIC" SNAPSHOT_DIR="./snapshots" nohup python3 consumer_stream.py > consumer.log 2>&1 &
 CONSUMER_PID=$!
 echo "[deploy] Consumer PID: $CONSUMER_PID"
 
 sleep 2
 
 echo "[deploy] Launching producer..."
-BROKERS="$BROKERS_HOST" TOPIC="$TOPIC" nohup python3 producer.py 2>&1 &
+BROKERS="$BROKERS_HOST" TOPIC="$TOPIC" nohup python3 producer.py > producer.log 2>&1 &
 PRODUCER_PID=$!
 echo "[deploy] Producer PID: $PRODUCER_PID"
 
@@ -70,5 +70,6 @@ ADAPTOR_PID=$!
 echo "[deploy] Adaptor PID: $ADAPTOR_PID"
 
 trap 'echo; echo "[deploy] Stopping..."; kill $PRODUCER_PID $CONSUMER_PID $ADAPTOR_PID 2>/dev/null || true; exit 0' INT
+tail -f consumer.log producer.log adaptor.log
 
 
