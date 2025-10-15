@@ -1,11 +1,10 @@
 """
-Real-time Drift Detection and Classification Visualization
+Real-time Drift Detection Visualization
 
-Displays live data stream with:
-- Feature values over time
-- Drift detection points with type classification
-- Color-coded drift types (sudden, incremental, gradual, recurrent, blip)
-- True drift indicators from generator
+Displays live data stream with aligned plots (following plot_detection.py style):
+- Plot 1: Data stream with true drift indicators from generator
+- Plot 2: Detection points with drift type classification
+- Real-time updates with proper alignment
 
 Usage:
     python plot_detection_realtime.py
@@ -19,7 +18,6 @@ from collections import deque
 from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
 from matplotlib.animation import FuncAnimation
 from confluent_kafka import Consumer
 
@@ -27,39 +25,30 @@ from confluent_kafka import Consumer
 from config import BROKERS, TOPIC, SHAPEDD_LOG
 
 # Configuration
-MAX_DISPLAY_POINTS = 2000  # Maximum points to display in plot
-UPDATE_INTERVAL_MS = 1000  # Update plot every 1 second
-POLL_TIMEOUT_SEC = 0.1     # Kafka poll timeout
+MAX_DISPLAY_POINTS = 3000  # Maximum points to display in plot
+UPDATE_INTERVAL_MS = 500   # Update plot every 500ms
+POLL_TIMEOUT_SEC = 0.05    # Kafka poll timeout
 
-# Drift type colors (matching professional visualization standards)
+# Drift type colors (matching plot_detection.py style)
 DRIFT_TYPE_COLORS = {
-    'sudden': '#FF4444',        # Bright red - immediate action
-    'incremental': '#FF9944',   # Orange - gradual change
-    'gradual': '#FFDD44',       # Yellow - slow oscillation
-    'recurrent': '#44FF44',     # Green - pattern repeat
-    'blip': '#4444FF',          # Blue - temporary noise
-    'undetermined': '#888888'   # Gray - unknown
-}
-
-DRIFT_TYPE_MARKERS = {
-    'sudden': 'v',         # Triangle down - sudden drop
-    'incremental': '^',    # Triangle up - gradual rise
-    'gradual': 's',        # Square - stable oscillation
-    'recurrent': 'o',      # Circle - recurring
-    'blip': 'x',           # X - noise
-    'undetermined': 'd'    # Diamond - unknown
+    'sudden': '#DC143C',        # Crimson red
+    'incremental': '#FF8C00',   # Dark orange
+    'gradual': '#FFD700',       # Gold
+    'recurrent': '#32CD32',     # Lime green
+    'blip': '#1E90FF',          # Dodger blue
+    'undetermined': '#808080'   # Gray
 }
 
 
 class RealtimeDriftVisualizer:
-    """Real-time visualization of drift detection with type classification."""
+    """Real-time visualization matching plot_detection.py layout."""
 
     def __init__(self, brokers, topic, log_path):
         self.brokers = brokers
         self.topic = topic
         self.log_path = log_path
 
-        # Data buffers
+        # Data buffers (ordered by stream index)
         self.stream_indices = deque(maxlen=MAX_DISPLAY_POINTS)
         self.stream_features = deque(maxlen=MAX_DISPLAY_POINTS)
         self.stream_drift_indicators = deque(maxlen=MAX_DISPLAY_POINTS)
@@ -72,51 +61,38 @@ class RealtimeDriftVisualizer:
         self.consumer = Consumer({
             'bootstrap.servers': brokers,
             'group.id': 'realtime-plotter',
-            'auto.offset.reset': 'latest',  # Only new data
+            'auto.offset.reset': 'latest',
             'enable.auto.commit': True
         })
         self.consumer.subscribe([topic])
 
-        # Setup matplotlib
-        plt.style.use('seaborn-v0_8-darkgrid')
-        self.fig = plt.figure(figsize=(16, 10))
+        # Setup matplotlib (2-plot layout like plot_detection.py)
+        self.fig, (self.ax1, self.ax2) = plt.subplots(2, 1, figsize=(15, 10), sharex=True)
         self.setup_plots()
 
         # Statistics
         self.total_samples = 0
         self.total_detections = 0
+        self.last_status_time = time.time()
 
     def setup_plots(self):
-        """Setup the subplot layout."""
-        gs = self.fig.add_gridspec(3, 2, hspace=0.3, wspace=0.3)
+        """Setup 2-plot layout matching plot_detection.py."""
+        # Plot 1: Data stream with true drift
+        self.ax1.set_title('Data Stream with True Drift Points (from gen_random)', fontsize=12, fontweight='bold')
+        self.ax1.set_ylabel('Feature Value (First Dimension)', fontsize=11)
+        self.ax1.grid(True, alpha=0.3)
 
-        # Main plot: Data stream with detections
-        self.ax_main = self.fig.add_subplot(gs[0:2, :])
-        self.ax_main.set_title('Real-time Data Stream with Drift Detection', fontsize=14, fontweight='bold')
-        self.ax_main.set_xlabel('Stream Index', fontsize=11)
-        self.ax_main.set_ylabel('Feature Value (First Dimension)', fontsize=11)
-        self.ax_main.grid(True, alpha=0.3)
+        # Plot 2: Detection signal
+        self.ax2.set_title('ShapeDD Detection Points (Real-time)', fontsize=12, fontweight='bold')
+        self.ax2.set_ylabel('Detection', fontsize=11)
+        self.ax2.set_xlabel('Stream Index', fontsize=11)
+        self.ax2.set_ylim(-0.1, 1.1)
+        self.ax2.grid(True, alpha=0.3)
 
-        # Bottom left: Drift type distribution
-        self.ax_types = self.fig.add_subplot(gs[2, 0])
-        self.ax_types.set_title('Drift Type Distribution', fontsize=11, fontweight='bold')
-        self.ax_types.set_ylabel('Count', fontsize=10)
-
-        # Bottom right: Statistics
-        self.ax_stats = self.fig.add_subplot(gs[2, 1])
-        self.ax_stats.set_title('Real-time Statistics', fontsize=11, fontweight='bold')
-        self.ax_stats.axis('off')
-
-        # Add legend for drift types
-        legend_elements = [
-            mpatches.Patch(color=DRIFT_TYPE_COLORS['sudden'], label='Sudden (TCD)'),
-            mpatches.Patch(color=DRIFT_TYPE_COLORS['incremental'], label='Incremental (PCD)'),
-            mpatches.Patch(color=DRIFT_TYPE_COLORS['gradual'], label='Gradual (PCD)'),
-            mpatches.Patch(color=DRIFT_TYPE_COLORS['recurrent'], label='Recurrent (PCD)'),
-            mpatches.Patch(color=DRIFT_TYPE_COLORS['blip'], label='Blip (noise)'),
-            mpatches.Patch(color='blue', label='True Drift (gen_random)', alpha=0.3)
-        ]
-        self.fig.legend(handles=legend_elements, loc='upper right', fontsize=9, framealpha=0.9)
+        # Main title
+        self.fig.suptitle('Real-time Drift Detection Analysis - Aligned Plots', fontsize=14, fontweight='bold')
+        self.fig.tight_layout()
+        self.fig.subplots_adjust(top=0.94)
 
     def update_stream_data(self):
         """Poll Kafka for new streaming data."""
@@ -139,11 +115,11 @@ class RealtimeDriftVisualizer:
 
                 if x_vec and idx >= 0:
                     self.stream_indices.append(idx)
-                    self.stream_features.append(x_vec[0])  # First feature for visualization
+                    self.stream_features.append(x_vec[0])  # First feature
                     self.stream_drift_indicators.append(drift_indicator)
                     self.total_samples += 1
                     new_samples += 1
-            except Exception as e:
+            except Exception:
                 continue
 
         return new_samples
@@ -158,7 +134,7 @@ class RealtimeDriftVisualizer:
             with open(self.log_path, 'r', encoding='utf-8', errors='ignore', newline='') as f:
                 # Skip to last known position
                 f.seek(self.last_log_position)
-
+                
                 reader = csv.DictReader(f)
                 for row in reader:
                     try:
@@ -177,213 +153,150 @@ class RealtimeDriftVisualizer:
                             })
                             self.total_detections += 1
                             new_detections += 1
-                    except Exception:
+                            print(f"[RT-Plot] New detection: idx={det_idx}, type={drift_type}, p={p_value:.4f}")
+                    except Exception as e:
                         continue
 
                 # Update position
                 self.last_log_position = f.tell()
-        except Exception as e:
+        except Exception:
             pass
 
         return new_detections
 
     def plot_frame(self, frame):
-        """Update plot for animation frame."""
+        """Update plot for animation frame (matching plot_detection.py style)."""
         # Update data from sources
         new_samples = self.update_stream_data()
         new_detections = self.update_detections()
 
-        # Clear axes
-        self.ax_main.clear()
-        self.ax_types.clear()
-        self.ax_stats.clear()
+        # Print status periodically
+        if time.time() - self.last_status_time > 5:
+            print(f"[RT-Plot] Samples: {self.total_samples}, Detections: {self.total_detections}, "
+                  f"Buffer: {len(self.stream_indices)}/{MAX_DISPLAY_POINTS}")
+            self.last_status_time = time.time()
 
-        # === Main Plot: Data Stream ===
+        # Clear axes
+        self.ax1.clear()
+        self.ax2.clear()
+
+        # === PLOT 1: Data Stream with True Drift ===
         if len(self.stream_indices) > 0:
             indices = np.array(self.stream_indices)
             features = np.array(self.stream_features)
             drift_indicators = np.array(self.stream_drift_indicators)
 
-            # Plot data points colored by true drift indicator
-            scatter = self.ax_main.scatter(
-                indices, features,
-                c=drift_indicators,
-                cmap='coolwarm',
-                alpha=0.5,
-                s=20,
-                label='Data points'
-            )
+            # Scatter plot colored by drift indicator
+            self.ax1.scatter(indices, features, c=drift_indicators, 
+                           cmap='coolwarm', alpha=0.7, s=15)
 
             # Mark true drift transitions with vertical lines
-            drift_changes = np.where(np.diff(drift_indicators) != 0)[0]
-            for change_idx in drift_changes:
-                if change_idx < len(indices) - 1:
-                    x_pos = indices[change_idx + 1]
-                    self.ax_main.axvline(
-                        x=x_pos,
-                        color='blue',
-                        linestyle='-',
-                        alpha=0.3,
-                        linewidth=2,
-                        label='True drift' if change_idx == drift_changes[0] else None
-                    )
+            drift_transitions = np.where(np.diff(drift_indicators) != 0)[0] + 1
+            for trans_idx in drift_transitions:
+                if trans_idx < len(indices):
+                    stream_pos = indices[trans_idx]
+                    self.ax1.axvline(x=stream_pos, color='blue', linestyle='-', 
+                                   alpha=0.6, linewidth=2)
+                    self.ax1.text(stream_pos, self.ax1.get_ylim()[1]*0.9, 
+                                f'True\n{stream_pos}', rotation=90, ha='center', 
+                                va='top', fontsize=8, 
+                                bbox=dict(boxstyle='round,pad=0.2', 
+                                        facecolor='blue', alpha=0.7))
 
-            # Plot detections with drift type markers
-            for detection in self.detections:
-                det_idx = detection['idx']
-                drift_type = detection['type']
+            self.ax1.set_title('Data Stream with True Drift Points (from gen_random)', 
+                             fontsize=12, fontweight='bold')
+            self.ax1.set_ylabel('Feature Value (First Dimension)', fontsize=11)
+            self.ax1.grid(True, alpha=0.3)
 
-                # Find closest point in stream for y-position
-                if len(indices) > 0:
+            # === PLOT 2: Detection Signal (Aligned) ===
+            # Create detection signal array (same length as data)
+            detection_signal = np.zeros(len(features))
+            detection_positions = []
+
+            if self.detections:
+                for det in self.detections:
+                    det_idx = det['idx']
+                    # Find closest data point to detection
                     closest_pos = np.argmin(np.abs(indices - det_idx))
-                    y_pos = features[closest_pos] if closest_pos < len(features) else 0
-                else:
-                    y_pos = 0
+                    if closest_pos < len(detection_signal):
+                        detection_signal[closest_pos] = 1
+                        detection_positions.append((indices[closest_pos], det))
 
-                # Plot detection marker
-                color = DRIFT_TYPE_COLORS.get(drift_type, DRIFT_TYPE_COLORS['undetermined'])
-                marker = DRIFT_TYPE_MARKERS.get(drift_type, DRIFT_TYPE_MARKERS['undetermined'])
+                # Plot detection signal with drift type colors
+                for pos_idx, (x_pos, det) in enumerate(detection_positions):
+                    drift_type = det['type']
+                    color = DRIFT_TYPE_COLORS.get(drift_type, DRIFT_TYPE_COLORS['undetermined'])
+                    
+                    # Scatter point
+                    self.ax2.scatter([x_pos], [1], c=[color], s=100, 
+                                   edgecolors='black', linewidths=1.5, zorder=10)
+                    
+                    # Vertical line
+                    self.ax2.axvline(x=x_pos, color=color, linestyle='--', 
+                                   alpha=0.7, linewidth=2)
+                    
+                    # Label
+                    self.ax2.text(x_pos, 0.8, f'{drift_type}\n{x_pos}', 
+                                rotation=90, ha='center', va='center', fontsize=8,
+                                bbox=dict(boxstyle='round,pad=0.2', 
+                                        facecolor=color, alpha=0.7))
 
-                self.ax_main.scatter(
-                    [det_idx], [y_pos],
-                    c=[color],
-                    marker=marker,
-                    s=200,
-                    edgecolors='black',
-                    linewidths=2,
-                    zorder=10,
-                    alpha=0.9
-                )
+                # Fill remaining points with gray
+                non_detection_mask = detection_signal == 0
+                if np.any(non_detection_mask):
+                    self.ax2.scatter(indices[non_detection_mask], 
+                                   detection_signal[non_detection_mask], 
+                                   c='gray', alpha=0.3, s=15)
 
-                # Add vertical line for detection
-                self.ax_main.axvline(
-                    x=det_idx,
-                    color=color,
-                    linestyle='--',
-                    alpha=0.6,
-                    linewidth=1.5
-                )
+                title_suffix = f'({len(self.detections)} detections)'
+            else:
+                # No detections yet - show all zeros
+                self.ax2.scatter(indices, detection_signal, c='gray', alpha=0.3, s=15)
+                title_suffix = '(No detections yet)'
 
-                # Add label
-                self.ax_main.text(
-                    det_idx,
-                    self.ax_main.get_ylim()[1] * 0.95,
-                    f'{drift_type}\n{det_idx}',
-                    rotation=90,
-                    ha='right',
-                    va='top',
-                    fontsize=8,
-                    bbox=dict(boxstyle='round,pad=0.3', facecolor=color, alpha=0.8, edgecolor='black')
-                )
+            self.ax2.set_title(f'ShapeDD Detection Points {title_suffix}', 
+                             fontsize=12, fontweight='bold')
+            self.ax2.set_ylabel('Detection', fontsize=11)
+            self.ax2.set_xlabel('Stream Index', fontsize=11)
+            self.ax2.set_ylim(-0.1, 1.1)
+            self.ax2.grid(True, alpha=0.3)
 
-        self.ax_main.set_title(
-            f'Real-time Data Stream with Drift Detection (Live)',
-            fontsize=14,
-            fontweight='bold'
-        )
-        self.ax_main.set_xlabel('Stream Index', fontsize=11)
-        self.ax_main.set_ylabel('Feature Value (First Dimension)', fontsize=11)
-        self.ax_main.grid(True, alpha=0.3)
+            # Ensure both plots have same x-axis range
+            x_min, x_max = indices.min(), indices.max()
+            self.ax1.set_xlim(x_min, x_max)
+            self.ax2.set_xlim(x_min, x_max)
 
-        # === Drift Type Distribution ===
-        if self.detections:
-            type_counts = {}
-            for det in self.detections:
-                dtype = det['type']
-                type_counts[dtype] = type_counts.get(dtype, 0) + 1
-
-            # Sort by predefined order
-            drift_types = ['sudden', 'incremental', 'gradual', 'recurrent', 'blip', 'undetermined']
-            types = [t for t in drift_types if t in type_counts]
-            counts = [type_counts[t] for t in types]
-            colors = [DRIFT_TYPE_COLORS[t] for t in types]
-
-            bars = self.ax_types.bar(types, counts, color=colors, alpha=0.8, edgecolor='black')
-
-            # Add count labels on bars
-            for bar, count in zip(bars, counts):
-                height = bar.get_height()
-                self.ax_types.text(
-                    bar.get_x() + bar.get_width() / 2.,
-                    height,
-                    f'{int(count)}',
-                    ha='center',
-                    va='bottom',
-                    fontsize=10,
-                    fontweight='bold'
-                )
-
-            self.ax_types.set_ylabel('Count', fontsize=10)
-            self.ax_types.set_xticklabels(types, rotation=45, ha='right', fontsize=9)
         else:
-            self.ax_types.text(
-                0.5, 0.5,
-                'No detections yet',
-                ha='center',
-                va='center',
-                transform=self.ax_types.transAxes,
-                fontsize=12,
-                color='gray'
-            )
+            # No data yet - show waiting message
+            self.ax1.text(0.5, 0.5, 'Waiting for data...', 
+                        transform=self.ax1.transAxes, ha='center', va='center',
+                        fontsize=14, color='gray')
+            self.ax2.text(0.5, 0.5, 'Waiting for data...', 
+                        transform=self.ax2.transAxes, ha='center', va='center',
+                        fontsize=14, color='gray')
+            
+            self.ax1.set_title('Data Stream with True Drift Points (from gen_random)', 
+                             fontsize=12, fontweight='bold')
+            self.ax2.set_title('ShapeDD Detection Points (Real-time)', 
+                             fontsize=12, fontweight='bold')
+            self.ax2.set_xlabel('Stream Index', fontsize=11)
 
-        self.ax_types.set_title('Drift Type Distribution', fontsize=11, fontweight='bold')
-
-        # === Statistics Panel ===
-        self.ax_stats.axis('off')
-
-        stats_text = f"""
-        Total Samples: {self.total_samples:,}
-        Total Detections: {self.total_detections}
-
-        Buffer Size: {len(self.stream_indices)} / {MAX_DISPLAY_POINTS}
-
-        Latest Detection:
-        """
-
-        if self.detections:
-            latest = self.detections[-1]
-            stats_text += f"""  Index: {latest['idx']}
-          Type: {latest['type']}
-          Category: {latest['category']}
-          P-value: {latest['p_value']:.6f}
-        """
-        else:
-            stats_text += "  None yet"
-
-        stats_text += f"""
-
-        Status: {'🟢 LIVE' if new_samples > 0 else '🔴 WAITING'}
-        Update Rate: ~{UPDATE_INTERVAL_MS}ms
-        """
-
-        self.ax_stats.text(
-            0.05, 0.95,
-            stats_text,
-            transform=self.ax_stats.transAxes,
-            fontsize=10,
-            verticalalignment='top',
-            family='monospace',
-            bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.3)
-        )
-
-        self.ax_stats.set_title('Real-time Statistics', fontsize=11, fontweight='bold')
-
-        # Update window title with status
+        # Update window title with stats
         self.fig.canvas.manager.set_window_title(
-            f'Drift Detection Monitor - {self.total_samples} samples, {self.total_detections} detections'
+            f'Real-time Drift Monitor - {self.total_samples} samples, {self.total_detections} detections'
         )
 
     def run(self):
         """Start the real-time visualization."""
-        print("=" * 60)
-        print("Real-time Drift Detection Visualization")
-        print("=" * 60)
+        print("=" * 70)
+        print("Real-time Drift Detection Visualization (plot_detection.py style)")
+        print("=" * 70)
         print(f"Kafka Broker: {self.brokers}")
         print(f"Data Topic: {self.topic}")
         print(f"Log File: {self.log_path}")
         print(f"Update Interval: {UPDATE_INTERVAL_MS}ms")
         print(f"Max Display Points: {MAX_DISPLAY_POINTS}")
-        print("=" * 60)
+        print("=" * 70)
         print("\nStarting visualization... Press Ctrl+C to stop.")
         print()
 
@@ -407,6 +320,21 @@ class RealtimeDriftVisualizer:
         """Clean up resources."""
         print("Closing Kafka consumer...")
         self.consumer.close()
+        
+        # Print final summary
+        print("\n" + "=" * 70)
+        print("Final Summary:")
+        print(f"  Total samples processed: {self.total_samples:,}")
+        print(f"  Total detections: {self.total_detections}")
+        if self.detections:
+            print(f"  Detection indices: {[d['idx'] for d in self.detections]}")
+            # Count by type
+            type_counts = {}
+            for det in self.detections:
+                dtype = det['type']
+                type_counts[dtype] = type_counts.get(dtype, 0) + 1
+            print(f"  By type: {dict(type_counts)}")
+        print("=" * 70)
         print("Done!")
 
 

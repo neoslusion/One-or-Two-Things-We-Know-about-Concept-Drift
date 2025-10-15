@@ -22,6 +22,14 @@ echo "  DRIFT_PVALUE=$DRIFT_PVALUE"
 echo "  RESULT_TOPIC=$RESULT_TOPIC"
 echo "  SHAPEDD_LOG=$SHAPEDD_LOG"
 
+echo "Remove the old detection results when deploy"
+# rm -f ./snapshots/*.npz
+# rm -f ./models/*.pkl
+# rm -f *.csv
+# rm -f *.log
+# rm -f *.out
+# rm -f ./models/cache/*.pkl
+
 echo "[deploy] Restarting docker services..."
 docker compose down 2>/dev/null || true
 docker compose up -d
@@ -61,8 +69,6 @@ KAFKA_BOOTSTRAP="$BROKERS_HOST" RESULT_TOPIC="$RESULT_TOPIC" SNAPSHOT_DIR="./sna
 ADAPTOR_PID=$!
 echo "[deploy] Adaptor PID: $ADAPTOR_PID"
 
-echo "[deploy] Tail logs (Ctrl+C to stop). Logs also in producer.log / consumer.log / adaptor.log"
 trap 'echo; echo "[deploy] Stopping..."; kill $PRODUCER_PID $CONSUMER_PID $ADAPTOR_PID 2>/dev/null || true; exit 0' INT
-tail -f consumer.log producer.log adaptor.log
 
 

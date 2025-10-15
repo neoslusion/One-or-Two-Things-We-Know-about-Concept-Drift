@@ -33,7 +33,7 @@ def main():
         # Randomize segment parameters similar to experiments
         length = int(rng.integers(3000, 12000))
         number = int(rng.integers(1, 6))
-        intens = float(rng.uniform(0.1, 0.6))
+        intens = float(rng.uniform(1, 1.5))
         dims = 2
         dist = "unif"
         alt = True

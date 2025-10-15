@@ -65,11 +65,10 @@ def main():
         sudden_len_thresh=150 # Inherited from notebook
     )
 
-    # Maintain history buffer for drift type classification (circular buffer)
-    history_buffer = deque(maxlen=HISTORY_BUFFER_SIZE)
+    # Single buffer for both processing and history (circular buffer)
+    buffer = deque(maxlen=max(BUFFER_SIZE, HISTORY_BUFFER_SIZE))
+    batch_queue = []  # Temporary queue for batch processing
 
-    buffer = []  # Accumulate samples for processing
-    sample_count = 0
     try:
         while True:
             msg = c.poll(1.0)
@@ -84,42 +83,41 @@ def main():
                 idx = data.get("idx", -1)
                 if not x_vec:
                     continue
-                    
-                buffer.append({"idx": idx, "x": x_vec})
-                history_buffer.append({"idx": idx, "x": x_vec})  # Also add to history for classification
-                sample_count += 1
 
-                # Process every BUFFER_SIZE samples (like experiment processes full dataset)
-                if len(buffer) >= BUFFER_SIZE:
-                    print(f"[shapedd] Processing buffer of {len(buffer)} samples...")
-                    
-                    # Extract data matrix
-                    X = np.array([item["x"] for item in buffer], dtype=float)
-                    indices = np.array([item["idx"] for item in buffer])
-                    
-                    # Run shape on entire buffer (like experiment)
-                    shp_full = shape(X, SHAPE_L1, SHAPE_L2, SHAPE_N_PERM)
-                    
-                    # Create batches like experiment
-                    n_samples = len(X)
+                buffer.append({"idx": idx, "x": x_vec})
+                batch_queue.append({"idx": idx, "x": x_vec})
+
+                # Process every BUFFER_SIZE samples
+                if len(batch_queue) >= BUFFER_SIZE:
+                    print(f"[shapedd] Processing batch of {len(batch_queue)} samples...")
+
+                    # Extract data matrix from batch queue
+                    X_batch = np.array([item["x"] for item in batch_queue], dtype=float)
+                    indices_batch = np.array([item["idx"] for item in batch_queue])
+
+                    # Run ShapeDD ONCE on entire BUFFER_SIZE samples
+                    shp_full = shape(X_batch, SHAPE_L1, SHAPE_L2, SHAPE_N_PERM)
+
+                    # Create batches/chunks for checking drift in segments
+                    n_samples = len(X_batch)
                     batches = []
                     for i in range(0, n_samples - CHUNK_SIZE + 1, CHUNK_SIZE):
                         batch_indices = np.arange(i, min(i + CHUNK_SIZE, n_samples))
                         batches.append(batch_indices)
-                    
-                    # Process each batch and check for drift
+
+                    # Check each chunk for drift using pre-computed ShapeDD results
                     detection_count = 0
                     for b in batches:
-                        # Extract p-values for this batch (column 2 in ConceptDrift_Pipeline!)
-                        batch_pvals = shp_full[b, 2]  # Column 2 contains p-values
-                        p_min = float(batch_pvals.min())
+                        # Extract p-values from full ShapeDD results for this chunk
+                        chunk_pvals = shp_full[b, 2]  # Column 2 contains p-values
+                        p_min = float(chunk_pvals.min())
                         drift = p_min < DRIFT_PVALUE
-                        
+
                         if drift:
-                            # Find detection position (argmin of p-values within batch)
-                            det_pos_in_batch = int(np.argmin(batch_pvals))
-                            det_idx_in_buffer = b[det_pos_in_batch]  # Index in current buffer
-                            det_idx = indices[det_idx_in_buffer]  # Map to original stream index
+                            # Find detection position (argmin of p-values within chunk)
+                            det_pos_in_chunk = int(np.argmin(chunk_pvals))
+                            det_idx_in_batch = b[det_pos_in_chunk]  # Index in current batch
+                            det_idx = indices_batch[det_idx_in_batch]  # Map to original stream index
 
                             print(f"[shapedd] DRIFT detected at idx={det_idx} p_min={p_min:.6f}")
 
@@ -128,9 +126,9 @@ def main():
 
                             if ENABLE_DRIFT_TYPE_CLASSIFICATION:
                                 try:
-                                    # Build classification history from history_buffer
-                                    history_data = np.array([item["x"] for item in history_buffer], dtype=float)
-                                    history_indices = np.array([item["idx"] for item in history_buffer])
+                                    # Build classification history from main buffer
+                                    history_data = np.array([item["x"] for item in buffer], dtype=float)
+                                    history_indices = np.array([item["idx"] for item in buffer])
 
                                     # Find drift position in history buffer
                                     drift_pos_in_history = np.where(history_indices == det_idx)[0]
@@ -162,28 +160,46 @@ def main():
                                 det_idx,
                                 p_min,
                                 1,
-                                indices[-1],
+                                indices_batch[-1],
                                 drift_type_info.get('subcategory', 'undetermined'),
                                 drift_type_info.get('category', 'undetermined')
                             ])
                             csv_file.flush()
 
                             # Save drift window snapshot for adaptor
+                            # Include sufficient context from history buffer for model adaptation
                             snapshot_filename = f"drift_window_{det_idx}_{int(time.time())}.npz"
                             snapshot_path = SNAPSHOT_DIR / snapshot_filename
 
-                            # Extract window around drift point (use batch data)
-                            window_X = X[b]
-                            window_indices = indices[b]
+                            # Extract window with history context (not just the batch chunk)
+                            # Use w_ref samples before drift + chunk after drift for context
+                            w_ref = drift_type_cfg.w_ref
+                            history_list = list(buffer)
 
-                            # Save snapshot with feature data (no labels for unsupervised drift detection)
+                            # Find position in full history
+                            hist_idx = next((i for i, item in enumerate(history_list) if item["idx"] == det_idx), None)
+
+                            if hist_idx is not None:
+                                # Get w_ref samples before + samples after drift
+                                start_idx = max(0, hist_idx - w_ref)
+                                end_idx = min(len(history_list), hist_idx + CHUNK_SIZE)
+                                window_samples = history_list[start_idx:end_idx]
+
+                                window_X = np.array([item["x"] for item in window_samples], dtype=float)
+                                window_indices = np.array([item["idx"] for item in window_samples])
+                            else:
+                                # Fallback: use chunk only
+                                window_X = X_batch[b]
+                                window_indices = indices_batch[b]
+
+                            # Save snapshot with feature data
                             np.savez(
                                 snapshot_path,
                                 X=window_X,
                                 indices=window_indices,
                                 feature_names=np.array([f"f{i}" for i in range(window_X.shape[1])])
                             )
-                            print(f"[shapedd] Saved snapshot to {snapshot_path}")
+                            print(f"[shapedd] Saved snapshot to {snapshot_path} (shape: {window_X.shape})")
 
                             # Emit to Kafka with proper format for adaptor (including drift type)
                             out = {
@@ -194,7 +210,7 @@ def main():
                                 "drift": True,
                                 "detector": "shapedd",
                                 "window_path": str(snapshot_path),
-                                "buffer_end_idx": int(indices[-1]),
+                                "buffer_end_idx": int(indices_batch[-1]),
                                 "drift_type": drift_type_info.get('subcategory', 'undetermined'),
                                 "drift_category": drift_type_info.get('category', 'undetermined'),
                                 "drift_length": drift_type_info.get('drift_length', 0),
@@ -204,9 +220,9 @@ def main():
                             p.produce(RESULT_TOPIC, json.dumps(out).encode("utf-8"))
                             p.poll(0)
                             detection_count += 1
-                    
-                    print(f"[shapedd] Processed {len(batches)} batches from buffer, {detection_count} drifts detected")
-                    buffer.clear()
+
+                    print(f"[shapedd] Processed {len(batches)} batches, {detection_count} drifts detected")
+                    batch_queue.clear()
             except Exception as e:
                 print(f"[shapedd-batch] processing error: {e}")
     except KeyboardInterrupt:
