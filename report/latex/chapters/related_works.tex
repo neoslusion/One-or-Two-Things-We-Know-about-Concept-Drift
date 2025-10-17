@@ -1,56 +1,56 @@
 \chapter{Công trình liên quan}
 
-\section{Giới thiệu về hiện tượng trôi dạt}
+\section{Các phương pháp phát hiện trôi dạt}
 
 \subsection{Khái niệm và bối cảnh}
 
-Thế giới không ngừng thay đổi đặt ra những thách thức cho các hệ thống tự động, ví dụ như các hệ thống liên quan đến cơ sở hạ tầng quan trọng, sản xuất và kiểm soát chất lượng.
-Việc vận hành đáng tin cậy các quy trình tự động và thuật toán giám sát đòi hỏi khả năng phát hiện, phản hồi và thích ứng với những thay đổi này (Ditzler và cộng sự, 2015; 
-Reppa và cộng sự, 2016; Chen và Boning, 2017; Vrachimis và cộng sự, 2022; Gabbar và cộng sự, 2023).
+% Thế giới không ngừng thay đổi đặt ra những thách thức cho các hệ thống tự động, ví dụ như các hệ thống liên quan đến cơ sở hạ tầng quan trọng, sản xuất và kiểm soát chất lượng.
+% Việc vận hành đáng tin cậy các quy trình tự động và thuật toán giám sát đòi hỏi khả năng phát hiện, phản hồi và thích ứng với những thay đổi này (Ditzler và cộng sự, 2015; 
+% Reppa và cộng sự, 2016; Chen và Boning, 2017; Vrachimis và cộng sự, 2022; Gabbar và cộng sự, 2023).
 
-Về mặt hình thức, những thay đổi trong phân phối tạo dữ liệu được gọi là trôi khái niệm (Gama và cộng sự, 2014). 
-Những thay đổi này có thể do các sửa đổi trong quy trình, môi trường hoặc cảm biến thu thập dữ liệu được quan sát. 
-Việc phát hiện các bất thường trong quy trình được quan sát là cần thiết để xác định các sản phẩm bị lỗi hoặc các loại lỗi không mong muốn khác. 
-Ngược lại, việc phát hiện những thay đổi trong cảm biến và môi trường là rất quan trọng để các quy trình tự động thực hiện các hành động phù hợp, chẳng hạn như thay 
-thế cảm biến bị lỗi hoặc sửa đổi hệ thống xử lý dữ liệu thu thập được để phù hợp với một kịch bản mới (Gama và cộng sự, 2004, 2014; Gonçalves và cộng sự, 2014).
+% Về mặt hình thức, những thay đổi trong phân phối tạo dữ liệu được gọi là trôi khái niệm (Gama và cộng sự, 2014). 
+% Những thay đổi này có thể do các sửa đổi trong quy trình, môi trường hoặc cảm biến thu thập dữ liệu được quan sát. 
+% Việc phát hiện các bất thường trong quy trình được quan sát là cần thiết để xác định các sản phẩm bị lỗi hoặc các loại lỗi không mong muốn khác. 
+% Ngược lại, việc phát hiện những thay đổi trong cảm biến và môi trường là rất quan trọng để các quy trình tự động thực hiện các hành động phù hợp, chẳng hạn như thay 
+% thế cảm biến bị lỗi hoặc sửa đổi hệ thống xử lý dữ liệu thu thập được để phù hợp với một kịch bản mới (Gama và cộng sự, 2004, 2014; Gonçalves và cộng sự, 2014).
 
-Thông thường, độ trôi được nghiên cứu trong các thiết lập luồng, trong đó những thay đổi trong
-phân phối dữ liệu cơ bản đòi hỏi phải điều chỉnh mô hình hoặc
-cảnh báo người vận hành để có hành động khắc phục (Ditzler và cộng sự,
-2015; Lu và cộng sự, 2018; Delange và cộng sự, 2021). Điều này liên quan chặt chẽ
-đến sự phát triển của các khái niệm trong học liên tục, một chủ đề phổ biến
-trong học sâu, nơi các khái niệm có thể xuất hiện hoặc biến mất. Độ trôi
-mở rộng ra ngoài các luồng dữ liệu và xuất hiện trong dữ liệu chuỗi thời gian với
-các quan sát phụ thuộc lẫn nhau. Độ trôi như vậy thường biểu hiện dưới dạng
-xu hướng, và sự vắng mặt của nó được gọi là tính dừng (Esling và Agon,
-2012; Aminikhanghahi và Cook, 2017).
-Trong các bối cảnh mà dữ liệu được quan sát theo thời gian, chẳng hạn như
-sản xuất và kiểm soát chất lượng, dữ liệu thường được thu thập
-trên nhiều địa điểm và được áp dụng các kỹ thuật học liên kết
-(Zhang và cộng sự, 2021). Thay vì hợp nhất tất cả dữ liệu trên một máy chủ toàn cầu, xử lý cục bộ được triển khai và kết quả được tích hợp vào một mô hình tổng thể. Tương tự như học theo luồng, điều quan trọng là phải giải quyết sự khác biệt hoặc độ trôi của dữ liệu từ các vị trí khác nhau để xây dựng một mô hình toàn cầu mạnh mẽ (Liu và cộng sự, 2020). Hơn nữa, độ trôi cần được tính đến trong học chuyển giao, một kỹ thuật học sâu (Pan và Yang, 2010), trong đó mô hình được huấn luyện trước trên một tác vụ tương tự với tập dữ liệu mở rộng hơn trước khi được tinh chỉnh trên tác vụ mục tiêu bằng cách sử dụng một tập dữ liệu hạn chế. Mặc dù trọng tâm chính của nghiên cứu này là các luồng dữ liệu, các chiến lược được trình bày ở đây cũng áp dụng cho các tác vụ khác.
+% Thông thường, độ trôi được nghiên cứu trong các thiết lập luồng, trong đó những thay đổi trong
+% phân phối dữ liệu cơ bản đòi hỏi phải điều chỉnh mô hình hoặc
+% cảnh báo người vận hành để có hành động khắc phục (Ditzler và cộng sự,
+% 2015; Lu và cộng sự, 2018; Delange và cộng sự, 2021). Điều này liên quan chặt chẽ
+% đến sự phát triển của các khái niệm trong học liên tục, một chủ đề phổ biến
+% trong học sâu, nơi các khái niệm có thể xuất hiện hoặc biến mất. Độ trôi
+% mở rộng ra ngoài các luồng dữ liệu và xuất hiện trong dữ liệu chuỗi thời gian với
+% các quan sát phụ thuộc lẫn nhau. Độ trôi như vậy thường biểu hiện dưới dạng
+% xu hướng, và sự vắng mặt của nó được gọi là tính dừng (Esling và Agon,
+% 2012; Aminikhanghahi và Cook, 2017).
+% Trong các bối cảnh mà dữ liệu được quan sát theo thời gian, chẳng hạn như
+% sản xuất và kiểm soát chất lượng, dữ liệu thường được thu thập
+% trên nhiều địa điểm và được áp dụng các kỹ thuật học liên kết
+% (Zhang và cộng sự, 2021). Thay vì hợp nhất tất cả dữ liệu trên một máy chủ toàn cầu, xử lý cục bộ được triển khai và kết quả được tích hợp vào một mô hình tổng thể. Tương tự như học theo luồng, điều quan trọng là phải giải quyết sự khác biệt hoặc độ trôi của dữ liệu từ các vị trí khác nhau để xây dựng một mô hình toàn cầu mạnh mẽ (Liu và cộng sự, 2020). Hơn nữa, độ trôi cần được tính đến trong học chuyển giao, một kỹ thuật học sâu (Pan và Yang, 2010), trong đó mô hình được huấn luyện trước trên một tác vụ tương tự với tập dữ liệu mở rộng hơn trước khi được tinh chỉnh trên tác vụ mục tiêu bằng cách sử dụng một tập dữ liệu hạn chế. Mặc dù trọng tâm chính của nghiên cứu này là các luồng dữ liệu, các chiến lược được trình bày ở đây cũng áp dụng cho các tác vụ khác.
 
-Việc xử lý các luồng dữ liệu trôi dạt bao gồm hai nhiệm vụ chính:
-thiết lập một mô hình mạnh mẽ cho các tác vụ dự đoán, tức là học trực tuyến hoặc
-học theo luồng, và giám sát các hệ thống để phát hiện hành vi bất ngờ.
-Trong trường hợp trước, trọng tâm là nhãn và mối quan hệ của nó với các
-tính năng khác, trong khi trường hợp sau liên quan đến bất kỳ thay đổi nào cho thấy
-hành vi hoặc trạng thái bất ngờ của hệ thống. Do đó, phát hiện trôi dạt
-tập trung vào các mục tiêu khác nhau, tương tự như học tập chung được gọi là
-có giám sát cho trường hợp trước và không giám sát cho trường hợp sau. Nghiên cứu này
-bỏ qua học trực tuyến vì nó đã được khám phá rộng rãi trong các
-khảo sát trước đây (Ditzler và cộng sự, 2015; Losing và cộng sự, 2018; Lu và cộng sự, 2018) và
-hộp công cụ (Bifet và cộng sự, 2010; Montiel và cộng sự, 2018, 2021).
-Thay vào đó, nghiên cứu này tập trung vào việc phát hiện trôi dạt không giám sát và
-giám sát các tình huống trong đó trôi dạt được dự đoán do việc sử dụng cảm biến
-hoặc nhạy cảm với những thay đổi của môi trường. Cụ thể, trọng tâm là phát hiện trôi dạt không giám sát, một yếu tố quan trọng để giám sát và hiểu rõ hiện tượng trôi dạt. 
-Một số ứng dụng điển hình là phát hiện trôi dạt cho các ứng dụng an ninh (Yang và cộng sự, 2021) và sử dụng phát hiện trôi dạt để phát hiện rò rỉ trong mạng lưới phân phối
-nước (Vaquet và cộng sự, 2024a,b). Ngoài ra, còn có các kỹ thuật để phân tích trôi dạt sâu hơn (Webb và cộng sự, 2017, 2018; Hinder và cộng sự, 2023a), mà chúng tôi sẽ không đề 
-cập chi tiết trong nghiên cứu này. Đối với độc giả quan tâm, chúng tôi cung cấp một phiên bản mở rộng bao gồm các chủ đề này cũng như nội dung của nghiên cứu 
-này (Hinder và cộng sự, 2023b). Lưu ý rằng các phương pháp phát hiện trôi dạt không giám sát được thảo luận ở đây khác với các phương pháp được 
-thiết kế cho học tập trực tuyến, như đã được thảo luận bởi Gemaque và cộng sự (2020). 
-Trong Phần 2.2, chúng tôi mô tả chi tiết hơn về sự tương phản giữa phát hiện trôi dạt có giám sát. Giám sát bao gồm việc
-quan sát một hệ thống và cung cấp thông tin cần thiết cho cả người vận hành và các tác vụ tự động để đảm bảo hệ thống hoạt động bình thường. 
-Thông tin cần thiết sẽ khác nhau tùy thuộc vào từng tác vụ cụ thể (Goldenberg và Webb, 2019; Verma, 2021). 
+% Việc xử lý các luồng dữ liệu trôi dạt bao gồm hai nhiệm vụ chính:
+% thiết lập một mô hình mạnh mẽ cho các tác vụ dự đoán, tức là học trực tuyến hoặc
+% học theo luồng, và giám sát các hệ thống để phát hiện hành vi bất ngờ.
+% Trong trường hợp trước, trọng tâm là nhãn và mối quan hệ của nó với các
+% tính năng khác, trong khi trường hợp sau liên quan đến bất kỳ thay đổi nào cho thấy
+% hành vi hoặc trạng thái bất ngờ của hệ thống. Do đó, phát hiện trôi dạt
+% tập trung vào các mục tiêu khác nhau, tương tự như học tập chung được gọi là
+% có giám sát cho trường hợp trước và không giám sát cho trường hợp sau. Nghiên cứu này
+% bỏ qua học trực tuyến vì nó đã được khám phá rộng rãi trong các
+% khảo sát trước đây (Ditzler và cộng sự, 2015; Losing và cộng sự, 2018; Lu và cộng sự, 2018) và
+% hộp công cụ (Bifet và cộng sự, 2010; Montiel và cộng sự, 2018, 2021).
+% Thay vào đó, nghiên cứu này tập trung vào việc phát hiện trôi dạt không giám sát và
+% giám sát các tình huống trong đó trôi dạt được dự đoán do việc sử dụng cảm biến
+% hoặc nhạy cảm với những thay đổi của môi trường. Cụ thể, trọng tâm là phát hiện trôi dạt không giám sát, một yếu tố quan trọng để giám sát và hiểu rõ hiện tượng trôi dạt. 
+% Một số ứng dụng điển hình là phát hiện trôi dạt cho các ứng dụng an ninh (Yang và cộng sự, 2021) và sử dụng phát hiện trôi dạt để phát hiện rò rỉ trong mạng lưới phân phối
+% nước (Vaquet và cộng sự, 2024a,b). Ngoài ra, còn có các kỹ thuật để phân tích trôi dạt sâu hơn (Webb và cộng sự, 2017, 2018; Hinder và cộng sự, 2023a), mà chúng tôi sẽ không đề 
+% cập chi tiết trong nghiên cứu này. Đối với độc giả quan tâm, chúng tôi cung cấp một phiên bản mở rộng bao gồm các chủ đề này cũng như nội dung của nghiên cứu 
+% này (Hinder và cộng sự, 2023b). Lưu ý rằng các phương pháp phát hiện trôi dạt không giám sát được thảo luận ở đây khác với các phương pháp được 
+% thiết kế cho học tập trực tuyến, như đã được thảo luận bởi Gemaque và cộng sự (2020). 
+% Trong Phần 2.2, chúng tôi mô tả chi tiết hơn về sự tương phản giữa phát hiện trôi dạt có giám sát. Giám sát bao gồm việc
+% quan sát một hệ thống và cung cấp thông tin cần thiết cho cả người vận hành và các tác vụ tự động để đảm bảo hệ thống hoạt động bình thường. 
+% Thông tin cần thiết sẽ khác nhau tùy thuộc vào từng tác vụ cụ thể (Goldenberg và Webb, 2019; Verma, 2021). 
 
 \subsection{Lịch sử phát triển các phương pháp phát hiện trôi dạt khái niệm}
 Trải qua nhiều thập kỷ, bài toán phát hiện hiện tượng trôi dạt đã được nghiên cứu với nhiều cách tiếp cận khác nhau. 
@@ -335,3 +335,217 @@ Như bảng \ref{tab:drift-history} tóm tắt, lĩnh vực phát hiện trôi d
 % file://file-U3E54GM9N3didgEzPW9ubH
 % [26] Towards Non-Parametric Drift Detection via Dynamic Adapting Window Independence Drift Detection (DAWIDD)
 % https://proceedings.mlr.press/v119/hinder20a.html
+\section{Xác định loại trôi dạt khái niệm}
+\label{sec:drift_type_identification}
+
+\subsection{Tổng quan}
+Sau khi phát hiện được thời điểm xảy ra trôi dạt (drift point), bước tiếp theo là
+\textbf{xác định loại trôi dạt} (drift type identification).  
+Khác với các phương pháp truyền thống chỉ xác định có trôi dạt hay không,
+phương pháp \textbf{CDT\_MSW} (Concept Drift Type identification based on Multi-Sliding Windows)
+được Guo \textit{et al.}~\cite{guo2022cdtmsw} đề xuất nhằm \emph{phân biệt bản chất và tốc độ thay đổi của quá trình drift}.
+Phương pháp này dựa trên việc quan sát hành vi thay đổi của độ chính xác giữa nhiều cửa sổ trượt
+(traditional sliding windows và adaptive windows), qua đó nhận dạng các loại drift như:
+\emph{sudden}, \emph{gradual}, \emph{incremental}, và \emph{recurrent}.
+
+\subsection{Giai đoạn 1: Phát hiện trôi dạt}
+Trong giai đoạn đầu, CDT\_MSW định nghĩa \textbf{tỷ lệ phát hiện} (Detection Flow Ratio)
+để đo lường sự thay đổi giữa hai cửa sổ dữ liệu $W_A$ và $W_B$:
+
+\begin{equation}
+\tilde{P}^{t}_{\text{det}} = \frac{a^B_t}{a^A_t},
+\tag{1}
+\end{equation}
+
+trong đó $a^A_t$ và $a^B_t$ là độ chính xác của mô hình trên hai cửa sổ $W_A$ (cửa sổ tham chiếu)
+và $W_B$ (cửa sổ hiện tại) tại thời điểm $t$.  
+Khi $\tilde{P}^{t}_{\text{det}}$ giảm mạnh (tức là độ chính xác trên $W_B$ suy giảm so với $W_A$),
+thuật toán xác định đây là vị trí có khả năng xảy ra trôi dạt.  
+Điểm phát hiện được ký hiệu là $t_d$.
+
+\subsection{Giai đoạn 2: Đo độ dài trôi dạt}
+Sau khi xác định được vị trí $t_d$, thuật toán tiếp tục \textbf{mở rộng vùng quan sát}
+để ước lượng độ dài của vùng thay đổi.  
+Gọi $t_{\text{start}}$ và $t_{\text{end}}$ lần lượt là điểm bắt đầu và kết thúc của vùng trôi dạt,
+thì \textbf{độ dài trôi dạt} (drift length) được tính bởi:
+
+\begin{equation}
+L_d = t_{\text{end}} - t_{\text{start}}.
+\label{eq:drift_length}
+\end{equation}
+
+Nếu $L_d < \lambda$ (với $\lambda$ là ngưỡng định trước), quá trình thay đổi được xem là
+\textbf{sudden drift}; ngược lại, nếu $L_d \ge \lambda$, đó là \textbf{progressive drift}
+(có thể là gradual hoặc incremental).
+
+Độ chính xác của việc ước lượng vùng drift được đánh giá bằng hai chỉ số~\cite{guo2022cdtmsw}:
+\textbf{LOR (Length Overflow Rate)} và \textbf{LRR (Length Recall Rate)}:
+
+\begin{align}
+\text{LOR} &=
+\frac{\sum_{t_i,\, d \in \text{Length}_i} \text{LOR}_i}{|\{t_i \mid d \in \text{Length}_i\}|},
+\quad
+\text{LOR}_i = 
+\frac{\max\{\min_{e \in \text{BufE}_i}((d+m)-e),\,0\}}{m}, \tag{11–12} \\[0.5em]
+\text{LRR} &= 1 - \text{LLR}. \tag{13}
+\end{align}
+
+Hai chỉ số này đo độ khớp giữa vùng drift thật và vùng được phát hiện:  
+LOR càng nhỏ và LRR càng cao $\Rightarrow$ vùng phát hiện càng chính xác.
+
+\subsection{Giai đoạn 3: Theo dõi và nhận dạng loại drift}
+Để phân biệt chi tiết giữa các loại trôi dạt tiến triển, CDT\_MSW định nghĩa
+\textbf{tỷ lệ theo dõi} (Tracking Flow Ratio – TFR):
+
+\begin{equation}
+\tilde{P}^{i}_{\text{tra}} = \frac{a^{*}_{B_0}}{a^{i}_{A_0}},
+\tag{5}
+\end{equation}
+
+trong đó:
+\begin{itemize}
+  \item $a^{*}_{B_0}$: độ chính xác của mô hình huấn luyện trên cửa sổ $W'_B$ tại vị trí ban đầu;
+  \item $a^{i}_{A_0}$: độ chính xác của mô hình trên cửa sổ $W'_A$ khi trượt đến vị trí $i$.
+\end{itemize}
+Dãy $\tilde{P}^{i}_{\text{tra}}$ được tổng hợp thành đường cong TFR,
+thể hiện hình dạng và tốc độ thay đổi của khái niệm.  
+Đường cong này dùng để phân biệt các loại drift cụ thể:
+\begin{itemize}
+  \item \textbf{Sudden drift:} $\tilde{P}_{\text{tra}}$ giảm đột ngột, không có giai đoạn chuyển tiếp.
+  \item \textbf{Gradual drift:} $\tilde{P}_{\text{tra}}$ dao động nhẹ rồi ổn định.
+  \item \textbf{Incremental drift:} $\tilde{P}_{\text{tra}}$ thay đổi tuyến tính theo thời gian.
+  \item \textbf{Recurrent drift:} $\tilde{P}_{\text{tra}}$ có dạng chu kỳ lặp lại.
+\end{itemize}
+
+\subsection{Đánh giá khả năng nhận dạng loại trôi dạt}
+Khả năng phân loại chính xác các loại trôi dạt được đánh giá bằng hai chỉ số~\cite{guo2022cdtmsw}:
+\textbf{ACC\textsubscript{cat}} và \textbf{ACC\textsubscript{subcat}},
+tương ứng với độ chính xác nhận dạng loại chính (TCD) và loại phụ (PCD):
+
+\begin{align}
+\text{ACC}_{\text{cat}} &=
+\frac{TT + TP}{TT + FT + TP + FP}, \tag{14} \\[0.5em]
+\text{ACC}_{\text{subcat}} &=
+\frac{\sum_i T^T_i + \sum_j T^P_j}{TT + TP}. \tag{15}
+\end{align}
+
+Trong đó:
+\begin{itemize}
+  \item $TT$, $FT$: số lượng nhận dạng đúng/sai cho loại trôi dạt chính (TCD);
+  \item $TP$, $FP$: số lượng nhận dạng đúng/sai cho loại phụ (PCD);
+  \item $T^T_i$, $T^P_j$: số lần nhận dạng đúng từng tiểu loại (sudden, gradual, incremental, recurrent).
+\end{itemize}
+
+\subsection{Tổng hợp và ý nghĩa}
+Tóm lại, CDT\_MSW nhận dạng loại trôi dạt dựa trên hai chỉ số động:
+\textbf{Detection Flow Ratio} (Công thức~1) và \textbf{Tracking Flow Ratio} (Công thức~5),
+cùng với các chỉ số đánh giá độ dài và độ chính xác của quá trình phân loại (Công thức~11–15).
+Cơ chế này cho phép mô hình không chỉ phát hiện thời điểm drift xảy ra,
+mà còn hiểu được bản chất của sự thay đổi (nhanh, chậm, tuyến tính hay lặp lại),
+từ đó cung cấp thông tin đầu vào quan trọng cho
+\textbf{giai đoạn cập nhật mô hình thích ứng} được trình bày trong Mục~\ref{sec:model_adaptation_strategies}.
+
+\section{Các chiến lược cập nhật mô hình thích ứng}
+\label{sec:model_adaptation_strategies}
+
+\subsection{Tổng quan}
+Trong các hệ thống học trực tuyến (online learning systems), việc phát hiện trôi dạt khái niệm
+(concept drift detection) chỉ là bước đầu tiên; điều quan trọng hơn là cách \textbf{mô hình thích ứng}
+(model adaptation) được cập nhật sau khi trôi dạt xảy ra.
+Các chiến lược cập nhật mô hình nhằm mục tiêu duy trì độ chính xác, ổn định và tránh hiện tượng quên ngắn hạn (catastrophic forgetting)
+trong quá trình học liên tục.
+
+Theo Guo \textit{et al.}~\cite{guo2022cdtmsw}, thông tin về loại trôi dạt (drift type) do phương pháp
+CDT\_MSW cung cấp đóng vai trò quan trọng để lựa chọn cơ chế cập nhật phù hợp.
+Ngoài ra, các nghiên cứu gần đây~\cite{jourdan2023process,xiang2023review,yuan2022advances}
+đã mở rộng khung thích ứng này sang các hệ thống học sâu (deep learning systems),
+trong đó chiến lược cập nhật không chỉ phụ thuộc vào loại trôi dạt mà còn vào cấu trúc mô hình, mức độ sẵn có của nhãn, và chi phí tính toán.
+
+\subsection{Phân loại chiến lược cập nhật}
+Tổng hợp từ các tài liệu trên, có thể chia các chiến lược cập nhật mô hình thành bốn nhóm chính:
+
+\begin{enumerate}[label=\textbf{(\alph*)}]
+  \item \textbf{Cập nhật cục bộ (Local Reset / Fine-tuning):}
+  Áp dụng khi xảy ra \emph{sudden drift}, tức là phân phối dữ liệu thay đổi mạnh trong thời gian ngắn.
+  Mô hình được tái huấn luyện một phần hoặc toàn bộ trên cửa sổ dữ liệu mới.
+  Phương pháp này phù hợp với các bộ phát hiện trôi dạt dựa trên cửa sổ như ADWIN hoặc CDT\_MSW,
+  khi $L_d < \lambda$ (độ dài trôi dạt ngắn).
+  Ví dụ, trong hệ thống giám sát quá trình sản xuất (process monitoring),
+  Jourdan \textit{et al.}~\cite{jourdan2023process} thực hiện \emph{partial reinitialization}
+  của các tầng cuối trong mạng nơ-ron khi độ bất định (uncertainty) vượt ngưỡng.
+
+  \item \textbf{Cập nhật dần (Gradual / Incremental Update):}
+  Khi mô hình gặp \emph{gradual} hoặc \emph{incremental drift},
+  sự thay đổi xảy ra từ từ, cần cập nhật mềm với hệ số học $\eta_t$ nhỏ hơn.
+  Theo Xiang \textit{et al.}~\cite{xiang2023review}, có thể mô hình hoá bằng công thức:
+  \[
+  \theta_{t+1} = \theta_t - \eta_t \nabla_\theta \mathcal{L}(x_t, y_t),
+  \quad \text{với } \eta_t = f(L_d, r_t),
+  \]
+  trong đó $L_d$ là độ dài trôi dạt, $r_t$ là tốc độ thay đổi.
+  Khi $r_t$ tăng đều, $\eta_t$ được tăng dần để theo kịp xu hướng dữ liệu mới.
+  Các kỹ thuật như \emph{online fine-tuning}, \emph{stochastic gradient with forgetting factor}
+  hoặc \emph{momentum adaptation} thường được sử dụng trong nhóm này.
+
+  \item \textbf{Cập nhật theo ngữ cảnh (Recurrent / Memory-based Adaptation):}
+  Đối với \emph{recurrent drift}, khi khái niệm cũ tái xuất hiện theo chu kỳ, mô hình nên duy trì
+  một \emph{bộ nhớ khái niệm} (concept repository).
+  Cách tiếp cận phổ biến là lưu trữ các snapshot $\{M_i\}$ tương ứng với từng khái niệm,
+  và lựa chọn mô hình phù hợp nhất khi phân phối dữ liệu hiện tại $P_t(x)$
+  tương tự với một snapshot trước đó:
+  \[
+  M^* = \arg\min_{M_i} \text{Dist}(P_t(x), P_{M_i}(x)).
+  \]
+  Phương pháp này được áp dụng trong các framework học sâu có bộ nhớ động như
+  Deep Ensemble Replay hoặc Continual Learning with Experience Buffer~\cite{yuan2022advances}.
+
+  \item \textbf{Cập nhật cấu trúc (Structural or Hybrid Adaptation):}
+  Một số nghiên cứu gần đây~\cite{xiang2023review,yuan2022advances}
+  đề xuất không chỉ điều chỉnh tham số, mà còn thay đổi \emph{cấu trúc mạng học sâu} khi có drift.
+  Ví dụ, thêm tầng mới hoặc nhánh mới để học khái niệm mới mà không làm mất kiến thức cũ,
+  biểu diễn bởi:
+  \[
+  \mathcal{M}_{t+1} = \mathcal{M}_t \cup \Delta \mathcal{M},
+  \]
+  trong đó $\Delta \mathcal{M}$ là tập các node hoặc layer mới được thêm.
+  Phương pháp này hữu ích với các trôi dạt dài hạn (progressive drift) hoặc trôi dạt phức hợp (hybrid drift).
+\end{enumerate}
+
+\subsection{Bảng tổng hợp}
+\begin{table}[H]
+\centering
+\caption{Mối quan hệ giữa loại trôi dạt và chiến lược cập nhật mô hình thích ứng}
+\label{tab:model_update_strategies}
+\begin{tabular}{p{3cm}p{9.5cm}}
+\toprule
+\textbf{Loại trôi dạt} & \textbf{Chiến lược cập nhật đề xuất} \\
+\midrule
+\textbf{Sudden drift} &
+Tái huấn luyện nhanh (local reset), bỏ dữ liệu cũ; tăng $\eta_t$; phù hợp với incremental retraining, ADWIN, CDT\_MSW. \\[0.4em]
+\textbf{Gradual drift} &
+Cập nhật mềm (soft update), giảm hệ số học; áp dụng momentum nhỏ hoặc sliding window dài. \\[0.4em]
+\textbf{Incremental drift} &
+Cập nhật liên tục (continuous adaptation), sử dụng gradient online và drift-aware scheduler. \\[0.4em]
+\textbf{Recurrent drift} &
+Duy trì bộ nhớ khái niệm; lựa chọn mô hình tương tự (ensemble selection / memory replay). \\[0.4em]
+\textbf{Progressive drift} &
+Thay đổi cấu trúc mô hình (dynamic architecture), hoặc học chuyển giao (transfer learning) giữa các giai đoạn. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Nhận xét tổng hợp}
+Từ các kết quả trên có thể rút ra ba quan sát chính:
+\begin{enumerate}
+  \item Việc xác định đúng loại trôi dạt giúp chọn chiến lược thích ứng hiệu quả, tránh huấn luyện lại toàn bộ.
+  \item Các phương pháp học sâu hiện đại hướng đến \emph{cập nhật kết hợp} (hybrid adaptation),
+  vừa tinh chỉnh trọng số, vừa thay đổi cấu trúc mạng để xử lý trôi dạt dài hạn~\cite{yuan2022advances}.
+  \item Các chỉ số định lượng như độ dài trôi dạt $L_d$ và tốc độ thay đổi $r_t$ của CDT\_MSW
+  có thể được dùng để điều chỉnh động learning rate hoặc quyết định chiến lược chuyển mô hình (switching strategy).
+\end{enumerate}
+
+\subsection{Kết luận}
+Tóm lại, chiến lược cập nhật mô hình thích ứng đóng vai trò cầu nối giữa phát hiện trôi dạt và duy trì hiệu năng hệ thống.
+Các phương pháp hiện đại kết hợp cả thông tin thống kê từ bộ phát hiện trôi dạt như CDT\_MSW
+và đặc trưng động của mô hình học sâu, cho phép \textbf{thích ứng chính xác theo từng loại trôi dạt},
+giảm thiểu hiện tượng quên kiến thức cũ và cải thiện độ bền vững của hệ thống học trực tuyến.

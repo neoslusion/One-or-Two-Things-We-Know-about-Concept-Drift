@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  latex-builder:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Proxy settings - will use environment variables if set
+        HTTP_PROXY: ${HTTP_PROXY:-}
+        HTTPS_PROXY: ${HTTPS_PROXY:-}
+        NO_PROXY: ${NO_PROXY:-}
+        http_proxy: ${http_proxy:-}
+        https_proxy: ${https_proxy:-}
+        no_proxy: ${no_proxy:-}
+    image: latex-thesis-builder:latest
+    container_name: thesis-builder
+    volumes:
+      # Mount source code
+      - .:/workspace
+      # Mount output directory
+      - ./output:/workspace/output
+      # Optional: Mount cache directory for faster rebuilds
+      - latex-cache:/home/builder/.texlive
+    environment:
+      # Pass through proxy settings to runtime
+      - HTTP_PROXY=${HTTP_PROXY:-}
+      - HTTPS_PROXY=${HTTPS_PROXY:-}
+      - NO_PROXY=${NO_PROXY:-}
+      - http_proxy=${http_proxy:-}
+      - https_proxy=${https_proxy:-}
+      - no_proxy=${no_proxy:-}
+    working_dir: /workspace
+    # Default command builds the thesis
+    command: ["./build_thesis.sh", "--output", "output"]
+    
+  # Interactive development service
+  latex-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        HTTP_PROXY: ${HTTP_PROXY:-}
+        HTTPS_PROXY: ${HTTPS_PROXY:-}
+        NO_PROXY: ${NO_PROXY:-}
+        http_proxy: ${http_proxy:-}
+        https_proxy: ${https_proxy:-}
+        no_proxy: ${no_proxy:-}
+    image: latex-thesis-builder:latest
+    container_name: thesis-builder-dev
+    volumes:
+      - .:/workspace
+      - ./output:/workspace/output
+      - latex-cache:/home/builder/.texlive
+    environment:
+      - HTTP_PROXY=${HTTP_PROXY:-}
+      - HTTPS_PROXY=${HTTPS_PROXY:-}
+      - NO_PROXY=${NO_PROXY:-}
+      - http_proxy=${http_proxy:-}
+      - https_proxy=${https_proxy:-}
+      - no_proxy=${no_proxy:-}
+    working_dir: /workspace
+    stdin_open: true
+    tty: true
+    command: ["/bin/bash"]
+
+volumes:
+  latex-cache:
+    driver: local
