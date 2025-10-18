@@ -55,7 +55,7 @@ class RealtimeDriftVisualizer:
 
         # Detection tracking
         self.detections = []  # List of {idx, p_value, type, category}
-        self.last_log_position = 0
+        self.last_processed_line = 0  # Track number of lines processed (not file position)
 
         # Kafka consumer for live data
         # Use dynamic group ID + 'earliest' to always start from beginning
@@ -137,11 +137,17 @@ class RealtimeDriftVisualizer:
         new_detections = 0
         try:
             with open(self.log_path, 'r', encoding='utf-8', errors='ignore', newline='') as f:
-                # Skip to last known position
-                f.seek(self.last_log_position)
-                
                 reader = csv.DictReader(f)
+                
+                # Skip lines we've already processed
+                current_line = 0
                 for row in reader:
+                    current_line += 1
+                    
+                    # Skip already processed lines
+                    if current_line <= self.last_processed_line:
+                        continue
+                    
                     try:
                         det_idx = int(float(row.get('detection_idx', '0')))
                         p_value = float(row.get('p_value', '1.0'))
@@ -165,8 +171,8 @@ class RealtimeDriftVisualizer:
                     except Exception as e:
                         continue
 
-                # Update position
-                self.last_log_position = f.tell()
+                # Update line counter to number of data lines processed (not including header)
+                self.last_processed_line = current_line
         except Exception:
             pass
 
