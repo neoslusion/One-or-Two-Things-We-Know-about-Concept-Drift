@@ -15,7 +15,8 @@ BROKERS = os.getenv("BROKERS", BROKERS)
 TOPIC = os.getenv("TOPIC", TOPIC)
 
 # Data generation parameters (matching DriftMonitoring.ipynb)
-STREAM_SIZE = int(os.getenv("STREAM_SIZE", "10000"))
+# Default: 4000 samples total (500 pre-train + 100 warmup + 900 pre-drift + drift at 1500 + 2500 post-drift for adaptation)
+STREAM_SIZE = int(os.getenv("STREAM_SIZE", "4000"))
 DRIFT_POSITION = int(os.getenv("DRIFT_POSITION", "1500"))
 RANDOM_SEED = int(os.getenv("RANDOM_SEED", "42"))
 
@@ -101,17 +102,13 @@ def main():
     
     p.flush()
     print(f"\n✓ Streaming complete - {STREAM_SIZE} samples sent")
-    print("Stream will restart in 5 seconds...")
-    time.sleep(5)
+    print("Producer finished - no more data will be sent")
 
 if __name__ == "__main__":
-    while True:
-        try:
-            main()
-        except KeyboardInterrupt:
-            print("\nProducer stopped by user")
-            break
-        except Exception as e:
-            print(f"Error: {e}")
-            print("Restarting in 5 seconds...")
-            time.sleep(5)
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\nProducer stopped by user")
+    except Exception as e:
+        print(f"Error: {e}")
+        raise

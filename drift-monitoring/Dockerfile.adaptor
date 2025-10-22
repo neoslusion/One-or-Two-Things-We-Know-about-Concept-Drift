@@ -13,7 +13,8 @@ RUN pip install --no-cache-dir \
     confluent-kafka \
     scikit-learn \
     scipy \
-    numpy
+    numpy \
+    river
 
 # Create mount directories
 RUN mkdir -p /data/snapshots /models
