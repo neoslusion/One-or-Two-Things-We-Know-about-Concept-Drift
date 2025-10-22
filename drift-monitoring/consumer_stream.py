@@ -348,43 +348,43 @@ def main():
                                 
                                 # Save snapshot with INDICES and DRIFT POSITION
                                 snapshot_filename = f"drift_window_{drift_detected_at}_{int(time.time())}.npz"
-                            snapshot_path = SNAPSHOT_DIR / snapshot_filename
+                                snapshot_path = SNAPSHOT_DIR / snapshot_filename
 
                                 # Save complete buffer with metadata
-                            np.savez(
-                                snapshot_path,
+                                np.savez(
+                                    snapshot_path,
                                     X=buffer_X,
                                     y=buffer_y,
                                     indices=buffer_indices,
                                     drift_position=drift_detected_at,  # CRITICAL: Mark drift position
                                     feature_names=np.array([f"f{i}" for i in range(buffer_X.shape[1])])
                                 )
-                            print(f"[Snapshot] Saved to {snapshot_path}")
-                            print(f"  Shape: {buffer_X.shape}")
-                            print(f"  Drift position: {drift_detected_at}")
-                            print(f"  Index range: {buffer_indices[0]} to {buffer_indices[-1]}\n")
-                                
-                            # Log detection
-                            csv_writer.writerow([
-                                drift_detected_at, p_min, 1, buffer_indices[-1],
-                                drift_type, drift_type_result.get('category', 'undetermined')
-                            ])
-                            csv_file.flush()
-                                
-                            # Emit drift event to Kafka
-                            out = {
-                                "event": "drift_detected",
+                                print(f"[Snapshot] Saved to {snapshot_path}")
+                                print(f"  Shape: {buffer_X.shape}")
+                                print(f"  Drift position: {drift_detected_at}")
+                                print(f"  Index range: {buffer_indices[0]} to {buffer_indices[-1]}\n")
+
+                                # Log detection
+                                csv_writer.writerow([
+                                    drift_detected_at, p_min, 1, buffer_indices[-1],
+                                    drift_type, drift_type_result.get('category', 'undetermined')
+                                ])
+                                csv_file.flush()
+
+                                # Emit drift event to Kafka
+                                out = {
+                                    "event": "drift_detected",
                                     "idx": int(drift_detected_at),
-                                "p_value": p_min,
-                                "detector": "shapedd",
-                                "window_path": str(snapshot_path),
+                                    "p_value": p_min,
+                                    "detector": "shapedd",
+                                    "window_path": str(snapshot_path),
                                     "drift_type": drift_type,
                                     "drift_category": drift_type_result.get('category', 'undetermined'),
                                     "drift_detected_at": int(drift_detected_at),  # Explicit position
-                                "ts": time.time()
-                            }
-                            p.produce(RESULT_TOPIC, json.dumps(out).encode("utf-8"))
-                            p.poll(0)
+                                    "ts": time.time()
+                                }
+                                p.produce(RESULT_TOPIC, json.dumps(out).encode("utf-8"))
+                                p.poll(0)
                     
                     # Display progress
                     if idx % 1000 == 0:
