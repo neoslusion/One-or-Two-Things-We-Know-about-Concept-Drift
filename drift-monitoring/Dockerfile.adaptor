@@ -2,12 +2,20 @@
 FROM python:3.11-slim
 
 WORKDIR /app
+
+# Copy all required files
 COPY adaptor.py /app/adaptor.py
+COPY adaptation_strategies.py /app/adaptation_strategies.py
+COPY config.py /app/config.py
 
-# cài lib tối thiểu
-RUN pip install --no-cache-dir kafka-python river numpy
+# Install all required dependencies
+RUN pip install --no-cache-dir \
+    confluent-kafka \
+    scikit-learn \
+    scipy \
+    numpy
 
-# thư mục mount
+# Create mount directories
 RUN mkdir -p /data/snapshots /models
 
 ENV RESULT_TOPIC=drift.results \
@@ -16,6 +24,7 @@ ENV RESULT_TOPIC=drift.results \
     GROUP_ID=adaptor-group \
     SNAPSHOT_DIR=/data/snapshots \
     MODEL_PATH=/models/current_model.pkl \
-    TASK_TYPE=classification
+    TASK_TYPE=classification \
+    ENABLE_DRIFT_TYPE_ADAPTATION=true
 
 CMD ["python", "-u", "adaptor.py"]
