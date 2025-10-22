@@ -10,8 +10,10 @@ import numpy as np
 # Kafka client: confluent_kafka (consistent with consumer)
 from confluent_kafka import Consumer, Producer, KafkaError
 
-# River (online ML)
-from river import preprocessing, linear_model, optim
+# Sklearn for batch learning (matches MultiDetectorEvaluation.ipynb)
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import Pipeline
 
 # Import adaptation strategies
 from adaptation_strategies import (
@@ -24,6 +26,9 @@ from adaptation_strategies import (
 )
 
 # ------------------ ENV & defaults ------------------
+
+# Import ADAPTATION_WINDOW from config
+from config import ADAPTATION_WINDOW
 
 RESULT_TOPIC = os.getenv("RESULT_TOPIC", "drift.results")
 MODEL_UPDATED_TOPIC = os.getenv("MODEL_UPDATED_TOPIC", "model.updated")
@@ -53,14 +58,24 @@ def err(msg: str):
     print(f"[Adaptor][ERROR] {msg}", flush=True)
 
 def make_model():
-    """Create River pipeline based on task type."""
+    """
+    Create sklearn Pipeline matching MultiDetectorEvaluation.ipynb.
+    
+    Uses batch learning with StandardScaler + LogisticRegression.
+    Model is FROZEN after training (no online learning during deployment).
+    """
     if TASK_TYPE == "classification":
-        return preprocessing.StandardScaler() | linear_model.LogisticRegression(
-            optimizer=optim.SGD(0.01), l2=1e-4
-        )
-    return preprocessing.StandardScaler() | linear_model.LinearRegression(
-        optimizer=optim.SGD(0.01), l2=1e-4
-    )
+        return Pipeline([
+            ('scaler', StandardScaler()),
+            ('clf', LogisticRegression(max_iter=1000, random_state=42))
+        ])
+    else:
+        # For regression (not used in current experiments)
+        from sklearn.linear_model import LinearRegression
+        return Pipeline([
+            ('scaler', StandardScaler()),
+            ('regressor', LinearRegression())
+        ])
 
 def save_model(model):
     MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -72,12 +87,19 @@ def load_model():
         return pickle.load(f)
 
 def load_snapshot(path: Path):
-    """Load .npz snapshot file."""
+    """
+    Load .npz snapshot file with drift metadata.
+    
+    Returns:
+        tuple: (X, y, feature_names, indices, drift_position)
+    """
     data = np.load(path, allow_pickle=True)
     X = data["X"]
     y = data["y"] if "y" in data.files else None
     feature_names = data["feature_names"].tolist() if "feature_names" in data.files else None
-    return X, y, feature_names
+    indices = data["indices"] if "indices" in data.files else None
+    drift_position = int(data["drift_position"]) if "drift_position" in data.files else None
+    return X, y, feature_names, indices, drift_position
 
 def publish_model_updated(prod: Producer, model_version: int, extra: dict):
     payload = {
@@ -169,40 +191,81 @@ def main():
 
                 t0 = time.time()
                 try:
-                    X, y, feature_names = load_snapshot(snap_path)
+                    X, y, feature_names, indices, drift_position = load_snapshot(snap_path)
                 except Exception as e:
                     err(f"Error loading snapshot {snap_path}: {e}")
                     continue
 
-                n = int(X.shape[0]) if isinstance(X, np.ndarray) else 0
+                # === CRITICAL: FILTER TO POST-DRIFT DATA ONLY ===
+                # Matching DriftMonitoring.ipynb to avoid pre-drift contamination
+                if drift_position is not None and indices is not None:
+                    # Filter to samples >= drift_position
+                    post_drift_mask = indices >= drift_position
+                    X_post = X[post_drift_mask]
+                    y_post = y[post_drift_mask] if y is not None else None
+                    
+                    # Limit to adaptation window
+                    if len(X_post) > ADAPTATION_WINDOW:
+                        X_adapt = X_post[-ADAPTATION_WINDOW:]
+                        y_adapt = y_post[-ADAPTATION_WINDOW:] if y_post is not None else None
+                    else:
+                        X_adapt = X_post
+                        y_adapt = y_post
+                    
+                    # Verify no contamination
+                    pre_drift_count = int(np.sum(~post_drift_mask))
+                    post_drift_count = int(np.sum(post_drift_mask))
+                    train_indices = indices[post_drift_mask]
+                    if len(train_indices) > 0:
+                        train_range = f"{train_indices[0]} to {train_indices[-1]}"
+                    else:
+                        train_range = "N/A"
+                    
+                    log(f"Snapshot loaded: {snap_path.name}")
+                    log(f"  Total samples: {len(X)}")
+                    log(f"  Drift position: {drift_position}")
+                    log(f"  Pre-drift samples (filtered out): {pre_drift_count}")
+                    log(f"  Post-drift samples: {post_drift_count}")
+                    log(f"  Training data range: samples {train_range}")
+                    log(f"  Adaptation samples: {len(X_adapt)}")
+                    
+                    if pre_drift_count > 0:
+                        log(f"  ✓ Filtered {pre_drift_count} pre-drift samples to avoid contamination")
+                else:
+                    # Fallback: no drift position metadata, use all data
+                    log(f"WARNING: No drift position metadata - using all snapshot data")
+                    X_adapt = X
+                    y_adapt = y
+
+                n = int(X_adapt.shape[0]) if isinstance(X_adapt, np.ndarray) else 0
                 if n == 0:
-                    err(f"Empty snapshot: {snap_path}")
+                    err(f"No post-drift samples available for adaptation")
                     continue
 
                 # === DRIFT-TYPE-SPECIFIC ADAPTATION ===
                 log(f"Drift detected: type={drift_type}, category={drift_category}")
 
                 if ENABLE_DRIFT_TYPE_ADAPTATION and drift_type != "undetermined":
-                    # Select strategy based on drift type
+                    # Select strategy based on drift type (using FILTERED post-drift data)
                     if drift_type == "sudden":
-                        model = adapt_sudden_drift(make_model, X, y, feature_names, ALLOW_UNLABELED_UPDATE)
+                        model = adapt_sudden_drift(make_model, X_adapt, y_adapt, feature_names, ALLOW_UNLABELED_UPDATE)
                     elif drift_type == "incremental":
-                        model = adapt_incremental_drift(model, X, y, feature_names)
+                        model = adapt_incremental_drift(model, X_adapt, y_adapt, feature_names)
                     elif drift_type == "gradual":
-                        model = adapt_gradual_drift(model, X, y, feature_names)
+                        model = adapt_gradual_drift(model, X_adapt, y_adapt, feature_names)
                     elif drift_type == "recurrent":
-                        model = adapt_recurrent_drift(model, X, y, feature_names, MODEL_CACHE_DIR)
+                        model = adapt_recurrent_drift(model, X_adapt, y_adapt, feature_names, MODEL_CACHE_DIR)
                         # Cache model with distribution for future recurrences
-                        cache_model_with_distribution(model, X, idx, MODEL_CACHE_DIR)
+                        cache_model_with_distribution(model, X_adapt, idx, MODEL_CACHE_DIR)
                     elif drift_type == "blip":
-                        model = adapt_blip_drift(model, X, y, feature_names)
+                        model = adapt_blip_drift(model, X_adapt, y_adapt, feature_names)
                     else:
                         log(f"Unknown drift type '{drift_type}' → incremental update")
-                        model = adapt_incremental_drift(model, X, y, feature_names)
+                        model = adapt_incremental_drift(model, X_adapt, y_adapt, feature_names)
                 else:
                     # Fallback: default incremental strategy
                     log("Drift-type undetermined → incremental update")
-                    model = adapt_incremental_drift(model, X, y, feature_names)
+                    model = adapt_incremental_drift(model, X_adapt, y_adapt, feature_names)
 
                 save_model(model)
                 dt = time.time() - t0

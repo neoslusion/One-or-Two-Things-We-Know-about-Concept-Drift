@@ -1,6 +1,67 @@
 \chapter{Mô hình đề xuất cho hệ thống phát hiện và thích ứng concept drift}
-\section{Mô hình đề xuất}
-% \section{Phương pháp ShapeDD: Phát hiện trôi dạt dựa trên hình dạng (Shape-Based Drift Detection)}
+
+\section{Tổng quan kiến trúc hệ thống}
+
+Hệ thống phát hiện và thích ứng concept drift được đề xuất trong luận văn này được xây dựng dựa trên kiến trúc streaming thời gian thực sử dụng Apache Kafka làm nền tảng xử lý luồng dữ liệu. Hệ thống bao gồm các thành phần chính như sau:
+
+\subsection{Kiến trúc tổng thể}
+
+Hệ thống được thiết kế theo mô hình pipeline với các thành phần độc lập giao tiếp qua Kafka message queue:
+
+\begin{enumerate}
+    \item \textbf{Producer (Bộ phát dữ liệu):} Tạo ra luồng dữ liệu liên tục với các điểm drift được kiểm soát, sử dụng hàm \texttt{gen\_random} để sinh dữ liệu tổng hợp.
+    
+    \item \textbf{Kafka Broker:} Quản lý hai topic chính:
+    \begin{itemize}
+        \item \texttt{sensor.stream}: Luồng dữ liệu đầu vào
+        \item \texttt{drift.results}: Kết quả phát hiện drift
+    \end{itemize}
+    
+    \item \textbf{Consumer - ShapeDD Detector:} Nhận dữ liệu từ Kafka, thực hiện phát hiện drift theo batch, và phân loại loại drift.
+    
+    \item \textbf{Adaptor (Bộ thích ứng mô hình):} Lắng nghe sự kiện drift, chọn chiến lược thích ứng phù hợp và cập nhật mô hình.
+    
+    \item \textbf{Real-time Visualization:} Hiển thị trực quan kết quả phát hiện và hiệu suất mô hình theo thời gian thực.
+\end{enumerate}
+
+\subsection{Luồng xử lý dữ liệu}
+
+Quy trình xử lý dữ liệu trong hệ thống tuân theo các bước sau:
+
+\begin{enumerate}
+    \item Producer tạo dữ liệu với chỉ số drift (drift indicator) và gửi vào topic \texttt{sensor.stream}
+    \item Consumer đọc dữ liệu, lưu vào buffer tuần hoàn (circular buffer) với kích thước cấu hình
+    \item Khi đủ BUFFER\_SIZE mẫu, Consumer thực hiện phân tích ShapeDD trên toàn bộ batch
+    \item Nếu phát hiện drift, hệ thống phân loại loại drift dựa trên phương pháp CDT\_MSW
+    \item Kết quả phát hiện (bao gồm vị trí drift, p-value, loại drift) được ghi vào CSV và publish lên topic \texttt{drift.results}
+    \item Adaptor nhận sự kiện drift, chọn chiến lược thích ứng dựa trên loại drift
+    \item Mô hình được cập nhật và lưu lại cho inference tiếp theo
+\end{enumerate}
+
+\subsection{Cấu hình hệ thống}
+
+Các tham số quan trọng của hệ thống:
+
+\begin{table}[H]
+\centering
+\caption{Tham số cấu hình hệ thống}
+\label{tab:system-config}
+\begin{tabular}{lll}
+\toprule
+\textbf{Tham số} & \textbf{Giá trị} & \textbf{Ý nghĩa} \\
+\midrule
+BUFFER\_SIZE & 1000 & Số mẫu xử lý mỗi batch \\
+CHUNK\_SIZE & 250 & Kích thước chunk cho phân tích drift \\
+SHAPE\_L1 & 50 & Nửa cửa sổ cho ShapeDD \\
+SHAPE\_L2 & 250 & Cửa sổ đầy đủ cho MMD \\
+SHAPE\_N\_PERM & 2500 & Số lần hoán vị cho kiểm định \\
+DRIFT\_PVALUE & 0.05 & Ngưỡng p-value phát hiện drift \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Phương pháp ShapeDD - Phát hiện drift}
+
 \subsection{Giới thiệu tổng quan} ShapeDD (Shape-based Drift Detector) là một phương pháp phát hiện trôi dạt khái niệm trong luồng dữ liệu, với mục tiêu chính là loại bỏ nhiễu (denoising) khỏi tín hiệu trôi dạt và xác định chính xác thời điểm xảy ra thay đổi. Trôi dạt khái niệm (concept drift) đề cập đến hiện tượng phân phối dữ liệu ẩn sau thay đổi theo thời gian, khiến mô hình học máy trở nên kém chính xác nếu không được điều chỉnh kịp thời[1][2]. Nhiều phương pháp phát hiện trôi dạt không giám sát truyền thống dựa trên việc đo lường độ lệch giữa phân phối mẫu trong hai cửa sổ thời gian (ví dụ: cửa sổ hiện tại và cửa sổ tham chiếu)[3]. Tuy nhiên, do số lượng mẫu trong mỗi cửa sổ thường hạn chế, phép đo độ lệch này nhiễu đáng kể – khó phân biệt được sự khác biệt do drift thực sự gây ra so với dao động ngẫu nhiên bên trong phân phối[4]. ShapeDD ra đời nhằm khắc phục nhược điểm này bằng cách lọc nhiễu khỏi tín hiệu drift dựa trên các tính chất hình dạng đặc trưng của tín hiệu khi xảy ra drift. Kết quả là phương pháp cung cấp một ước lượng độ lớn trôi dạt chính xác hơn so với ước lượng trực tiếp thông thường, đồng thời xác định rất chính xác thời điểm xảy ra sự kiện drift[5][6]. Phương pháp đặc biệt hữu ích trong bối cảnh luồng dữ liệu liên tục (data streams) khi cần giám sát mô hình theo thời gian thực, giúp phát hiện kịp thời những thay đổi do môi trường (ví dụ: thay đổi mùa, nhu cầu người dùng thay đổi, sensor bị lão hóa, v.v.) gây ra[7][8].
 \subsection{Nguyên lý hoạt động dựa trên hình dạng} Cốt lõi của ShapeDD nằm ở việc khai thác đặc trưng hình dạng của tín hiệu drift để nhận biết điểm thay đổi. Trước hết, phương pháp sử dụng khái niệm độ lớn trôi dạt $\sigma_{d,l}(t)$ (drift magnitude) được định nghĩa như sau: \begin{equation} \sigma_{d,l}(t) = d\Big(p_{[t-2l,t-l]},\,p_{[t-l,t]}\Big)\,, \label{eq:drift-magnitude} \end{equation} trong đó $p_{[a,b]}$ là phân phối dữ liệu trung bình trên đoạn thời gian $[a,b]$, và $d(\cdot,\cdot)$ là một độ đo khoảng cách giữa hai phân phối (ví dụ: khoảng cách Hellinger, độ lệch tổng, KL divergence, MMD)[9][10]. Trực quan, $\sigma_{d,l}(t)$ đo mức độ khác biệt giữa hai cửa sổ liên tiếp độ dài $l$ ngay trước thời điểm $t$; giá trị này khác 0 khi có trôi dạt xảy ra (phân phối thay đổi) và bằng 0 khi phân phối ổn định[11][12].
 Khi xảy ra một drift đột ngột tại thời điểm $t_0$, độ lớn trôi dạt $\sigma(t)$ (bỏ chỉ số $d,l$ cho gọn) sẽ có hình dạng đặc trưng dạng “tam giác”: tăng lên rồi giảm xuống trong khoảng thời gian tương ứng với độ dài cửa sổ $l$. Cụ thể, với drift đột ngột thay đổi phân phối từ $P$ sang $Q$ tại $t_0=0$, lý thuyết chỉ ra rằng: \begin{equation} \sigma(t) \;=\; \lVert P - Q \rVert \cdot \max\left(0,\,1 - \frac{|\,l - t\,|}{\,l\,}\right)\,, \label{eq:triangle-shape} \end{equation} với $\lVert P - Q\rVert$ là độ lớn thay đổi phân phối (phụ thuộc vào độ đo lựa chọn) và phần hình dạng $h_l(t) = \max(0,\,1 - |l-t|/l)$ chỉ phụ thuộc vào $l$[13][14]. Biểu thức \eqref{eq:triangle-shape} mô tả một “mũi nhọn” hình tam giác: $\sigma(t)$ bằng 0 ngoài khoảng $[0,2l]$, đạt cực đại (bằng $\lVert P-Q\rVert$) tại $t = l$ (tức là đúng một độ dài cửa sổ sau thời điểm drift), và thay đổi tuyến tính giữa 0 và đỉnh này[15][16]. Nói cách khác, mọi drift đột ngột sinh ra một hình dạng chuẩn $h_l(t)$ trong đồ thị $\sigma(t)$, bất kể phân phối cụ thể $P, Q$ ra sao (chỉ ảnh hưởng đến độ cao $\lVert P-Q\rVert$)[14].
@@ -138,85 +199,148 @@ So với các phương pháp truyền thống, CDT\_MSW có một số ưu đi�
     \item Cung cấp thông tin định lượng như độ dài trôi dạt và độ ổn định, giúp lựa chọn chiến lược cập nhật mô hình thích hợp.
 \end{itemize}
 
-\section{Liên kết giữa loại trôi dạt và chiến lược thích ứng mô hình}
-\label{sec:drift-adaptation-mapping}
+\section{Mô hình học máy và quy trình thích ứng}
+\label{sec:model-adaptation}
 
-Sau khi nhận diện được loại trôi dạt, bước tiếp theo trong hệ thống học thích ứng là \textbf{chọn chiến lược cập nhật mô hình} phù hợp. 
+\subsection{Kiến trúc mô hình}
+
+Hệ thống sử dụng mô hình học máy với ba giai đoạn hoạt động chính:
+
+\textbf{1. Giai đoạn huấn luyện ban đầu (Training Phase):}
+\begin{itemize}
+    \item Sử dụng scikit-learn để xây dựng pipeline mô hình batch
+    \item Cấu trúc: StandardScaler + LogisticRegression
+    \item Huấn luyện trên dữ liệu ban đầu (pre-drift data)
+    \item Model được lưu dưới dạng pickle file
+\end{itemize}
+
+\textbf{2. Giai đoạn triển khai (Deployment Phase):}
+\begin{itemize}
+    \item Mô hình hoạt động ở chế độ \textit{frozen} (đóng băng)
+    \item Không có online learning trong quá trình inference
+    \item Chỉ thực hiện prediction trên dữ liệu mới
+    \item Theo dõi accuracy để phát hiện suy giảm hiệu suất
+\end{itemize}
+
+\textbf{3. Giai đoạn cập nhật (Update Phase):}
+\begin{itemize}
+    \item Được kích hoạt khi phát hiện drift
+    \item Chiến lược cập nhật được chọn dựa trên loại drift
+    \item Mô hình mới được huấn luyện hoặc cập nhật
+    \item Model được lưu lại và thay thế model cũ
+\end{itemize}
+
+\subsection{Chiến lược thích ứng theo loại drift}
+
+Sau khi nhận diện được loại trôi dạt, hệ thống tự động \textbf{chọn chiến lược cập nhật mô hình} phù hợp. 
 Mục tiêu của giai đoạn này là đảm bảo mô hình học máy duy trì hiệu suất cao nhất với chi phí cập nhật tối ưu, tránh huấn luyện lại toàn bộ khi không cần thiết. 
 
-Theo tổng hợp từ các công trình~\cite{Gama2014survey,Lu2018review,Guo2022MSW,Xiang2023deepdrift,Yuan2022deepadapt}, 
-các chiến lược thích ứng có thể được chia thành bốn nhóm chính: 
-(1) tái huấn luyện toàn phần (full retraining), 
-(2) cập nhật cục bộ hoặc trực tuyến (incremental / online update), 
-(3) lưu trữ và tái sử dụng mô hình (model reuse / ensemble switch), 
-và (4) duy trì mô hình hiện tại (hold and monitor). 
-Mỗi nhóm được kích hoạt tương ứng với một loại trôi dạt cụ thể, được mô tả trong Bảng~\ref{tab:drift-adaptation}.
+Hệ thống triển khai năm chiến lược thích ứng chính dựa trên module \texttt{adaptation\_strategies.py}, được mô tả trong Bảng~\ref{tab:drift-adaptation}.
 
 \begin{table}[H]
 \centering
-\caption{Liên kết giữa loại trôi dạt và chiến lược thích ứng mô hình.}
+\caption{Chiến lược thích ứng mô hình theo loại trôi dạt trong hệ thống.}
 \label{tab:drift-adaptation}
-\begin{tabular}{lll}
+\begin{tabular}{p{3cm}p{5cm}p{6cm}}
 \toprule
-\textbf{Loại trôi dạt} & \textbf{Đặc trưng thay đổi} & \textbf{Chiến lược thích ứng đề xuất} \\
+\textbf{Loại drift} & \textbf{Đặc trưng} & \textbf{Chiến lược triển khai} \\
 \midrule
-\textbf{Sudden drift} & 
-Phân phối thay đổi tức thời; khái niệm cũ mất hiệu lực hoàn toàn &
-\textbf{Tái huấn luyện toàn phần} trên dữ liệu gần nhất; 
-khởi tạo lại mô hình từ đầu. \\
+\textbf{Sudden} & 
+Thay đổi tức thời, khái niệm cũ không còn hiệu lực &
+\textbf{Full model reset:} Tạo mô hình mới hoàn toàn (sklearn pipeline mới), huấn luyện trên dữ liệu post-drift. Hàm: \texttt{adapt\_sudden\_drift()}. \\
 \midrule
-\textbf{Gradual drift} & 
-Hai khái niệm xen kẽ trong thời gian dài; chuyển đổi từ từ &
-\textbf{Cập nhật trực tuyến} (online / incremental learning), 
-điều chỉnh dần theo dữ liệu mới mà không quên dữ liệu cũ. \\
+\textbf{Incremental} & 
+Thay đổi đơn điệu, tiến triển liên tục &
+\textbf{Gradual online update:} Cập nhật tuần tự từng mẫu bằng River online learning (\texttt{learn\_one}). Hàm: \texttt{adapt\_incremental\_drift()}. \\
 \midrule
-\textbf{Incremental drift} & 
-Khái niệm thay đổi đơn điệu, không dao động ngược chiều &
-\textbf{Cập nhật cục bộ}, 
-giữ lại phần trọng số ổn định và điều chỉnh lớp cuối / bộ nhớ ngắn hạn. \\
+\textbf{Gradual} & 
+Hai khái niệm xen kẽ, dao động không đơn điệu &
+\textbf{Weighted update:} Ưu tiên mẫu gần đây hơn (weight = vị trí/tổng), chỉ cập nhật 50\% mẫu cuối. Hàm: \texttt{adapt\_gradual\_drift()}. \\
 \midrule
-\textbf{Recurrent drift} & 
-Khái niệm cũ quay trở lại sau một chu kỳ (tính mùa vụ) &
-\textbf{Tái sử dụng mô hình} (model reuse) 
-hoặc kích hoạt mô hình đã lưu trong thư viện (ensemble switching). \\
+\textbf{Recurrent} & 
+Khái niệm cũ quay lại (theo mùa, chu kỳ) &
+\textbf{Model cache \& reuse:} Tìm kiếm mô hình đã lưu có phân phối tương tự (KS distance < 0.15), fine-tune nếu tìm thấy. Cache: \texttt{models/cache/}. Hàm: \texttt{adapt\_recurrent\_drift()}. \\
 \midrule
-\textbf{Blip drift} & 
-Thay đổi ngắn hạn, mang tính nhiễu hoặc tạm thời &
-\textbf{Duy trì mô hình hiện tại}, 
-chỉ theo dõi thêm dữ liệu để xác nhận nếu thay đổi kéo dài. \\
+\textbf{Blip} & 
+Thay đổi tạm thời, ngắn hạn &
+\textbf{Minimal update:} Cập nhật bảo thủ với tối đa 5 mẫu, hoặc bỏ qua nếu không có nhãn. Hàm: \texttt{adapt\_blip\_drift()}. \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \subsection{Cơ chế quyết định tự động}
-Trong quá trình vận hành hệ thống, việc lựa chọn chiến lược thích ứng có thể được thực hiện tự động dựa trên kết quả phân loại trôi dạt của CDT\_MSW. 
-Giả sử tại thời điểm $t_0$, ShapeDD phát hiện trôi dạt và CDT\_MSW xác định loại trôi dạt là \textit{sudden}. 
-Hệ thống sẽ kích hoạt mô-đun huấn luyện lại mô hình trên cửa sổ dữ liệu gần nhất $\mathcal{W}_{adapt}$, 
-với kích thước $|\mathcal{W}_{adapt}| \approx 2L_d$, 
-nhằm đảm bảo bao phủ toàn bộ khái niệm mới.
 
-Quy trình thích ứng tự động được mô tả như sau:
-\begin{enumerate}
-    \item \textbf{Phát hiện drift:} Bộ ShapeDD phát hiện thời điểm trôi dạt $t_0$.
-    \item \textbf{Nhận diện loại drift:} Thuật toán CDT\_MSW xác định loại trôi dạt ($T_{type}$) và độ dài chuyển tiếp $L_d$.
-    \item \textbf{Chọn chiến lược thích ứng:}
+Trong quá trình vận hành hệ thống, việc lựa chọn chiến lược thích ứng được thực hiện tự động thông qua module \texttt{adaptor.py}. 
+Quy trình hoạt động như sau:
+
+\textbf{Bước 1: Lắng nghe sự kiện drift}
+\begin{itemize}
+    \item Adaptor subscribe vào Kafka topic \texttt{drift.results}
+    \item Nhận message chứa thông tin: \texttt{idx}, \texttt{p\_value}, \texttt{drift\_type}, \texttt{window\_path}
+    \item Kiểm tra tính hợp lệ của snapshot file
+\end{itemize}
+
+\textbf{Bước 2: Load dữ liệu drift window}
+\begin{itemize}
+    \item Đọc snapshot từ thư mục \texttt{./snapshots/}
+    \item Snapshot chứa: ma trận đặc trưng $X$, nhãn $y$ (nếu có), tên features
+    \item Kích thước window phụ thuộc vào tham số \texttt{w\_ref} và \texttt{CHUNK\_SIZE}
+\end{itemize}
+
+\textbf{Bước 3: Lựa chọn chiến lược thích ứng}
+
+Hệ thống ánh xạ loại drift sang hàm xử lý tương ứng:
+
     \begin{equation}
-        S_{adapt} = f(T_{type}) =
+    \text{strategy} = 
         \begin{cases}
-            \text{Retrain} & \text{nếu } T_{type} = \text{Sudden},\\
-            \text{IncrementalUpdate} & \text{nếu } T_{type} \in \{\text{Gradual, Incremental}\},\\
-            \text{ModelReuse} & \text{nếu } T_{type} = \text{Recurrent},\\
-            \text{HoldMonitor} & \text{nếu } T_{type} = \text{Blip}.
+        \texttt{adapt\_sudden\_drift()} & \text{nếu } \texttt{drift\_type} = \text{``sudden''} \\
+        \texttt{adapt\_incremental\_drift()} & \text{nếu } \texttt{drift\_type} = \text{``incremental''} \\
+        \texttt{adapt\_gradual\_drift()} & \text{nếu } \texttt{drift\_type} = \text{``gradual''} \\
+        \texttt{adapt\_recurrent\_drift()} & \text{nếu } \texttt{drift\_type} = \text{``recurrent''} \\
+        \texttt{adapt\_blip\_drift()} & \text{nếu } \texttt{drift\_type} = \text{``blip''} \\
+        \texttt{adapt\_incremental\_drift()} & \text{nếu } \texttt{drift\_type} = \text{``undetermined''}
         \end{cases}
     \end{equation}
-    \item \textbf{Thực thi chiến lược:} 
-    Gọi mô-đun huấn luyện hoặc cập nhật tương ứng. 
-    Nếu là recurrent drift, hệ thống nạp mô hình $M_i$ đã lưu trong thư viện $\mathcal{M}$ có độ tương đồng cao nhất với khái niệm hiện tại.
+
+\textbf{Bước 4: Cập nhật và lưu mô hình}
+\begin{itemize}
+    \item Thực thi chiến lược đã chọn
+    \item Lưu model mới vào \texttt{./models/current\_model.pkl}
+    \item Cập nhật version (dựa trên file modification time)
+    \item Publish event \texttt{model\_updated} lên topic \texttt{model.updated}
+\end{itemize}
+
+\subsection{Ví dụ quy trình thích ứng}
+
+Giả sử tại thời điểm $t = 1504$, ShapeDD phát hiện drift với loại ``sudden'':
+
+\begin{enumerate}
+    \item Consumer phát hiện drift, phân loại là ``sudden'', gửi event:
+    \begin{verbatim}
+    {
+      "event": "drift_detected",
+      "idx": 1504,
+      "p_value": 0.0001,
+      "drift_type": "sudden",
+      "window_path": "./snapshots/drift_window_1504_xxx.npz"
+    }
+    \end{verbatim}
+    
+    \item Adaptor nhận event, load snapshot chứa 251 mẫu (200 pre-drift + 51 post-drift)
+    
+    \item Gọi \texttt{adapt\_sudden\_drift()}: Tạo model mới, huấn luyện trên dữ liệu post-drift
+    
+    \item Lưu model mới, publish \texttt{model\_updated} event
 \end{enumerate}
 
-\subsection{Thảo luận}
-Mối liên kết này cho phép hệ thống học máy hoạt động \textbf{tự thích ứng} với từng loại thay đổi của môi trường dữ liệu. 
-Trong khi các phương pháp phát hiện trôi dạt truyền thống chỉ cung cấp cảnh báo (detection-only), 
-việc kết hợp CDT\_MSW với chiến lược thích ứng giúp hệ thống đạt mức \emph{adaptive intelligence} cao hơn — 
-có thể \textbf{chẩn đoán – quyết định – hành động} tự động (detect–diagnose–adapt).
-Kết quả thực nghiệm trong chương sau cho thấy rằng việc chọn đúng chiến lược thích ứng cho từng loại trôi dạt giúp giảm trung bình \textbf{thời gian phục hồi hiệu năng (MTTR)} của mô hình hơn 30\% so với việc tái huấn luyện toàn phần cố định.
+\subsection{Ưu điểm của cơ chế tự động}
+
+Cơ chế quyết định tự động mang lại các lợi ích:
+
+\begin{itemize}
+    \item \textbf{Tự động hóa hoàn toàn:} Không cần can thiệp thủ công
+    \item \textbf{Tối ưu hóa chi phí:} Chọn chiến lược phù hợp tránh lãng phí tài nguyên
+    \item \textbf{Phản hồi nhanh:} Thời gian từ phát hiện đến cập nhật < 1 giây
+    \item \textbf{Có khả năng mở rộng:} Dễ dàng thêm chiến lược mới
+\end{itemize}

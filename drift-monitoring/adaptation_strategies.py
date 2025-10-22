@@ -2,11 +2,15 @@
 Adaptation strategies for different drift types.
 
 Each strategy implements a specific model update approach based on drift characteristics.
+Uses sklearn batch learning to match MultiDetectorEvaluation.ipynb notebook.
 """
 import numpy as np
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional, List, Callable
 from scipy.stats import ks_2samp
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import Pipeline
 
 
 def log(msg: str):
@@ -17,44 +21,25 @@ def err(msg: str):
     print(f"[Strategy][ERROR] {msg}", flush=True)
 
 
-def _to_records(X: np.ndarray, feature_names: Optional[List[str]] = None):
-    """Convert numpy array to River record format (list of dicts)."""
-    n, d = X.shape
-    if feature_names is None:
-        feature_names = [str(j) for j in range(d)]
-    return [{feature_names[j]: float(X[i, j]) for j in range(d)} for i in range(n)]
-
-
-def learn_many(model, X: np.ndarray, y: Optional[np.ndarray], feature_names: Optional[List[str]] = None):
-    """Online update for River model."""
-    if y is None:
-        log("No labels - updating scaler statistics only")
-        Xrecs = _to_records(X, feature_names)
-        for xi in Xrecs:
-            _ = model.transform_one(xi)
-        return model
-
-    Xrecs = _to_records(X, feature_names)
-    for xi, yi in zip(Xrecs, y):
-        model = model.learn_one(xi, yi)
-    return model
-
-
-def adapt_sudden_drift(model_factory, X: np.ndarray, y: Optional[np.ndarray],
+def adapt_sudden_drift(model_factory: Callable, X: np.ndarray, y: Optional[np.ndarray],
                        feature_names: Optional[List[str]] = None, allow_unlabeled: bool = False):
     """
-    SUDDEN drift: Full model reset and retrain.
-    Abrupt change - best to start fresh.
+    SUDDEN drift: Full model reset and retrain (sklearn batch learning).
+    
+    Matches MultiDetectorEvaluation.ipynb approach:
+    - Create fresh sklearn Pipeline
+    - Train on post-drift data using .fit()
+    - Abrupt change - best to start fresh
     """
     log("SUDDEN drift → Full model reset and retrain")
     new_model = model_factory()
 
     if y is not None:
-        new_model = learn_many(new_model, X, y, feature_names)
-        log(f"  Retrained on {len(X)} samples")
+        # Batch training with sklearn
+        new_model.fit(X, y)
+        log(f"  Retrained on {len(X)} samples using sklearn .fit()")
     elif allow_unlabeled:
-        new_model = learn_many(new_model, X, y, feature_names)
-        log(f"  Updated scaler with {len(X)} unlabeled samples")
+        log(f"  WARNING: Cannot train classifier without labels - returning untrained model")
 
     return new_model
 
@@ -62,38 +47,48 @@ def adapt_sudden_drift(model_factory, X: np.ndarray, y: Optional[np.ndarray],
 def adapt_incremental_drift(model, X: np.ndarray, y: Optional[np.ndarray],
                             feature_names: Optional[List[str]] = None):
     """
-    INCREMENTAL drift: Gradual online updates.
-    Monotonic progression - keep existing model and adapt gradually.
+    INCREMENTAL drift: Batch retrain on recent data (sklearn approach).
+    
+    Note: sklearn doesn't support true incremental learning for LogisticRegression pipeline.
+    Strategy: Retrain on the drift window data (similar to sudden but keeps context).
+    Monotonic progression - retrain on recent samples.
     """
-    log("INCREMENTAL drift → Gradual online updates")
-    model = learn_many(model, X, y, feature_names)
-    log(f"  Applied incremental updates with {len(X)} samples")
+    log("INCREMENTAL drift → Retrain on drift window")
+    
+    if y is not None:
+        # Batch retrain on drift window
+        model.fit(X, y)
+        log(f"  Retrained model on {len(X)} recent samples")
+    else:
+        log("  WARNING: Cannot retrain without labels")
+    
     return model
 
 
 def adapt_gradual_drift(model, X: np.ndarray, y: Optional[np.ndarray],
                         feature_names: Optional[List[str]] = None):
     """
-    GRADUAL drift: Weighted updates with recent sample priority.
-    Non-monotonic with oscillations - use weighted learning.
+    GRADUAL drift: Retrain on recent samples (sklearn batch approach).
+    
+    Non-monotonic with oscillations - focus on recent 50% of samples.
+    Note: sklearn doesn't support sample weighting in Pipeline easily,
+    so we use a subset strategy instead.
     """
-    log("GRADUAL drift → Weighted updates (recent samples prioritized)")
+    log("GRADUAL drift → Retrain on recent samples")
 
     if y is None:
-        model = learn_many(model, X, y, feature_names)
-        log(f"  Updated scaler with {len(X)} samples")
+        log("  WARNING: Cannot retrain without labels")
         return model
 
+    # Focus on recent half (gradual drift still evolving)
     n = len(X)
-    Xrecs = _to_records(X, feature_names)
+    cutoff = n // 2
+    X_recent = X[cutoff:]
+    y_recent = y[cutoff:]
 
-    # Weighted learning: recent samples get higher weight
-    for i, (xi, yi) in enumerate(zip(Xrecs, y)):
-        weight = (i + 1) / n
-        if weight > 0.5:  # Focus on recent half
-            model = model.learn_one(xi, yi)
-
-    log(f"  Applied weighted updates focusing on recent {n//2} samples")
+    # Batch retrain on recent samples
+    model.fit(X_recent, y_recent)
+    log(f"  Retrained on recent {len(X_recent)} samples (50% of window)")
     return model
 
 
@@ -163,13 +158,15 @@ def adapt_recurrent_drift(model, X: np.ndarray, y: Optional[np.ndarray],
                           cache_dir: Optional[Path] = None,
                           similarity_threshold: float = 0.15):
     """
-    RECURRENT drift: Use cached model if pattern repeats.
+    RECURRENT drift: Use cached sklearn model if pattern repeats.
+    
     Return to previous distribution - try to reuse old models.
+    Fine-tune cached model with sklearn batch learning.
     """
     log("RECURRENT drift → Checking for cached model")
 
     if cache_dir is None or not cache_dir.exists():
-        log("  No cache directory → fallback to incremental")
+        log("  No cache directory → fallback to batch retrain")
         return adapt_incremental_drift(model, X, y, feature_names)
 
     # Find best matching cached model
@@ -185,32 +182,39 @@ def adapt_recurrent_drift(model, X: np.ndarray, y: Optional[np.ndarray],
                 with open(model_pkl, "rb") as f:
                     cached_model = pickle.load(f)
 
-                # Fine-tune cached model
+                # Fine-tune cached model with sklearn
                 if y is not None:
-                    cached_model = learn_many(cached_model, X, y, feature_names)
+                    cached_model.fit(X, y)
                     log(f"  Loaded cached model and fine-tuned with {len(X)} samples")
+                else:
+                    log(f"  Loaded cached model without fine-tuning (no labels)")
 
                 return cached_model
         except Exception as e:
             err(f"  Failed to load cached model: {e}")
 
-    log("  No suitable cached model → fallback to incremental")
+    log("  No suitable cached model → fallback to batch retrain")
     return adapt_incremental_drift(model, X, y, feature_names)
 
 
 def adapt_blip_drift(model, X: np.ndarray, y: Optional[np.ndarray],
                      feature_names: Optional[List[str]] = None):
     """
-    BLIP: Minimal update.
+    BLIP: Minimal update (sklearn batch approach).
+    
     Very short temporary anomaly - likely noise, don't overreact.
+    Conservative strategy: retrain on small subset or skip entirely.
     """
     log("BLIP drift → Minimal update (temporary noise)")
 
-    if y is not None:
-        # Conservative update with small subset
-        n_samples = min(5, len(X))
-        model = learn_many(model, X[:n_samples], y[:n_samples], feature_names)
-        log(f"  Conservative update with {n_samples} samples only")
+    if y is not None and len(X) > 0:
+        # Very conservative: only if we have reasonable sample size
+        if len(X) >= 10:
+            n_samples = min(10, len(X))
+            model.fit(X[:n_samples], y[:n_samples])
+            log(f"  Conservative retrain with {n_samples} samples only")
+        else:
+            log(f"  Ignoring blip - too few samples ({len(X)})")
     else:
         log("  Ignoring unlabeled blip")
 

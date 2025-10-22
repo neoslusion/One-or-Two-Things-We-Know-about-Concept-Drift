@@ -2,70 +2,113 @@
 
 \section{Tổng kết đóng góp của nghiên cứu}
 
-Luận văn này đã thúc đẩy sự hiểu biết về concept drift thông qua phân tích lý thuyết toàn diện, đổi mới phương pháp luận, và đánh giá thực nghiệm. Nghiên cứu giải quyết các câu hỏi cơ bản về đặc trưng drift, phát hiện và thích ứng đồng thời cung cấp giải pháp thực tế cho các ứng dụng thực tế.
+Luận văn này đã nghiên cứu và triển khai thành công một hệ thống phát hiện và thích ứng concept drift tự động sử dụng ShapeDD detector và chiến lược thích ứng theo loại drift. Nghiên cứu kết hợp lý thuyết vững chắc với triển khai thực tế, tạo ra một giải pháp khả thi cho các ứng dụng streaming data.
 
-\subsection{Đóng góp lý thuyết}
+\subsection{Đóng góp về hệ thống}
 
-\textbf{Taxonomy drift toàn diện:} Chúng tôi phát triển framework đa chiều để đặc trưng hóa concept drift nắm bắt các khía cạnh thời gian, phân phối và không gian của thay đổi. Taxonomy này cung cấp cách tiếp cận có cấu trúc để hiểu các hiện tượng drift khác nhau và ý nghĩa của chúng cho chiến lược phát hiện và thích ứng.
+\textbf{Kiến trúc streaming real-time:} Xây dựng hệ thống hoàn chỉnh sử dụng Apache Kafka cho xử lý luồng dữ liệu, cho phép phát hiện drift và thích ứng mô hình tự động trong thời gian thực. Kiến trúc modular với các thành phần độc lập: Producer, Consumer (ShapeDD), Drift Classifier, Adaptor và Visualization.
 
-\textbf{Hình thức hóa toán học:} Công trình của chúng tôi cung cấp nền tảng toán học chính thức để định lượng mức độ drift và dự đoán yêu cầu thích ứng. Các metric đề xuất cho phép so sánh có hệ thống các kịch bản drift và cung cấp nền tảng lý thuyết cho thiết kế thuật toán.
+\textbf{Tích hợp ShapeDD detector:} Triển khai phương pháp ShapeDD với adaptive window sizing (ShapeDD\_Improved) đạt hiệu suất phát hiện drift xuất sắc (F1 = 1.0, delay = 4 samples). Hệ thống sử dụng permutation test với 2500 lần hoán vị đảm bảo độ tin cậy thống kê cao.
 
-\textbf{Framework Meta-learning:} Chúng tôi thiết lập nền tảng lý thuyết cho lựa chọn chiến lược thích ứng tự động dựa trên đặc trưng drift. Framework này thu hẹp khoảng cách giữa phát hiện drift và phản hồi thích ứng tối ưu.
+\textbf{Phân loại drift tự động:} Tích hợp phương pháp CDT\_MSW để tự động phân loại drift thành 5 loại (sudden, incremental, gradual, recurrent, blip) dựa trên đặc trưng thay đổi phân phối. Sử dụng KS distance tracking và stability analysis để xác định drift length và category (TCD/PCD).
 
-\subsection{Đóng góp phương pháp luận}
+\subsection{Đóng góp về triển khai}
 
-\textbf{Adaptive Statistical Test (AST):} Phương pháp AST đề xuất kết hợp nhiều statistical test với adaptive thresholding để đạt hiệu suất phát hiện drift vượt trội. Các đổi mới chính bao gồm:
+\textbf{Chiến lược thích ứng đa dạng:} Triển khai 5 chiến lược thích ứng khác nhau trong module \texttt{adaptation\_strategies.py}:
 \begin{itemize}
-    \item Fisher's method để kết hợp p-value từ các statistical test khác nhau
-    \item Điều chỉnh ngưỡng thích ứng dựa trên tỷ lệ báo động nhầm lịch sử
-    \item Triển khai hiệu quả phù hợp cho kịch bản streaming thời gian thực
+    \item \textbf{Sudden drift:} Full model reset - tạo mô hình mới hoàn toàn
+    \item \textbf{Incremental drift:} Gradual online updates với River framework
+    \item \textbf{Gradual drift:} Weighted updates ưu tiên mẫu gần đây
+    \item \textbf{Recurrent drift:} Model cache \& reuse với distribution similarity matching
+    \item \textbf{Blip drift:} Minimal update để tránh overreact với noise
 \end{itemize}
 
-\textbf{Dynamic Ensemble Detector (DED):} Framework DED cung cấp phát hiện drift bền vững thông qua kết hợp có trọng số của nhiều thuật toán phát hiện. Cơ chế weighting động cho phép hệ thống thích ứng với các mẫu drift khác nhau tự động.
+\textbf{Frozen model deployment:} Áp dụng chiến lược deployment mô hình đóng băng (frozen), không có online learning trong quá trình inference. Cách tiếp cận này cho phép:
+\begin{itemize}
+    \item Đo lường chính xác impact của drift qua accuracy degradation
+    \item Stability cao cho production systems
+    \item Clear separation giữa deployment và adaptation phases
+    \item Easy rollback nếu cần thiết
+\end{itemize}
 
-\textbf{Framework thích ứng Meta-learning:} Cách tiếp cận meta-learning của chúng tôi tự động lựa chọn chiến lược thích ứng tối ưu dựa trên đặc trưng drift được trích xuất. Điều này loại bỏ nhu cầu lựa chọn chiến lược thủ công và cải thiện hiệu quả thích ứng.
-
-\textbf{Quản lý cửa sổ thích ứng:} Chiến lược quản lý cửa sổ đề xuất điều chỉnh động kích thước cửa sổ dựa trên các mẫu drift được phát hiện, tối ưu hóa sự đánh đổi giữa tốc độ thích ứng và tính ổn định.
+\textbf{Event-driven architecture:} Sử dụng Kafka message queue để decouple các thành phần, cho phép:
+\begin{itemize}
+    \item Independent scaling của từng component
+    \item Asynchronous processing giảm latency
+    \item Event replay cho debugging và testing
+    \item Flexible deployment (Docker containers)
+\end{itemize}
 
 \subsection{Đóng góp thực nghiệm}
 
-\textbf{Đánh giá toàn diện:} Chúng tôi thực hiện các thí nghiệm mở rộng trên 15 bộ dữ liệu bao gồm các kịch bản tổng hợp và thực tế. Giao thức đánh giá bao gồm kiểm định thống kê nghiêm ngặt và phân tích effect size để đảm bảo kết luận đáng tin cậy.
+\textbf{So sánh detector toàn diện:} Đánh giá 10 drift detectors (4 window-based, 6 streaming) trên cùng sudden drift scenario với 10,000 samples. Kết quả cho thấy ShapeDD\_Improved vượt trội về cả accuracy và detection delay.
 
-\textbf{Cải thiện hiệu suất:} Các phương pháp của chúng tôi đạt được cải thiện đáng kể so với các phương pháp baseline:
+\textbf{Kết quả nổi bật:} ShapeDD\_Improved đạt được:
 \begin{itemize}
-    \item Cải thiện 24\% độ chính xác phát hiện drift
-    \item Giảm 54\% độ trễ phát hiện
-    \item Giảm 76\% tỷ lệ báo động nhầm
-    \item Cải thiện 6.3\% độ chính xác phân loại sau drift
+    \item F1-score: 1.0 (perfect detection - không false positive, không false negative)
+    \item Detection delay: 4 samples (nhanh nhất trong 10 detectors)
+    \item Drift type classification: 100\% accurate (phân loại đúng là "sudden")
+    \item Recovery rate: 82.8\% sau adaptation
+    \item Recovery time: 96 samples để đạt 95\% baseline accuracy
 \end{itemize}
 
-\textbf{Xác thực thực tế:} Kết quả bộ dữ liệu thực tế chứng minh khả năng ứng dụng thực tế của các phương pháp của chúng tôi trên các lĩnh vực đa dạng bao gồm tài chính, dự đoán thời tiết, phát hiện spam, và bảo mật mạng.
+\textbf{Phân tích lifecycle đầy đủ:} Theo dõi toàn bộ quá trình từ detection đến recovery:
+\begin{itemize}
+    \item Baseline accuracy: 0.996 (pre-drift)
+    \item Degradation: Giảm xuống 0.550 (44\% drop)
+    \item Adaptation: Full model reset với 800 post-drift samples
+    \item Recovery: Phục hồi lên 0.919 (91.9\%)
+\end{itemize}
 
 \section{Những phát hiện và hiểu biết chính}
 
 \subsection{Hiểu biết về phát hiện drift}
 
-\textbf{Phương pháp đa phương thức vượt trội:} Kết quả của chúng tôi xác nhận rằng việc kết hợp nhiều góc nhìn thống kê cải thiện đáng kể độ tin cậy phát hiện so với các phương pháp một test. Tính đa dạng của các statistical test nắm bắt các khía cạnh khác nhau của thay đổi phân phối.
+\textbf{Adaptive window sizing quan trọng:} ShapeDD\_Improved với adaptive window (L1 = 5\% stream length) vượt trội so với fixed window. Adaptive sizing tự động điều chỉnh theo magnitude và characteristics của drift, giảm false positives và tăng sensitivity.
 
-\textbf{Adaptive Thresholding thiết yếu:} Các phương pháp ngưỡng tĩnh mắc phải bias đặc thù miền. Adaptive thresholding dựa trên metric hiệu suất lịch sử cung cấp phát hiện bền vững hơn trên các kịch bản đa dạng.
+\textbf{Trade-off accuracy vs. speed:} Window-based detectors (ShapeDD) chính xác hơn nhưng chậm hơn (1.6 ms/sample) so với streaming detectors (0.27-0.31 ms/sample). Lựa chọn phụ thuộc vào requirements:
+\begin{itemize}
+    \item Mission-critical systems: Chọn accuracy (ShapeDD)
+    \item High-throughput streams: Chọn speed (ADWIN, EDDM)
+\end{itemize}
 
-\textbf{Lợi ích Ensemble:} Phát hiện ensemble động cung cấp tính bền vững vượt trội, đặc biệt trong các kịch bản với loại drift hỗn hợp. Khả năng cân bằng trọng số các detector khác nhau dựa trên hiệu suất gần đây là quan trọng để xử lý các mẫu drift tiến hóa.
+\textbf{Permutation test hiệu quả:} 2500 permutations cung cấp statistical confidence cao, lọc được noise và false positives. P-value threshold 0.05 cân bằng tốt giữa sensitivity và specificity.
 
 \subsection{Hiểu biết về chiến lược thích ứng}
 
-\textbf{Tối ưu hóa phụ thuộc ngữ cảnh:} Không có chiến lược thích ứng đơn lẻ nào hoạt động tối ưu trên tất cả các kịch bản drift. Hiệu quả của các cách tiếp cận khác nhau phụ thuộc mạnh vào đặc trưng drift như mức độ, tốc độ và feature bị ảnh hưởng.
+\textbf{Full reset tốt cho sudden drift:} Khi concept thay đổi hoàn toàn, full model reset hiệu quả hơn incremental updates:
+\begin{itemize}
+    \item Recovery rate: 82.8\% vs. 78-79\% (incremental)
+    \item Training time: <1s (acceptable)
+    \item Không bị "catastrophic forgetting" từ old concept
+\end{itemize}
 
-\textbf{Hiệu quả Meta-learning:} Lựa chọn chiến lược tự động thông qua meta-learning vượt trội đáng kể so với các phương pháp cố định. Khả năng học từ kết quả thích ứng lịch sử cho phép cải thiện liên tục trong lựa chọn chiến lược.
+\textbf{Frozen model phát hiện drift tốt hơn:} Deployment model đóng băng (không online learning) giúp:
+\begin{itemize}
+    \item Accuracy degradation rõ ràng khi drift xảy ra (0.996 → 0.550)
+    \item Dễ measure impact của drift
+    \item Stable behavior trong production
+    \item Clear trigger cho adaptation
+\end{itemize}
 
-\textbf{Tầm quan trọng của quản lý cửa sổ:} Kích thước cửa sổ thích ứng cung cấp lợi ích đáng kể so với cửa sổ cố định. Kích thước cửa sổ tối ưu phụ thuộc vào đặc trưng drift và phải được điều chỉnh động.
+\textbf{Drift type classification enables smart adaptation:} Phân loại đúng drift type (sudden, incremental, etc.) cho phép chọn strategy phù hợp, tránh over-adaptation hoặc under-adaptation.
 
-\subsection{Hiểu biết về ứng dụng thực tế}
+\subsection{Hiểu biết về kiến trúc hệ thống}
 
-\textbf{Mẫu đặc thù miền:} Các miền ứng dụng khác nhau thể hiện các mẫu drift đặc trưng. Dữ liệu tài chính cho thấy thay đổi đột ngột, dữ liệu thời tiết thể hiện mẫu theo mùa, và phát hiện spam liên quan đến tiến hóa dần dần với thay đổi đột ngột thỉnh thoảng.
+\textbf{Event-driven architecture scalable:} Kafka-based messaging cho phép:
+\begin{itemize}
+    \item Independent scaling: Consumer, Adaptor scale riêng biệt
+    \item Fault tolerance: Message persistence đảm bảo không mất data
+    \item Flexibility: Dễ thêm consumers mới (visualization, logging, etc.)
+\end{itemize}
 
-\textbf{Ràng buộc tính toán quan trọng:} Ứng dụng thực tế yêu cầu cân bằng cẩn thận giữa độ chính xác phát hiện và hiệu quả tính toán. Các phương pháp của chúng tôi cung cấp sự cân bằng này trong khi duy trì hiệu suất cạnh tranh.
-
-\textbf{Khan hiếm annotation:} Tính sẵn có hạn chế của annotation drift trong bộ dữ liệu thực tế tạo ra thách thức cho các phương pháp có giám sát. Các kỹ thuật bán giám sát của chúng tôi giúp giải quyết hạn chế này.
+\textbf{Modular design dễ maintain:} Separation of concerns:
+\begin{itemize}
+    \item Detection module: Chỉ lo phát hiện drift
+    \item Classification module: Phân loại drift type
+    \item Adaptation module: Update model theo strategy
+    \item Mỗi module có thể test và optimize độc lập
+\end{itemize}
 
 \section{Limitations and Constraints}
 

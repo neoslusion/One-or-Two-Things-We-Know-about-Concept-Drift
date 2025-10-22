@@ -22,7 +22,7 @@ from matplotlib.animation import FuncAnimation
 from confluent_kafka import Consumer
 
 # Import shared configuration
-from config import BROKERS, TOPIC, SHAPEDD_LOG
+from config import BROKERS, TOPIC, SHAPEDD_LOG, ACCURACY_TOPIC
 
 # Configuration
 MAX_DISPLAY_POINTS = 3000  # Maximum points to display in plot
@@ -41,11 +41,12 @@ DRIFT_TYPE_COLORS = {
 
 
 class RealtimeDriftVisualizer:
-    """Real-time visualization matching plot_detection.py layout."""
+    """Real-time visualization with accuracy tracking (matching DriftMonitoring.ipynb)."""
 
-    def __init__(self, brokers, topic, log_path):
+    def __init__(self, brokers, topic, accuracy_topic, log_path):
         self.brokers = brokers
         self.topic = topic
+        self.accuracy_topic = accuracy_topic
         self.log_path = log_path
 
         # Data buffers (ordered by stream index)
@@ -53,11 +54,16 @@ class RealtimeDriftVisualizer:
         self.stream_features = deque(maxlen=MAX_DISPLAY_POINTS)
         self.stream_drift_indicators = deque(maxlen=MAX_DISPLAY_POINTS)
 
+        # Accuracy tracking buffers
+        self.accuracy_indices = deque(maxlen=MAX_DISPLAY_POINTS)
+        self.accuracy_values = deque(maxlen=MAX_DISPLAY_POINTS)
+        self.baseline_accuracy = None
+
         # Detection tracking
         self.detections = []  # List of {idx, p_value, type, category}
         self.last_processed_line = 0  # Track number of lines processed (not file position)
 
-        # Kafka consumer for live data
+        # Kafka consumer for live data stream
         # Use dynamic group ID + 'earliest' to always start from beginning
         import time as time_module
         plot_group_id = f'realtime-plotter-{int(time_module.time())}'
@@ -69,35 +75,53 @@ class RealtimeDriftVisualizer:
             'enable.auto.commit': True
         })
         self.consumer.subscribe([topic])
-        print(f"[RT-Plot] Using consumer group: {plot_group_id} (starting from earliest)")
+        print(f"[RT-Plot] Data consumer group: {plot_group_id} (starting from earliest)")
 
-        # Setup matplotlib (2-plot layout like plot_detection.py)
-        self.fig, (self.ax1, self.ax2) = plt.subplots(2, 1, figsize=(15, 10), sharex=True)
+        # Kafka consumer for accuracy metrics
+        accuracy_group_id = f'realtime-accuracy-{int(time_module.time())}'
+        self.accuracy_consumer = Consumer({
+            'bootstrap.servers': brokers,
+            'group.id': accuracy_group_id,
+            'auto.offset.reset': 'earliest',
+            'enable.auto.commit': True
+        })
+        self.accuracy_consumer.subscribe([accuracy_topic])
+        print(f"[RT-Plot] Accuracy consumer group: {accuracy_group_id} (starting from earliest)")
+
+        # Setup matplotlib (3-plot layout: data, detections, accuracy)
+        self.fig, (self.ax1, self.ax2, self.ax3) = plt.subplots(3, 1, figsize=(15, 12), sharex=True)
         self.setup_plots()
 
         # Statistics
         self.total_samples = 0
         self.total_detections = 0
+        self.total_accuracy_points = 0
         self.last_status_time = time.time()
 
     def setup_plots(self):
-        """Setup 2-plot layout matching plot_detection.py."""
+        """Setup 3-plot layout matching DriftMonitoring.ipynb."""
         # Plot 1: Data stream with true drift
-        self.ax1.set_title('Data Stream with True Drift Points (from gen_random)', fontsize=12, fontweight='bold')
+        self.ax1.set_title('Data Stream with True Drift Points (SEA Dataset)', fontsize=12, fontweight='bold')
         self.ax1.set_ylabel('Feature Value (First Dimension)', fontsize=11)
         self.ax1.grid(True, alpha=0.3)
 
         # Plot 2: Detection signal
         self.ax2.set_title('ShapeDD Detection Points (Real-time)', fontsize=12, fontweight='bold')
         self.ax2.set_ylabel('Detection', fontsize=11)
-        self.ax2.set_xlabel('Stream Index', fontsize=11)
         self.ax2.set_ylim(-0.1, 1.1)
         self.ax2.grid(True, alpha=0.3)
 
+        # Plot 3: Model Accuracy (NEW - matching notebook)
+        self.ax3.set_title('Model Accuracy Over Time', fontsize=12, fontweight='bold')
+        self.ax3.set_ylabel('Accuracy', fontsize=11)
+        self.ax3.set_xlabel('Stream Index', fontsize=11)
+        self.ax3.set_ylim(-0.05, 1.05)
+        self.ax3.grid(True, alpha=0.3)
+
         # Main title
-        self.fig.suptitle('Real-time Drift Detection Analysis - Aligned Plots', fontsize=14, fontweight='bold')
+        self.fig.suptitle('Real-time Drift Detection and Model Performance', fontsize=14, fontweight='bold')
         self.fig.tight_layout()
-        self.fig.subplots_adjust(top=0.94)
+        self.fig.subplots_adjust(top=0.96)
 
     def update_stream_data(self):
         """Poll Kafka for new streaming data."""
@@ -116,7 +140,7 @@ class RealtimeDriftVisualizer:
                 data = json.loads(msg.value().decode('utf-8'))
                 x_vec = data.get('x', [])
                 idx = data.get('idx', -1)
-                drift_indicator = data.get('drift', 0)
+                drift_indicator = data.get('drift_indicator', 0)
 
                 if x_vec and idx >= 0:
                     self.stream_indices.append(idx)
@@ -128,6 +152,37 @@ class RealtimeDriftVisualizer:
                 continue
 
         return new_samples
+
+    def update_accuracy_data(self):
+        """Poll Kafka for new accuracy metrics."""
+        new_points = 0
+        start_time = time.time()
+
+        # Poll for up to 100ms or 50 messages
+        while (time.time() - start_time) < 0.1 and new_points < 50:
+            msg = self.accuracy_consumer.poll(timeout=POLL_TIMEOUT_SEC)
+            if msg is None:
+                break
+            if msg.error():
+                continue
+
+            try:
+                data = json.loads(msg.value().decode('utf-8'))
+                idx = data.get('idx', -1)
+                accuracy = data.get('accuracy', 0.0)
+                baseline = data.get('baseline_accuracy', 0.0)
+
+                if idx >= 0:
+                    self.accuracy_indices.append(idx)
+                    self.accuracy_values.append(accuracy)
+                    if baseline > 0 and self.baseline_accuracy is None:
+                        self.baseline_accuracy = baseline
+                    self.total_accuracy_points += 1
+                    new_points += 1
+            except Exception:
+                continue
+
+        return new_points
 
     def update_detections(self):
         """Load new detections from CSV log, filtering to match visible data range."""
@@ -179,20 +234,22 @@ class RealtimeDriftVisualizer:
         return new_detections
 
     def plot_frame(self, frame):
-        """Update plot for animation frame (matching plot_detection.py style)."""
+        """Update plot for animation frame (3-plot layout with accuracy)."""
         # Update data from sources
         new_samples = self.update_stream_data()
+        new_accuracy = self.update_accuracy_data()
         new_detections = self.update_detections()
 
         # Print status periodically
         if time.time() - self.last_status_time > 5:
-            print(f"[RT-Plot] Samples: {self.total_samples}, Detections: {self.total_detections}, "
-                  f"Buffer: {len(self.stream_indices)}/{MAX_DISPLAY_POINTS}")
+            print(f"[RT-Plot] Samples: {self.total_samples}, Accuracy points: {self.total_accuracy_points}, "
+                  f"Detections: {self.total_detections}, Buffer: {len(self.stream_indices)}/{MAX_DISPLAY_POINTS}")
             self.last_status_time = time.time()
 
         # Clear axes
         self.ax1.clear()
         self.ax2.clear()
+        self.ax3.clear()
 
         # === PLOT 1: Data Stream with True Drift ===
         if len(self.stream_indices) > 0:
@@ -217,7 +274,7 @@ class RealtimeDriftVisualizer:
                                 bbox=dict(boxstyle='round,pad=0.2', 
                                         facecolor='blue', alpha=0.7))
 
-            self.ax1.set_title('Data Stream with True Drift Points (from gen_random)', 
+            self.ax1.set_title('Data Stream with True Drift Points (SEA Dataset)', 
                              fontsize=12, fontweight='bold')
             self.ax1.set_ylabel('Feature Value (First Dimension)', fontsize=11)
             self.ax1.grid(True, alpha=0.3)
@@ -271,14 +328,58 @@ class RealtimeDriftVisualizer:
             self.ax2.set_title(f'ShapeDD Detection Points {title_suffix}', 
                              fontsize=12, fontweight='bold')
             self.ax2.set_ylabel('Detection', fontsize=11)
-            self.ax2.set_xlabel('Stream Index', fontsize=11)
             self.ax2.set_ylim(-0.1, 1.1)
             self.ax2.grid(True, alpha=0.3)
 
-            # Ensure both plots have same x-axis range
+            # === PLOT 3: Model Accuracy Over Time (NEW) ===
+            if len(self.accuracy_indices) > 0:
+                acc_indices = np.array(self.accuracy_indices)
+                acc_values = np.array(self.accuracy_values)
+                
+                # Plot accuracy line
+                self.ax3.plot(acc_indices, acc_values, 'b-', linewidth=2, label='Prequential Accuracy')
+                
+                # Mark baseline accuracy (if available)
+                if self.baseline_accuracy is not None:
+                    self.ax3.axhline(y=self.baseline_accuracy, color='green', linestyle='--', 
+                                   linewidth=2, alpha=0.7, label=f'Baseline ({self.baseline_accuracy:.3f})')
+                
+                # Mark drift detection points with vertical lines
+                for det in self.detections:
+                    det_idx = det['idx']
+                    drift_type = det['type']
+                    color = DRIFT_TYPE_COLORS.get(drift_type, DRIFT_TYPE_COLORS['undetermined'])
+                    self.ax3.axvline(x=det_idx, color=color, linestyle='--', 
+                                   alpha=0.6, linewidth=1.5)
+                
+                # Add current accuracy annotation
+                if len(acc_values) > 0:
+                    current_acc = acc_values[-1]
+                    self.ax3.text(0.02, 0.95, f'Current: {current_acc:.4f}', 
+                                transform=self.ax3.transAxes, 
+                                fontsize=10, verticalalignment='top',
+                                bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
+                
+                self.ax3.legend(loc='upper right', fontsize=9)
+                accuracy_title = f'Model Accuracy Over Time ({len(self.accuracy_indices)} points)'
+            else:
+                # No accuracy data yet
+                self.ax3.text(0.5, 0.5, 'Waiting for accuracy data...', 
+                            transform=self.ax3.transAxes, ha='center', va='center',
+                            fontsize=14, color='gray')
+                accuracy_title = 'Model Accuracy Over Time (No data yet)'
+            
+            self.ax3.set_title(accuracy_title, fontsize=12, fontweight='bold')
+            self.ax3.set_ylabel('Accuracy', fontsize=11)
+            self.ax3.set_xlabel('Stream Index', fontsize=11)
+            self.ax3.set_ylim(-0.05, 1.05)
+            self.ax3.grid(True, alpha=0.3)
+
+            # Ensure all plots have same x-axis range
             x_min, x_max = indices.min(), indices.max()
             self.ax1.set_xlim(x_min, x_max)
             self.ax2.set_xlim(x_min, x_max)
+            self.ax3.set_xlim(x_min, x_max)
 
         else:
             # No data yet - show waiting message
@@ -288,25 +389,31 @@ class RealtimeDriftVisualizer:
             self.ax2.text(0.5, 0.5, 'Waiting for data...', 
                         transform=self.ax2.transAxes, ha='center', va='center',
                         fontsize=14, color='gray')
+            self.ax3.text(0.5, 0.5, 'Waiting for data...', 
+                        transform=self.ax3.transAxes, ha='center', va='center',
+                        fontsize=14, color='gray')
             
-            self.ax1.set_title('Data Stream with True Drift Points (from gen_random)', 
+            self.ax1.set_title('Data Stream with True Drift Points (SEA Dataset)', 
                              fontsize=12, fontweight='bold')
             self.ax2.set_title('ShapeDD Detection Points (Real-time)', 
                              fontsize=12, fontweight='bold')
-            self.ax2.set_xlabel('Stream Index', fontsize=11)
+            self.ax3.set_title('Model Accuracy Over Time', 
+                             fontsize=12, fontweight='bold')
+            self.ax3.set_xlabel('Stream Index', fontsize=11)
 
         # Update window title with stats
         self.fig.canvas.manager.set_window_title(
-            f'Real-time Drift Monitor - {self.total_samples} samples, {self.total_detections} detections'
+            f'Real-time Drift Monitor - {self.total_samples} samples, {self.total_detections} detections, Acc: {self.total_accuracy_points} pts'
         )
 
     def run(self):
         """Start the real-time visualization."""
         print("=" * 70)
-        print("Real-time Drift Detection Visualization (plot_detection.py style)")
+        print("Real-time Drift Detection with Accuracy Tracking")
         print("=" * 70)
         print(f"Kafka Broker: {self.brokers}")
         print(f"Data Topic: {self.topic}")
+        print(f"Accuracy Topic: {self.accuracy_topic}")
         print(f"Log File: {self.log_path}")
         print(f"Update Interval: {UPDATE_INTERVAL_MS}ms")
         print(f"Max Display Points: {MAX_DISPLAY_POINTS}")
@@ -332,14 +439,20 @@ class RealtimeDriftVisualizer:
 
     def cleanup(self):
         """Clean up resources."""
-        print("Closing Kafka consumer...")
+        print("Closing Kafka consumers...")
         self.consumer.close()
+        self.accuracy_consumer.close()
         
         # Print final summary
         print("\n" + "=" * 70)
         print("Final Summary:")
         print(f"  Total samples processed: {self.total_samples:,}")
+        print(f"  Total accuracy points: {self.total_accuracy_points:,}")
         print(f"  Total detections: {self.total_detections}")
+        if self.baseline_accuracy is not None:
+            print(f"  Baseline accuracy: {self.baseline_accuracy:.4f}")
+        if len(self.accuracy_values) > 0:
+            print(f"  Final accuracy: {self.accuracy_values[-1]:.4f}")
         if self.detections:
             print(f"  Detection indices: {[d['idx'] for d in self.detections]}")
             # Count by type
@@ -357,6 +470,7 @@ def main():
     # Configuration from environment
     brokers = os.getenv("BROKERS", BROKERS)
     topic = os.getenv("TOPIC", TOPIC)
+    accuracy_topic = os.getenv("ACCURACY_TOPIC", ACCURACY_TOPIC)
     log_path = os.getenv("SHAPEDD_LOG", SHAPEDD_LOG)
 
     # Validate log path
@@ -367,7 +481,7 @@ def main():
         print()
 
     # Create and run visualizer
-    visualizer = RealtimeDriftVisualizer(brokers, topic, log_path)
+    visualizer = RealtimeDriftVisualizer(brokers, topic, accuracy_topic, log_path)
     visualizer.run()
 
 
