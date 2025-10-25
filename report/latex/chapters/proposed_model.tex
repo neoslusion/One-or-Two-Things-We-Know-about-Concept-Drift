@@ -112,7 +112,7 @@ file://file-4wKoBBbEzwYdNQiNqvnWCu
 \label{sec:cdt-msw}
 
 \subsection{Tổng quan}
-Phương pháp \textit{Concept Drift Type Identification based on Multi–Sliding Windows (CDT\_MSW)} được đề xuất bởi Guo và cộng sự~\cite{Guo2022MSW} nhằm mở rộng chức năng của các bộ phát hiện trôi dạt thông thường. 
+Phương pháp \textit{Concept Drift Type Identification based on Multi–Sliding Windows (CDT\_MSW)} được đề xuất bởi Guo và cộng sự~\cite{guo2022cdtmsw} nhằm mở rộng chức năng của các bộ phát hiện trôi dạt thông thường. 
 Trong khi các thuật toán như DDM, ADWIN hay ShapeDD chỉ xác định \emph{thời điểm xảy ra trôi dạt}, thì CDT\_MSW đi xa hơn bằng cách \textbf{nhận dạng loại trôi dạt} dựa trên hình thái thay đổi của phân phối dữ liệu theo thời gian. 
 Phương pháp này đặc biệt hữu ích cho các hệ thống học thích ứng (adaptive learning systems), nơi mà mỗi loại trôi dạt đòi hỏi một chiến lược cập nhật mô hình khác nhau.
 
@@ -170,7 +170,7 @@ Dựa trên độ dài trôi dạt $L_d$ và hình dạng của đường cong $
 \subsection{Các tham số của CDT\_MSW}
 Phương pháp CDT\_MSW không yêu cầu đặt ngưỡng cố định cho tất cả các luồng dữ liệu; 
 các tham số được điều chỉnh linh hoạt dựa trên tốc độ thay đổi của luồng và độ nhiễu của dữ liệu. 
-Bảng~\ref{tab:cdt-msw-params} liệt kê các tham số thường dùng và gợi ý giá trị khởi tạo được đề xuất trong~\cite{Guo2022MSW}.
+Bảng~\ref{tab:cdt-msw-params} liệt kê các tham số thường dùng và gợi ý giá trị khởi tạo được đề xuất trong~\cite{guo2022cdtmsw}.
 
 \begin{table}[H]
 \centering
