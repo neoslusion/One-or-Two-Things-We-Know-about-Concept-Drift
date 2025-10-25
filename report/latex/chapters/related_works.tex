@@ -72,19 +72,19 @@ PH thực chất triển khai biểu đồ CUSUM để nhạy với những thay
 
 Tương tự, các kiểm định thống kê hai mẫu (như Kolmogorov–Smirnov, Student t-test) cũng được tận dụng để so sánh phân phối của hai cửa sổ dữ liệu (mới và cũ) nhằm tìm ra sự khác biệt có ý nghĩa.
 
-Một dấu mốc quan trọng trong nhóm này là phương pháp \textbf{ADWIN} (Adaptive Windowing) do Bifet và Gavalda đề xuất năm 2007[2]. 
+Một dấu mốc quan trọng trong nhóm này là phương pháp \textbf{ADWIN} (Adaptive Windowing) do Bifet và Gavaldà đề xuất năm 2007~\cite{bifet2007learning}. 
 
-ADWIN sử dụng cửa sổ trượt có kích thước thay đổi một cách thích ứng: nó duy trì một cửa sổ dữ liệu với độ dài biến thiên sao cho giả thiết “không có thay đổi” được đảm bảo bên trong cửa sổ đó[3]. 
+ADWIN sử dụng cửa sổ trượt có kích thước thay đổi một cách thích ứng: nó duy trì một cửa sổ dữ liệu với độ dài biến thiên sao cho giả thiết "không có thay đổi" được đảm bảo bên trong cửa sổ đó. 
 
 Cụ thể, tại mỗi thời điểm, ADWIN tách cửa sổ hiện tại thành hai phần $W_0$ và $W_1$ (phần đầu và phần cuối của cửa sổ) rồi so sánh sự khác biệt về giá trị trung bình giữa $W_0$ và $W_1$.
 
-Nếu chênh lệch trung bình vượt quá một ngưỡng thống kê (xác định dựa trên khoảng tin cậy với mức ý nghĩa $\delta$ đã chọn), thuật toán kết luận rằng phân phối dữ liệu đã thay đổi và kích hoạt báo động drift[3]. 
+Nếu chênh lệch trung bình vượt quá một ngưỡng thống kê (xác định dựa trên khoảng tin cậy với mức ý nghĩa $\delta$ đã chọn), thuật toán kết luận rằng phân phối dữ liệu đã thay đổi và kích hoạt báo động drift. 
 
 Ưu điểm nổi bật của ADWIN là nó cung cấp đảm bảo về mặt lý thuyết cho độ chính xác của phát hiện thay đổi, đồng thời tự động điều chỉnh kích thước cửa sổ thay vì yêu cầu người dùng cố định trước. 
 
-Phương pháp này tỏ ra hiệu quả trong việc phát hiện cả drift đột ngột lẫn dần dần, và đã tạo nền tảng cho nhiều kỹ thuật nâng cao sau này[4]. 
+Phương pháp này tỏ ra hiệu quả trong việc phát hiện cả drift đột ngột lẫn dần dần, và đã tạo nền tảng cho nhiều kỹ thuật nâng cao sau này.
 
-Tuy nhiên, ADWIN cũng có nhược điểm: chi phí tính toán khá cao do phải kiểm tra nhiều kích thước cửa sổ, và nhạy cảm với nhiễu (noise) trong dữ liệu[5][4].
+Tuy nhiên, ADWIN cũng có nhược điểm: chi phí tính toán khá cao do phải kiểm tra nhiều kích thước cửa sổ, và nhạy cảm với nhiễu (noise) trong dữ liệu~\cite{hinder2024survey_partA}.
 
 Bên cạnh ADWIN, nhiều phương pháp thống kê khác lần lượt xuất hiện. 
 
