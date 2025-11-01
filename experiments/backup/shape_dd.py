@@ -210,7 +210,7 @@ def shape_sensitive(X, l1=30, l2=100, n_perm=2500, gamma_multiplier=2.0):
     shape_threshold = np.percentile(shape, 60)  # Only filter bottom 60%
 
     for pos in potential_peaks:
-        if shape[pos] > shape_threshold:
+        if shape[pos] > 0:
             res[pos,0] = shape[pos]
             a, b = max(0, pos-int(l2/2)), min(n, pos+int(l2/2))
             res[pos,1:] = mmd(X[a:b], pos-a, n_perm)

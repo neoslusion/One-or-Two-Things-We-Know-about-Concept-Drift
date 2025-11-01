@@ -56,7 +56,7 @@ def generate_stream_with_sudden_drift(total_size, drift_position, seed=42):
     # Verify drift
     pre_mean = np.mean(X[:drift_position], axis=0)
     post_mean = np.mean(X[drift_position:], axis=0)
-    print(f"\n✓ SUDDEN DRIFT created at sample {drift_position}")
+    print(f"\nSUDDEN DRIFT created at sample {drift_position}")
     print(f"  Pre-drift means:  [{pre_mean[0]:.2f}, {pre_mean[1]:.2f}, {pre_mean[2]:.2f}]")
     print(f"  Post-drift means: [{post_mean[0]:.2f}, {post_mean[1]:.2f}, {post_mean[2]:.2f}]")
     print(f"  Feature shift magnitude: {np.linalg.norm(post_mean - pre_mean):.2f}\n")
@@ -101,7 +101,7 @@ def main():
         time.sleep(0.002)  # 2ms per sample
     
     p.flush()
-    print(f"\n✓ Streaming complete - {STREAM_SIZE} samples sent")
+    print(f"\nStreaming complete - {STREAM_SIZE} samples sent")
     print("Producer finished - no more data will be sent")
 
 if __name__ == "__main__":

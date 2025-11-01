@@ -17,17 +17,17 @@ echo ""
 echo "2. Clearing old detection data..."
 rm -f shapedd_batches.csv
 rm -f models/current_model.pkl
-echo "   ✓ Removed shapedd_batches.csv (will be recreated)"
-echo "   ✓ Removed current_model.pkl (will be recreated after drift)"
+echo "   Removed shapedd_batches.csv (will be recreated)"
+echo "   Removed current_model.pkl (will be recreated after drift)"
 
 # Optional: Clear old snapshots (uncomment if needed)
-# echo "   ✓ Clearing old snapshots..."
+# echo "   Clearing old snapshots..."
 # rm -f snapshots/drift_window_*.npz
 
 echo ""
 echo "3. Rebuilding Docker adaptor (if Dockerfile changed)..."
 docker compose build adaptor
-echo "   ✓ Adaptor image rebuilt"
+echo "   Adaptor image rebuilt"
 
 echo ""
 echo "4. Starting services with fresh consumer group..."
@@ -38,9 +38,9 @@ echo ""
 echo "════════════════════════════════════════════════════════════"
 echo "System restarted with clean state!"
 echo ""
-echo "✓ CSV cleared (no old detections)"
-echo "✓ Consumer will use fresh group ID (starts from earliest)"
-echo "✓ Producer will start with new stream (idx resets to 0)"
+echo "CSV cleared (no old detections)"
+echo "Consumer will use fresh group ID (starts from earliest)"
+echo "Producer will start with new stream (idx resets to 0)"
 echo ""
 echo "Now you can run:"
 echo "  python plot_detection_realtime.py"

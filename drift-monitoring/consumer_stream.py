@@ -212,8 +212,8 @@ def main():
                             model_path = MODEL_DIR / "initial_model.pkl"
                             save_model(model, model_path)
                             
-                            print(f"✓ Model trained on samples 0-{INITIAL_TRAINING_SIZE-1}")
-                            print(f"✓ Model saved to {model_path}")
+                            print(f"Model trained on samples 0-{INITIAL_TRAINING_SIZE-1}")
+                            print(f"Model saved to {model_path}")
                             print(f"\n[Phase 2: WARMUP] Evaluating baseline accuracy...")
                             current_phase = "WARMUP"
                             
@@ -236,8 +236,8 @@ def main():
                         print(f"\n{'='*80}")
                         print(f"[Phase 2 Complete] Warmup evaluation finished")
                         print(f"{'='*80}")
-                        print(f"✓ Warmup samples: {TRAINING_WARMUP}")
-                        print(f"✓ Baseline accuracy: {baseline_accuracy:.4f}")
+                        print(f"Warmup samples: {TRAINING_WARMUP}")
+                        print(f"Baseline accuracy: {baseline_accuracy:.4f}")
                         print(f"\nModel is now FROZEN - will only predict (no learning)")
                         print(f"Drift detection starts from sample {DEPLOYMENT_START}")
                         print(f"{'='*80}\n")

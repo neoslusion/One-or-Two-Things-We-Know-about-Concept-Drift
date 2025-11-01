@@ -230,7 +230,7 @@ def main():
                     log(f"  Adaptation samples: {len(X_adapt)}")
                     
                     if pre_drift_count > 0:
-                        log(f"  ✓ Filtered {pre_drift_count} pre-drift samples to avoid contamination")
+                        log(f"  Filtered {pre_drift_count} pre-drift samples to avoid contamination")
                 else:
                     # Fallback: no drift position metadata, use all data
                     log(f"WARNING: No drift position metadata - using all snapshot data")
