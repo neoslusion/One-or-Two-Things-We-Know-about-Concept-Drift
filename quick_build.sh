@@ -54,7 +54,7 @@ if [ -f "main.pdf" ]; then
     pages=$(pdfinfo main.pdf 2>/dev/null | grep Pages | awk '{print $2}' || echo "Unknown")
     size=$(ls -lh main.pdf | awk '{print $5}')
     echo ""
-    echo -e "${GREEN}✅ Success! PDF generated${NC}"
+    echo -e "${GREEN}Success! PDF generated${NC}"
     echo -e "   📄 Pages: $pages"
     echo -e "   📦 Size: $size"
     echo -e "   📍 Location: report/latex/main.pdf"
