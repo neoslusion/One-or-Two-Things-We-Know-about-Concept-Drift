@@ -428,4 +428,42 @@ Kết quả thực nghiệm chứng minh hiệu quả của hệ thống phát h
     \item Trade-off giữa accuracy và speed cần cân nhắc theo use case
 \end{itemize}
 
+% ============================================================================
+% TODO [FUTURE EXPERIMENTS]: Mở rộng thực nghiệm (Optional Extensions)
+% ============================================================================
+%
+% 1. THÊM CÁC LOẠI DRIFT KHÁC:
+%    - Gradual drift: Phân phối thay đổi từ từ theo thời gian
+%    - Incremental drift: Thay đổi liên tục nhỏ
+%    - Recurrent drift: Phân phối quay lại concept cũ
+%    - Blip drift: Thay đổi tạm thời rồi quay lại
+%    Notebook: experiments/notebooks/MultiDetectors_Evaluation_WithAdaptation.ipynb
+%    Ước tính: 2-3 ngày
+%
+% 2. THÊM REAL-WORLD DATASETS:
+%    - Electricity dataset (Harries & Wales): Dự đoán giá điện
+%    - Weather dataset: Dự đoán thời tiết
+%    - [Domain-specific dataset]: Tùy theo lĩnh vực ứng dụng
+%    Ước tính: 3-5 ngày
+%
+% 3. PHÂN TÍCH PARAMETER SENSITIVITY:
+%    - Sensitivity của L1, L2, n_perm trong ShapeDD
+%    - Ảnh hưởng của adaptation window size
+%    - Trade-off giữa detection delay và false alarm rate
+%    Ước tính: 2 ngày
+%
+% 4. SO SÁNH VỚI ONLINE LEARNING:
+%    - So sánh frozen model vs continuous learning (River)
+%    - Đánh giá trade-off giữa stability và adaptability
+%    Ước tính: 1-2 ngày
+%
+% 5. THÊM METRICS ĐÁNH GIÁ:
+%    - Mean Time To Recover (MTTR)
+%    - Area Under ROC curve cho detection
+%    - Computational efficiency trên large-scale streams
+%    Ước tính: 1 ngày
+%
+% Chi tiết đầy đủ: Xem file FUTURE_EXPERIMENTS_TODO.md
+% ============================================================================
+
 Chương tiếp theo sẽ tổng kết các đóng góp chính của luận văn và đề xuất hướng phát triển trong tương lai. 

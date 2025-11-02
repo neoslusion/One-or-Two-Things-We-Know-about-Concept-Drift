@@ -83,6 +83,60 @@ Nếu $P = Q$, ba thành phần này cân bằng nhau và $\text{MMD}^2 = 0$. N�
 
 Với Gaussian kernel ($\sigma = 1$), MMD sẽ nắm bắt được sự dịch chuyển trung bình (mean shift) giữa hai phân phối. Khi $n, m \to \infty$, $\widehat{\text{MMD}}^2$ hội tụ về giá trị dương phản ánh khoảng cách thực giữa $P$ và $Q$.
 
+\subsubsection{Tính chất lý thuyết và chứng minh (PhD-level)}
+
+\textbf{Định lý 1 (Characteris characteristic kernel):} Nếu $k$ là characteristic kernel (e.g., Gaussian RBF), thì $\text{MMD}(P, Q) = 0$ khi và chỉ khi $P = Q$.
+
+\textbf{Chứng minh (phác thảo):} Kernel $k$ là characteristic nếu ánh xạ mean embedding $\mu_P: P \mapsto \mathbb{E}_{X \sim P}[\phi(X)] \in \mathcal{H}$ là đơn ánh (injective). Do đó:
+\begin{align}
+\text{MMD}(P, Q) &= \sup_{f \in \mathcal{F}} \left| \mathbb{E}_{X \sim P}[f(X)] - \mathbb{E}_{Y \sim Q}[f(Y)] \right| \nonumber \\
+&= \|\mu_P - \mu_Q\|_{\mathcal{H}}
+\end{align}
+
+Vì $\mu$ là đơn ánh, $\|\mu_P - \mu_Q\|_{\mathcal{H}} = 0 \Leftrightarrow \mu_P = \mu_Q \Leftrightarrow P = Q$. $\square$
+
+\textbf{Định lý 2 (Consistency of empirical estimator):} Với $n = m$ và kernel bounded $|k(x,y)| \leq K$, estimator $\widehat{\text{MMD}}^2$ thỏa mãn:
+\begin{equation}
+\mathbb{E}[\widehat{\text{MMD}}^2] = \text{MMD}^2(P, Q) + O(1/n)
+\end{equation}
+\begin{equation}
+\text{Var}[\widehat{\text{MMD}}^2] = O(1/n)
+\end{equation}
+
+\textbf{Chứng minh (phác thảo):} Unbiasedness được chứng minh trực tiếp từ linearity của kỳ vọng. Variance bound thu được từ McDiarmid's inequality với bounded differences property của kernel. Chi tiết trong~\cite{hinder2024survey_partA}. $\square$
+
+\textbf{Định lý 3 (Asymptotic distribution):} Dưới $H_0: P = Q$, với $n, m \to \infty$ và $m/n \to 1$:
+\begin{equation}
+n \cdot \widehat{\text{MMD}}^2 \xrightarrow{d} \sum_{i=1}^{\infty} \lambda_i (z_i^2 - 1)
+\end{equation}
+trong đó $z_i \sim \mathcal{N}(0,1)$ i.i.d. và $\{\lambda_i\}$ là eigenvalues của operator tích phân với kernel $k$.
+
+Kết quả này cho phép thực hiện hypothesis test với asymptotic p-values.
+
+\textbf{Complexity Analysis (Chi tiết):}
+
+\textbf{Time complexity:}
+\begin{itemize}
+    \item Naive computation: $O(n^2)$ cho single window
+    \item Sliding window với $T$ positions: $O(T \cdot n^2)$
+    \item Optimized với low-rank approximation: $O(T \cdot n \cdot r)$ với $r \ll n$
+    \item Permutation test ($N_{\text{perm}}$ permutations): $O(N_{\text{perm}} \cdot n^2)$
+\end{itemize}
+
+\textbf{Space complexity:}
+\begin{itemize}
+    \item Kernel matrix: $O(n^2)$
+    \item Incremental updates: $O(n)$ với circular buffer
+    \item Low-rank approximation: $O(n \cdot r)$
+\end{itemize}
+
+\textbf{Trade-offs:}
+\begin{itemize}
+    \item Exact computation: Chậm nhưng chính xác hoàn toàn
+    \item Random Fourier Features: $O(T \cdot n \cdot D)$ với $D$ random features, xấp xỉ kernel
+    \item Nyström approximation: $O(T \cdot n \cdot m)$ với $m$ landmark points
+\end{itemize}
+
 \subsection{Các phương pháp phát hiện drift cơ bản}
 
 Các phương pháp phát hiện drift cơ bản đã được trình bày chi tiết trong Chương 2. Để cung cấp ngữ cảnh cho ShapeDD, chúng ta tóm tắt ngắn gọn các đặc điểm chính:
