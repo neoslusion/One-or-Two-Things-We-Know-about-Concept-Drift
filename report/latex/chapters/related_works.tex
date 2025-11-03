@@ -457,7 +457,7 @@ trong quá trình học liên tục.
 
 Theo Guo \textit{et al.}~\cite{guo2022cdtmsw}, thông tin về loại trôi dạt (drift type) do phương pháp
 CDT\_MSW cung cấp đóng vai trò quan trọng để lựa chọn cơ chế cập nhật phù hợp.
-Ngoài ra, các nghiên cứu gần đây~\cite{jourdan2023process,xiang2023review,yuan2022advances}
+Ngoài ra, các nghiên cứu gần đây~\cite{jourdan2023process}
 đã mở rộng khung thích ứng này sang các hệ thống học sâu (deep learning systems),
 trong đó chiến lược cập nhật không chỉ phụ thuộc vào loại trôi dạt mà còn vào cấu trúc mô hình, mức độ sẵn có của nhãn, và chi phí tính toán.
 
@@ -477,7 +477,7 @@ Tổng hợp từ các tài liệu trên, có thể chia các chiến lược c�
   \item \textbf{Cập nhật dần (Gradual / Incremental Update):}
   Khi mô hình gặp \emph{gradual} hoặc \emph{incremental drift},
   sự thay đổi xảy ra từ từ, cần cập nhật mềm với hệ số học $\eta_t$ nhỏ hơn.
-  Theo Xiang \textit{et al.}~\cite{xiang2023review}, có thể mô hình hoá bằng công thức:
+  Theo Xiang \textit{et al.}, có thể mô hình hoá bằng công thức:
   \[
   \theta_{t+1} = \theta_t - \eta_t \nabla_\theta \mathcal{L}(x_t, y_t),
   \quad \text{với } \eta_t = f(L_d, r_t),
@@ -497,10 +497,10 @@ Tổng hợp từ các tài liệu trên, có thể chia các chiến lược c�
   M^* = \arg\min_{M_i} \text{Dist}(P_t(x), P_{M_i}(x)).
   \]
   Phương pháp này được áp dụng trong các framework học sâu có bộ nhớ động như
-  Deep Ensemble Replay hoặc Continual Learning with Experience Buffer~\cite{yuan2022advances}.
+  Deep Ensemble Replay hoặc Continual Learning with Experience Buffer.
 
   \item \textbf{Cập nhật cấu trúc (Structural or Hybrid Adaptation):}
-  Một số nghiên cứu gần đây~\cite{xiang2023review,yuan2022advances}
+  Một số nghiên cứu gần đây
   đề xuất không chỉ điều chỉnh tham số, mà còn thay đổi \emph{cấu trúc mạng học sâu} khi có drift.
   Ví dụ, thêm tầng mới hoặc nhánh mới để học khái niệm mới mà không làm mất kiến thức cũ,
   biểu diễn bởi:
@@ -539,7 +539,7 @@ Từ các kết quả trên có thể rút ra ba quan sát chính:
 \begin{enumerate}
   \item Việc xác định đúng loại trôi dạt giúp chọn chiến lược thích ứng hiệu quả, tránh huấn luyện lại toàn bộ.
   \item Các phương pháp học sâu hiện đại hướng đến \emph{cập nhật kết hợp} (hybrid adaptation),
-  vừa tinh chỉnh trọng số, vừa thay đổi cấu trúc mạng để xử lý trôi dạt dài hạn~\cite{yuan2022advances}.
+  vừa tinh chỉnh trọng số, vừa thay đổi cấu trúc mạng để xử lý trôi dạt dài hạn.
   \item Các chỉ số định lượng như độ dài trôi dạt $L_d$ và tốc độ thay đổi $r_t$ của CDT\_MSW
   có thể được dùng để điều chỉnh động learning rate hoặc quyết định chiến lược chuyển mô hình (switching strategy).
 \end{enumerate}

@@ -176,6 +176,13 @@ FHDDM & streaming & Có & - & 0 & 1 & 0.000 & $\infty$ \\
     \item Permutation test với 2500 lần hoán vị đảm bảo độ tin cậy thống kê
 \end{itemize}
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{figures/detection_timeline.png}
+    \caption{Timeline phát hiện drift của các detector. Drift thực xảy ra tại sample 1500. ShapeDD\_Improved phát hiện nhanh nhất với delay chỉ 4 samples, trong khi ADWIN và EDDM có delay 59 và 51 samples. Các detector khác phát hiện sai vị trí hoặc không phát hiện được.}
+    \label{fig:detection-timeline}
+\end{figure}
+
 \subsection{Hiệu suất mô hình và quá trình thích ứng}
 
 Phân tích chi tiết hiệu suất mô hình qua các giai đoạn: baseline, degradation và recovery.
@@ -231,6 +238,20 @@ EDDM & 0.989 & 0.560 & 0.429 & 0.904 & 80.3 & 83 \\
     \end{itemize}
 \end{enumerate}
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{figures/accuracy_over_time.png}
+    \caption{Quá trình degradation và recovery của model accuracy. Baseline accuracy là 0.996, giảm xuống 0.550 sau drift (tại sample 1500), sau đó phục hồi lên 0.919 sau khi adaptation strategy được kích hoạt (tại sample 1600). Các vùng màu khác nhau biểu thị các giai đoạn: pre-drift (xanh lá), degradation (đỏ), adaptation (vàng), và stabilized (xanh dương).}
+    \label{fig:accuracy-over-time}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{figures/recovery_breakdown.png}
+    \caption{Phân tích chi tiết recovery phase. Biểu đồ trên so sánh accuracy ở 3 giai đoạn (baseline, minimum, recovery). Biểu đồ dưới cho thấy recovery time (số samples cần để đạt 95\% baseline accuracy). ShapeDD\_Improved có recovery time là 96 samples.}
+    \label{fig:recovery-breakdown}
+\end{figure}
+
 \subsection{Phân tích chi phí tính toán}
 
 Đánh giá hiệu quả tính toán của các detector thành công trong việc xử lý 10,000 samples.
@@ -279,6 +300,13 @@ ShapeDD (standard) & 19.95 & 1.995 & 1.66 & 501 samples/s \\
     \end{itemize}
 \end{itemize}
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{figures/computational_performance.png}
+    \caption{So sánh hiệu năng tính toán. Biểu đồ trái: tổng runtime cho 10,000 samples. Biểu đồ phải: throughput (samples/second). ADWIN và EDDM nhanh hơn ShapeDD\_Improved khoảng 5 lần, nhưng ShapeDD đạt F1-score hoàn hảo (1.0) và delay thấp nhất (4 samples).}
+    \label{fig:computational-performance}
+\end{figure}
+
 \section{Đánh giá chiến lược thích ứng}
 
 \subsection{So sánh chiến lược sudden drift}
@@ -312,6 +340,13 @@ Hệ thống triển khai chiến lược "full model reset" cho sudden drift, �
 \end{enumerate}
 
 \section{Thảo luận}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{figures/performance_comparison.png}
+    \caption{Tổng quan so sánh hiệu suất giữa 3 detector thành công. Tất cả đạt F1-score hoàn hảo (1.0), nhưng ShapeDD\_Improved có detection delay thấp nhất (4 samples) và recovery rate cao nhất (82.8\%). ADWIN và EDDM có delay lớn hơn (59 và 51 samples) nhưng cũng đạt recovery rate tốt (>80\%).}
+    \label{fig:performance-comparison}
+\end{figure}
 
 \subsection{Kết quả chính}
 
