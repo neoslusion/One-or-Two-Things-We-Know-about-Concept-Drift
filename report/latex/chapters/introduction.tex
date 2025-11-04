@@ -2,7 +2,7 @@
 
 \section{Thực trạng chung}
 
-Trong những năm gần đây, lĩnh vực trí tuệ nhân tạo ngày càng phát triển nhanh chóng. Việc ứng dụng thành quả của trí tuệ nhân tạo ngày càng được phổ biến rộng rãi, không chỉ trong đời sống hằng ngày mà cả trong công việc. Khi các ứng dụng học máy không còn bị giới hạn trong phòng thí nghiệm nữa để được ứng dụng vào trong đời sống trong các lĩnh vực sản xuất như bảo trì thông minh và kiểm soát chất lượng. Khi đó, các câu hỏi liên quan đến độ tin cậy và độ bền liên tục của chúng nảy sinh.
+Trong những năm gần đây, lĩnh vực trí tuệ nhân tạo ngày càng phát triển nhanh chóng. Việc ứng dụng thành quả của trí tuệ nhân tạo ngày càng được phổ biến rộng rãi, không chỉ trong đời sống hằng ngày mà cả trong công việc. Các ứng dụng học máy không còn bị giới hạn trong phòng thí nghiệm mà đã được triển khai vào đời sống thực tế trong các lĩnh vực sản xuất như bảo trì thông minh và kiểm soát chất lượng. Khi đó, các câu hỏi liên quan đến độ tin cậy và độ bền liên tục của chúng nảy sinh.
 
 Các tập dữ liệu tĩnh được sử dụng để huấn luyện các mô hình học máy chỉ có thể nắm bắt được một phần nhỏ các điều kiện có thể xảy ra trong thế giới thực. Các trường hợp trôi dạt, chẳng hạn như thay đổi điều kiện môi trường, thiết bị và vận hành có thể, theo thời gian, làm giảm đáng kể hiệu suất của các mô hình học máy, gây ảnh hưởng đến sự an toàn, độ tin cậy của mô hình và kinh tế nếu không được giải quyết đúng cách. Do đó, cần phải (1) phát hiện sự trôi dạt sớm nhất có thể và (2) điều chỉnh hiệu quả mô hình theo các điều kiện thay đổi động.
 
@@ -24,29 +24,27 @@ Luận văn này giải quyết các thách thức trên bằng cách xây dựn
 
 \subsection{Nghiên cứu và phân tích các phương pháp phát hiện trôi dạt}
 
-Mục tiêu đầu tiên của đề tài là tiến hành một nghiên cứu chi tiết và phân tích sâu về phương pháp các phương pháp phát hiện trôi dạt hiện nay - bao gồm các phương pháp truyền thống và các tiếp cận hiện đại sau này. Luận văn sẽ xem xét cơ sở lý thuyết của các phương pháp, bao gồm cách tiếp cận các phương pháp triển khai, cũng như tính linh hoạt của chúng. Bằng cách này, luận văn sẽ làm rõ hơn về sức mạnh và giới hạn của các phương pháp để làm cơ sở cho việc lựa chọn và ứng dụng phương pháp phù hợp nhất đối với bài toán đặt ra.
+Mục tiêu đầu tiên của đề tài là tiến hành một nghiên cứu chi tiết và phân tích sâu về các phương pháp phát hiện trôi dạt hiện nay - bao gồm các phương pháp truyền thống và các tiếp cận hiện đại. Luận văn sẽ xem xét cơ sở lý thuyết của các phương pháp, cách tiếp cận triển khai, cũng như tính linh hoạt của chúng. Bằng cách này, luận văn sẽ làm rõ hơn về ưu điểm và hạn chế của các phương pháp để làm cơ sở cho việc lựa chọn và ứng dụng phương pháp phù hợp nhất đối với bài toán đặt ra.
 
 \subsection{Ứng dụng phương pháp được chọn vào phát hiện trôi dạt trong hệ thống}
 
-Sau khi hiểu rõ về cơ sở lý thuyết của phương pháp đó, luận văn sẽ tiến hành ứng dụng với phương pháp được chọn cho việc phát hiện trôi dạt trong dữ liệu streaming. Phương pháp này sẽ được thiết kế để đảm bảo khả năng phát hiện nhanh chóng và chính xác, cũng như mức độ trôi đối với nhiều kiểu dữ liệu phức tạp khác nhau.
-
+Sau khi hiểu rõ về cơ sở lý thuyết của phương pháp được chọn, luận văn sẽ tiến hành ứng dụng phương pháp đó cho việc phát hiện trôi dạt trong dữ liệu streaming. Phương pháp này sẽ được thiết kế để đảm bảo khả năng phát hiện nhanh chóng và chính xác đối với nhiều kiểu dữ liệu phức tạp khác nhau.
 
 \subsection{Tìm hiểu các chiến lược cập nhật mô hình thích ứng}
 
-Sau khi phát hiện được hiện tượng trôi dạt xảy ra, tùy thuộc vào loại trôi dạt nào cũng như là mức độ ảnh hưởng của nó đến mô hình, luận văn sẽ nghiên cứu và đề xuất các chiến lược cập nhật mô hình thích ứng phù hợp. Điều này có thể bao gồm việc điều chỉnh các tham số của mô hình, thay đổi cấu trúc của mô hình, hoặc áp dụng các kỹ thuật học máy mới để cải thiện khả năng phát hiện và thích ứng với dữ liệu mới.
-
+Sau khi phát hiện được hiện tượng trôi dạt xảy ra, tùy thuộc vào loại trôi dạt cũng như mức độ ảnh hưởng của nó đến mô hình, luận văn sẽ nghiên cứu và đề xuất các chiến lược cập nhật mô hình thích ứng phù hợp. Điều này có thể bao gồm việc điều chỉnh các tham số của mô hình, thay đổi cấu trúc của mô hình, hoặc áp dụng các kỹ thuật học máy mới để cải thiện khả năng phát hiện và thích ứng với dữ liệu mới.
 
 \subsection{Kết hợp phương pháp phát hiện trôi dạt với chiến lược cập nhật mô hình}
 
-Luận văn sẽ tiến hành nghiêng cứu và phát triển một khung tổng thể kết hợp giữa phương pháp phát hiện trôi dạt và chiến lược cập nhật mô hình thích ứng. Khung này sẽ được thiết kế để đảm bảo tính linh hoạt và khả năng mở rộng, cho phép nó áp dụng hiệu quả trong các môi trường dữ liệu streaming có cấu trúc đa dạng và phức tạp.
+Luận văn sẽ tiến hành nghiên cứu và phát triển một khung tổng thể kết hợp giữa phương pháp phát hiện trôi dạt và chiến lược cập nhật mô hình thích ứng. Khung này sẽ được thiết kế để đảm bảo tính linh hoạt và khả năng mở rộng, cho phép áp dụng hiệu quả trong các môi trường dữ liệu streaming có cấu trúc đa dạng và phức tạp.
 
 \subsection{Tùy chỉnh và tối ưu hóa mô hình}
 
-Dựa trên kết quả nghiên cứu và thử nghiệm, luận văn sẽ tiến hành tùy chỉnh và tối ưu hóa mô hình kết hợp giữa để phù hợp với các đặc điểm riêng biệt của dữ liệu và các loại trôi dạt khác nhau. Quá trình này sẽ bao gồm việc điều chỉnh các tham số, cải thiện thuật toán, và phát triển các chiến lược thích ứng để đạt được hiệu suất tối ưu trong việc phát hiện.
+Dựa trên kết quả nghiên cứu và thử nghiệm, luận văn sẽ tiến hành tùy chỉnh và tối ưu hóa mô hình để phù hợp với các đặc điểm riêng biệt của dữ liệu và các loại trôi dạt khác nhau. Quá trình này sẽ bao gồm việc điều chỉnh các tham số, cải thiện thuật toán, và phát triển các chiến lược thích ứng để đạt được hiệu suất tối ưu trong việc phát hiện.
 
 \subsection{Triển khai và đánh giá}
 
-Cuối cùng, luận văn sẽ triển khai mô hình đã được tối ưu hóa và tiến hành đánh giá toàn diện trên các tập dữ liệu synthetic và thực tế. Quá trình đánh giá sẽ bao gồm việc so sánh hiệu suất với các phương pháp hiện có, phân tích độ chính xác, thời gian phát hiện, và khả năng thích ứng của mô hình trong các điều kiện khác nhau.
+Cuối cùng, luận văn sẽ triển khai mô hình đã được tối ưu hóa và tiến hành đánh giá toàn diện trên các tập dữ liệu tổng hợp và thực tế. Quá trình đánh giá sẽ bao gồm việc so sánh hiệu suất với các phương pháp hiện có, phân tích độ chính xác, thời gian phát hiện, và khả năng thích ứng của mô hình trong các điều kiện khác nhau.
 
 \section{Giới hạn đề tài và đối tượng nghiên cứu}
 
