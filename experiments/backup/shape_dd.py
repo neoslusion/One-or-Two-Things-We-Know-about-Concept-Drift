@@ -277,7 +277,7 @@ def shape_adaptive_v2(X, l1, l2, n_perm, sensitivity='medium'):
     potential_peaks = np.where(shape_prime < 0)[0]  # Local maxima
 
     # =========================================================================
-    # STAGE 4: ADAPTIVE THRESHOLD (FIX #1 and #3)
+    # STAGE 4: ADAPTIVE THRESHOLD (FIX #1 and #3) + RECALL IMPROVEMENT
     # =========================================================================
     # CHANGE 1: Inverted threshold_factors (FIX #1 - CRITICAL)
     #   OLD: 'high'=0.02, 'ultrahigh'=0.03 (WRONG - created high thresholds)
@@ -287,9 +287,16 @@ def shape_adaptive_v2(X, l1, l2, n_perm, sensitivity='medium'):
     #   OLD: threshold = mean + k*std (sensitive to outliers, filters weak drifts)
     #   NEW: threshold = percentile * sensitivity_multiplier (robust, magnitude-agnostic)
     #
+    # RECALL IMPROVEMENT (NEW):
+    #   - Lowered percentile from 20th → 10th (catches weaker drifts)
+    #   - More aggressive multipliers (high: 0.8 → 0.6, ultrahigh: 0.5 → 0.3)
+    #   - Added absolute minimum floor to prevent missing very weak drifts
+    #
     # REASON: Higher k should mean LOWER threshold (more sensitive), not higher
     #         Percentile approach focuses on relative peak strength
+    #         Absolute minimum ensures weak drifts in noisy streams aren't filtered
     # IMPACT: 'high' sensitivity now actually detects MORE drifts (as intended)
+    #         Better recall without sacrificing too much precision
 
     if sensitivity == 'none':
         threshold = 0  # No filtering, test all positive peaks
@@ -298,19 +305,35 @@ def shape_adaptive_v2(X, l1, l2, n_perm, sensitivity='medium'):
         positive_shapes = shape[shape > 0]
 
         if len(positive_shapes) > 0:
-            # Use 20th percentile as baseline (filters obvious noise in bottom 20%)
-            baseline = np.percentile(positive_shapes, 20)
+            # IMPROVED: Use 10th percentile (was 20th)
+            # Catches more weak signals that were previously filtered
+            baseline = np.percentile(positive_shapes, 10)
 
-            # CORRECTED sensitivity multipliers (FIX #1)
-            # Lower multiplier = lower threshold = higher sensitivity
+            # IMPROVED: More aggressive multipliers for better recall
+            # Lower multiplier = lower threshold = higher sensitivity = better recall
             sensitivity_multipliers = {
-                'low': 1.5,        # Conservative: baseline * 1.5 (high threshold)
-                'medium': 1.2,     # Balanced: baseline * 1.2
-                'high': 0.8,       # Aggressive: baseline * 0.8 (low threshold)
-                'ultrahigh': 0.5   # Very aggressive: baseline * 0.5 (very low threshold)
+                'low': 1.2,        # Conservative (was 1.5) - still filters noise
+                'medium': 0.8,     # Balanced (was 1.2) - more aggressive
+                'high': 0.5,       # Aggressive (was 0.8) - much lower threshold
+                'ultrahigh': 0.25  # Very aggressive (was 0.5) - catches weak drifts
             }
-            multiplier = sensitivity_multipliers.get(sensitivity, 1.2)
-            threshold = baseline * multiplier
+            multiplier = sensitivity_multipliers.get(sensitivity, 0.8)
+
+            # Calculate percentile-based threshold
+            percentile_threshold = baseline * multiplier
+
+            # CRITICAL RECALL FIX: Add absolute minimum floor
+            # Prevents missing very weak drifts in noisy streams
+            # Use 5th percentile as noise floor estimate
+            noise_floor = np.percentile(positive_shapes, 5)
+            absolute_minimum = noise_floor * 0.4  # Allow signals just above noise
+
+            # Use the LOWER of the two thresholds (more permissive = better recall)
+            threshold = min(percentile_threshold, absolute_minimum)
+
+            # Safety check: Don't go too low (prevents excessive FP)
+            if threshold < noise_floor * 0.2:  # Below 20% of noise floor
+                threshold = noise_floor * 0.2
         else:
             threshold = 0
 
@@ -357,17 +380,20 @@ def shape_adaptive_v2(X, l1, l2, n_perm, sensitivity='medium'):
     detection_density = len(p_values) / n if n > 0 else 0
 
     # Only apply FDR in sparse detection scenarios
-    if len(p_values) > 1 and detection_density < 0.02 and sensitivity != 'none':
+    # RECALL IMPROVEMENT: Raised density threshold from 0.02 to 0.03
+    # Allows FDR to be skipped more often, preserving more detections
+    if len(p_values) > 1 and detection_density < 0.03 and sensitivity != 'none':
         p_values_array = np.array(p_values)
 
-        # Sensitivity-based FDR alpha (more lenient for higher sensitivity)
+        # IMPROVED: More lenient FDR alphas for better recall
+        # Higher alpha = less strict FDR = preserves more detections = better recall
         alpha_values = {
-            'low': 0.01,       # Strict FDR
-            'medium': 0.05,    # Standard FDR
-            'high': 0.10,      # Lenient FDR (preserves more detections)
-            'ultrahigh': 0.15  # Very lenient FDR
+            'low': 0.01,       # Strict FDR (unchanged)
+            'medium': 0.08,    # Standard FDR (was 0.05) - more lenient
+            'high': 0.15,      # Lenient FDR (was 0.10) - much more lenient
+            'ultrahigh': 0.25  # Very lenient FDR (was 0.15) - prioritize recall
         }
-        alpha = alpha_values.get(sensitivity, 0.05)
+        alpha = alpha_values.get(sensitivity, 0.08)
 
         # Apply Benjamini-Hochberg correction
         significant_indices = benjamini_hochberg_correction(p_values_array, alpha=alpha)
