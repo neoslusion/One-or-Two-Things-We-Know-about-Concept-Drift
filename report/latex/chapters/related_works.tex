@@ -4,59 +4,25 @@
 
 \subsection{Khái niệm và bối cảnh}
 
-% Thế giới không ngừng thay đổi đặt ra những thách thức cho các hệ thống tự động, ví dụ như các hệ thống liên quan đến cơ sở hạ tầng quan trọng, sản xuất và kiểm soát chất lượng.
-% Việc vận hành đáng tin cậy các quy trình tự động và thuật toán giám sát đòi hỏi khả năng phát hiện, phản hồi và thích ứng với những thay đổi này (Ditzler và cộng sự, 2015; 
-% Reppa và cộng sự, 2016; Chen và Boning, 2017; Vrachimis và cộng sự, 2022; Gabbar và cộng sự, 2023).
+\subsection{Các loại hiện tượng trôi dạt}
 
-% Về mặt hình thức, những thay đổi trong phân phối tạo dữ liệu được gọi là trôi khái niệm (Gama và cộng sự, 2014). 
-% Những thay đổi này có thể do các sửa đổi trong quy trình, môi trường hoặc cảm biến thu thập dữ liệu được quan sát. 
-% Việc phát hiện các bất thường trong quy trình được quan sát là cần thiết để xác định các sản phẩm bị lỗi hoặc các loại lỗi không mong muốn khác. 
-% Ngược lại, việc phát hiện những thay đổi trong cảm biến và môi trường là rất quan trọng để các quy trình tự động thực hiện các hành động phù hợp, chẳng hạn như thay 
-% thế cảm biến bị lỗi hoặc sửa đổi hệ thống xử lý dữ liệu thu thập được để phù hợp với một kịch bản mới (Gama và cộng sự, 2004, 2014; Gonçalves và cộng sự, 2014).
+Concept drift, hay còn gọi là sự trôi dạt khái niệm, đề cập đến những thay đổi trong phân phối dữ liệu được tạo ra theo thời gian, đặc biệt là trong môi trường động và thay đổi theo thời gian, chẳng hạn như trong ứng dụng về IoT [17]. Cụ thể hơn, sự trôi dạt khái niệm là một vấn đề trong đó các mối quan hệ thống kê giữa các giá trị đầu vào và giá trị mục tiêu bị thay đổi theo thời gian theo cách không thể dự đoán được [18]. 
+Có nhiều loại trôi dạt khác nhau, tùy thuộc vào các yếu tố dữ liệu đang thay đổi. Các loại chính của sự trôi dạt khái niệm bao gồm:
+Sự trôi dạt ảo (Virtual Drift): Còn được gọi là sự dịch chuyển biến phụ, đề cập đến tình huống mà sự thay đổi xảy ra trong phân phối các trường hợp đầu vào, trong khi xác suất sau của các giá trị mục tiêu vẫn không đổi [3].
+Sự trôi dạt thực (Real Drift): Sự thay đổi trong xác suất sau của các giá trị mục tiêu (tức là các lớp) được gọi là sự trôi dạt thực. Sự trôi dạt thực có thể không ảnh hưởng đến sự phân phối các trường hợp đầu vào. Ví dụ, người ta có thể đề cập đến sự thay đổi trong sở thích của người dùng khi họ theo dõi các kênh tin tức phát trực tuyến, trong khi sự phân phối các mục tin tức nhận được thường không thay đổi [3].
+Sự trôi dạt dần dần và đột ngột (Gradual and abrupt drift): Về tốc độ, sự trôi dạt có thể được phân loại thành sự trôi dạt dần dần và đột ngột. Sự trôi dạt dần dần biểu thị trường hợp khi sự phân phối dữ liệu thay đổi dần dần theo thời gian, trong khi sự trôi dạt đột ngột có thể xảy ra khi sự thay đổi trong phân phối dữ liệu xảy ra đột ngột [3].
+Sự trôi tăng dần (Increamental Drift):, thể hiện cho sự tiến hóa dần dần của phân phối dữ liệu. Ví dụ như sự tiến hóa dần dần của hệ thống đề xuất người dùng ngày càng tiến hóa và nhiều hơn dựa trên sự thay đổi của người dùng.[19]
+Sự trôi dạt lặp lại (Recurrent Drift): Trôi dạt lặp lại là khi dữ liệu quay trở lại trạng thái cũ sau một thời gian, hoặc lặp lại theo chu kỳ. Những thay đổi trong dữ liệu không phải mới mà đã từng xảy ra trước đó. Ví dụ như xu hướng thời trang thay đổi theo mùa, tuần hoàn theo từng năm. [19]
 
-% Thông thường, độ trôi được nghiên cứu trong các thiết lập luồng, trong đó những thay đổi trong
-% phân phối dữ liệu cơ bản đòi hỏi phải điều chỉnh mô hình hoặc
-% cảnh báo người vận hành để có hành động khắc phục (Ditzler và cộng sự,
-% 2015; Lu và cộng sự, 2018; Delange và cộng sự, 2021). Điều này liên quan chặt chẽ
-% đến sự phát triển của các khái niệm trong học liên tục, một chủ đề phổ biến
-% trong học sâu, nơi các khái niệm có thể xuất hiện hoặc biến mất. Độ trôi
-% mở rộng ra ngoài các luồng dữ liệu và xuất hiện trong dữ liệu chuỗi thời gian với
-% các quan sát phụ thuộc lẫn nhau. Độ trôi như vậy thường biểu hiện dưới dạng
-% xu hướng, và sự vắng mặt của nó được gọi là tính dừng (Esling và Agon,
-% 2012; Aminikhanghahi và Cook, 2017).
-% Trong các bối cảnh mà dữ liệu được quan sát theo thời gian, chẳng hạn như
-% sản xuất và kiểm soát chất lượng, dữ liệu thường được thu thập
-% trên nhiều địa điểm và được áp dụng các kỹ thuật học liên kết
-% (Zhang và cộng sự, 2021). Thay vì hợp nhất tất cả dữ liệu trên một máy chủ toàn cầu, xử lý cục bộ được triển khai và kết quả được tích hợp vào một mô hình tổng thể. Tương tự như học theo luồng, điều quan trọng là phải giải quyết sự khác biệt hoặc độ trôi của dữ liệu từ các vị trí khác nhau để xây dựng một mô hình toàn cầu mạnh mẽ (Liu và cộng sự, 2020). Hơn nữa, độ trôi cần được tính đến trong học chuyển giao, một kỹ thuật học sâu (Pan và Yang, 2010), trong đó mô hình được huấn luyện trước trên một tác vụ tương tự với tập dữ liệu mở rộng hơn trước khi được tinh chỉnh trên tác vụ mục tiêu bằng cách sử dụng một tập dữ liệu hạn chế. Mặc dù trọng tâm chính của nghiên cứu này là các luồng dữ liệu, các chiến lược được trình bày ở đây cũng áp dụng cho các tác vụ khác.
+Sự trôi dạt khái niệm có thể dẫn đến hiệu suất giảm trong quá trình vận hành thực tế của mô hình học máy, điểu này trái ngược với hiệu suất được đánh giá trên tập dữ liệu thử nghiệm tĩnh trong quá trình phát triển.
+Sự trôi dạt khái niệm có thể ảnh hưởng lớn đến hiệu suất của mô hình dự đoán, đặc biệt là khi mô hình học từ luồng dữ liệu. Một loạt các dịch vụ/ứng dụng trong bối cảnh hệ thống và mạng truyền thông có thể bị cản trở bởi sự trôi dạt khái niệm như: Hệ thống phát hiện xâm nhập (Intrusion Detection Systems  - IDS, hệ thống phân loại và dự đoán lưu lượng và IIoT. Ví dụ, người ta có thể tham khảo các kỹ thuật bảo trì dựa trên tình trạng (Condition-Based Maintenance - CBM) trong IIoT được sử dụng để dự đoán các điều kiện bất thường và thời gian bảo trì thông qua phân tích dữ liệu IIoT. Sự trôi dạt khái niệm ảnh hưởng đáng kể đến hiệu suất của CBM và do đó làm giảm chất lượng sản phẩm. 
+Điều này có thể được giải thích bởi thực tế là sự phân phối các mẫu lỗi có thể thay đổi theo thời gian do máy móc lão hóa và quy trình bảo trì. Do đó, một kỹ thuật CBM không có khả năng xử lý sự trôi dạt khái niệm sẽ hoạt động kém. Thật vậy, sự trôi dạt khái niệm có thể ảnh hưởng đến hiệu quả và tính mạnh mẽ của phân tích luồng dữ liệu.
+Sự trôi dạt khái niệm cũng là vấn đề đối với các ứng dụng IoT khác, chẳng hạn như thành phố thông minh. Trong các thành phố thông minh, dữ liệu có thể được thu thập vì nhiều lý do khác nhau, chẳng hạn như đảm bảo an ninh mạng, dự đoán ô nhiễm không khí, dự đoán giao thông đường bộ và dự báo tải điện. Tuy nhiên, theo thời gian, những thay đổi không lường trước có thể xảy ra trong dữ liệu được thu thập (sự trôi dạt khái niệm) và do đó, nó đặt ra những thách thức nghiêm trọng đối với độ chính xác của các mô hình dự đoán.
+Trong môi trường không cố định, có một số cân nhắc mà các mô hình dự đoán phải tính đến để phát hiện và tự thích ứng với sự trôi dạt khái niệm, nếu không, hiệu suất của các mô hình này sẽ giảm sút về độ chính xác và độ mạnh mẽ. Theo thời gian, một mô hình dự đoán có thể cần cập nhật các tham số và cấu trúc của nó bằng cách kết hợp các dữ liệu huấn luyện mới hoặc thay thế hoàn toàn mô hình cũ để xử lý sự trôi dạt khái niệm.
 
-% Việc xử lý các luồng dữ liệu trôi dạt bao gồm hai nhiệm vụ chính:
-% thiết lập một mô hình mạnh mẽ cho các tác vụ dự đoán, tức là học trực tuyến hoặc
-% học theo luồng, và giám sát các hệ thống để phát hiện hành vi bất ngờ.
-% Trong trường hợp trước, trọng tâm là nhãn và mối quan hệ của nó với các
-% tính năng khác, trong khi trường hợp sau liên quan đến bất kỳ thay đổi nào cho thấy
-% hành vi hoặc trạng thái bất ngờ của hệ thống. Do đó, phát hiện trôi dạt
-% tập trung vào các mục tiêu khác nhau, tương tự như học tập chung được gọi là
-% có giám sát cho trường hợp trước và không giám sát cho trường hợp sau. Nghiên cứu này
-% bỏ qua học trực tuyến vì nó đã được khám phá rộng rãi trong các
-% khảo sát trước đây (Ditzler và cộng sự, 2015; Losing và cộng sự, 2018; Lu và cộng sự, 2018) và
-% hộp công cụ (Bifet và cộng sự, 2010; Montiel và cộng sự, 2018, 2021).
-% Thay vào đó, nghiên cứu này tập trung vào việc phát hiện trôi dạt không giám sát và
-% giám sát các tình huống trong đó trôi dạt được dự đoán do việc sử dụng cảm biến
-% hoặc nhạy cảm với những thay đổi của môi trường. Cụ thể, trọng tâm là phát hiện trôi dạt không giám sát, một yếu tố quan trọng để giám sát và hiểu rõ hiện tượng trôi dạt. 
-% Một số ứng dụng điển hình là phát hiện trôi dạt cho các ứng dụng an ninh (Yang và cộng sự, 2021) và sử dụng phát hiện trôi dạt để phát hiện rò rỉ trong mạng lưới phân phối
-% nước (Vaquet và cộng sự, 2024a,b). Ngoài ra, còn có các kỹ thuật để phân tích trôi dạt sâu hơn (Webb và cộng sự, 2017, 2018; Hinder và cộng sự, 2023a), mà chúng tôi sẽ không đề 
-% cập chi tiết trong nghiên cứu này. Đối với độc giả quan tâm, chúng tôi cung cấp một phiên bản mở rộng bao gồm các chủ đề này cũng như nội dung của nghiên cứu 
-% này (Hinder và cộng sự, 2023b). Lưu ý rằng các phương pháp phát hiện trôi dạt không giám sát được thảo luận ở đây khác với các phương pháp được 
-% thiết kế cho học tập trực tuyến, như đã được thảo luận bởi Gemaque và cộng sự (2020). 
-% Trong Phần 2.2, chúng tôi mô tả chi tiết hơn về sự tương phản giữa phát hiện trôi dạt có giám sát. Giám sát bao gồm việc
-% quan sát một hệ thống và cung cấp thông tin cần thiết cho cả người vận hành và các tác vụ tự động để đảm bảo hệ thống hoạt động bình thường. 
-% Thông tin cần thiết sẽ khác nhau tùy thuộc vào từng tác vụ cụ thể (Goldenberg và Webb, 2019; Verma, 2021). 
 
 \subsection{Lịch sử phát triển các phương pháp phát hiện trôi dạt khái niệm}
-Trải qua nhiều thập kỷ, bài toán phát hiện hiện tượng trôi dạt đã được nghiên cứu với nhiều cách tiếp cận khác nhau. 
-Từ những năm 1990, các hệ thống học máy đầu tiên có khả năng thích ứng với concept drift (ví dụ: STAGGER 1986, FLORA 1996) chủ yếu dựa trên chiến lược cửa sổ trượt hoặc bỏ quên mẫu cũ để dần thích nghi với dữ liệu mới. 
-
-Tuy nhiên, giai đoạn này chưa có phương pháp “phát hiện” drift tách rời; các mô hình thường tự điều chỉnh dựa trên độ lỗi hoặc trọng số mẫu theo thời gian. 
+Trải qua nhiều thập kỷ, bài toán phát hiện hiện tượng trôi dạt đã được nghiên cứu với nhiều cách tiếp cận khác nhau. Từ những năm 1990, các hệ thống học máy đầu tiên có khả năng thích ứng với concept drift (ví dụ: STAGGER 1986, FLORA 1996) chủ yếu dựa trên chiến lược cửa sổ trượt hoặc bỏ quên mẫu cũ để dần thích nghi với dữ liệu mới. Tuy nhiên, giai đoạn này chưa có phương pháp “phát hiện” drift tách rời; các mô hình thường tự điều chỉnh dựa trên độ lỗi hoặc trọng số mẫu theo thời gian. 
 
 Bước ngoặt xảy ra vào giữa những năm 2000 khi các thuật toán chuyên biệt để phát hiện điểm thay đổi bắt đầu ra đời. 
 

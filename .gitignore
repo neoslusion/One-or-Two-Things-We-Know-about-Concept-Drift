@@ -70,7 +70,6 @@ venv.bak/
 *.pickle
 *.h5
 *.hdf5
-*.png
 
 
 # Log files
