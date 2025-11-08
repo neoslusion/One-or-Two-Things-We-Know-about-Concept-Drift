@@ -1,4 +1,44 @@
 \chapter{Cơ sở lý thuyết}
+
+\section{Khái niệm và các loại concept drift}
+
+\subsection{Định nghĩa concept drift}
+
+Concept drift, hay còn gọi là sự trôi dạt khái niệm, đề cập đến những thay đổi trong phân phối dữ liệu được tạo ra theo thời gian, đặc biệt là trong môi trường động và thay đổi theo thời gian, chẳng hạn như trong ứng dụng về IoT~\cite{ramakrishnan2014enabling}. Cụ thể hơn, sự trôi dạt khái niệm là một vấn đề trong đó các mối quan hệ thống kê giữa các giá trị đầu vào và giá trị mục tiêu bị thay đổi theo thời gian theo cách không thể dự đoán được~\cite{schlimmer1986incremental}.
+
+Sự trôi dạt khái niệm có thể dẫn đến hiệu suất giảm trong quá trình vận hành thực tế của mô hình học máy, điều này trái ngược với hiệu suất được đánh giá trên tập dữ liệu thử nghiệm tĩnh trong quá trình phát triển.
+
+\subsection{Phân loại các loại concept drift}
+
+Có nhiều loại trôi dạt khác nhau, tùy thuộc vào các yếu tố dữ liệu đang thay đổi. Các loại chính của sự trôi dạt khái niệm bao gồm~\cite{sciencedirect2024drift, hovakimyan2024evolving}:
+
+\textbf{Sự trôi dạt ảo (Virtual Drift):} Còn được gọi là sự dịch chuyển biến phụ (covariate shift), đề cập đến tình huống mà sự thay đổi xảy ra trong phân phối các trường hợp đầu vào $P(X)$, trong khi xác suất hậu nghiệm của các giá trị mục tiêu $P(Y|X)$ vẫn không đổi~\cite{moreno2012unifying}.
+
+\textbf{Sự trôi dạt thực (Real Drift):} Sự thay đổi trong xác suất hậu nghiệm của các giá trị mục tiêu (tức là các lớp) $P(Y|X)$ được gọi là sự trôi dạt thực. Sự trôi dạt thực có thể không ảnh hưởng đến sự phân phối các trường hợp đầu vào $P(X)$. Ví dụ, người ta có thể đề cập đến sự thay đổi trong sở thích của người dùng khi họ theo dõi các kênh tin tức phát trực tuyến, trong khi sự phân phối các mục tin tức nhận được thường không thay đổi~\cite{gama2014survey}.
+
+\textbf{Sự trôi dạt đột ngột (Abrupt Drift):} Biểu thị trường hợp khi sự phân phối dữ liệu thay đổi đột ngột tại một thời điểm cụ thể. Drift đột ngột dễ nhận biết nhưng đòi hỏi cơ chế phát hiện và thích ứng nhanh để tránh suy giảm hiệu suất nghiêm trọng~\cite{basseville1993detection}.
+
+\textbf{Sự trôi dạt dần dần (Gradual Drift):} Sự trôi dạt dần dần biểu thị trường hợp khi sự phân phối dữ liệu thay đổi dần dần theo thời gian qua một khoảng thời gian chuyển tiếp. Trong giai đoạn chuyển tiếp này, dữ liệu có thể đến từ cả phân phối cũ và phân phối mới với tỷ lệ thay đổi dần~\cite{gama2014survey}.
+
+\textbf{Sự trôi dạt tăng dần (Incremental Drift):} Thể hiện sự tiến hóa dần dần của phân phối dữ liệu theo từng bước nhỏ liên tục. Ví dụ như sự tiến hóa dần dần của hệ thống đề xuất người dùng ngày càng tiến hóa và nhiều hơn dựa trên sự thay đổi sở thích của người dùng theo thời gian~\cite{hovakimyan2024evolving}.
+
+\textbf{Sự trôi dạt lặp lại (Recurrent Drift):} Trôi dạt lặp lại là khi dữ liệu quay trở lại trạng thái cũ sau một thời gian, hoặc lặp lại theo chu kỳ. Những thay đổi trong dữ liệu không phải mới mà đã từng xảy ra trước đó. Ví dụ như xu hướng thời trang thay đổi theo mùa, tuần hoàn theo từng năm~\cite{hovakimyan2024evolving}.
+
+\subsection{Ảnh hưởng của concept drift}
+
+Sự trôi dạt khái niệm có thể ảnh hưởng lớn đến hiệu suất của mô hình dự đoán, đặc biệt là khi mô hình học từ luồng dữ liệu. Một loạt các dịch vụ/ứng dụng trong bối cảnh hệ thống và mạng truyền thông có thể bị cản trở bởi sự trôi dạt khái niệm như~\cite{ramakrishnan2014enabling}:
+
+\begin{itemize}
+    \item \textbf{Hệ thống phát hiện xâm nhập (IDS):} Các mẫu tấn công mạng liên tục thay đổi, đòi hỏi IDS phải thích ứng với các mối đe dọa mới
+    \item \textbf{Hệ thống phân loại và dự đoán lưu lượng:} Mẫu lưu lượng mạng thay đổi theo thời gian, ảnh hưởng đến độ chính xác dự đoán
+    \item \textbf{Industrial IoT (IIoT):} Đặc biệt trong các kỹ thuật bảo trì dựa trên tình trạng (Condition-Based Maintenance - CBM) được sử dụng để dự đoán các điều kiện bất thường và thời gian bảo trì thông qua phân tích dữ liệu IIoT~\cite{jourdan2021machine}
+    \item \textbf{Thành phố thông minh:} Dữ liệu được thu thập cho nhiều mục đích như đảm bảo an ninh mạng, dự đoán ô nhiễm không khí, dự đoán giao thông đường bộ và dự báo tải điện
+\end{itemize}
+
+Sự phân phối các mẫu lỗi có thể thay đổi theo thời gian do máy móc lão hóa và quy trình bảo trì. Do đó, một kỹ thuật CBM không có khả năng xử lý sự trôi dạt khái niệm sẽ hoạt động kém~\cite{jourdan2021machine}. Thật vậy, sự trôi dạt khái niệm có thể ảnh hưởng đến hiệu quả và tính mạnh mẽ của phân tích luồng dữ liệu~\cite{tripathi2021ensuring}.
+
+Trong môi trường không cố định, có một số cân nhắc mà các mô hình dự đoán phải tính đến để phát hiện và tự thích ứng với sự trôi dạt khái niệm, nếu không, hiệu suất của các mô hình này sẽ giảm sút về độ chính xác và độ mạnh mẽ. Theo thời gian, một mô hình dự đoán có thể cần cập nhật các tham số và cấu trúc của nó bằng cách kết hợp các dữ liệu huấn luyện mới hoặc thay thế hoàn toàn mô hình cũ để xử lý sự trôi dạt khái niệm.
+
 \section{Cách tiếp cận nghiên cứu}
 
 Chương này trình bày khung phương pháp luận để điều tra phát hiện concept drift sử dụng phương pháp Shape Drift Detector (ShapeDD). Cách tiếp cận của chúng tôi tập trung vào việc hiểu các nền tảng lý thuyết của ShapeDD, triển khai thuật toán cho các kịch bản drift khác nhau, và thực hiện đánh giá thực nghiệm toàn diện để đánh giá hiệu quả của nó trên các loại concept drift khác nhau.

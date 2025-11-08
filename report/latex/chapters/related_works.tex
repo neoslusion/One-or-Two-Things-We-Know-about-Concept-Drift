@@ -4,23 +4,6 @@
 
 \subsection{Khái niệm và bối cảnh}
 
-\subsection{Các loại hiện tượng trôi dạt}
-
-Concept drift, hay còn gọi là sự trôi dạt khái niệm, đề cập đến những thay đổi trong phân phối dữ liệu được tạo ra theo thời gian, đặc biệt là trong môi trường động và thay đổi theo thời gian, chẳng hạn như trong ứng dụng về IoT [17]. Cụ thể hơn, sự trôi dạt khái niệm là một vấn đề trong đó các mối quan hệ thống kê giữa các giá trị đầu vào và giá trị mục tiêu bị thay đổi theo thời gian theo cách không thể dự đoán được [18]. 
-Có nhiều loại trôi dạt khác nhau, tùy thuộc vào các yếu tố dữ liệu đang thay đổi. Các loại chính của sự trôi dạt khái niệm bao gồm:
-Sự trôi dạt ảo (Virtual Drift): Còn được gọi là sự dịch chuyển biến phụ, đề cập đến tình huống mà sự thay đổi xảy ra trong phân phối các trường hợp đầu vào, trong khi xác suất sau của các giá trị mục tiêu vẫn không đổi [3].
-Sự trôi dạt thực (Real Drift): Sự thay đổi trong xác suất sau của các giá trị mục tiêu (tức là các lớp) được gọi là sự trôi dạt thực. Sự trôi dạt thực có thể không ảnh hưởng đến sự phân phối các trường hợp đầu vào. Ví dụ, người ta có thể đề cập đến sự thay đổi trong sở thích của người dùng khi họ theo dõi các kênh tin tức phát trực tuyến, trong khi sự phân phối các mục tin tức nhận được thường không thay đổi [3].
-Sự trôi dạt dần dần và đột ngột (Gradual and abrupt drift): Về tốc độ, sự trôi dạt có thể được phân loại thành sự trôi dạt dần dần và đột ngột. Sự trôi dạt dần dần biểu thị trường hợp khi sự phân phối dữ liệu thay đổi dần dần theo thời gian, trong khi sự trôi dạt đột ngột có thể xảy ra khi sự thay đổi trong phân phối dữ liệu xảy ra đột ngột [3].
-Sự trôi tăng dần (Increamental Drift):, thể hiện cho sự tiến hóa dần dần của phân phối dữ liệu. Ví dụ như sự tiến hóa dần dần của hệ thống đề xuất người dùng ngày càng tiến hóa và nhiều hơn dựa trên sự thay đổi của người dùng.[19]
-Sự trôi dạt lặp lại (Recurrent Drift): Trôi dạt lặp lại là khi dữ liệu quay trở lại trạng thái cũ sau một thời gian, hoặc lặp lại theo chu kỳ. Những thay đổi trong dữ liệu không phải mới mà đã từng xảy ra trước đó. Ví dụ như xu hướng thời trang thay đổi theo mùa, tuần hoàn theo từng năm. [19]
-
-Sự trôi dạt khái niệm có thể dẫn đến hiệu suất giảm trong quá trình vận hành thực tế của mô hình học máy, điểu này trái ngược với hiệu suất được đánh giá trên tập dữ liệu thử nghiệm tĩnh trong quá trình phát triển.
-Sự trôi dạt khái niệm có thể ảnh hưởng lớn đến hiệu suất của mô hình dự đoán, đặc biệt là khi mô hình học từ luồng dữ liệu. Một loạt các dịch vụ/ứng dụng trong bối cảnh hệ thống và mạng truyền thông có thể bị cản trở bởi sự trôi dạt khái niệm như: Hệ thống phát hiện xâm nhập (Intrusion Detection Systems  - IDS, hệ thống phân loại và dự đoán lưu lượng và IIoT. Ví dụ, người ta có thể tham khảo các kỹ thuật bảo trì dựa trên tình trạng (Condition-Based Maintenance - CBM) trong IIoT được sử dụng để dự đoán các điều kiện bất thường và thời gian bảo trì thông qua phân tích dữ liệu IIoT. Sự trôi dạt khái niệm ảnh hưởng đáng kể đến hiệu suất của CBM và do đó làm giảm chất lượng sản phẩm. 
-Điều này có thể được giải thích bởi thực tế là sự phân phối các mẫu lỗi có thể thay đổi theo thời gian do máy móc lão hóa và quy trình bảo trì. Do đó, một kỹ thuật CBM không có khả năng xử lý sự trôi dạt khái niệm sẽ hoạt động kém. Thật vậy, sự trôi dạt khái niệm có thể ảnh hưởng đến hiệu quả và tính mạnh mẽ của phân tích luồng dữ liệu.
-Sự trôi dạt khái niệm cũng là vấn đề đối với các ứng dụng IoT khác, chẳng hạn như thành phố thông minh. Trong các thành phố thông minh, dữ liệu có thể được thu thập vì nhiều lý do khác nhau, chẳng hạn như đảm bảo an ninh mạng, dự đoán ô nhiễm không khí, dự đoán giao thông đường bộ và dự báo tải điện. Tuy nhiên, theo thời gian, những thay đổi không lường trước có thể xảy ra trong dữ liệu được thu thập (sự trôi dạt khái niệm) và do đó, nó đặt ra những thách thức nghiêm trọng đối với độ chính xác của các mô hình dự đoán.
-Trong môi trường không cố định, có một số cân nhắc mà các mô hình dự đoán phải tính đến để phát hiện và tự thích ứng với sự trôi dạt khái niệm, nếu không, hiệu suất của các mô hình này sẽ giảm sút về độ chính xác và độ mạnh mẽ. Theo thời gian, một mô hình dự đoán có thể cần cập nhật các tham số và cấu trúc của nó bằng cách kết hợp các dữ liệu huấn luyện mới hoặc thay thế hoàn toàn mô hình cũ để xử lý sự trôi dạt khái niệm.
-
-
 \subsection{Lịch sử phát triển các phương pháp phát hiện trôi dạt khái niệm}
 Trải qua nhiều thập kỷ, bài toán phát hiện hiện tượng trôi dạt đã được nghiên cứu với nhiều cách tiếp cận khác nhau. Từ những năm 1990, các hệ thống học máy đầu tiên có khả năng thích ứng với concept drift (ví dụ: STAGGER 1986, FLORA 1996) chủ yếu dựa trên chiến lược cửa sổ trượt hoặc bỏ quên mẫu cũ để dần thích nghi với dữ liệu mới. Tuy nhiên, giai đoạn này chưa có phương pháp “phát hiện” drift tách rời; các mô hình thường tự điều chỉnh dựa trên độ lỗi hoặc trọng số mẫu theo thời gian. 
 
@@ -128,11 +111,11 @@ Nếu p-value nhỏ hơn mức ý nghĩa $\alpha$ đã chọn, chúng ta kết l
 
 Ý tưởng chính là: nếu mô hình hiện tại bỗng nhiên dự đoán kém (tỉ lệ lỗi tăng lên đáng kể) thì có khả năng khái niệm đã thay đổi. 
 
-Phương pháp tiêu biểu mở đầu cho hướng tiếp cận này là \textbf{DDM} (\textit{Drift Detection Method}) do Gama và cộng sự giới thiệu năm 2004[6]. 
+Phương pháp tiêu biểu mở đầu cho hướng tiếp cận này là \textbf{DDM} (\textit{Drift Detection Method}) do Gama và cộng sự giới thiệu năm 2004~\cite{gama2004learning}.
 
-DDM được xem như cột mốc quan trọng, đặt nền tảng cho hàng loạt nghiên cứu tiếp theo về phát hiện drift[6]. 
+DDM được xem như cột mốc quan trọng, đặt nền tảng cho hàng loạt nghiên cứu tiếp theo về phát hiện drift~\cite{gama2004learning}.
 
-Thuật toán DDM giám sát tỉ lệ lỗi (error rate) của mô hình theo dòng dữ liệu bằng cách xem mỗi mẫu dự đoán sai như một thử nghiệm Bernoulli (lỗi = 1 nếu dự đoán sai)[7]. 
+Thuật toán DDM giám sát tỉ lệ lỗi (error rate) của mô hình theo dòng dữ liệu bằng cách xem mỗi mẫu dự đoán sai như một thử nghiệm Bernoulli (lỗi = 1 nếu dự đoán sai)~\cite{gama2004learning}. 
 
 Giả sử $p_i$ là xác suất lỗi tại mẫu thứ $i$, DDM ước lượng $p_i$ và độ lệch chuẩn $s_i$ tương ứng. 
 
@@ -140,7 +123,7 @@ Trong quá trình cập nhật, DDM ghi nhận giá trị tối thiểu của $p
 
 Khi nào $p_j + 3s_j$ ở thời điểm $j$ vượt quá giá trị tối thiểu trước đó một lượng đáng kể, mô hình suy luận rằng đã có drift xảy ra. 
 
-Cụ thể, DDM đặt hai ngưỡng: mức \textit{cảnh báo} khi $p_j + 2s_j$ vượt quá min$(p_i+3s_i)$, và mức \textit{drift} khi $p_j + 3s_j$ vượt quá min$(p_i+3s_i)$[7]. 
+Cụ thể, DDM đặt hai ngưỡng: mức \textit{cảnh báo} khi $p_j + 2s_j$ vượt quá min$(p_i+3s_i)$, và mức \textit{drift} khi $p_j + 3s_j$ vượt quá min$(p_i+3s_i)$~\cite{gama2004learning}. 
 
 \begin{itemize}
     \item \textbf{Mức cảnh báo:} Được kích hoạt khi $p_i + s_i \geq p_{\text{min}} + 2 \cdot s_{\text{min}}$
@@ -158,11 +141,11 @@ p_i = \frac{\sum_{j=1}^{i} \text{error}_j}{i}
 s_i = \sqrt{\frac{p_i(1-p_i)}{i}}
 \end{equation}
 
-Khi chạm ngưỡng cảnh báo, hệ thống có thể chuẩn bị (ví dụ lưu dữ liệu); khi chạm ngưỡng drift, DDM phát tín hiệu rằng concept drift đã diễn ra, và mô hình cần được điều chỉnh hoặc huấn luyện lại. DDM tỏ ra hiệu quả, đơn giản và rất phù hợp cho các ứng dụng dòng dữ liệu thời gian thực, bởi nó chỉ yêu cầu tính toán nhẹ (cập nhật thống kê lỗi)[8]. 
+Khi chạm ngưỡng cảnh báo, hệ thống có thể chuẩn bị (ví dụ lưu dữ liệu); khi chạm ngưỡng drift, DDM phát tín hiệu rằng concept drift đã diễn ra, và mô hình cần được điều chỉnh hoặc huấn luyện lại. DDM tỏ ra hiệu quả, đơn giản và rất phù hợp cho các ứng dụng dòng dữ liệu thời gian thực, bởi nó chỉ yêu cầu tính toán nhẹ (cập nhật thống kê lỗi)~\cite{gama2004learning}.
 
-Tuy nhiên, nhược điểm của DDM là trong môi trường dữ liệu nhiễu, tỉ lệ lỗi dao động có thể gây ra nhiều báo động giả (false alarm)[9]. Đặc biệt, DDM phản ứng chậm trước các dạng drift từ từ (gradual drift) do nó chỉ dựa vào sự gia tăng đột biến của lỗi. Nhược điểm này đã dẫn đến sự ra đời của các biến thể cải tiến. 
+Tuy nhiên, nhược điểm của DDM là trong môi trường dữ liệu nhiễu, tỉ lệ lỗi dao động có thể gây ra nhiều báo động giả (false alarm)~\cite{gama2004learning}. Đặc biệt, DDM phản ứng chậm trước các dạng drift từ từ (gradual drift) do nó chỉ dựa vào sự gia tăng đột biến của lỗi. Nhược điểm này đã dẫn đến sự ra đời của các biến thể cải tiến.
 
-Năm 2006, \textbf{EDDM} (\textit{Early DDM}) được đề xuất nhằm nâng cao khả năng phát hiện drift dần dần[9][10]. Thay vì theo dõi trực tiếp xác suất lỗi, EDDM tập trung vào khoảng cách (số mẫu) giữa các lần dự đoán sai liên tiếp. Ý tưởng là khi sự trôi dạt chưa xảy ra, các lỗi phân bố ngẫu nhiên; còn khi sự trôi dạt bắt đầu thay đổi từ từ, lỗi sẽ xuất hiện ngày một thường xuyên hơn. EDDM tính trung bình khoảng cách lỗi và độ lệch chuẩn của khoảng cách đó, rồi đặt ngưỡng tương tự DDM để phát hiện drift dựa trên việc khoảng cách lỗi giảm mạnh[10]. Nhờ vậy, EDDM nhạy hơn với các thay đổi từ từ, báo hiệu sớm hơn so với DDM trong nhiều trường hợp.
+Năm 2006, \textbf{EDDM} (\textit{Early DDM}) được đề xuất nhằm nâng cao khả năng phát hiện drift dần dần~\cite{baena2006early}. Thay vì theo dõi trực tiếp xác suất lỗi, EDDM tập trung vào khoảng cách (số mẫu) giữa các lần dự đoán sai liên tiếp. Ý tưởng là khi sự trôi dạt chưa xảy ra, các lỗi phân bố ngẫu nhiên; còn khi sự trôi dạt bắt đầu thay đổi từ từ, lỗi sẽ xuất hiện ngày một thường xuyên hơn. EDDM tính trung bình khoảng cách lỗi và độ lệch chuẩn của khoảng cách đó, rồi đặt ngưỡng tương tự DDM để phát hiện drift dựa trên việc khoảng cách lỗi giảm mạnh~\cite{baena2006early}. Nhờ vậy, EDDM nhạy hơn với các thay đổi từ từ, báo hiệu sớm hơn so với DDM trong nhiều trường hợp.
 
 EDDM tính toán khoảng cách trung bình ($p'_i$) giữa hai lỗi phân loại gần đây và độ lệch chuẩn của nó ($s'_i$) tại mỗi bước thời gian. Phương pháp lưu trữ giá trị tối đa đã quan sát của $p'_i + 2 \cdot s'_i$ (ký hiệu là $p'_{\text{max}} + 2 \cdot s'_{\text{max}}$), đại diện cho điểm mà mô hình hiện tại xấp xỉ tốt nhất các khái niệm dữ liệu cơ bản.
 
@@ -265,11 +248,11 @@ Tổng kết lại, nhóm phương pháp học sâu phản ánh xu hướng hi�
 \hline
 1996 & FLORA${}^*$ & Cửa sổ trượt thích ứng đầu tiên, xử lý drift bằng chọn bộ nhớ ngắn hạn. \\
 \hline
-2004 & DDM[6] & Giám sát tỉ lệ lỗi mô hình, đặt ngưỡng cảnh báo và drift theo luật SPC; phát hiện drift đột ngột hiệu quả. \\
+2004 & DDM~\cite{gama2004learning} & Giám sát tỉ lệ lỗi mô hình, đặt ngưỡng cảnh báo và drift theo luật SPC; phát hiện drift đột ngột hiệu quả. \\
 \hline
-2006 & EDDM[10] & Mở rộng DDM, cải thiện phát hiện drift dần dần bằng cách theo dõi khoảng cách giữa các lỗi. \\
+2006 & EDDM~\cite{baena2006early} & Mở rộng DDM, cải thiện phát hiện drift dần dần bằng cách theo dõi khoảng cách giữa các lỗi. \\
 \hline
-2007 & ADWIN[3] & Cửa sổ trượt thích ứng với đảm bảo lý thuyết, so sánh thống kê hai cửa sổ con để phát hiện thay đổi phân phối. \\
+2007 & ADWIN~\cite{bifet2007learning} & Cửa sổ trượt thích ứng với đảm bảo lý thuyết, so sánh thống kê hai cửa sổ con để phát hiện thay đổi phân phối. \\
 \hline
 2015 & HDDM[11] & Sử dụng bất đẳng thức Hoeffding (phi tham số) để phát hiện drift trên dòng lỗi; giảm giả định phân phối so với DDM. \\
 \hline
