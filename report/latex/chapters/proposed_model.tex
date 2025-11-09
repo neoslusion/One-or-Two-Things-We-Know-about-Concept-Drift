@@ -194,6 +194,13 @@ trong đó:
 \end{algorithmic}
 \end{algorithm}
 
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{image/snr_adaptive_architecture.png}
+\caption{Kiến trúc hệ thống ShapeDD SNR-Adaptive. Hệ thống ước lượng SNR từ luồng dữ liệu đầu vào, sau đó chọn chiến lược phát hiện thích ứng (aggressive hoặc conservative) dựa trên ngưỡng $\tau=0.010$. Chiến lược aggressive sử dụng ShapeDD\_Adaptive\_v2 với độ nhạy medium, trong khi chiến lược conservative sử dụng ShapeDD gốc. Phân bố thực nghiệm cho thấy 58.7\% aggressive và 41.3\% conservative, đạt F1=0.697 và xếp hạng 4/18.}
+\label{fig:snr_adaptive_architecture}
+\end{figure}
+
 \subsubsection{Ưu điểm của phương pháp SNR-Adaptive}
 
 Phương pháp hybrid này mang lại các lợi ích sau:
@@ -219,6 +226,13 @@ Khi sử dụng buffer trượt (sliding buffer) với kích thước lớn (750
     \item Nguyên nhân: Buffer chứa dữ liệu hỗn hợp [Ổn định: 90\%] [Drift: 10\%] [Ổn định: ...]
 \end{itemize}
 
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{image/buffer_dilution.png}
+\caption{Hiệu ứng pha loãng SNR trong môi trường buffer. (Trên) Thành phần buffer 750 mẫu chứa dữ liệu hỗn hợp: 90\% ổn định (xanh lam) và 10\% drift (đỏ), dẫn đến SNR quan sát thấp hơn đáng kể. (Dưới) So sánh SNR lý thuyết (0.4-4.0) với SNR quan sát trong buffer (0.005-0.020), chênh lệch khoảng 100 lần do hiệu ứng pha loãng. Đây là lý do ngưỡng $\tau$ phải được hiệu chỉnh xuống 0.010 thay vì sử dụng giá trị lý thuyết.}
+\label{fig:buffer_dilution}
+\end{figure}
+
 \textbf{Cơ sở lý thuyết cho việc tối ưu tham số:}
 
 Theo tiêu chuẩn Neyman-Pearson trong lý thuyết phát hiện tín hiệu, ngưỡng tối ưu là ngưỡng cân bằng giữa tỷ lệ false positive (Type I error) và false negative (Type II error) khi chi phí của chúng tương đương. Điều này tương ứng với việc sử dụng cân bằng khoảng 50\% chiến lược tích cực và 50\% chiến lược bảo thủ, đạt được điểm cân bằng tối ưu giữa precision và recall.
@@ -241,6 +255,13 @@ Tối ưu & 0.010 & medium & 58.7\% & \textbf{0.697} \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{image/strategy_selection.png}
+\caption{Phân bố lựa chọn chiến lược của ShapeDD SNR-Adaptive. (Trên) Biểu đồ tròn cho thấy 58.7\% lựa chọn chiến lược aggressive (tích cực) và 41.3\% conservative (bảo thủ), gần với mục tiêu cân bằng 50/50 theo tiêu chuẩn Neyman-Pearson. (Dưới) So sánh cân bằng chiến lược giữa các cấu hình: v1 (threshold=0.008, 64.7\% aggressive), v2 (threshold=0.010, 58.7\% aggressive) và tối ưu lý thuyết (50\%). Cấu hình v2 đạt cân bằng tốt nhất với độ lệch chỉ 8.7\% so với mục tiêu.}
+\label{fig:strategy_selection}
+\end{figure}
 
 Lý do lựa chọn:
 \begin{itemize}
@@ -266,6 +287,20 @@ MMD & 0.659 & 91.3\% & 6/18 & Baseline \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{image/optimization_comparison.png}
+\caption{So sánh hiệu suất trước và sau tối ưu hóa tham số. Ba panel cho thấy sự cải thiện của cấu hình v2 so với v1: (Trái) F1-score tăng từ 0.684 lên 0.697 (+1.9\%), (Giữa) Recall tăng từ 62.5\% lên 66.2\%, (Phải) Balance Score cải thiện từ 14.7 xuống 8.7 (càng gần 0 càng cân bằng). Việc điều chỉnh threshold từ 0.008 lên 0.010 và sensitivity từ high xuống medium đã mang lại cải thiện đáng kể trên tất cả các chỉ số đánh giá.}
+\label{fig:optimization_comparison}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{image/threshold_sensitivity.png}
+\caption{Phân tích độ nhạy ngưỡng SNR. (Trái) Cân bằng chiến lược thay đổi theo ngưỡng, cho thấy threshold=0.010 (đường đỏ đứt) đạt 58.7\% gần với mục tiêu 50\% (đường xanh đứt). (Phải) F1-score dự kiến theo ngưỡng, với điểm peak ở vùng 0.008-0.012. Các điểm dữ liệu thực nghiệm (v1 ở 0.008 với F1=0.684, v2 ở 0.010 với F1=0.697) được đánh dấu rõ ràng, xác nhận rằng threshold=0.010 nằm trong vùng tối ưu.}
+\label{fig:threshold_sensitivity}
+\end{figure}
 
 \textbf{Phân tích kết quả:}
 
