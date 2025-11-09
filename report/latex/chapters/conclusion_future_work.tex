@@ -110,37 +110,37 @@ Luận văn này đã nghiên cứu và triển khai thành công một hệ th�
     \item Mỗi module có thể test và optimize độc lập
 \end{itemize}
 
-\section{Limitations and Constraints}
+\section{Hạn chế và ràng buộc}
 
-\subsection{Methodological Limitations}
+\subsection{Hạn chế về phương pháp luận}
 
-\textbf{Parameter Sensitivity:} While our methods show good robustness, they still require parameter tuning for optimal performance. Automated parameter optimization remains challenging.
+\textbf{Độ nhạy tham số:} Mặc dù các phương pháp của nghiên cứu cho thấy độ bền vững tốt, chúng vẫn yêu cầu điều chỉnh tham số để đạt hiệu suất tối ưu. Tối ưu hóa tham số tự động vẫn còn là thách thức.
 
-\textbf{High-Dimensional Challenges:} Very high-dimensional datasets (>1000 features) present computational and statistical challenges for some components of our framework.
+\textbf{Thách thức đa chiều cao:} Các tập dữ liệu có số chiều rất cao (>1000 features) đặt ra các thách thức tính toán và thống kê cho một số thành phần của framework.
 
-\textbf{Meta-learning Requirements:} The meta-learning approach requires sufficient historical data with drift annotations, which may not be available in all applications.
+\textbf{Yêu cầu meta-learning:} Phương pháp meta-learning yêu cầu đủ dữ liệu lịch sử với các chú thích drift, điều này có thể không khả dụng trong tất cả các ứng dụng.
 
-\textbf{Interpretability Trade-offs:} The sophistication of our ensemble approaches can make it difficult to understand why specific decisions are made, limiting interpretability in critical applications.
+\textbf{Đánh đổi khả năng giải thích:} Sự phức tạp của các phương pháp ensemble có thể khiến việc hiểu tại sao các quyết định cụ thể được đưa ra trở nên khó khăn, hạn chế khả năng giải thích trong các ứng dụng quan trọng.
 
-\subsection{Evaluation Limitations}
+\subsection{Hạn chế về đánh giá}
 
-\textbf{Synthetic Dataset Bias:} While we used diverse synthetic datasets, they may not capture all complexities of real-world drift patterns.
+\textbf{Thiên kiến dữ liệu tổng hợp:} Mặc dù sử dụng các tập dữ liệu tổng hợp đa dạng, chúng có thể không nắm bắt được tất cả sự phức tạp của các mẫu drift trong thế giới thực.
 
-\textbf{Annotation Subjectivity:} Manual annotation of drift points in real-world datasets involves subjective judgments that may affect evaluation reliability.
+\textbf{Tính chủ quan của chú thích:} Chú thích thủ công các điểm drift trong tập dữ liệu thực tế liên quan đến các đánh giá chủ quan có thể ảnh hưởng đến độ tin cậy của việc đánh giá.
 
-\textbf{Limited Long-term Studies:} Most evaluations span relatively short time periods. Long-term performance in continuously evolving environments requires further investigation.
+\textbf{Nghiên cứu dài hạn hạn chế:} Hầu hết các đánh giá kéo dài trong khoảng thời gian tương đối ngắn. Hiệu suất dài hạn trong môi trường liên tục phát triển cần điều tra thêm.
 
-\section{Broader Impact and Applications}
+\section{Tác động rộng và ứng dụng}
 
-\subsection{Industrial Applications}
+\subsection{Ứng dụng công nghiệp}
 
-Our research has direct applications across numerous industries:
+Nghiên cứu có ứng dụng trực tiếp trong nhiều ngành công nghiệp:
 
-\textbf{Financial Services:}
+\textbf{Dịch vụ tài chính:}
 \begin{itemize}
-    \item Fraud detection systems that adapt to evolving fraud patterns
-    \item Risk assessment models that account for changing market conditions
-    \item Algorithmic trading systems that respond to market regime changes
+    \item Hệ thống phát hiện gian lận thích ứng với các mẫu gian lận đang phát triển
+    \item Mô hình đánh giá rủi ro tính đến điều kiện thị trường thay đổi
+    \item Hệ thống giao dịch thuật toán phản ứng với thay đổi chế độ thị trường
 \end{itemize}
 
 \textbf{Y tế:}
@@ -161,7 +161,7 @@ Our research has direct applications across numerous industries:
 
 \textbf{Công bằng và giảm thiểu thiên kiến:} Các phương pháp concept drift có thể giúp xác định và giải quyết các mẫu thiên kiến đang phát triển trong hệ thống học máy, thúc đẩy các ứng dụng AI công bằng hơn.
 
-\textbf{Nghiên cứu biến đổi khí hậu:} Các phương pháp xử lý mẫu thời gian của chúng tôi có thể đóng góp vào mô hình hóa khí hậu và hệ thống giám sát môi trường.
+\textbf{Nghiên cứu biến đổi khí hậu:} Các phương pháp xử lý mẫu thời gian của nghiên cứu này có thể đóng góp vào mô hình hóa khí hậu và hệ thống giám sát môi trường.
 
 \textbf{Sức khỏe cộng đồng:} Hệ thống thích ứng có thể cải thiện mô hình hóa dịch bệnh và phản ứng sức khỏe cộng đồng bằng cách phát hiện và thích ứng với các mẫu bệnh tật thay đổi.
 

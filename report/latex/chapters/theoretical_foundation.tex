@@ -41,7 +41,7 @@ Trong môi trường không cố định, có một số cân nhắc mà các m�
 
 \section{Cách tiếp cận nghiên cứu}
 
-Chương này trình bày khung phương pháp luận để điều tra phát hiện concept drift sử dụng phương pháp Shape Drift Detector (ShapeDD). Cách tiếp cận của chúng tôi tập trung vào việc hiểu các nền tảng lý thuyết của ShapeDD, triển khai thuật toán cho các kịch bản drift khác nhau, và thực hiện đánh giá thực nghiệm toàn diện để đánh giá hiệu quả của nó trên các loại concept drift khác nhau.
+Chương này trình bày khung phương pháp luận để điều tra phát hiện concept drift sử dụng phương pháp Shape Drift Detector (ShapeDD). Nghiên cứu này tập trung vào việc hiểu các nền tảng lý thuyết của ShapeDD, triển khai thuật toán cho các kịch bản drift khác nhau, và thực hiện đánh giá thực nghiệm toàn diện để đánh giá hiệu quả của nó trên các loại concept drift khác nhau.
 
 Phương pháp luận nghiên cứu bao gồm ba thành phần chính: (1) phân tích lý thuyết của thuật toán ShapeDD và các nền tảng Maximum Mean Discrepancy (MMD) cơ bản, (2) triển khai và tối ưu hóa hệ thống phát hiện cho các bộ dữ liệu tổng hợp và thực tế, và (3) đánh giá thực nghiệm toàn diện trên các mẫu drift và cấu hình tham số khác nhau.
 
@@ -49,7 +49,7 @@ Phương pháp luận nghiên cứu bao gồm ba thành phần chính: (1) phân
 
 \subsection{Maximum Mean Discrepancy (MMD)}
 
-Shape Drift Detector (ShapeDD) dựa trên Maximum Mean Discrepancy (MMD), một thước đo thống kê được sử dụng để so sánh hai phân phối xác suất $P$ và $Q$. Ý tưởng cốt lõi là ánh xạ dữ liệu từ không gian gốc vào không gian feature cao chiều nơi việc so sánh trở nên nhạy cảm hơn với sự khác biệt phân phối.
+Shape Drift Detector (ShapeDD) dựa trên Maximum Mean Discrepancy (MMD)~\cite{gretton2012kernel}, một thước đo thống kê được sử dụng để so sánh hai phân phối xác suất $P$ và $Q$. Ý tưởng cốt lõi là ánh xạ dữ liệu từ không gian gốc vào không gian feature cao chiều nơi việc so sánh trở nên nhạy cảm hơn với sự khác biệt phân phối.
 
 \subsubsection{Định nghĩa và intuition}
 
@@ -65,15 +65,15 @@ trong đó:
     \item $P$ và $Q$ là hai phân phối cần được so sánh
     \item $X \sim P$ đại diện cho biến ngẫu nhiên được lấy mẫu từ phân phối $P$
     \item $Y \sim Q$ đại diện cho biến ngẫu nhiên được lấy mẫu từ phân phối $Q$
-    \item $\mathcal{F}$ là một lớp hàm $f$ sao cho $\|f\|_{\mathcal{H}} \leq 1$ trong Reproducing Kernel Hilbert Space (RKHS)
+    \item $\mathcal{F}$ là một lớp hàm $f$ sao cho $\|f\|_{\mathcal{H}} \leq 1$ trong Reproducing Kernel Hilbert Space (RKHS)~\cite{scholkopf2002learning}
     \item $\sup$ biểu thị supremum (cận trên nhỏ nhất)
 \end{itemize}
 
-\textbf{Intuition:} Trong không gian ban đầu, hai phân phối có thể khó phân biệt. Bằng cách ánh xạ vào RKHS thông qua hàm kernel, các cấu trúc phức tạp của phân phối trở nên rõ ràng hơn. MMD đo lường khoảng cách giữa "trung bình" (mean embedding) của hai phân phối trong không gian này.
+\textbf{Intuition:} Trong không gian ban đầu, hai phân phối có thể khó phân biệt. Bằng cách ánh xạ vào RKHS thông qua hàm kernel~\cite{scholkopf2002learning}, các cấu trúc phức tạp của phân phối trở nên rõ ràng hơn. MMD đo lường khoảng cách giữa "trung bình" (mean embedding) của hai phân phối trong không gian này.
 
 \subsubsection{Kernel trick và RKHS}
 
-Trong thực tế, việc tìm supremum trên $\mathcal{F}$ là không khả thi về mặt tính toán. Do đó, MMD thường được triển khai trong RKHS sử dụng kernel trick với hàm kernel $k(x, y)$:
+Trong thực tế, việc tìm supremum trên $\mathcal{F}$ là không khả thi về mặt tính toán. Do đó, MMD thường được triển khai trong RKHS~\cite{scholkopf2002learning} sử dụng kernel trick với hàm kernel $k(x, y)$:
 
 \begin{equation}
 k(x, y) = \langle \phi(x), \phi(y) \rangle_{\mathcal{H}}
@@ -247,7 +247,7 @@ Tín hiệu shape được tính bằng convolution:
 
 \textbf{Bước 4.2: Permutation Test}
 
-Mỗi drift candidate được xác thực bằng permutation test để loại bỏ false positive:
+Mỗi drift candidate được xác thực bằng permutation test~\cite{good2005permutation} để loại bỏ false positive:
 
 \begin{enumerate}
     \item Tính $\text{MMD}^2_{\text{obs}}$ từ dữ liệu gốc tại vị trí candidate
@@ -296,9 +296,9 @@ Thuật toán ShapeDD hoàn chỉnh có thể được tóm tắt trong các bư
 
 \subsection{Phương pháp Meta-Learning}
 
-Chúng tôi phát triển khung meta-learning tự động lựa chọn chiến lược thích ứng dựa trên đặc trưng drift được phát hiện:
+Luận văn phát triển khung meta-learning tự động lựa chọn chiến lược thích ứng dựa trên đặc trưng drift được phát hiện:
 
-\textbf{Trích xuất feature:} Đối với mỗi episode drift được phát hiện, chúng tôi trích xuất feature mô tả:
+\textbf{Trích xuất feature:} Đối với mỗi episode drift được phát hiện, nghiên cứu trích xuất feature mô tả:
 \begin{itemize}
     \item Mức độ drift: $|\Delta(t_1, t_2)|$
     \item Tốc độ drift: $\frac{|\Delta(t_1, t_2)|}{t_2 - t_1}$
@@ -316,7 +316,7 @@ trong đó $\mathbf{f}_{\text{drift}}$ biểu thị các feature drift được 
 
 \subsection{Quản lý cửa sổ thích ứng}
 
-Chúng tôi đề xuất chiến lược quản lý cửa sổ thích ứng điều chỉnh kích thước cửa sổ dựa trên đặc trưng drift:
+Luận văn đề xuất chiến lược quản lý cửa sổ thích ứng điều chỉnh kích thước cửa sổ dựa trên đặc trưng drift:
 
 \begin{equation}
 w_{\text{size}}(t) = w_{\text{base}} \cdot \exp(-\lambda \cdot \Delta(t))
@@ -328,9 +328,9 @@ trong đó $w_{\text{base}}$ là kích thước cửa sổ cơ sở, $\lambda$ l
 
 \subsection{Tạo bộ dữ liệu tổng hợp}
 
-Để đánh giá hiệu quả của ShapeDD trên các kịch bản drift khác nhau, chúng tôi tạo ra các bộ dữ liệu tổng hợp được kiểm soát với đặc trưng drift được định nghĩa chính xác. Cách tiếp cận này cho phép chúng tôi đánh giá hiệu suất thuật toán dưới các điều kiện đã biết và phân tích tác động của các tham số khác nhau.
+Để đánh giá hiệu quả của ShapeDD trên các kịch bản drift khác nhau, được tạo ra các bộ dữ liệu tổng hợp được kiểm soát với đặc trưng drift được định nghĩa chính xác. Cách tiếp cận này cho phép nghiên cứu đánh giá hiệu suất thuật toán dưới các điều kiện đã biết và phân tích tác động của các tham số khác nhau.
 
-\textbf{Bộ dữ liệu Abrupt Drift:} Chúng tôi tạo ra các bộ dữ liệu với thay đổi đột ngột, tức thì trong phân phối dữ liệu. Bộ dữ liệu bao gồm 10,000 điểm dữ liệu với sampling đồng nhất trong không gian đơn vị. Drift được giới thiệu bằng cách dịch chuyển các tham số phân phối tại các điểm thời gian được chọn ngẫu nhiên:
+\textbf{Bộ dữ liệu Abrupt Drift:} Nghiên cứu tạo ra các bộ dữ liệu với thay đổi đột ngột, tức thì trong phân phối dữ liệu. Bộ dữ liệu bao gồm 10,000 điểm dữ liệu với sampling đồng nhất trong không gian đơn vị. Drift được giới thiệu bằng cách dịch chuyển các tham số phân phối tại các điểm thời gian được chọn ngẫu nhiên:
 
 \begin{itemize}
     \item Kích thước dataset: 10,000 điểm dữ liệu
@@ -339,7 +339,7 @@ trong đó $w_{\text{base}}$ là kích thước cửa sổ cơ sở, $\lambda$ l
     \item Loại phân phối: Phân phối đồng nhất với dịch chuyển tham số đột ngột
 \end{itemize}
 
-\textbf{Bộ dữ liệu Incremental Drift:} Chúng tôi tạo ra các bộ dữ liệu thể hiện thay đổi dần dần, liên tục trong các tham số phân phối theo thời gian. Điều này đại diện cho các mẫu drift tiến hóa chậm thường được tìm thấy trong các ứng dụng thực tế:
+\textbf{Bộ dữ liệu Incremental Drift:} Nghiên cứu tạo ra các bộ dữ liệu thể hiện thay đổi dần dần, liên tục trong các tham số phân phối theo thời gian. Điều này đại diện cho các mẫu drift tiến hóa chậm thường được tìm thấy trong các ứng dụng thực tế:
 
 \begin{itemize}
     \item Kích thước dataset: 10,000 điểm dữ liệu  
@@ -350,7 +350,7 @@ trong đó $w_{\text{base}}$ là kích thước cửa sổ cơ sở, $\lambda$ l
 
 Quá trình tạo dữ liệu tổng hợp đảm bảo khả năng tái tạo và cho phép đánh giá có hệ thống hiệu suất phát hiện trên các cường độ và mẫu drift khác nhau.
 
-\textbf{Biến thiên tham số:} Đối với mỗi loại drift, chúng tôi tạo ra nhiều biến thể dataset với:
+\textbf{Biến thiên tham số:} Đối với mỗi loại drift, được tạo ra nhiều biến thể dataset với:
 \begin{itemize}
     \item Mức độ drift khác nhau (0.1, 0.3, 0.5, 0.7, 0.9)
     \item Chiều khác nhau (2D, 5D, 10D, 20D)
@@ -360,7 +360,7 @@ Quá trình tạo dữ liệu tổng hợp đảm bảo khả năng tái tạo v
 
 \subsection{Giao thức đánh giá}
 
-\textbf{Đánh giá Prequential:} Chúng tôi sử dụng cách tiếp cận test-then-train để đánh giá streaming thực tế:
+\textbf{Đánh giá Prequential:} Nghiên cứu sử dụng cách tiếp cận test-then-train để đánh giá streaming thực tế:
 
 \textbf{Các bước giao thức đánh giá:}
 \begin{enumerate}
@@ -375,7 +375,7 @@ Quá trình tạo dữ liệu tổng hợp đảm bảo khả năng tái tạo v
     \item Báo cáo metric hiệu suất tích lũy
 \end{enumerate}
 
-\textbf{Metric hiệu suất:} Chúng tôi sử dụng nhiều metric để đánh giá các khía cạnh khác nhau của hiệu suất:
+\textbf{Metric hiệu suất:} Nghiên cứu sử dụng nhiều metric để đánh giá các khía cạnh khác nhau của hiệu suất:
 
 \begin{itemize}
     \item \textit{Độ chính xác phân loại}: Độ chính xác dự đoán tổng thể
@@ -387,7 +387,7 @@ Quá trình tạo dữ liệu tổng hợp đảm bảo khả năng tái tạo v
 
 \subsection{Phân tích thống kê}
 
-\textbf{Kiểm định ý nghĩa:} Chúng tôi sử dụng các test thống kê phù hợp để xác minh ý nghĩa của sự khác biệt hiệu suất:
+\textbf{Kiểm định ý nghĩa:} Nghiên cứu sử dụng các test thống kê phù hợp để xác minh ý nghĩa của sự khác biệt hiệu suất:
 
 \begin{itemize}
     \item Friedman test để so sánh nhiều thuật toán trên các dataset
@@ -395,7 +395,7 @@ Quá trình tạo dữ liệu tổng hợp đảm bảo khả năng tái tạo v
     \item McNemar test để so sánh độ chính xác phân loại
 \end{itemize}
 
-\textbf{Phân tích Effect Size:} Ngoài ý nghĩa thống kê, chúng tôi tính effect size để đánh giá ý nghĩa thực tế:
+\textbf{Phân tích Effect Size:} Ngoài ý nghĩa thống kê, được tính effect size để đánh giá ý nghĩa thực tế:
 
 \begin{equation}
 \text{Cohen's d} = \frac{\mu_1 - \mu_2}{\sqrt{\frac{\sigma_1^2 + \sigma_2^2}{2}}}
@@ -405,7 +405,7 @@ Quá trình tạo dữ liệu tổng hợp đảm bảo khả năng tái tạo v
 
 \subsection{Framework phần mềm}
 
-Chúng tôi phát triển framework phần mềm toàn diện cho thí nghiệm concept drift:
+Luận văn phát triển framework phần mềm toàn diện cho thí nghiệm concept drift:
 
 \textbf{Các thành phần cốt lõi:}
 \begin{itemize}
@@ -443,7 +443,7 @@ Chúng tôi phát triển framework phần mềm toàn diện cho thí nghiệm 
 
 \subsection{Cross-validation cho phát hiện drift}
 
-Cross-validation truyền thống không phù hợp cho dữ liệu thời gian có drift. Chúng tôi sử dụng temporal cross-validation:
+Cross-validation truyền thống không phù hợp cho dữ liệu thời gian có drift. Nghiên cứu sử dụng temporal cross-validation:
 
 \begin{itemize}
     \item \textit{Sliding window validation}: Sử dụng cửa sổ thời gian chồng chéo
@@ -467,12 +467,12 @@ x_{\text{noisy}} = x + \epsilon \quad \text{trong đó} \quad \epsilon \sim \mat
 
 \subsection{Quyền riêng tư dữ liệu}
 
-Tất cả dataset thực tế được sử dụng trong nghiên cứu này hoặc được công khai hoặc được ẩn danh hóa đúng cách. Chúng tôi đảm bảo tuân thủ các quy định bảo vệ dữ liệu có liên quan.
+Tất cả dataset thực tế được sử dụng trong nghiên cứu này hoặc được công khai hoặc được ẩn danh hóa đúng cách. Nghiên cứu đảm bảo tuân thủ các quy định bảo vệ dữ liệu có liên quan.
 
 \subsection{Khả năng tái tạo}
 
-Chúng tôi cam kết công khai code, dataset và cấu hình thí nghiệm để cho phép tái tạo và tạo thuận lợi cho nghiên cứu tương lai.
+Luận văn cam kết công khai code, dataset và cấu hình thí nghiệm để cho phép tái tạo và tạo thuận lợi cho nghiên cứu tương lai.
 
 \section{Tóm tắt}
 
-Chương này đã phác thảo phương pháp luận toàn diện được sử dụng trong nghiên cứu này. Cách tiếp cận của chúng tôi kết hợp phát triển lý thuyết với thiết kế thuật toán thực tế và đánh giá thực nghiệm nghiêm ngặt. Chương tiếp theo trình bày kết quả của việc áp dụng phương pháp luận này để điều tra phát hiện concept drift và thích ứng trên nhiều lĩnh vực và kịch bản.
+Chương này đã phác thảo phương pháp luận toàn diện được sử dụng trong nghiên cứu này. Nghiên cứu này kết hợp phát triển lý thuyết với thiết kế thuật toán thực tế và đánh giá thực nghiệm nghiêm ngặt. Chương tiếp theo trình bày kết quả của việc áp dụng phương pháp luận này để điều tra phát hiện concept drift và thích ứng trên nhiều lĩnh vực và kịch bản.

@@ -107,7 +107,7 @@ Một so sánh khái quát: nếu DDM, EDDM, Page-Hinkley,... là các phương 
 
 \subsubsection{Phát hiện quan trọng: Ảnh hưởng của tỷ lệ tín hiệu-nhiễu (SNR)}
 
-Qua quá trình thử nghiệm và đánh giá với nhiều tập dữ liệu khác nhau, chúng tôi phát hiện ra một kết quả quan trọng: \textbf{không có chiến lược phát hiện drift duy nhất là tối ưu cho mọi môi trường SNR}.
+Qua quá trình thử nghiệm và đánh giá với nhiều tập dữ liệu khác nhau, Nghiên cứu phát hiện một kết quả quan trọng: \textbf{không có chiến lược phát hiện drift duy nhất là tối ưu cho mọi môi trường SNR}.
 
 Kết quả thực nghiệm cho thấy:
 
@@ -127,7 +127,7 @@ Kết quả thực nghiệm cho thấy:
 
 \subsubsection{Nền tảng lý thuyết: Lý thuyết phát hiện tín hiệu}
 
-Kết quả này phản ánh một nguyên lý cơ bản trong lý thuyết phát hiện tín hiệu (Signal Detection Theory) và tiêu chuẩn Neyman-Pearson:
+Kết quả này phản ánh một nguyên lý cơ bản trong lý thuyết phát hiện tín hiệu (Signal Detection Theory) và tiêu chuẩn Neyman-Pearson~\cite{neyman1933problem}:
 
 \begin{equation}
 \text{SNR} = \frac{\sigma^2_{\text{signal}}}{\sigma^2_{\text{noise}}}
@@ -159,7 +159,7 @@ trong đó:
 
 \subsubsection{Giải pháp: Phương pháp hybrid thích ứng SNR}
 
-Để khắc phục hạn chế của các chiến lược đơn lẻ, chúng tôi đề xuất phương pháp \textbf{ShapeDD SNR-Adaptive} - một thuật toán hybrid tự động chọn chiến lược phát hiện dựa trên SNR ước lượng của môi trường:
+Để khắc phục hạn chế của các chiến lược đơn lẻ, Luận văn đề xuất phương pháp \textbf{ShapeDD SNR-Adaptive} - một thuật toán hybrid tự động chọn chiến lược phát hiện dựa trên SNR ước lượng của môi trường:
 
 \textbf{Thuật toán ước lượng SNR:}
 
@@ -214,7 +214,7 @@ Phương pháp hybrid này mang lại các lợi ích sau:
 
 \subsubsection{Tối ưu hóa tham số dựa trên đánh giá thực nghiệm}
 
-Qua quá trình đánh giá ban đầu, chúng tôi quan sát thấy rằng việc lựa chọn tham số (ngưỡng SNR $\tau$ và độ nhạy $s$) có ảnh hưởng đáng kể đến hiệu suất phát hiện. Phân tích lý thuyết và thực nghiệm cho thấy:
+Qua quá trình đánh giá ban đầu, Nghiên cứu quan sát thấy rằng việc lựa chọn tham số (ngưỡng SNR $\tau$ và độ nhạy $s$) có ảnh hưởng đáng kể đến hiệu suất phát hiện. Phân tích lý thuyết và thực nghiệm cho thấy:
 
 \textbf{Hiệu ứng pha loãng SNR trong môi trường buffer:}
 
@@ -235,11 +235,11 @@ Khi sử dụng buffer trượt (sliding buffer) với kích thước lớn (750
 
 \textbf{Cơ sở lý thuyết cho việc tối ưu tham số:}
 
-Theo tiêu chuẩn Neyman-Pearson trong lý thuyết phát hiện tín hiệu, ngưỡng tối ưu là ngưỡng cân bằng giữa tỷ lệ false positive (Type I error) và false negative (Type II error) khi chi phí của chúng tương đương. Điều này tương ứng với việc sử dụng cân bằng khoảng 50\% chiến lược tích cực và 50\% chiến lược bảo thủ, đạt được điểm cân bằng tối ưu giữa precision và recall.
+Theo tiêu chuẩn Neyman-Pearson~\cite{neyman1933problem} trong lý thuyết phát hiện tín hiệu, ngưỡng tối ưu là ngưỡng cân bằng giữa tỷ lệ false positive (Type I error) và false negative (Type II error) khi chi phí của chúng tương đương. Điều này tương ứng với việc sử dụng cân bằng khoảng 50\% chiến lược tích cực và 50\% chiến lược bảo thủ, đạt được điểm cân bằng tối ưu giữa precision và recall.
 
 \textbf{Cấu hình tham số tối ưu:}
 
-Dựa trên lý thuyết và kết quả thực nghiệm, chúng tôi điều chỉnh tham số như sau:
+Dựa trên lý thuyết và kết quả thực nghiệm, Luận văn điều chỉnh tham số như sau:
 
 \begin{table}[H]
 \centering
