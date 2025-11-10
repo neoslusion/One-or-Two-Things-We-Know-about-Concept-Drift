@@ -48,198 +48,112 @@ Mặt khác, chúng thường đòi hỏi giả định mạnh về độc lập
 Dù vậy, nhóm phương pháp thống kê đã đặt nền móng quan trọng cho lĩnh vực phát hiện drift, đặc biệt cho các bài toán mà ta quan tâm trực tiếp đến sự thay đổi của dữ liệu hơn là hiệu năng mô hình.
 
 
-Shape Drift Detector (ShapeDD) là một detector drift dựa trên meta-statistic hoạt động thông qua quá trình đa giai đoạn để xác định concept drift trong luồng dữ liệu. Thuật toán sử dụng MMD như thước đo thống kê cốt lõi và theo một cách tiếp cận có hệ thống bao gồm bốn giai đoạn chính.
+Shape Drift Detector (ShapeDD)~\cite{hinder2024survey_partA} là detector dựa trên Maximum Mean Discrepancy (MMD)~\cite{gretton2012kernel} hoạt động qua bốn giai đoạn:
 
-\subsubsection{Giai đoạn 1: Thu thập dữ liệu}
+\begin{enumerate}
+    \item \textbf{Thu thập dữ liệu:} Sử dụng cửa sổ trượt $W_t$ kích thước $2l_1$ trên luồng dữ liệu
+    \item \textbf{Tính MMD:} So sánh hai nửa cửa sổ bằng MMD với kernel Gaussian RBF
+    \item \textbf{Shape detection:} Phát hiện hình tam giác đặc trưng của drift qua convolution filtering
+    \item \textbf{Xác thực:} Sử dụng permutation test~\cite{good2005permutation} để xác nhận drift có ý nghĩa thống kê ($p < \alpha$)
+\end{enumerate}
 
-Giai đoạn đầu tiên bao gồm thu thập dữ liệu sử dụng kỹ thuật cửa sổ trượt. Nhiều chiến lược cửa sổ có thể được sử dụng:
-
-\begin{itemize}
-    \item \textbf{Cửa sổ trượt kích thước cố định}: Duy trì kích thước cửa sổ không đổi $w$ trượt trên luồng dữ liệu
-    \item \textbf{Cửa sổ thích ứng}: Điều chỉnh động kích thước cửa sổ dựa trên đặc trưng dữ liệu
-    \item \textbf{Cửa sổ chồng chéo}: Sử dụng các đoạn chồng chéo để đảm bảo chuyển tiếp mượt mà
-\end{itemize}
-
-Đối với luồng dữ liệu $\mathcal{S} = \{x_1, x_2, \ldots, x_n\}$, chúng ta duy trì cửa sổ trượt $W_t$ có kích thước $l_1$ tại thời điểm $t$:
-\begin{equation}
-W_t = \{x_{t-l_1+1}, x_{t-l_1+2}, \ldots, x_t\}
-\end{equation}
-
-\subsubsection{Giai đoạn 2: Xây dựng feature}
-
-Trong giai đoạn này, chúng ta xây dựng ma trận tương đồng sử dụng hàm kernel để nắm bắt mối quan hệ giữa các điểm dữ liệu. Gaussian RBF kernel thường được sử dụng:
-
-\begin{equation}
-k(x_i, x_j) = \exp\left(-\frac{\|x_i - x_j\|^2}{2\sigma^2}\right)
-\end{equation}
-
-Điều này tạo ra ma trận kernel $K \in \mathbb{R}^{n \times n}$ trong đó $K_{ij} = k(x_i, x_j)$ biểu thị sự tương đồng giữa các điểm dữ liệu $x_i$ và $x_j$.
-
-\subsubsection{Giai đoạn 3: Tính toán sự khác biệt}
-
-Cốt lõi của ShapeDD bao gồm tính toán sự khác biệt thống kê giữa các đoạn dữ liệu liên tiếp sử dụng MMD. Chúng ta định nghĩa hàm trọng số $w(t)$ tạo ra trọng số tương phản cho các nửa khác nhau của cửa sổ trượt:
-
-\begin{equation}
-w(t) = \begin{cases}
-\frac{1}{l_1} & \text{nếu } t \in [1, l_1] \\
--\frac{1}{l_1} & \text{nếu } t \in [l_1+1, 2l_1]
-\end{cases}
-\end{equation}
-
-Thống kê MMD sau đó được tính như:
-\begin{equation}
-\text{MMD}^2_t = \sum_{i,j=1}^{2l_1} w_i w_j K_{ij}
-\end{equation}
-
-Tính toán này được thực hiện trên toàn bộ luồng dữ liệu sử dụng phương pháp cửa sổ trượt, tạo ra chuỗi các giá trị MMD $\{\text{MMD}^2_1, \text{MMD}^2_2, \ldots, \text{MMD}^2_T\}$.
-
-\subsubsection{Giai đoạn 4: Xác thực thống kê}
-
-Giai đoạn cuối cùng bao gồm chuẩn hóa các thống kê MMD và xác định các điểm thay đổi tiềm năng thông qua phát hiện zero-crossing. Các giá trị shape được tính bằng convolution:
-
-\begin{equation}
-\text{shape\_values}_t = \sum_{i} \text{MMD}^2_{t+i} \cdot h_i
-\end{equation}
-
-trong đó $h$ là kernel convolution (thường là $[1, -1]$ cho phát hiện biên đơn giản).
-
-Các điểm thay đổi tiềm năng được xác định khi các giá trị shape liên tiếp có dấu trái ngược. Những ứng cử viên này sau đó được xác thực bằng permutation test để tính p-value và xác định ý nghĩa thống kê.
-Nếu p-value nhỏ hơn mức ý nghĩa $\alpha$ đã chọn, chúng ta kết luận rằng có concept drift tại thời điểm đó.
+Ý tưởng cốt lõi: Khi drift xảy ra, tín hiệu MMD tạo hình tam giác (tăng rồi giảm) do cửa sổ trượt qua vùng thay đổi. Shape filtering giúp giảm false alarm đáng kể so với methods chỉ dựa vào ngưỡng MMD đơn thuần. Chi tiết đầy đủ về cơ chế hoạt động được trình bày trong Chapter 2 (Nền tảng lý thuyết).
 
 \subsubsection{Các phương pháp dựa trên hiệu năng mô hình}
 Đây là nhóm phương pháp phổ biến trong giai đoạn giữa những năm 2000, khi các nhà nghiên cứu tập trung vào việc giám sát chất lượng dự đoán của mô hình học máy theo thời gian để phát hiện drift. 
 
 Ý tưởng chính là: nếu mô hình hiện tại bỗng nhiên dự đoán kém (tỉ lệ lỗi tăng lên đáng kể) thì có khả năng khái niệm đã thay đổi. 
 
-Phương pháp tiêu biểu mở đầu cho hướng tiếp cận này là \textbf{DDM} (\textit{Drift Detection Method}) do Gama và cộng sự giới thiệu năm 2004~\cite{gama2004learning}.
+Họ phương pháp DDM (Drift Detection Method) được phát triển từ năm 2004~\cite{gama2004learning} đến nay, trở thành nền tảng quan trọng của drift detection.
 
-DDM được xem như cột mốc quan trọng, đặt nền tảng cho hàng loạt nghiên cứu tiếp theo về phát hiện drift~\cite{gama2004learning}.
-
-Thuật toán DDM giám sát tỉ lệ lỗi (error rate) của mô hình theo dòng dữ liệu bằng cách xem mỗi mẫu dự đoán sai như một thử nghiệm Bernoulli (lỗi = 1 nếu dự đoán sai)~\cite{gama2004learning}. 
-
-Giả sử $p_i$ là xác suất lỗi tại mẫu thứ $i$, DDM ước lượng $p_i$ và độ lệch chuẩn $s_i$ tương ứng. 
-
-Trong quá trình cập nhật, DDM ghi nhận giá trị tối thiểu của $p_i + 3s_i$ (biên trên của khoảng tin cậy 3 sigma) đạt được cho đến hiện tại. 
-
-Khi nào $p_j + 3s_j$ ở thời điểm $j$ vượt quá giá trị tối thiểu trước đó một lượng đáng kể, mô hình suy luận rằng đã có drift xảy ra. 
-
-Cụ thể, DDM đặt hai ngưỡng: mức \textit{cảnh báo} khi $p_j + 2s_j$ vượt quá min$(p_i+3s_i)$, và mức \textit{drift} khi $p_j + 3s_j$ vượt quá min$(p_i+3s_i)$~\cite{gama2004learning}. 
-
+\textbf{DDM (Drift Detection Method, 2004)} theo dõi tỷ lệ lỗi $p_i$ và độ lệch chuẩn $s_i$ của mô hình trên dòng dữ liệu. Ý tưởng cốt lõi là trong quá trình học, nếu phân phối dữ liệu ổn định, tỷ lệ lỗi sẽ giảm dần và dao động xung quanh một giá trị thấp. Khi concept drift xảy ra, tỷ lệ lỗi đột ngột tăng cao, vượt ra khỏi khoảng tin cậy. DDM ghi nhận giá trị tối thiểu của $p_i + s_i$ trong quá trình học, và đặt hai ngưỡng cảnh báo:
 \begin{itemize}
-    \item \textbf{Mức cảnh báo:} Được kích hoạt khi $p_i + s_i \geq p_{\text{min}} + 2 \cdot s_{\text{min}}$
-    \item \textbf{Mức phát hiện drift:} Được kích hoạt khi $p_i + s_i \geq p_{\text{min}} + 3 \cdot s_{\text{min}}$
+    \item \textbf{Warning level:} Khi $p_i + s_i \geq p_{min} + 2 \cdot s_{min}$ (ngưỡng 2-sigma), hệ thống bắt đầu lưu dữ liệu mới để chuẩn bị huấn luyện lại
+    \item \textbf{Drift level:} Khi $p_i + s_i \geq p_{min} + 3 \cdot s_{min}$ (ngưỡng 3-sigma), drift được xác nhận, mô hình cũ bị loại bỏ và huấn luyện lại từ dữ liệu đã lưu
 \end{itemize}
 
-trong đó $p_i$ là tỷ lệ lỗi hiện tại, $s_i$ là độ lệch chuẩn, và $p_{\text{min}}, s_{\text{min}}$ là các giá trị tối thiểu đã quan sát được.
+DDM đơn giản, hiệu quả cho sudden drift, nhưng phản ứng chậm với gradual drift do chỉ dựa vào sự gia tăng đột biến của lỗi~\cite{gama2004learning}.
 
-Tỷ lệ lỗi $p_i$ và độ lệch chuẩn $s_i$ được tính như sau:
-\begin{equation}
-p_i = \frac{\sum_{j=1}^{i} \text{error}_j}{i}
-\end{equation}
+\textbf{EDDM (Early DDM, 2006)} cải thiện khả năng phát hiện gradual drift bằng cách thay đổi metric theo dõi. Thay vì theo dõi trực tiếp tỷ lệ lỗi, EDDM tập trung vào \textit{khoảng cách} (số mẫu) giữa các lần dự đoán sai liên tiếp~\cite{baena2006early}. Ý tưởng là: khi không có drift, các lỗi phân bố ngẫu nhiên với khoảng cách lớn; khi drift bắt đầu, lỗi xuất hiện thường xuyên hơn (khoảng cách giảm). EDDM tính trung bình và độ lệch chuẩn của khoảng cách lỗi, phát hiện drift khi khoảng cách giảm mạnh so với giá trị tối đa đã ghi nhận. Nhờ vậy, EDDM nhạy hơn với các thay đổi từ từ, báo hiệu sớm hơn DDM trong nhiều trường hợp~\cite{baena2006early}.
 
-\begin{equation}
-s_i = \sqrt{\frac{p_i(1-p_i)}{i}}
-\end{equation}
+Sau DDM và EDDM, hàng loạt thuật toán dựa trên theo dõi hiệu năng ra đời, cho thấy sự phát triển mạnh mẽ trong giai đoạn cuối 2000s và 2010s.
 
-Khi chạm ngưỡng cảnh báo, hệ thống có thể chuẩn bị (ví dụ lưu dữ liệu); khi chạm ngưỡng drift, DDM phát tín hiệu rằng concept drift đã diễn ra, và mô hình cần được điều chỉnh hoặc huấn luyện lại. DDM tỏ ra hiệu quả, đơn giản và rất phù hợp cho các ứng dụng dòng dữ liệu thời gian thực, bởi nó chỉ yêu cầu tính toán nhẹ (cập nhật thống kê lỗi)~\cite{gama2004learning}.
-
-Tuy nhiên, nhược điểm của DDM là trong môi trường dữ liệu nhiễu, tỉ lệ lỗi dao động có thể gây ra nhiều báo động giả (false alarm)~\cite{gama2004learning}. Đặc biệt, DDM phản ứng chậm trước các dạng drift từ từ (gradual drift) do nó chỉ dựa vào sự gia tăng đột biến của lỗi. Nhược điểm này đã dẫn đến sự ra đời của các biến thể cải tiến.
-
-Năm 2006, \textbf{EDDM} (\textit{Early DDM}) được đề xuất nhằm nâng cao khả năng phát hiện drift dần dần~\cite{baena2006early}. Thay vì theo dõi trực tiếp xác suất lỗi, EDDM tập trung vào khoảng cách (số mẫu) giữa các lần dự đoán sai liên tiếp. Ý tưởng là khi sự trôi dạt chưa xảy ra, các lỗi phân bố ngẫu nhiên; còn khi sự trôi dạt bắt đầu thay đổi từ từ, lỗi sẽ xuất hiện ngày một thường xuyên hơn. EDDM tính trung bình khoảng cách lỗi và độ lệch chuẩn của khoảng cách đó, rồi đặt ngưỡng tương tự DDM để phát hiện drift dựa trên việc khoảng cách lỗi giảm mạnh~\cite{baena2006early}. Nhờ vậy, EDDM nhạy hơn với các thay đổi từ từ, báo hiệu sớm hơn so với DDM trong nhiều trường hợp.
-
-EDDM tính toán khoảng cách trung bình ($p'_i$) giữa hai lỗi phân loại gần đây và độ lệch chuẩn của nó ($s'_i$) tại mỗi bước thời gian. Phương pháp lưu trữ giá trị tối đa đã quan sát của $p'_i + 2 \cdot s'_i$ (ký hiệu là $p'_{\text{max}} + 2 \cdot s'_{\text{max}}$), đại diện cho điểm mà mô hình hiện tại xấp xỉ tốt nhất các khái niệm dữ liệu cơ bản.
-
-EDDM sử dụng hai ngưỡng $\alpha$ và $\beta$ để báo hiệu các thay đổi:
+\textbf{HDDM (Hoeffding's Drift Detection Method, 2015)} là một hướng cải tiến quan trọng, áp dụng các ràng buộc thống kê chặt chẽ hơn để giảm giả định phân phối. Thay vì giả định rằng tỷ lệ lỗi tuân theo phân phối cụ thể (như DDM giả định phân phối nhị thức), HDDM sử dụng bất đẳng thức Hoeffding để xây dựng tiêu chí phát hiện drift phi tham số (non-parametric). HDDM có hai biến thể chính:
 \begin{itemize}
-    \item \textbf{Mức cảnh báo:} Drift tiềm ẩn được chỉ báo khi tỷ số $\frac{p'_i + 2 \cdot s'_i}{p'_{\text{max}} + 2 \cdot s'_{\text{max}}} < \alpha$ (thường $\alpha = 0.95$)
-    \item \textbf{Mức drift:} Concept drift được phát hiện khi tỷ số $\frac{p'_i + 2 \cdot s'_i}{p'_{\text{max}} + 2 \cdot s'_{\text{max}}} < \beta$ (thường $\beta = 0.90$)
+    \item \textbf{HDDM\_A:} Sử dụng trung bình tỷ lệ lỗi với Hoeffding bound
+    \item \textbf{HDDM\_W:} Sử dụng tỷ lệ lỗi có trọng số (weighted), gán trọng số cao hơn cho dữ liệu gần đây
 \end{itemize}
 
+Bất đẳng thức Hoeffding cho phép HDDM đặt ngưỡng phát hiện drift mà không cần giả định về phân phối của dữ liệu, làm cho phương pháp linh hoạt hơn trong các tình huống thực tế.
 
-EDDM chỉ bắt đầu tìm kiếm concept drift sau khi ít nhất 30 lỗi phân loại đã xảy ra, vì điều này cần thiết để ước lượng đáng tin cậy phân phối khoảng cách giữa các lỗi.
+\textbf{FHDDM (Fast HDDM, 2016)} được giới thiệu như phiên bản tăng tốc của HDDM, cải thiện cả tốc độ và độ nhạy trong việc phát hiện drift. FHDDM vẫn dựa trên bất đẳng thức Hoeffding nhưng tối ưu thuật toán tính toán để phù hợp với dòng dữ liệu tốc độ cao (high-speed data streams). Các cải tiến về mặt kỹ thuật giúp FHDDM phản ứng nhanh hơn với cả drift đột ngột lẫn drift dần dần, đồng thời giảm độ phức tạp tính toán so với HDDM gốc.
 
-Sau DDM và EDDM, hàng loạt thuật toán dựa trên theo dõi hiệu năng ra đời, cho thấy sự phát triển mạnh mẽ trong giai đoạn cuối 2000s và 2010s. Một hướng cải tiến quan trọng là áp dụng các ràng buộc thống kê chặt chẽ hơn để giảm giả định phân phối. Ví dụ, \textbf{HDDM} (\textit{Hoeffding's DDM}, Frías-Blanco et al., 2015) sử dụng bất đẳng thức Hoeffding để xây dựng tiêu chí phát hiện drift phi tham số (không giả định phân phối cụ thể của lỗi)[11]. HDDM có hai biến thể: HDDM\_A dùng trung bình tỷ lệ lỗi với bound Hoeffding, và HDDM\_W dùng tỷ lệ lỗi gán trọng số. 
-
-Tiếp đó, \textbf{FHDDM} (\textit{Fast HDDM}, Pesaranghader \& Viktor, 2016) được giới thiệu như phiên bản tăng tốc của HDDM, cải thiện cả tốc độ và độ nhạy trong việc phát hiện drift[12]. FHDDM vẫn dựa trên bất đẳng thức Hoeffding nhưng tối ưu thuật toán tính toán để phù hợp với dòng dữ liệu tốc độ cao, nhờ đó phản ứng nhanh với cả drift đột ngột lẫn dần dần[12]. 
-
-Phương pháp FHDDMS (\textit{Fast Hoeffding's DDM with Multiple Sliding Windows}, Pesaranghader \& Viktor, 2016) mở rộng phương pháp FHDDM bằng cách duy trì hai cửa sổ trượt chồng lên nhau với kích thước khác nhau: một cửa sổ ngắn và một cửa sổ dài. Thiết kế này cho phép phương pháp tận dụng những ưu điểm của cả hai kích thước cửa sổ:
-
+\textbf{FHDDMS (Fast HDDM with Multiple Sliding Windows, 2016)} mở rộng FHDDM bằng cách duy trì hai cửa sổ trượt với kích thước khác nhau:
 \begin{itemize}
-    \item \textbf{Cửa sổ ngắn:} Được thiết kế để phát hiện drift đột ngột nhanh hơn
-    \item \textbf{Cửa sổ dài:} Nhằm phát hiện drift dần dần với tỷ lệ âm tính giả thấp hơn
+    \item \textbf{Cửa sổ ngắn:} Phát hiện sudden drift nhanh hơn do nhạy với thay đổi cục bộ
+    \item \textbf{Cửa sổ dài:} Phát hiện gradual drift với tỷ lệ false negative thấp hơn do có nhiều dữ liệu hơn để ước lượng ổn định
 \end{itemize}
 
-Đối với cả hai cửa sổ, thuật toán chèn '1' nếu dự đoán đúng và '0' nếu sai. FHDDMS liên tục tính toán giá trị trung bình hiện tại của các phần tử trong mỗi cửa sổ ($\mu_{tl}$ cho cửa sổ dài, $\mu_{ts}$ cho cửa sổ ngắn) và cập nhật giá trị trung bình tối đa đã quan sát ($\mu_{ml}$ cho cửa sổ dài, $\mu_{ms}$ cho cửa sổ ngắn) nếu giá trị hiện tại cao hơn.
+FHDDMS liên tục so sánh giá trị trung bình hiện tại với giá trị trung bình tối đa đã quan sát trong mỗi cửa sổ. Drift được báo hiệu nếu sự khác biệt của \textit{bất kỳ} cửa sổ nào vượt quá ngưỡng Hoeffding tương ứng. Thiết kế dual-window này cho phép FHDDMS tận dụng được ưu điểm của cả hai kích thước cửa sổ, cân bằng giữa độ nhạy (sensitivity) và độ tin cậy (reliability).
 
-Concept drift được báo hiệu nếu sự khác biệt giữa giá trị trung bình tối đa đã quan sát và giá trị trung bình hiện tại ($\Delta\mu = \mu_m - \mu_t$) của một trong hai cửa sổ vượt quá ngưỡng được xác định trước ($\varepsilon_l$ hoặc $\varepsilon_s$), được tính toán bằng bất đẳng thức Hoeffding:
-
-\begin{equation}
-\varepsilon = \sqrt{\frac{\ln(1/\delta)}{2n}}
-\end{equation}
-
-trong đó $\delta$ là mức độ tin cậy và $n$ là kích thước cửa sổ.
-
-Điều kiện phát hiện drift cho FHDDMS:
-\begin{equation}
-(\mu_{ml} - \mu_{tl} > \varepsilon_l) \vee (\mu_{ms} - \mu_{ts} > \varepsilon_s)
-\end{equation}
-
-MDDM là một phương pháp mới được thiết kế để phát hiện nhanh chóng và hiệu quả các concept drift trong luồng dữ liệu đang phát triển. Phương pháp này tận dụng bất đẳng thức McDiarmid, một bất đẳng thức tập trung mạnh mẽ, để phát hiện chính xác những thay đổi đáng kể trong phân phối dữ liệu.
-
-MDDM hoạt động bằng cách trượt một cửa sổ có kích thước cố định $W$ trên kết quả dự đoán (1 cho đúng, 0 cho sai). Một cải tiến quan trọng là việc áp dụng các lược đồ trọng số cho các phần tử trong cửa sổ, gán trọng số cao hơn cho các mục gần đây hơn để nhấn mạnh tầm quan trọng và thúc đẩy phát hiện nhanh hơn.
-
-Thuật toán liên tục tính toán giá trị trung bình có trọng số hiện tại ($\mu_{tw}$) của cửa sổ:
-\begin{equation}
-\mu_{tw} = \frac{\sum_{i=1}^{W} w_i \cdot x_i}{\sum_{i=1}^{W} w_i}
-\end{equation}
-
-và so sánh với giá trị trung bình có trọng số tối đa đã quan sát ($\mu_{mw}$). Sự khác biệt có ý nghĩa thống kê giữa hai giá trị này, được giới hạn bởi bất đẳng thức McDiarmid, báo hiệu sự xuất hiện của concept drift.
-
-Bất đẳng thức McDiarmid được áp dụng như sau:
-\begin{equation}
-P(|\mu_{tw} - \mathbb{E}[\mu_{tw}]| \geq \varepsilon) \leq 2\exp\left(-\frac{2\varepsilon^2 W^2}{\sum_{i=1}^{W} c_i^2}\right)
-\end{equation}
-
-Trong đó $c_i$ là hằng số bounded difference cho biến thứ $i$.
-
-MDDM cung cấp các biến thể dựa trên lược đồ trọng số khác nhau:
+\textbf{MDDM (McDiarmid's Drift Detection Method)} là phương pháp áp dụng bất đẳng thức McDiarmid – một bất đẳng thức tập trung (concentration inequality) mạnh mẽ – để phát hiện chính xác những thay đổi đáng kể trong phân phối dữ liệu. Điểm đặc biệt của MDDM là việc áp dụng các lược đồ trọng số (weighting schemes) cho các phần tử trong cửa sổ trượt:
 \begin{itemize}
-    \item \textbf{MDDM-A (Arithmetic):} Sử dụng trọng số tuyến tính: $w_i = i$
-    \item \textbf{MDDM-G (Geometric):} Sử dụng trọng số hình học: $w_i = r^{i-1}$ với $r > 1$
-    \item \textbf{MDDM-E (Euler):} Sử dụng trọng số Euler: $w_i = e^{(i-1)/c}$ với hằng số $c$
+    \item \textbf{MDDM-A (Arithmetic):} Trọng số tuyến tính $w_i = i$
+    \item \textbf{MDDM-G (Geometric):} Trọng số hình học $w_i = r^{i-1}$ với $r > 1$
+    \item \textbf{MDDM-E (Euler):} Trọng số theo hàm mũ $w_i = e^{(i-1)/c}$
 \end{itemize}
 
-Song song, Barros et al. (2017) đề xuất \textbf{RDDM} (\textit{Reactive DDM}), tối ưu thời gian phản ứng bằng cách rút ngắn giai đoạn cảnh báo, giúp phát hiện nhanh các thay đổi đột ngột[13]. Những năm gần đây còn xuất hiện các biến thể hướng đến các tình huống đặc thù: như \textbf{ADDM} (Adaptive DDM) và \textbf{EDDM-CP} (EDDM kết hợp kiểm soát false alarm), \textbf{ACDDM} (Accurate DDM) năm 2020 cải thiện độ chính xác cho cả drift lặp lại[14][15], \textbf{DMDDM} (Diversity-Measure DDM, 2020) tận dụng sự đa dạng của một tập classifier để nhận biết drift[16], hay \textbf{DDM-FPW} (2020) kiểm soát tỷ lệ dương tính giả khi drift trong luồng dữ liệu IoT nhiều nhãn[17]. 
+Các lược đồ trọng số này gán trọng số cao hơn cho các mẫu gần đây, giúp MDDM phản ứng nhanh hơn với thay đổi mới nhất trong dòng dữ liệu.
 
-Mục tiêu chung của các cải tiến này là tăng độ nhạy với nhiều loại drift (đột ngột, dần dần, lặp lại), đồng thời giảm báo động giả và phân biệt được nhiễu.
-Tóm lại, nhóm phương pháp dựa trên hiệu năng mô hình đã phát triển mạnh từ giữa thập niên 2000 và vẫn đang được mở rộng. Bắt đầu từ DDM như một chuẩn mực nền tảng[6], các nghiên cứu nối tiếp đã dần hoàn thiện nó thành một họ phương pháp đa dạng, cân bằng hơn giữa tốc độ, độ chính xác và độ tin cậy trong môi trường dữ liệu phức tạp[8].
+\textbf{RDDM (Reactive DDM, 2017)} tập trung vào việc tối ưu thời gian phản ứng bằng cách rút ngắn giai đoạn cảnh báo (warning phase) của DDM gốc. RDDM điều chỉnh các ngưỡng để phát hiện nhanh hơn các thay đổi đột ngột, đồng thời vẫn duy trì khả năng xử lý drift lặp lại (recurrent drift). Cải tiến này đặc biệt hữu ích trong các ứng dụng yêu cầu phản ứng thời gian thực.
+
+Những năm gần đây còn xuất hiện các biến thể hướng đến các tình huống đặc thù: \textbf{ACDDM} (Accurate DDM, 2020) cải thiện độ chính xác cho cả drift lặp lại bằng cách ghi nhớ các concept cũ; \textbf{DMDDM} (Diversity-Measure DDM, 2020) tận dụng sự đa dạng (diversity) của một tập classifier để nhận biết drift mạnh hơn; và \textbf{DDM-FPW} (2020) kiểm soát tỷ lệ dương tính giả (false positive rate) trong luồng dữ liệu IoT đa nhãn (multi-label streams). Mục tiêu chung của các cải tiến này là tăng độ nhạy với nhiều loại drift (sudden, gradual, incremental, recurrent), đồng thời giảm báo động giả và phân biệt được drift thực sự với nhiễu.
+
+\begin{table}[h]
+\centering
+\caption{So sánh các phương pháp DDM-family}
+\label{tab:ddm_comparison}
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Phương pháp} & \textbf{Năm} & \textbf{Cải tiến chính} & \textbf{Điểm mạnh} \\
+\midrule
+DDM & 2004 & Theo dõi error rate & Đơn giản, phát hiện sudden drift tốt \\
+EDDM & 2006 & Khoảng cách giữa lỗi & Phát hiện gradual drift sớm hơn \\
+HDDM & 2015 & Hoeffding bound & Phi tham số, không giả định phân phối \\
+FHDDM & 2016 & Tối ưu tốc độ & Nhanh cho high-speed stream \\
+FHDDMS & 2016 & Dual windows & Cân bằng sudden/gradual detection \\
+MDDM & - & McDiarmid + weights & Nhấn mạnh dữ liệu gần đây \\
+RDDM & 2017 & Rút ngắn warning & Phản ứng nhanh với sudden drift \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Tóm lại, nhóm phương pháp dựa trên hiệu năng mô hình đã phát triển mạnh từ giữa thập niên 2000 và vẫn đang được mở rộng. Bắt đầu từ DDM như một chuẩn mực nền tảng~\cite{gama2004learning}, các nghiên cứu nối tiếp đã dần hoàn thiện nó thành một họ phương pháp đa dạng, cân bằng hơn giữa tốc độ, độ chính xác và độ tin cậy trong môi trường dữ liệu phức tạp.
 
 
 \subsubsection{Các phương pháp học máy truyền thống}
-Bên cạnh việc dùng trực tiếp thống kê hoặc sai số mô hình, các nhà nghiên cứu còn phát triển những kỹ thuật phát hiện drift dựa trên mô hình học máy hoặc tổ hợp nhiều mô hình. Những phương pháp này thường có tính “chủ động” hơn: không chỉ chờ hiệu năng giảm mà còn tìm dấu hiệu thay đổi trong cấu trúc dữ liệu hoặc trong phản ứng của nhiều mô hình khác nhau.
+Bên cạnh việc dùng trực tiếp thống kê hoặc sai số mô hình, các nhà nghiên cứu còn phát triển những kỹ thuật phát hiện drift dựa trên mô hình học máy hoặc tổ hợp nhiều mô hình. Những phương pháp này thường có tính "chủ động" hơn: không chỉ chờ hiệu năng giảm mà còn tìm dấu hiệu thay đổi trong cấu trúc dữ liệu hoặc trong phản ứng của nhiều mô hình khác nhau.
 
-Một ví dụ tiêu biểu là \textbf{Paired Learners} của Bach và Maloof (2008)[18]. Phương pháp này sử dụng hai mô hình học song song trên dòng dữ liệu: một mô hình “ổn định” được huấn luyện trên toàn bộ dữ liệu tích lũy (dài hạn), và một mô hình “nhanh” liên tục huấn luyện trên cửa sổ ngắn hạn gần đây. Khi có concept drift, mô hình nhanh sẽ thích nghi sớm và phân phối dự đoán của nó sẽ khác biệt rõ so với mô hình ổn định. Paired Learners theo dõi mức độ bất đồng giữa hai mô hình này: nếu sai khác vượt ngưỡng, ta kết luận đã có drift. Cách tiếp cận này cho phép phát hiện cả drift đột ngột (mô hình nhanh thay đổi tức thời) lẫn drift dần dần (mô hình nhanh dần dần phân kỳ khỏi mô hình cũ). Nghiên cứu cho thấy Paired Learners phát hiện drift khá hiệu quả và thường vượt trội các detector đơn lẻ trong nhiều kịch bản[4].
+\textbf{Paired Learners} (Bach \& Maloof, 2008) là một ví dụ tiêu biểu, sử dụng hai mô hình học song song trên dòng dữ liệu: một mô hình "ổn định" (stable learner) được huấn luyện trên toàn bộ dữ liệu tích lũy (dài hạn), và một mô hình "nhanh" (reactive learner) liên tục huấn luyện trên cửa sổ ngắn hạn gần đây. Khi có concept drift, mô hình nhanh sẽ thích nghi sớm và phân phối dự đoán của nó sẽ khác biệt rõ so với mô hình ổn định. Paired Learners theo dõi mức độ bất đồng (disagreement) giữa hai mô hình này: nếu sai khác vượt ngưỡng, ta kết luận đã có drift. Cách tiếp cận này cho phép phát hiện cả drift đột ngột (mô hình nhanh thay đổi tức thời) lẫn drift dần dần (mô hình nhanh dần dần phân kỳ khỏi mô hình cũ).
 
-Một hướng khác là tận dụng \textit{ensemble learning} – sử dụng nhiều mô hình phân loại chạy song song – không chỉ để nâng cao độ chính xác, mà còn để nhận biết concept drift thông qua sự đa dạng. Ví dụ, phương pháp \textbf{ACE} (Adaptive Classifier Ensemble, 2009) duy trì một tập phân loại viên và liên tục đánh giá mỗi mô hình trên luồng dữ liệu. Khi có mô hình suy giảm độ chính xác, nó bị thay thế bởi mô hình mới huấn luyện trên dữ liệu gần đây. Mặc dù ACE tập trung vào thích ứng mô hình, việc mô hình cũ bị loại bỏ chính là dấu hiệu của drift (tức concept cũ không còn phù hợp). Tương tự, \textbf{Learn++.NSE} (Elwell \& Polikar, 2011) mở rộng ý tưởng ensemble bằng cách gán trọng số thời gian cho các classifier theo độ tuổi – classifier mới được thêm vào để học concept mới còn classifier cũ mờ dần. Nếu quan sát chuỗi trọng số hoặc lỗi của ensemble thay đổi đáng kể, ta có thể xác định có drift xảy ra. Nhìn chung, các phương pháp ensemble cho phép "phát hiện" drift một cách gián tiếp thông qua cơ chế tự điều chỉnh: drift được phản ánh khi cấu trúc hoặc thành phần của ensemble thay đổi.
+Một hướng khác là tận dụng \textit{ensemble learning} – sử dụng nhiều mô hình phân loại chạy song song – không chỉ để nâng cao độ chính xác, mà còn để nhận biết concept drift thông qua sự đa dạng (diversity) của ensemble. Ví dụ, phương pháp \textbf{ACE} (Adaptive Classifier Ensemble, 2009) duy trì một tập phân loại viên và liên tục đánh giá mỗi mô hình trên luồng dữ liệu. Khi có mô hình suy giảm độ chính xác, nó bị thay thế bởi mô hình mới huấn luyện trên dữ liệu gần đây. Việc mô hình cũ bị loại bỏ chính là dấu hiệu của drift (tức concept cũ không còn phù hợp). Tương tự, \textbf{Learn++.NSE} (Elwell \& Polikar, 2011) mở rộng ý tưởng ensemble bằng cách gán trọng số thời gian (temporal weights) cho các classifier theo độ tuổi – classifier mới được thêm vào để học concept mới còn classifier cũ mờ dần. Nhìn chung, các phương pháp ensemble cho phép "phát hiện" drift một cách gián tiếp thông qua cơ chế tự điều chỉnh: drift được phản ánh khi cấu trúc hoặc thành phần của ensemble thay đổi.
 
-Ngoài ra, nhiều phương pháp học máy khác tập trung vào việc so sánh mô hình hoặc phân cụm giữa hai khoảng thời gian. Một số kỹ thuật huấn luyện mô hình đặc biệt để dự đoán độ khác biệt giữa phân phối dữ liệu hiện tại và quá khứ (hay gọi là concept drift indicators). Ví dụ, người ta có thể huấn luyện một mô hình phân loại nhằm phân biệt “dữ liệu cũ” và “dữ liệu mới”; nếu mô hình này đạt độ chính xác cao nghĩa là hai phân phối khác nhau rõ (drift lớn). Cách làm này biến phát hiện drift thành một bài toán học máy hai lớp (gọi là \textit{classifier-based drift detection}), tuy nhiên cần cẩn trọng với tính ngẫu nhiên. Trong môi trường không có nhãn liên tục, một số phương pháp sử dụng phân cụm hoặc mô hình one-class (như one-class SVM, autoencoder) để mô tả dữ liệu; khi phân cụm thay đổi hình dạng hoặc mô hình one-class tăng lỗi ngoại lệ, đó là dấu hiệu drift (ví dụ \textbf{OCDD} – One-Class Drift Detector).
+Ngoài ra, một số phương pháp sử dụng \textbf{classifier-based drift detection}: huấn luyện một mô hình phân loại nhằm phân biệt "dữ liệu cũ" và "dữ liệu mới"; nếu mô hình này đạt độ chính xác cao nghĩa là hai phân phối khác nhau rõ (drift lớn). Trong môi trường unsupervised, các phương pháp \textbf{one-class} như OCDD (One-Class Drift Detector) dùng one-class SVM hoặc autoencoder để mô tả dữ liệu; khi reconstruction error tăng cao, đó là dấu hiệu drift.
 
-Nhìn lại lịch sử, nhóm phương pháp dựa trên học máy truyền thống phát triển mạnh khoảng 2008–2015, khi khả năng tính toán cho phép triển khai nhiều mô hình song song. Những phương pháp này tận dụng sức mạnh của ensemble và mô hình meta để phát hiện các thay đổi tinh vi mà các phương pháp đơn lẻ có thể bỏ lỡ. Chúng tạo bước chuyển từ các kỹ thuật thuần thống kê sang các hệ thống linh hoạt, kết hợp chặt chẽ quá trình phát hiện drift với quá trình học liên tục. Đồng thời, các phương pháp này mở đường cho việc tích hợp sâu hơn cơ chế phát hiện drift vào các mô hình phức tạp như mạng neural, mà ta sẽ xét trong nhóm tiếp theo.
+Nhóm phương pháp này phát triển mạnh khoảng 2008–2015, khi khả năng tính toán cho phép triển khai nhiều mô hình song song. Chúng tận dụng sức mạnh của ensemble và mô hình meta để phát hiện các thay đổi tinh vi, tạo bước chuyển từ các kỹ thuật thuần thống kê sang các hệ thống linh hoạt, kết hợp chặt chẽ quá trình phát hiện drift với quá trình học liên tục.
 
 \subsubsection{Các phương pháp học sâu}
-Trong những năm gần đây (từ khoảng 2015 trở lại đây), với sự bùng nổ của học sâu, bài toán concept drift được nghiên cứu trong bối cảnh các mô hình mạng neural phức tạp. Thách thức đặt ra là các mô hình deep learning thường có hàng triệu tham số và quá trình học phức tạp, làm sao tích hợp hoặc thiết kế bộ phát hiện drift hiệu quả? Các hướng tiếp cận chính bao gồm: (i) tích hợp các detector truyền thống (như đã trình bày ở trên) để giám sát đầu ra hoặc đặc trưng trung gian của mạng deep; (ii) thiết kế kiến trúc mạng hoặc chiến lược huấn luyện có khả năng tự nhận biết drift và điều chỉnh cấu trúc; (iii) sử dụng chính các mô hình deep để trực tiếp phân tích sự thay đổi phân phối trong dữ liệu hoặc trong không gian đặc trưng.
+Trong những năm gần đây (từ khoảng 2015 trở lại đây), với sự bùng nổ của học sâu, bài toán concept drift được nghiên cứu trong bối cảnh các mô hình mạng neural phức tạp. Thách thức đặt ra là các mô hình deep learning thường có hàng triệu tham số và quá trình học phức tạp, làm sao tích hợp hoặc thiết kế bộ phát hiện drift hiệu quả? Các hướng tiếp cận chính bao gồm: (i) tích hợp các detector truyền thống để giám sát đầu ra hoặc đặc trưng trung gian của mạng deep; (ii) thiết kế kiến trúc mạng có khả năng tự nhận biết drift và điều chỉnh cấu trúc; (iii) sử dụng chính các mô hình deep để trực tiếp phân tích sự thay đổi phân phối trong dữ liệu.
 
-Hướng thứ (i) hiện khá phổ biến do tính đơn giản và hiệu quả: người ta gắn các bộ phát hiện drift cổ điển vào pipeline của mô hình deep. Ví dụ, trong giám sát mô hình CNN phân loại ảnh, ta có thể theo dõi độ bất định (entropy) của phân phối dự đoán; khi entropy tăng đột biến (mô hình trở nên kém chắc chắn), một bộ phát hiện như ADWIN được kích hoạt để dò tìm thay đổi trong chuỗi entropy theo thời gian[19][20]. Jourdan và cộng sự (2023) đã áp dụng thành công cách này để phát hiện drift trong hệ thống giám sát sản xuất công nghiệp: sử dụng ADWIN theo dõi độ lệch xác suất dự đoán của mạng CNN, khi ADWIN báo drift thì hệ thống trigger huấn luyện lại mô hình trên dữ liệu mới[21][19]. Tương tự, trong mô hình phát hiện bất thường dùng LSTM, người ta cũng nhúng các detector như DDM hoặc Page-Hinkley để liên tục canh chừng lỗi dự đoán theo thời gian. Việc tích hợp này lợi dụng được tính chất “model-agnostic” của các thuật toán drift detection truyền thống, biến chúng thành cảm biến cho các mô hình deep phức tạp.
+\textbf{Hướng (i): External detectors.} Cách tiếp cận phổ biến là gắn các bộ phát hiện drift cổ điển vào pipeline của mô hình deep learning. Ví dụ, trong giám sát mô hình CNN phân loại ảnh, ta có thể theo dõi độ bất định (entropy) của phân phối dự đoán; khi entropy tăng đột biến (mô hình trở nên kém chắc chắn), một bộ phát hiện như ADWIN được kích hoạt để dò tìm thay đổi trong chuỗi entropy theo thời gian. Jourdan và cộng sự (2023) đã áp dụng thành công cách này để phát hiện drift trong hệ thống giám sát sản xuất công nghiệp: sử dụng ADWIN theo dõi độ lệch xác suất dự đoán của mạng CNN, khi ADWIN báo drift thì hệ thống trigger huấn luyện lại mô hình trên dữ liệu mới. Tương tự, trong mô hình phát hiện bất thường dùng LSTM, người ta cũng nhúng các detector như DDM hoặc Page-Hinkley để liên tục canh chừng lỗi dự đoán theo thời gian. Việc tích hợp này lợi dụng được tính chất "model-agnostic" của các thuật toán drift detection truyền thống, biến chúng thành cảm biến cho các mô hình deep phức tạp.
 
-Hướng thứ (ii) tìm cách làm cho bản thân mô hình deep learning “nhạy cảm” với drift và tự cấu hình lại khi cần. Một đại diện tiêu biểu là các mạng nơ-ron tiến hóa theo luồng dữ liệu. Chẳng hạn, \textbf{NADINE} (Pratama et al., 2019) là một mạng MLP nhiều lớp có khả năng tiến hóa cấu trúc: NADINE tích hợp một cơ chế phát hiện drift chủ động, dựa trên thuật toán cửa sổ trượt thích ứng kết hợp bất đẳng thức Hoeffding (tương tự ý tưởng của FHDDM) để liên tục kiểm tra dữ liệu mới[22]. Mỗi khi detector phát hiện tín hiệu drift, NADINE sẽ “tiến hóa” bằng cách thêm hoặc bớt các nút ẩn và tầng ẩn tương ứng, nhằm thích nghi với concept mới[22]. Cơ chế này giúp mạng tự điều chỉnh độ phức tạp (tăng nếu concept mới phức tạp hơn, hoặc giảm nếu cần tránh overfitting) và đã cho thấy hiệu quả trên các bài toán phân loại, hồi quy trong môi trường non-stationary. 
+\textbf{Hướng (ii): Self-adaptive architectures.} Các mạng neural tự điều chỉnh cấu trúc khi drift xảy ra đang trở thành xu hướng quan trọng. \textbf{NADINE} (Pratama et al., 2019) là một mạng MLP nhiều lớp có khả năng tiến hóa cấu trúc: NADINE tích hợp một cơ chế phát hiện drift chủ động, dựa trên thuật toán cửa sổ trượt thích ứng kết hợp bất đẳng thức Hoeffding (tương tự ý tưởng của FHDDM) để liên tục kiểm tra dữ liệu mới. Mỗi khi detector phát hiện tín hiệu drift, NADINE sẽ "tiến hóa" bằng cách thêm hoặc bớt các nút ẩn và tầng ẩn tương ứng, nhằm thích nghi với concept mới. Cơ chế này giúp mạng tự điều chỉnh độ phức tạp (tăng nếu concept mới phức tạp hơn, hoặc giảm nếu cần tránh overfitting).
 
-Một phương pháp khác là \textbf{CIDD-ADODNN} (2020) – một kiến trúc deep được thiết kế cho dữ liệu mất cân bằng – cũng sử dụng bộ phát hiện drift ADWIN để chủ động phát hiện thay đổi, sau đó dùng thuật toán tối ưu đặc biệt (Adadelta) để điều chỉnh trọng số mạng cho phù hợp với concept mới[23]. Nhờ chiến lược này, mô hình CIDD-ADODNN cải thiện rõ rệt độ chính xác phân loại trên dòng dữ liệu chứa cả drift đột ngột và dần dần, đồng thời xử lý tốt bài toán dữ liệu lệch lớp[23].
+Một phương pháp khác là \textbf{CIDD-ADODNN} (2020) – một kiến trúc deep được thiết kế cho dữ liệu mất cân bằng – cũng sử dụng bộ phát hiện drift ADWIN để chủ động phát hiện thay đổi, sau đó dùng thuật toán tối ưu đặc biệt (Adadelta) để điều chỉnh trọng số mạng cho phù hợp với concept mới. Nhờ chiến lược này, mô hình cải thiện rõ rệt độ chính xác phân loại trên dòng dữ liệu chứa cả drift đột ngột và dần dần, đồng thời xử lý tốt bài toán dữ liệu lệch lớp.
 
-Hướng thứ (iii) khai thác trực tiếp năng lực biểu diễn của mô hình deep để nhận biết drift. Ví dụ, một autoencoder (mạng tự mã hóa) có thể học nén dữ liệu đầu vào; nếu phân phối dữ liệu thay đổi, lỗi tái tạo (reconstruction error) của autoencoder sẽ tăng cao. Dựa trên ý tưởng đó, \textbf{AEDetect} (2021) giám sát phân phối lỗi tái tạo của autoencoder, khi phân phối này dịch chuyển đáng kể thì phát tín hiệu drift. 
+\textbf{Hướng (iii): Intrinsic detection.} Khai thác trực tiếp năng lực biểu diễn của mô hình deep để nhận biết drift. Ví dụ, một autoencoder (mạng tự mã hóa) có thể học nén dữ liệu đầu vào; nếu phân phối dữ liệu thay đổi, lỗi tái tạo (reconstruction error) của autoencoder sẽ tăng cao. \textbf{AEDetect} (2021) giám sát phân phối lỗi tái tạo của autoencoder, khi phân phối này dịch chuyển đáng kể thì phát tín hiệu drift. Trong lĩnh vực chuỗi thời gian, \textbf{LSTM-NDT} (Neural Drift Detector dùng LSTM) được đề xuất để học mô hình chuỗi và dùng sai số dự báo của LSTM làm tiêu chí phát hiện drift. Các phương pháp này có ưu điểm tận dụng tối đa thông tin trong dữ liệu (nhờ đặc trưng học được của network), nhưng thách thức ở chỗ việc tách bạch "drift" và "nhiễu" trong nội tại mô hình không dễ dàng.
 
-Tương tự, trong lĩnh vực chuỗi thời gian, \textbf{LSTM-NDT} (Neural Drift Detector dùng LSTM) được đề xuất để học mô hình chuỗi và dùng sai số dự báo của LSTM làm tiêu chí phát hiện drift. Các phương pháp này thường kết hợp chặt chẽ giữa mô hình dự đoán và mô hình phát hiện, đôi khi hòa trộn làm một. Chúng có ưu điểm tận dụng tối đa thông tin trong dữ liệu (nhờ đặc trưng học được của network), nhưng thách thức ở chỗ việc tách bạch “drift” và “nhiễu” trong nội tại mô hình không dễ dàng, và mô hình phức tạp cũng có nguy cơ phản ứng chậm với thay đổi.
-
-Tổng kết lại, nhóm phương pháp học sâu phản ánh xu hướng hiện đại của lĩnh vực concept drift. Từ khoảng năm 2015 đến nay, chúng ta chứng kiến sự gia tăng các công trình kết hợp giữa deep learning và phát hiện concept drift. Ban đầu, các mô hình deep thường dựa vào các “cảm biến” drift bên ngoài (như ADWIN, DDM) để quyết định khi nào cần tái huấn luyện. Dần dần, các kiến trúc deep thích ứng (như NADINE, DEN, ADL, DEVDAN\ldots) ra đời với khả năng tự điều chỉnh cấu trúc khi drift diễn ra[24][25]. Mặc dù vẫn đang trong giai đoạn phát triển, các phương pháp này hứa hẹn đem lại sự linh hoạt và mạnh mẽ, giúp mô hình học sâu vận hành bền vững trong môi trường dữ liệu luôn biến động.
+Tổng kết lại, từ khoảng năm 2015 đến nay, chúng ta chứng kiến sự gia tăng các công trình kết hợp giữa deep learning và phát hiện concept drift. Ban đầu, các mô hình deep thường dựa vào các "cảm biến" drift bên ngoài (như ADWIN, DDM) để quyết định khi nào cần tái huấn luyện. Dần dần, các kiến trúc deep thích ứng (như NADINE, DEN, ADL, DEVDAN) ra đời với khả năng tự điều chỉnh cấu trúc khi drift diễn ra. Mặc dù vẫn đang trong giai đoạn phát triển, các phương pháp này hứa hẹn đem lại sự linh hoạt và mạnh mẽ, giúp mô hình học sâu vận hành bền vững trong môi trường dữ liệu luôn biến động.
 \begin{table}[h]\centering
 \caption{Tóm tắt một số mốc chính trong phát triển phương pháp phát hiện concept drift}\label{tab:drift-history}
 \begin{tabular}{|c|l|p{7.5cm}|}
@@ -254,36 +168,21 @@ Tổng kết lại, nhóm phương pháp học sâu phản ánh xu hướng hi�
 \hline
 2007 & ADWIN~\cite{bifet2007learning} & Cửa sổ trượt thích ứng với đảm bảo lý thuyết, so sánh thống kê hai cửa sổ con để phát hiện thay đổi phân phối. \\
 \hline
-2015 & HDDM[11] & Sử dụng bất đẳng thức Hoeffding (phi tham số) để phát hiện drift trên dòng lỗi; giảm giả định phân phối so với DDM. \\
+2015 & HDDM & Sử dụng bất đẳng thức Hoeffding (phi tham số) để phát hiện drift trên dòng lỗi; giảm giả định phân phối so với DDM. \\
 \hline
-2016 & FHDDM[12] & Phiên bản nhanh của HDDM, tăng tốc độ và độ nhạy khi drift (đột ngột và dần dần). \\
+2016 & FHDDM & Phiên bản nhanh của HDDM, tăng tốc độ và độ nhạy khi drift (đột ngột và dần dần). \\
 \hline
-2017 & RDDM[13] & Phản ứng nhanh với drift đột ngột, rút ngắn giai đoạn cảnh báo của DDM; phù hợp cả drift lặp lại. \\
+2017 & RDDM & Phản ứng nhanh với drift đột ngột, rút ngắn giai đoạn cảnh báo của DDM; phù hợp cả drift lặp lại. \\
 \hline
-2020 & DAWIDD[26] & Phương pháp phi tham số dùng kiểm định độc lập (independence test) thay vì mô hình dự đoán; linh hoạt với nhiều dạng drift khác nhau. \\
+2020 & DAWIDD~\cite{hinder2020dawidd} & Phương pháp phi tham số dùng kiểm định độc lập (independence test) thay vì mô hình dự đoán; linh hoạt với nhiều dạng drift khác nhau. \\
 \hline
-2019--22 & Học sâu thích ứng & Xuất hiện các mô hình deep learning tích hợp phát hiện drift (NADINE[22], ADL, DEVDAN, CIDD-ADODNN[23]…); mạng tự mở rộng hoặc dùng detector gắn ngoài để duy trì hiệu năng dưới concept drift. \\
+2019--22 & Học sâu thích ứng & Xuất hiện các mô hình deep learning tích hợp phát hiện drift (NADINE, ADL, DEVDAN, CIDD-ADODNN…); mạng tự mở rộng hoặc dùng detector gắn ngoài để duy trì hiệu năng dưới concept drift. \\
 \hline
 \multicolumn{3}{l}{\footnotesize ${}^*$Ghi chú: FLORA (Widmer \& Kubat, 1996) là hệ thống học không có detector tách rời, sử dụng cửa sổ ngắn hạn để thích ứng concept drift.} \\
 \hline
 \end{tabular}
 \end{table}
-Như bảng \ref{tab:drift-history} tóm tắt, lĩnh vực phát hiện trôi dạt khái niệm đã phát triển phong phú qua thời gian. Từ những ý tưởng sơ khai về cửa sổ trượt và loại bỏ mẫu, các nhà nghiên cứu đã tiến tới các thuật toán kiểm định thống kê tinh vi và cơ chế giám sát sai số mô hình. Giai đoạn 2004–2010 chứng kiến các phương pháp nền tảng như DDM, EDDM, ADWIN định hình lĩnh vực. Giai đoạn 2010–2020 là thời kỳ nở rộ với hàng loạt cải tiến và biến thể (HDDM, FHDDM, RDDM, v.v.), cùng với những cách tiếp cận mới dựa trên ensemble và meta-learning. Từ 2020 trở đi, xu hướng tích hợp với học sâu trở nên rõ nét, hướng tới các hệ thống vừa có khả năng học biểu diễn mạnh mẽ vừa linh hoạt thích ứng với dữ liệu biến đổi. Sự kết hợp liên ngành giữa thống kê, học máy và học sâu đang tiếp tục mở ra những chương mới cho bài toán concept drift, hứa hẹn các giải pháp ngày càng hiệu quả và toàn diện hơn trong tương lai.
-% ________________________________________
-% [1] PageHinkley - River
-% https://riverml.xyz/dev/api/drift/PageHinkley/
-% [2] [4] [5] [6] [7] [8] [9] [10] [11] [12] [13] [14] [15] [16] [17] [18] Evolving Strategies in Machine Learning: A Systematic Review of Concept Drift Detection
-% https://www.mdpi.com/2078-2489/15/12/786
-% [3] ADWIN - River
-% https://riverml.xyz/dev/api/drift/ADWIN/
-% [19] [20] [21] [Paper] - Model Adaptation - Handling concept drift in deep learning applications for process monitoring.pdf
-% file://file-JW6dMZ49D5Rdyy9TiUAxaM
-% [22] [23] [Paper] - Model Adaptation - Concept Drift Adaptation Methods under the Deep Learning Framework A Literature Review.pdf
-% file://file-D5msT7u3GLEByn7AErXZAZ
-% [24] [25] [Paper] - Model Adaptation - Recent Advances in Concept Drift Adaptation Methods for Deep Learning.pdf
-% file://file-U3E54GM9N3didgEzPW9ubH
-% [26] Towards Non-Parametric Drift Detection via Dynamic Adapting Window Independence Drift Detection (DAWIDD)
-% https://proceedings.mlr.press/v119/hinder20a.html
+Như bảng \ref{tab:drift-history} tóm tắt, lĩnh vực phát hiện trôi dạt khái niệm đã phát triển phong phú qua thời gian. Từ những ý tưởng sơ khai về cửa sổ trượt và loại bỏ mẫu, các nhà nghiên cứu đã tiến tới các thuật toán kiểm định thống kê tinh vi và cơ chế giám sát sai số mô hình. Giai đoạn 2004–2010 chứng kiến các phương pháp nền tảng như DDM, EDDM, ADWIN định hình lĩnh vực. Giai đoạn 2010–2020 là thời kỳ nở rộ với hàng loạt cải tiến và biến thể (HDDM, FHDDM, RDDM, v.v.), cùng với những cách tiếp cận mới dựa trên ensemble và meta-learning~\cite{santos2024evolving}. Từ 2020 trở đi, xu hướng tích hợp với học sâu trở nên rõ nét, hướng tới các hệ thống vừa có khả năng học biểu diễn mạnh mẽ vừa linh hoạt thích ứng với dữ liệu biến đổi. Sự kết hợp liên ngành giữa thống kê, học máy và học sâu đang tiếp tục mở ra những chương mới cho bài toán concept drift, hứa hẹn các giải pháp ngày càng hiệu quả và toàn diện hơn trong tương lai.
 \section{Xác định loại trôi dạt khái niệm}
 \label{sec:drift_type_identification}
 
