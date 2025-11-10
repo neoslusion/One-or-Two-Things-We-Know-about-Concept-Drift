@@ -6,17 +6,11 @@ Trong những năm gần đây, lĩnh vực trí tuệ nhân tạo ngày càng p
 
 Các tập dữ liệu tĩnh được sử dụng để huấn luyện các mô hình học máy chỉ có thể nắm bắt được một phần nhỏ các điều kiện có thể xảy ra trong thế giới thực. Các trường hợp trôi dạt, chẳng hạn như thay đổi điều kiện môi trường, thiết bị và vận hành có thể, theo thời gian, làm giảm đáng kể hiệu suất của các mô hình học máy, gây ảnh hưởng đến sự an toàn, độ tin cậy của mô hình và kinh tế nếu không được giải quyết đúng cách. Do đó, cần phải (1) phát hiện sự trôi dạt sớm nhất có thể và (2) điều chỉnh hiệu quả mô hình theo các điều kiện thay đổi động.
 
-\section{Bối cảnh và động lực nghiên cứu}
-
-Nghiên cứu này được xây dựng dựa trên nền tảng của survey paper \textit{"One or Two Things We Know about Concept Drift -- A Survey on Monitoring Evolving Environments"}~\cite{hinder2024survey_partA,hinder2024survey_partB} được công bố trên Frontiers in Artificial Intelligence năm 2024. Survey này cung cấp một tổng quan toàn diện về các phương pháp phát hiện, định vị và giải thích concept drift, tạo nền tảng lý thuyết vững chắc cho nghiên cứu của nghiên cứu này.
-
-Dựa trên các phát hiện từ survey, luận văn này tập trung vào việc triển khai thực tế một hệ thống hoàn chỉnh kết hợp ba thành phần chính: (1) phát hiện drift sử dụng ShapeDD detector, (2) phân loại loại drift sử dụng phương pháp CDT\_MSW, và (3) thích ứng mô hình với chiến lược phù hợp cho từng loại drift.
-
 \section{Tổng quan về bài toán}
 
 Trong lĩnh vực xử lý dữ liệu streaming, việc xử lý và phân tích dữ liệu đang trở thành một thách thức lớn do tính phức tạp và tính động của dữ liệu này. Một thách thức quan trọng là xử lý hiện tượng \textbf{concept drift} - một hiện tượng xảy ra khi phân phối dữ liệu đầu vào $P(X)$ hoặc mối quan hệ giữa đầu vào và đầu ra $P(y|X)$ thay đổi theo thời gian - điều này ảnh hưởng trực tiếp đến hiệu suất của các mô hình học máy và các hệ thống ra quyết định tự động.
 
-Đối với các ứng dụng production-grade, việc phát hiện drift trong thời gian thực (real-time) hoặc gần thời gian thực là yêu cầu bắt buộc để đảm bảo chất lượng và độ tin cậy của hệ thống. Tuy nhiên, việc xây dựng hệ thống như vậy đặt ra nhiều thách thức: (1) phát hiện drift chính xác với false positive thấp, (2) xác định loại drift để chọn chiến lược thích ứng phù hợp, (3) cập nhật mô hình nhanh chóng mà không làm gián đoạn dịch vụ, và (4) xử lý khối lượng lớn dữ liệu streaming với latency thấp.
+Đối với các ứng dụng học máy trong môi trường production, việc phát hiện drift trong thời gian thực (real-time) hoặc gần thời gian thực là yêu cầu bắt buộc để đảm bảo chất lượng và độ tin cậy của hệ thống. Tuy nhiên, việc xây dựng hệ thống như vậy đặt ra nhiều thách thức: (1) phát hiện drift chính xác với false positive thấp, (2) xác định loại drift để chọn chiến lược thích ứng phù hợp, (3) cập nhật mô hình nhanh chóng mà không làm gián đoạn dịch vụ, và (4) xử lý khối lượng lớn dữ liệu streaming với latency thấp.
 
 Luận văn này giải quyết các thách thức trên bằng cách xây dựng một hệ thống end-to-end kết hợp: (1) phát hiện drift không giám sát sử dụng ShapeDD với kernel-based statistical testing, (2) phân loại loại drift tự động sử dụng CDT\_MSW, (3) adaptation strategies đa dạng cho từng loại drift, và (4) kiến trúc streaming real-time sử dụng Apache Kafka cho việc xử lý event-driven có khả năng mở rộng.
 
@@ -28,7 +22,7 @@ Mục tiêu đầu tiên của đề tài là tiến hành một nghiên cứu c
 
 \subsection{Ứng dụng phương pháp được chọn vào phát hiện trôi dạt trong hệ thống}
 
-Sau khi hiểu rõ về cơ sở lý thuyết của phương pháp được chọn, luận văn sẽ tiến hành ứng dụng phương pháp đó cho việc phát hiện trôi dạt trong dữ liệu streaming. Phương pháp này sẽ được thiết kế để đảm bảo khả năng phát hiện nhanh chóng và chính xác đối với nhiều kiểu dữ liệu phức tạp khác nhau.
+Sau khi hiểu rõ về cơ sở lý thuyết của phương pháp được chọn, luận văn sẽ tiến hành ứng dụng phương pháp đó cho việc phát hiện trôi dạt trong dữ liệu streaming. Phương pháp này sẽ được thiết kế và cải tiến để đảm bảo khả năng phát hiện nhanh chóng và chính xác đối với nhiều kiểu dữ liệu phức tạp khác nhau.
 
 \subsection{Tìm hiểu các chiến lược cập nhật mô hình thích ứng}
 
@@ -54,7 +48,7 @@ Nghiên cứu này tập trung vào các phạm vi cụ thể sau:
 
 \textbf{Phạm vi về phương pháp:}
 \begin{itemize}
-    \item Nghiên cứu sâu về phương pháp Shape Drift Detector (ShapeDD) và các phương pháp phát hiện drift khác (ADWIN, DDM, EDDM, etc.)
+    \item Nghiên cứu sâu về phương pháp Shape Drift Detector (ShapeDD) cùng với phiên bản cải tiến và so sánh đánh giá với các phương pháp phát hiện drift khác (ADWIN, DDM, EDDM, etc.)
     \item Phát hiện concept drift trong môi trường dữ liệu streaming real-time sử dụng Apache Kafka
     \item Nghiên cứu phương pháp phân loại loại drift (CDT\_MSW) để nhận diện sudden, incremental, gradual, recurrent và blip drift
     \item Phát triển chiến lược thích ứng mô hình (model adaptation strategies) phù hợp với từng loại drift
@@ -64,7 +58,7 @@ Nghiên cứu này tập trung vào các phạm vi cụ thể sau:
 \textbf{Phạm vi về dữ liệu:}
 \begin{itemize}
     \item Chủ yếu sử dụng tập dữ liệu synthetic có kiểm soát để đánh giá hiệu suất
-    \item Tập trung vào dữ liệu số với các loại concept drift: đột ngột, tăng dần, và tuần hoàn
+    \item Tập trung vào dữ liệu số với loại concept drift đột ngột
     \item Không bao gồm dữ liệu phi cấu trúc như text, image hoặc audio
 \end{itemize}
 
