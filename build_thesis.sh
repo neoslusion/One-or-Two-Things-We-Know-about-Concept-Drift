@@ -75,8 +75,11 @@ compile_latex() {
     
     # First pass
     print_status "Running pdflatex (1st pass)..."
+    set +e  # Temporarily disable exit on error for pdflatex
     pdflatex -interaction=nonstopmode "$MAIN_FILE.tex" > pdflatex_1st.log 2>&1
-    if [ $? -ne 0 ] && ! grep -q "Output written on $MAIN_FILE.pdf" pdflatex_1st.log; then
+    local exit_code=$?
+    set -e  # Re-enable exit on error
+    if [ $exit_code -ne 0 ] && ! grep -q "Output written on $MAIN_FILE.pdf" pdflatex_1st.log; then
         print_error "First pdflatex pass failed. Check main.log for details."
         cat main.log | tail -20
         cd - > /dev/null
@@ -95,8 +98,11 @@ compile_latex() {
     
     # Second pass
     print_status "Running pdflatex (2nd pass)..."
+    set +e  # Temporarily disable exit on error for pdflatex
     pdflatex -interaction=nonstopmode "$MAIN_FILE.tex" > pdflatex_2nd.log 2>&1
-    if [ $? -ne 0 ] && ! grep -q "Output written on $MAIN_FILE.pdf" pdflatex_2nd.log; then
+    local exit_code=$?
+    set -e  # Re-enable exit on error
+    if [ $exit_code -ne 0 ] && ! grep -q "Output written on $MAIN_FILE.pdf" pdflatex_2nd.log; then
         print_error "Second pdflatex pass failed. Check main.log for details."
         cat main.log | tail -20
         cd - > /dev/null
@@ -105,8 +111,11 @@ compile_latex() {
     
     # Third pass (to resolve all cross-references)
     print_status "Running pdflatex (3rd pass)..."
+    set +e  # Temporarily disable exit on error for pdflatex
     pdflatex -interaction=nonstopmode "$MAIN_FILE.tex" > pdflatex_3rd.log 2>&1
-    if [ $? -ne 0 ] && ! grep -q "Output written on $MAIN_FILE.pdf" pdflatex_3rd.log; then
+    local exit_code=$?
+    set -e  # Re-enable exit on error
+    if [ $exit_code -ne 0 ] && ! grep -q "Output written on $MAIN_FILE.pdf" pdflatex_3rd.log; then
         print_error "Third pdflatex pass failed. Check main.log for details."
         cat main.log | tail -20
         cd - > /dev/null
