@@ -48,25 +48,25 @@ Nghiên cứu này tập trung vào các phạm vi cụ thể sau:
 
 \textbf{Phạm vi về phương pháp:}
 \begin{itemize}
-    \item Nghiên cứu sâu về phương pháp Shape Drift Detector (ShapeDD) cùng với phiên bản cải tiến và so sánh đánh giá với các phương pháp phát hiện drift khác (ADWIN, DDM, EDDM, etc.)
-    \item Phát hiện concept drift trong môi trường dữ liệu streaming real-time sử dụng Apache Kafka
-    \item Nghiên cứu phương pháp phân loại loại drift (CDT\_MSW) để nhận diện sudden, incremental, gradual, recurrent và blip drift
-    \item Phát triển chiến lược thích ứng mô hình (model adaptation strategies) phù hợp với từng loại drift
-    \item Xây dựng hệ thống end-to-end từ phát hiện đến thích ứng tự động
+\item Nghiên cứu sâu về phương pháp Shape Drift Detector (ShapeDD) cùng với phiên bản cải tiến và so sánh đánh giá với các phương pháp phát hiện drift khác (ADWIN, DDM, EDDM, etc.)
+\item Phát hiện concept drift trong môi trường dữ liệu streaming real-time sử dụng Apache Kafka
+\item Nghiên cứu phương pháp phân loại loại drift (CDT\_MSW) để nhận diện sudden, incremental, gradual, recurrent và blip drift
+\item Phát triển chiến lược thích ứng mô hình (model adaptation strategies) phù hợp với từng loại drift
+\item Xây dựng hệ thống end-to-end từ phát hiện đến thích ứng tự động
 \end{itemize}
 
 \textbf{Phạm vi về dữ liệu:}
 \begin{itemize}
-    \item Chủ yếu sử dụng tập dữ liệu synthetic có kiểm soát để đánh giá hiệu suất
-    \item Tập trung vào dữ liệu số với loại concept drift đột ngột
-    \item Không bao gồm dữ liệu phi cấu trúc như text, image hoặc audio
+\item Chủ yếu sử dụng tập dữ liệu synthetic có kiểm soát để đánh giá hiệu suất
+\item Tập trung vào dữ liệu số với loại concept drift đột ngột
+\item Không bao gồm dữ liệu phi cấu trúc như text, image hoặc audio
 \end{itemize}
 
 \textbf{Phạm vi về đánh giá:}
 \begin{itemize}
-    \item Đánh giá hiệu suất phát hiện drift về mặt độ chính xác, thời gian phát hiện và tỷ lệ false alarm
-    \item So sánh với các baseline methods cơ bản
-    \item Không bao gồm đánh giá về computational complexity chi tiết hoặc scalability trên big data
+\item Đánh giá hiệu suất phát hiện drift về mặt độ chính xác, thời gian phát hiện và tỷ lệ false alarm
+\item So sánh với các baseline methods cơ bản
+\item Không bao gồm đánh giá về computational complexity chi tiết hoặc scalability trên big data
 \end{itemize}
 
 \subsection{Đối tượng nghiên cứu}
@@ -75,11 +75,11 @@ Nghiên cứu này tập trung vào các phạm vi cụ thể sau:
 
 \textbf{Các đối tượng cụ thể bao gồm:}
 \begin{itemize}
-    \item Cơ sở lý thuyết Maximum Mean Discrepancy (MMD) trong RKHS và kernel-based drift detection
-    \item Các thành phần của thuật toán ShapeDD: kernel selection, window management, statistical validation
-    \item Phương pháp CDT\_MSW (Concept Drift Type Identification based on Multi-Sliding Windows) để phân loại loại drift
-    \item Chiến lược thích ứng mô hình: full reset (sudden), gradual updates (incremental), weighted updates (gradual), model caching (recurrent), minimal update (blip)
-    \item Kiến trúc streaming real-time: Apache Kafka message broker, Producer-Consumer pattern, event-driven architecture
-    \item Tập dữ liệu synthetic mô phỏng các loại concept drift khác nhau (SEA dataset variants)
-    \item Metrics đánh giá: F1-score, detection delay, recovery rate, accuracy degradation
+\item Cơ sở lý thuyết Maximum Mean Discrepancy (MMD) trong RKHS và kernel-based drift detection
+\item Các thành phần của thuật toán ShapeDD: kernel selection, window management, statistical validation
+\item Phương pháp CDT\_MSW (Concept Drift Type Identification based on Multi-Sliding Windows) để phân loại loại drift
+\item Chiến lược thích ứng mô hình: full reset (sudden), gradual updates (incremental), weighted updates (gradual), model caching (recurrent), minimal update (blip)
+\item Kiến trúc streaming real-time: Apache Kafka message broker, Producer-Consumer pattern, event-driven architecture
+\item Tập dữ liệu synthetic mô phỏng các loại concept drift khác nhau (SEA dataset variants)
+\item Metrics đánh giá: F1-score, detection delay, recovery rate, accuracy degradation
 \end{itemize}
