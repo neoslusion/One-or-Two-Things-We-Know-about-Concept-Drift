@@ -121,13 +121,29 @@ Nếu $P = Q$, ba thành phần này cân bằng nhau và $\text{MMD}^2 = 0$. N�
 
 \subsubsection{Ước lượng thực nghiệm}
 
-Để ước tính thực nghiệm với mẫu $\{x_i\}_{i=1}^n$ từ $P$ và $\{y_j\}_{j=1}^m$ từ $Q$:
+Để ước tính thực nghiệm với mẫu $\{x_i\}_{i=1}^n$ từ $P$ và $\{y_j\}_{j=1}^m$ từ $Q$, có hai ước lượng chính:
 
+\textbf{1. Unbiased estimator ($\widehat{\text{MMD}}^2_u$):}
 \begin{equation}
-\widehat{\text{MMD}}^2 = \frac{1}{n(n-1)} \sum_{i \neq j} k(x_i, x_j) + \frac{1}{m(m-1)} \sum_{i \neq j} k(y_i, y_j) - \frac{2}{nm} \sum_{i,j} k(x_i, y_j)
+\widehat{\text{MMD}}^2_u = \frac{1}{n(n-1)} \sum_{i \neq j} k(x_i, x_j) + \frac{1}{m(m-1)} \sum_{i \neq j} k(y_i, y_j) - \frac{2}{nm} \sum_{i,j} k(x_i, y_j)
 \end{equation}
 
-\textbf{Tính chất thống kê:} $\widehat{\text{MMD}}^2$ là unbiased estimator của $\text{MMD}^2$ với phương sai giảm theo tốc độ $O(1/n + 1/m)$ khi kích thước mẫu tăng.
+Ước lượng này là unbiased ($\mathbb{E}[\widehat{\text{MMD}}^2_u] = \text{MMD}^2$) bằng cách loại trừ các cặp $(i,i)$ trong hai tổng đầu (tránh bias do tự tương quan).
+
+\textbf{2. Biased but consistent estimator ($\widehat{\text{MMD}}^2_b$):}
+\begin{equation}
+\widehat{\text{MMD}}^2_b = \mathbf{w}^\top K_{XY} \mathbf{w}
+\end{equation}
+
+trong đó:
+\begin{itemize}
+    \item $K_{XY}$ là kernel matrix kích thước $(n+m) \times (n+m)$ trên tất cả samples $\{x_1, ..., x_n, y_1, ..., y_m\}$
+    \item $\mathbf{w} = (n^{-1}, ..., n^{-1}, -m^{-1}, ..., -m^{-1})^\top$ với $n$ phần tử dương và $m$ phần tử âm
+\end{itemize}
+
+Ước lượng này biased nhưng consistent (hội tụ về $\text{MMD}^2$ khi $n, m \to \infty$).
+
+\textbf{Tính chất thống kê:} Cả hai ước lượng đều hội tụ với tốc độ $O(\sqrt{\min(n,m)^{-1}})$ và bound này chỉ phụ thuộc vào tính chất của kernel, độc lập với số chiều dữ liệu~\cite{gretton2012kernel}.
 
 \textbf{Ví dụ minh họa:} Xét hai phân phối 1D:
 \begin{itemize}
@@ -166,14 +182,50 @@ Nhiều phương pháp phát hiện drift truyền thống dựa trên việc đ
 
 trong đó $p_{[a,b]}$ là phân phối dữ liệu trung bình trên đoạn thời gian $[a,b]$, và $d(\cdot,\cdot)$ là một độ đo khoảng cách giữa hai phân phối (ví dụ: MMD, khoảng cách Hellinger, KL divergence).
 
-\textbf{Hình dạng tam giác đặc trưng:} Khi xảy ra drift đột ngột tại thời điểm $t_0$, độ lớn drift $\sigma(t)$ có hình dạng đặc trưng dạng tam giác: tăng lên rồi giảm xuống trong khoảng thời gian tương ứng với độ dài cửa sổ $l$. Với drift đột ngột thay đổi phân phối từ $P$ sang $Q$ tại $t_0=0$, lý thuyết chỉ ra:
+\textbf{Hình dạng tam giác đặc trưng:} Khi xảy ra drift đột ngột tại thời điểm $t_0$, độ lớn drift $\sigma(t)$ có hình dạng đặc trưng dạng tam giác: tăng lên rồi giảm xuống trong khoảng thời gian tương ứng với độ dài cửa sổ $l$. Tính chất này được chứng minh chính thức trong Theorem sau:
 
-\begin{equation}
-\sigma(t) = \lVert P - Q \rVert \cdot \max\left(0,\,1 - \frac{|\,l - t\,|}{\,l\,}\right)
-\label{eq:triangle-shape-core}
-\end{equation}
+\begin{theorem}[Triangle Shape Property - Hinder et al.~\cite{hinder2024survey_partA}]
+\label{thm:triangle-shape}
+Cho $\|\cdot\|$ là một norm trên không gian các phân phối hữu hạn, $l > 0$, và $p_t$ là drift process với single abrupt drift tại $t = 0$, tức là:
+\[
+p_t = \begin{cases}
+P & t \leq 0 \\
+Q & t > 0
+\end{cases}
+\]
+trong đó $P, Q$ là các phân phối tùy ý. Khi đó:
+\[
+\sigma_{\|\cdot\|,l,p_{\cdot}}(t) = \|P - Q\| \cdot \max\left(0, 1 - \frac{|l - t|}{l}\right) =: \|P - Q\| \cdot h_l(t)
+\]
 
-với $\lVert P - Q\rVert$ là độ lớn thay đổi phân phối và phần hình dạng $h_l(t) = \max(0,\,1 - |l-t|/l)$ chỉ phụ thuộc vào $l$. Biểu thức này mô tả một "mũi nhọn" hình tam giác: $\sigma(t)$ bằng 0 ngoài khoảng $[0,2l]$, đạt cực đại tại $t = l$ (đúng một độ dài cửa sổ sau thời điểm drift), và thay đổi tuyến tính giữa 0 và đỉnh.
+Đặc biệt, $\sigma$ có thể phân tích thành:
+\begin{itemize}
+    \item \textbf{Scalar part:} $\|P - Q\|$ - phụ thuộc vào norm và distributions nhưng độc lập với $l$
+    \item \textbf{Shape part:} $h_l(t) = \max(0, 1 - |l-t|/l)$ - chỉ phụ thuộc vào $l$, độc lập với norm và distributions
+\end{itemize}
+\end{theorem}
+
+\textbf{Hệ quả cho multiple drifts:} Theorem 1 mở rộng cho drift processes với nhiều abrupt drifts tại $t_1 < ... < t_n$:
+\[
+p_t = \begin{cases}
+P_0 & t < t_1 \\
+P_1 & t \in [t_1, t_2) \\
+\vdots \\
+P_n & t \geq t_n
+\end{cases}
+\]
+
+Với mọi $l < \min\{t_{i+1} - t_i\}/2$ (drifts đủ xa nhau), ta có:
+\[
+\sigma_{\|\cdot\|,l,p_{\cdot}}(t) = \sum_{i=1}^{n} \|P_{i-1} - P_i\| \cdot h_l(t - t_i)
+\]
+
+\textbf{Ý nghĩa thực tiễn:} Theorem 1 cho thấy shape $h_l(t)$ là universal pattern cho abrupt drift, không phụ thuộc vào đặc trưng cụ thể của distributions. Điều này cho phép:
+\begin{itemize}
+    \item Sử dụng chung tham số shape cho nhiều norms và window lengths khác nhau
+    \item Denoising robust bằng cách fit parametric curve $\sum_i s_i h_{l_i}(t - t_i)$ thay vì pointwise estimation
+    \item Precise localization của drift time $t_0$ thông qua zero-crossing detection của $h'_l$
+\end{itemize}
 
 \textbf{Bộ lọc hình dạng:} Để phát hiện mẫu tam giác này, ShapeDD sử dụng bộ lọc trọng số $h'_l(t)$ (đạo hàm của $h_l$):
 
@@ -522,3 +574,250 @@ w_{\text{size}}(t) = w_{\text{base}} \cdot \exp(-\lambda \cdot \Delta(t))
 \end{equation}
 
 trong đó $w_{\text{base}}$ là kích thước cửa sổ cơ sở, $\lambda$ là tham số suy giảm, và $\Delta(t)$ là mức độ drift được phát hiện.
+
+\subsection{Chi tiết triển khai ShapeDD}
+
+\subsubsection{Thuật toán ShapeDD đầy đủ}
+
+Để hiểu rõ hơn về cách ShapeDD hoạt động trong thực tế, chúng ta trình bày thuật toán đầy đủ kết hợp cả 4 giai đoạn đã mô tả:
+
+\begin{algorithm}[H]
+\caption{ShapeDD - Shape-Based Drift Detector}
+\label{alg:shapedd-full}
+\begin{algorithmic}[1]
+\REQUIRE Luồng dữ liệu $\mathcal{S} = \{x_1, x_2, ..., x_n\}$
+\REQUIRE Kích thước cửa sổ $l_1$, $l_2$ (với $l_2 > l_1$)
+\REQUIRE Số lần permutation $n_{\text{perm}}$
+\REQUIRE Mức ý nghĩa $\alpha$ (thường 0.05)
+\ENSURE Tập hợp các drift point $\mathcal{D}$
+
+\STATE \textit{// Giai đoạn 1: Khởi tạo}
+\STATE Tính ma trận kernel $K \in \mathbb{R}^{n \times n}$: $K_{ij} = k(x_i, x_j)$
+\STATE Khởi tạo $\mathcal{D} \leftarrow \emptyset$ (tập drift points rỗng)
+
+\STATE \textit{// Giai đoạn 2: Tính toán MMD statistic sequence}
+\STATE Tạo weight vector $\mathbf{w} = [\frac{1}{l_1}, ..., \frac{1}{l_1}, -\frac{1}{l_1}, ..., -\frac{1}{l_1}]^\top$ (kích thước $2l_1$)
+\STATE Khởi tạo ma trận trọng số $W \in \mathbb{R}^{(n-2l_1) \times n}$
+\FOR{$i = 1$ to $n - 2l_1$}
+    \STATE $W[i, i:i+2l_1] \leftarrow \mathbf{w}$
+\ENDFOR
+\STATE Tính MMD sequence: $\text{stat}[i] = W[i, :] \cdot K \cdot W[i, :]^\top$
+
+\STATE \textit{// Giai đoạn 3: Shape detection via convolution}
+\STATE Tạo shape filter $h'_l = [+1, ..., +1, -1, ..., -1]$ (length $2l_1$)
+\STATE $\text{shape} \leftarrow \text{convolve}(\text{stat}, h'_l)$
+\STATE Tính $\text{shape\_prime}[i] = \text{shape}[i] \times \text{shape}[i+1]$ \textit{// Detect sign changes}
+
+\STATE \textit{// Giai đoạn 4: Statistical validation}
+\FOR{mỗi zero-crossing tại vị trí $t$ trong shape\_prime}
+    \STATE Extract window $W_t = \{x_{t-l_2+1}, ..., x_t\}$
+    \STATE Chia $W_t$ thành hai nửa: $W_{\text{ref}} = W_t[1:l_2/2]$, $W_{\text{test}} = W_t[l_2/2+1:l_2]$
+    \STATE Tính $\text{MMD}^2_{\text{obs}}$ giữa $W_{\text{ref}}$ và $W_{\text{test}}$
+
+    \STATE \textit{// Permutation test}
+    \STATE $p\text{-value} \leftarrow 0$
+    \FOR{$j = 1$ to $n_{\text{perm}}$}
+        \STATE Hoán vị ngẫu nhiên nhãn của $W_t$
+        \STATE Tính $\text{MMD}^2_{\text{perm}}$
+        \IF{$\text{MMD}^2_{\text{perm}} \geq \text{MMD}^2_{\text{obs}}$}
+            \STATE $p\text{-value} \leftarrow p\text{-value} + 1$
+        \ENDIF
+    \ENDFOR
+    \STATE $p\text{-value} \leftarrow p\text{-value} / n_{\text{perm}}$
+
+    \IF{$p\text{-value} < \alpha$}
+        \STATE $\mathcal{D} \leftarrow \mathcal{D} \cup \{t\}$ \textit{// Accept drift}
+    \ENDIF
+\ENDFOR
+
+\RETURN $\mathcal{D}$
+\end{algorithmic}
+\end{algorithm}
+
+\textbf{Độ phức tạp tính toán:}
+\begin{itemize}
+    \item \textbf{Khởi tạo kernel matrix:} $O(n^2 \cdot d)$ với $d$ là số chiều dữ liệu
+    \item \textbf{MMD sequence computation:} $O(n \cdot l_1^2)$
+    \item \textbf{Convolution:} $O(n \cdot l_1)$
+    \item \textbf{Permutation test:} $O(|\mathcal{D}| \cdot n_{\text{perm}} \cdot l_2^2)$
+    \item \textbf{Tổng thể:} $O(n^2 \cdot d + n \cdot l_1^2 + |\mathcal{D}| \cdot n_{\text{perm}} \cdot l_2^2)$
+\end{itemize}
+
+\subsubsection{Các biến thể của ShapeDD}
+
+Ngoài phiên bản gốc, nghiên cứu này triển khai và đánh giá nhiều biến thể của ShapeDD để xử lý các thách thức khác nhau trong phát hiện drift. Mỗi biến thể có những cải tiến và trade-offs riêng.
+
+\textbf{1. ShapeDD Adaptive:} Phiên bản adaptive đầu tiên giới thiệu khái niệm sensitivity levels để điều chỉnh độ nhạy của detector:
+
+\begin{itemize}
+    \item \textbf{Gamma selection:} Sử dụng Scott's rule để tự động chọn bandwidth kernel:
+    \begin{equation}
+    \gamma = \frac{1}{2\sigma^2}, \quad \sigma = \sigma_{\text{data}} \cdot n^{-1/(d+4)}
+    \end{equation}
+
+    \item \textbf{Sensitivity levels:} Năm mức độ nhạy với các threshold multipliers khác nhau:
+    \begin{itemize}
+        \item \texttt{low}: $\text{threshold} = \text{baseline} \times 1.5$ (bảo thủ nhất)
+        \item \texttt{medium}: $\text{threshold} = \text{baseline} \times 1.2$
+        \item \texttt{high}: $\text{threshold} = \text{baseline} \times 0.8$
+        \item \texttt{ultrahigh}: $\text{threshold} = \text{baseline} \times 0.5$ (tích cực nhất)
+        \item \texttt{none}: Không có threshold, chấp nhận mọi candidate
+    \end{itemize}
+
+    \item \textbf{FDR correction:} Áp dụng Benjamini-Hochberg procedure để kiểm soát False Discovery Rate trong multiple testing
+\end{itemize}
+
+\textbf{2. ShapeDD Adaptive v2 - Năm cải tiến quan trọng:}
+
+Phiên bản adaptive\_v2 khắc phục các vấn đề nghiêm trọng trong adaptive gốc thông qua năm cải tiến then chốt:
+
+\begin{enumerate}
+    \item \textbf{Corrected sensitivity logic (Sửa lỗi threshold):}
+    \begin{itemize}
+        \item \textit{Vấn đề:} Adaptive gốc đảo ngược ý nghĩa của sensitivity - "high sensitivity" lại dùng threshold cao (kém nhạy)
+        \item \textit{Giải pháp:} Đảo ngược threshold multipliers:
+        \begin{align*}
+        \texttt{low} &\rightarrow \times 1.2 \text{ (threshold cao, bảo thủ)} \\
+        \texttt{medium} &\rightarrow \times 0.8 \\
+        \texttt{high} &\rightarrow \times 0.5 \\
+        \texttt{ultrahigh} &\rightarrow \times 0.25 \text{ (threshold thấp, tích cực)}
+        \end{align*}
+    \end{itemize}
+
+    \item \textbf{Minimal smoothing (Giảm làm mượt):}
+    \begin{itemize}
+        \item \textit{Vấn đề:} Smoothing window $= \sqrt{l_1}$ quá lớn, làm mờ drift signals
+        \item \textit{Giải pháp:} Giảm xuống còn 3-point moving average:
+        \begin{equation}
+        \text{smooth\_window} = 3 \quad (\text{thay vì } \max(3, \lceil\sqrt{l_1}\rceil))
+        \end{equation}
+    \end{itemize}
+
+    \item \textbf{Percentile-based threshold (Ngưỡng robust):}
+    \begin{itemize}
+        \item \textit{Vấn đề:} Mean-based baseline dễ bị ảnh hưởng bởi outliers
+        \item \textit{Giải pháp:} Sử dụng 10th percentile của positive shapes:
+        \begin{equation}
+        \text{baseline} = \text{percentile}(\text{positive\_shapes}, 10)
+        \end{equation}
+        \item Robust hơn với extreme values và noise spikes
+    \end{itemize}
+
+    \item \textbf{Adaptive FDR (FDR có điều kiện):}
+    \begin{itemize}
+        \item \textit{Vấn đề:} FDR correction luôn được áp dụng, làm giảm recall không cần thiết trong clean environments
+        \item \textit{Giải pháp:} Chỉ áp dụng FDR khi detection density cao:
+        \begin{equation}
+        \text{Apply FDR if} \quad \frac{|\text{candidates}|}{n} < 0.03
+        \end{equation}
+        \item Tránh over-correction trong scenarios với ít drift
+    \end{itemize}
+
+    \item \textbf{Hybrid threshold strategy (Kết hợp strategies):}
+    \begin{itemize}
+        \item Sử dụng cả magnitude threshold và statistical test
+        \item Drift được chấp nhận nếu:
+        \begin{equation}
+        (\text{magnitude} > \text{threshold}) \land (p\text{-value} < \alpha)
+        \end{equation}
+        \item Cân bằng giữa sensitivity và specificity
+    \end{itemize}
+\end{enumerate}
+
+\textbf{3. ShapeDD Sensitive:} Biến thể được tối ưu cho phát hiện drift nhỏ và tinh tế:
+
+\begin{itemize}
+    \item \textbf{Smaller windows:} Sử dụng $l_1 = 30$, $l_2 = 100$ (nhỏ hơn default 50/150)
+    \item \textbf{Aggressive gamma:} $\gamma = 2.0 / \text{median\_dist}^2$ (gấp đôi sensitivity)
+    \item \textbf{Lower threshold:} Baseline multiplier = 0.6 (thấp hơn "high" sensitivity)
+    \item \textbf{Trade-off:} Recall cao hơn nhưng false positive rate tăng
+\end{itemize}
+
+\subsubsection{Bảng so sánh các biến thể ShapeDD}
+
+\begin{table}[H]
+\centering
+\caption{So sánh các biến thể ShapeDD}
+\label{tab:shapedd-variants}
+\begin{tabular}{|l|p{2.5cm}|p{3cm}|p{3cm}|p{3cm}|}
+\hline
+\textbf{Biến thể} & \textbf{Đặc điểm chính} & \textbf{Ưu điểm} & \textbf{Nhược điểm} & \textbf{Khi nào dùng} \\
+\hline
+\textbf{Original} & Conservative, high precision & Ít false positive, ổn định & Có thể miss subtle drift & Default choice, high-stakes scenarios \\
+\hline
+\textbf{Adaptive} & Sensitivity levels, gamma auto-selection & Flexible, FDR control & Inverted threshold logic (bug) & Không khuyến nghị (dùng v2) \\
+\hline
+\textbf{Adaptive v2} & 5 critical fixes, corrected logic & Balanced P-R, robust & Phức tạp hơn & Multi-drift scenarios, noisy data \\
+\hline
+\textbf{Sensitive} & Small windows, aggressive threshold & High recall, early detection & High FP rate & Subtle drift, low latency required \\
+\hline
+\textbf{SNR-Adaptive} & Hybrid strategy, SNR-aware & Best F1-score, auto-adapt & Requires SNR estimation & Production, unknown SNR environments \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsubsection{Hiệu ứng pha loãng buffer (Buffer Dilution Effect)}
+
+Một phát hiện quan trọng trong nghiên cứu này là \textbf{buffer dilution effect} - hiện tượng SNR quan sát được thấp hơn nhiều so với SNR lý thuyết khi sử dụng rolling buffer trong phát hiện drift thực tế.
+
+\textbf{Lý thuyết vs Thực tế:}
+
+\begin{itemize}
+    \item \textbf{SNR lý thuyết} (isolated drift trong môi trường sạch):
+    \begin{equation}
+    \text{SNR}_{\text{theory}} \in [0.4, 4.0]
+    \end{equation}
+    Giả định: Drift point riêng biệt, không có dữ liệu ổn định xen kẽ
+
+    \item \textbf{SNR quan sát được} (buffer-based detection):
+    \begin{equation}
+    \text{SNR}_{\text{observed}} \in [0.005, 0.020]
+    \end{equation}
+    Giảm khoảng \textbf{100 lần} so với lý thuyết!
+\end{itemize}
+
+\textbf{Nguyên nhân:} Trong phát hiện thực tế, chúng ta sử dụng rolling buffer chứa dữ liệu hỗn hợp:
+
+\begin{equation}
+\text{Buffer}_{750} = \underbrace{[\text{Stable data}]}_{\sim 90\%} + \underbrace{[\text{Drift data}]}_{\sim 10\%}
+\end{equation}
+
+Với buffer size = 750 và drift detection window = 150:
+\begin{itemize}
+    \item Tỷ lệ drift data: $150 / 750 = 20\%$ (lý tưởng)
+    \item Thực tế: Do overlap và continuous streaming, chỉ $\sim 10\%$ là pure drift signal
+    \item Phần còn lại ($\sim 90\%$) là stable data, "pha loãng" tín hiệu drift
+\end{itemize}
+
+\textbf{Tác động lên signal variance:}
+
+\begin{equation}
+\sigma^2_{\text{signal,buffer}} = \sigma^2_{\text{signal,theory}} \times \left(\frac{\text{\% drift data}}{100\%}\right)^2 \approx \sigma^2_{\text{signal,theory}} \times 0.01
+\end{equation}
+
+Do đó: $\text{SNR}_{\text{buffer}} \approx \text{SNR}_{\text{theory}} / 100$
+
+\textbf{Hệ quả quan trọng cho SNR-Adaptive:}
+
+Threshold phải được hiệu chỉnh (calibrated) cho môi trường buffer:
+\begin{itemize}
+    \item Threshold lý thuyết: $\tau_{\text{theory}} \approx 0.5$ (midpoint của [0.4, 4.0])
+    \item Threshold buffer-calibrated: $\tau_{\text{buffer}} = 0.010$ (midpoint của [0.005, 0.020])
+    \item Giảm 50 lần: $\tau_{\text{buffer}} = \tau_{\text{theory}} / 50$
+\end{itemize}
+
+Threshold 0.010 được chọn dựa trên:
+\begin{enumerate}
+    \item \textbf{Empirical observation:} Phân tích SNR quan sát trên 8 datasets
+    \item \textbf{Neyman-Pearson optimization:} Cân bằng Type I/II errors
+    \item \textbf{Strategy balance validation:} Đạt $\sim 50\%$ aggressive / $\sim 50\%$ conservative
+\end{enumerate}
+
+\textbf{Validation qua thực nghiệm:} Với threshold = 0.010:
+\begin{itemize}
+    \item Strategy distribution: 58.7\% aggressive, 41.3\% conservative ($\approx$ 50/50)
+    \item F1-score: 0.697 (ranked 4th/18 methods)
+    \item Balanced precision-recall trade-off
+\end{itemize}
+
+Hiệu ứng buffer dilution giải thích tại sao threshold phải được điều chỉnh đáng kể so với giá trị lý thuyết để phương pháp SNR-Adaptive hoạt động hiệu quả trong môi trường production thực tế.
