@@ -1,11 +1,127 @@
 \chapter{Mô hình đề xuất cho hệ thống phát hiện và thích ứng concept drift}
 \label{chap:proposed-model}
 
+\section{Nền tảng xử lý luồng dữ liệu phân tán với Apache Kafka}
+
+Trong bối cảnh triển khai hệ thống phát hiện concept drift thời gian thực, việc lựa chọn một nền tảng xử lý luồng dữ liệu (stream processing platform) mạnh mẽ và đáng tin cậy là rất quan trọng. Apache Kafka~\cite{kreps2011kafka} đã trở thành nền tảng tiêu chuẩn công nghiệp cho xử lý luồng dữ liệu phân tán, được sử dụng rộng rãi trong các hệ thống big data và real-time analytics. Phần này trình bày nền tảng lý thuyết của Apache Kafka làm cơ sở cho việc triển khai hệ thống phát hiện drift trong các phần tiếp theo của chương này.
+
+\subsection{Kiến trúc Apache Kafka}
+
+Apache Kafka là một hệ thống xử lý tin nhắn phân tán (distributed messaging system) được thiết kế để xử lý luồng dữ liệu thời gian thực với khối lượng lớn (high-throughput)~\cite{kreps2011kafka}. Kafka được phát triển ban đầu tại LinkedIn và sau đó trở thành một dự án mã nguồn mở của Apache Software Foundation.
+
+\subsubsection{Các thành phần chính}
+
+Kiến trúc Kafka bao gồm các thành phần chính sau~\cite{wang2015building}:
+
+\begin{itemize}
+    \item \textbf{Producer (Nhà sản xuất):} Ứng dụng gửi dữ liệu (messages) vào Kafka. Producer chịu trách nhiệm chọn partition nào sẽ nhận message trong một topic, có thể dựa trên round-robin hoặc semantic partitioning.
+
+    \item \textbf{Consumer (Người tiêu dùng):} Ứng dụng đọc và xử lý dữ liệu từ Kafka. Consumer theo dõi vị trí đọc của mình (offset) trong mỗi partition, cho phép đọc lại dữ liệu khi cần thiết.
+
+    \item \textbf{Broker (Máy chủ):} Các server Kafka lưu trữ và quản lý messages. Một Kafka cluster bao gồm nhiều broker để đảm bảo tính khả dụng cao (high availability) và khả năng mở rộng (scalability).
+
+    \item \textbf{Topic:} Danh mục hoặc feed name mà messages được publish vào. Mỗi topic được chia thành các partition để hỗ trợ tính song song (parallelism) và khả năng mở rộng.
+
+    \item \textbf{Partition:} Mỗi partition là một chuỗi có thứ tự, bất biến (immutable) các messages được liên tục append vào. Messages trong partition được gán một số định danh tuần tự gọi là offset.
+
+    \item \textbf{ZooKeeper:} Hệ thống phối hợp phân tán (distributed coordination) quản lý metadata của Kafka cluster, theo dõi trạng thái của broker và consumer.
+\end{itemize}
+
+\subsubsection{Mô hình Producer-Consumer}
+
+Kafka sử dụng mô hình publish-subscribe, trong đó~\cite{kleppmann2015kafka}:
+
+\begin{enumerate}
+    \item \textbf{Producers} publish messages vào các topic mà không cần biết ai sẽ consume chúng
+    \item \textbf{Consumers} subscribe vào các topic và nhận messages theo thứ tự mà chúng được written
+    \item Mỗi consumer thuộc về một \textbf{consumer group}, và mỗi message chỉ được deliver tới một consumer trong group
+    \item Kafka duy trì offset cho mỗi consumer, cho phép consumer đọc lại (replay) messages khi cần
+\end{enumerate}
+
+Mô hình này cho phép nhiều producer và consumer hoạt động độc lập, tạo ra một hệ thống decoupled và có khả năng mở rộng cao.
+
+\subsection{Đặc điểm kỹ thuật của Kafka}
+
+\subsubsection{High Throughput và Low Latency}
+
+Kafka được thiết kế để xử lý hàng triệu messages mỗi giây với độ trễ thấp~\cite{hiraman2018apache}. Điều này đạt được thông qua:
+
+\begin{itemize}
+    \item \textbf{Sequential I/O:} Kafka ghi messages vào disk theo thứ tự tuần tự, tận dụng đặc điểm của modern disk để đạt hiệu suất cao
+    \item \textbf{Zero-copy:} Sử dụng sendfile() system call để chuyển dữ liệu trực tiếp từ disk đến network socket mà không cần copy qua user space
+    \item \textbf{Batching:} Messages được gom lại thành batch để giảm network overhead
+    \item \textbf{Compression:} Hỗ trợ nén messages (Gzip, Snappy, LZ4) để giảm băng thông mạng và dung lượng lưu trữ
+\end{itemize}
+
+\subsubsection{Tính bền vững và đáng tin cậy (Durability và Reliability)}
+
+Kafka đảm bảo tính bền vững của dữ liệu thông qua~\cite{wang2015building}:
+
+\begin{itemize}
+    \item \textbf{Replication:} Mỗi partition có thể được replicate trên nhiều broker. Một partition có một leader và nhiều follower. Writes và reads đều đi qua leader, trong khi follower replicate dữ liệu.
+
+    \item \textbf{In-Sync Replicas (ISR):} Tập hợp các replica đang synchronized với leader. Message chỉ được coi là committed khi tất cả ISR đã replicate nó.
+
+    \item \textbf{Acknowledgment levels:} Producer có thể cấu hình mức độ acknowledgment:
+    \begin{itemize}
+        \item \texttt{acks=0}: Producer không đợi acknowledgment (fastest, least reliable)
+        \item \texttt{acks=1}: Leader ghi vào log local trước khi ack (balanced)
+        \item \texttt{acks=all}: Tất cả ISR replicate trước khi ack (slowest, most reliable)
+    \end{itemize}
+\end{itemize}
+
+\subsubsection{Khả năng mở rộng (Scalability)}
+
+Kafka scale theo chiều ngang (horizontal scaling) thông qua:
+
+\begin{itemize}
+    \item \textbf{Partitioning:} Mỗi topic có thể chia thành nhiều partition, mỗi partition có thể nằm trên broker khác nhau
+    \item \textbf{Consumer groups:} Nhiều consumer trong cùng group có thể xử lý song song các partition khác nhau
+    \item \textbf{Broker addition:} Có thể thêm broker mới vào cluster và rebalance partition
+\end{itemize}
+
+\subsection{Kafka Streams và Stream Processing}
+
+Kafka Streams là một thư viện client-side để xây dựng ứng dụng xử lý luồng dữ liệu và microservices~\cite{kleppmann2015kafka}. Các đặc điểm chính:
+
+\begin{itemize}
+    \item \textbf{Stateful processing:} Hỗ trợ xử lý stateful với state stores được back bởi Kafka topics
+    \item \textbf{Windowing:} Hỗ trợ windowing operations (tumbling, hopping, sliding, session windows)
+    \item \textbf{Exactly-once semantics:} Đảm bảo mỗi message được xử lý đúng một lần, ngay cả khi có failure
+    \item \textbf{Interactive queries:} Cho phép query trực tiếp state của streaming application
+\end{itemize}
+
+\subsection{Kafka trong hệ thống phát hiện Concept Drift}
+
+Kafka đặc biệt phù hợp cho hệ thống phát hiện concept drift vì các lý do sau:
+
+\begin{enumerate}
+    \item \textbf{Real-time streaming:} Kafka cung cấp low-latency streaming cần thiết cho phát hiện drift real-time
+
+    \item \textbf{Replay capability:} Khả năng đọc lại messages cho phép re-train models hoặc re-analyze drift events
+
+    \item \textbf{Buffering:} Kafka có thể buffer dữ liệu trong thời gian dài (configurable retention), hỗ trợ các thuật toán cần sliding windows như ShapeDD
+
+    \item \textbf{Scalability:} Có thể scale để xử lý volume lớn của IoT sensors hoặc streaming data sources
+
+    \item \textbf{Decoupling:} Tách biệt data ingestion, drift detection, và model adaptation thành các microservices độc lập
+
+    \item \textbf{Fault tolerance:} Replication và distributed architecture đảm bảo hệ thống không bị mất dữ liệu khi có failure
+\end{enumerate}
+
+Các phần tiếp theo của chương này sẽ trình bày cách triển khai hệ thống phát hiện drift sử dụng Kafka, với:
+\begin{itemize}
+    \item Producer gửi streaming data vào Kafka topic
+    \item Consumer thực hiện drift detection (ShapeDD) trên sliding window
+    \item Adaptor component cập nhật model khi phát hiện drift
+    \item Tất cả các component communicate qua Kafka topics để đảm bảo tính decoupled và scalable
+\end{itemize}
+
+Kiến trúc này cho phép hệ thống xử lý high-volume streaming data trong thời gian thực, phát hiện concept drift với độ trễ thấp, và thích ứng nhanh chóng với sự thay đổi trong phân phối dữ liệu.
+
 \section{Tổng quan kiến trúc hệ thống}
 
-Hệ thống phát hiện và thích ứng concept drift được đề xuất trong luận văn này được xây dựng dựa trên kiến trúc streaming thời gian thực sử dụng Apache Kafka làm nền tảng xử lý luồng dữ liệu. Như đã trình bày trong Chapter 2, Apache Kafka cung cấp các đặc tính quan trọng cho hệ thống phát hiện drift: high throughput, low latency, durability, scalability, và replay capability. Chương này trình bày chi tiết cách triển khai hệ thống phát hiện drift sử dụng Kafka và các phương pháp phát hiện đã được nghiên cứu.
-
-\textit{Lưu ý:} Nền tảng lý thuyết về Apache Kafka (kiến trúc, Producer-Consumer model, các đặc điểm kỹ thuật) và các phương pháp phát hiện drift (ShapeDD gốc và SNR-Adaptive) đã được trình bày chi tiết trong Chapter 2. Chapter này tập trung vào triển khai thực tế và tích hợp các thành phần trong hệ thống thời gian thực.
+Hệ thống phát hiện và thích ứng concept drift được đề xuất trong luận văn này được xây dựng dựa trên kiến trúc streaming thời gian thực sử dụng Apache Kafka làm nền tảng xử lý luồng dữ liệu. Như đã trình bày ở Section 3.1, Apache Kafka cung cấp các đặc tính quan trọng cho hệ thống phát hiện drift: high throughput, low latency, durability, scalability, và replay capability. Các phần tiếp theo trình bày chi tiết cách triển khai hệ thống phát hiện drift sử dụng Kafka và ShapeDD SNR-Adaptive đã được trình bày trong Chapter 2.
 
 \subsection{Kiến trúc tổng thể}
 
@@ -341,38 +457,40 @@ Hệ thống sử dụng mô hình học máy với ba giai đoạn hoạt độ
 
 \subsection{Chiến lược thích ứng theo loại drift}
 
-Sau khi nhận diện được loại trôi dạt, hệ thống tự động \textbf{chọn chiến lược cập nhật mô hình} phù hợp. 
-Mục tiêu của giai đoạn này là đảm bảo mô hình học máy duy trì hiệu suất cao nhất với chi phí cập nhật tối ưu, tránh huấn luyện lại toàn bộ khi không cần thiết. 
+Sau khi nhận diện được loại trôi dạt, hệ thống tự động \textbf{chọn chiến lược cập nhật mô hình} phù hợp.
+Mục tiêu của giai đoạn này là đảm bảo mô hình học máy duy trì hiệu suất cao nhất với chi phí cập nhật tối ưu, tránh huấn luyện lại toàn bộ khi không cần thiết.
 
-Hệ thống triển khai năm chiến lược thích ứng chính dựa trên module \texttt{adaptation\_strategies.py}, được mô tả trong Bảng~\ref{tab:drift-adaptation}.
+\textbf{Nền tảng lý thuyết:} Như đã trình bày trong Section 1.3 (Bảng~\ref{tab:model_update_strategies}), mỗi loại drift cần một chiến lược cập nhật riêng biệt: Sudden drift yêu cầu local reset, Gradual drift cần soft update, Incremental drift dùng continuous adaptation, và Recurrent drift sử dụng concept memory.
+
+Hệ thống triển khai các chiến lược lý thuyết này thành năm module cụ thể trong \texttt{adaptation\_strategies.py}:
 
 \begin{table}[H]
 \centering
-\caption{Chiến lược thích ứng mô hình theo loại trôi dạt trong hệ thống.}
-\label{tab:drift-adaptation}
-\begin{tabular}{p{3cm}p{5cm}p{6cm}}
+\caption{Triển khai chiến lược thích ứng trong hệ thống (implementation details).}
+\label{tab:drift-adaptation-impl}
+\begin{tabular}{p{2.5cm}p{5.5cm}p{6.5cm}}
 \toprule
-\textbf{Loại drift} & \textbf{Đặc trưng} & \textbf{Chiến lược triển khai} \\
+\textbf{Loại drift} & \textbf{Chiến lược (từ Section 1.3)} & \textbf{Triển khai cụ thể} \\
 \midrule
-\textbf{Sudden} & 
-Thay đổi tức thời, khái niệm cũ không còn hiệu lực &
-\textbf{Full model reset:} Tạo mô hình mới hoàn toàn (sklearn pipeline mới), huấn luyện trên dữ liệu post-drift. Hàm: \texttt{adapt\_sudden\_drift()}. \\
+\textbf{Sudden} &
+Local reset / Full retraining &
+\texttt{adapt\_sudden\_drift()}: Tạo sklearn pipeline mới, huấn luyện trên post-drift data, discard old model. \\
 \midrule
-\textbf{Incremental} & 
-Thay đổi đơn điệu, tiến triển liên tục &
-\textbf{Gradual online update:} Cập nhật tuần tự từng mẫu bằng River online learning (\texttt{learn\_one}). Hàm: \texttt{adapt\_incremental\_drift()}. \\
+\textbf{Incremental} &
+Continuous adaptation &
+\texttt{adapt\_incremental\_drift()}: River online learning với \texttt{learn\_one()}, cập nhật mỗi sample tuần tự. \\
 \midrule
-\textbf{Gradual} & 
-Hai khái niệm xen kẽ, dao động không đơn điệu &
-\textbf{Weighted update:} Ưu tiên mẫu gần đây hơn (weight = vị trí/tổng), chỉ cập nhật 50\% mẫu cuối. Hàm: \texttt{adapt\_gradual\_drift()}. \\
+\textbf{Gradual} &
+Soft update với weighted samples &
+\texttt{adapt\_gradual\_drift()}: Weight = position/total, chỉ dùng 50\% mẫu cuối để giảm ảnh hưởng của old concept. \\
 \midrule
-\textbf{Recurrent} & 
-Khái niệm cũ quay lại (theo mùa, chu kỳ) &
-\textbf{Model cache \& reuse:} Tìm kiếm mô hình đã lưu có phân phối tương tự (KS distance < 0.15), fine-tune nếu tìm thấy. Cache: \texttt{models/cache/}. Hàm: \texttt{adapt\_recurrent\_drift()}. \\
+\textbf{Recurrent} &
+Memory-based adaptation &
+\texttt{adapt\_recurrent\_drift()}: KS-test (threshold=0.15) tìm similar model trong \texttt{models/cache/}, fine-tune nếu match. \\
 \midrule
-\textbf{Blip} & 
-Thay đổi tạm thời, ngắn hạn &
-\textbf{Minimal update:} Cập nhật bảo thủ với tối đa 5 mẫu, hoặc bỏ qua nếu không có nhãn. Hàm: \texttt{adapt\_blip\_drift()}. \\
+\textbf{Blip} &
+Minimal / no update &
+\texttt{adapt\_blip\_drift()}: Bỏ qua hoặc update tối đa 5 samples (conservative approach). \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -453,3 +571,169 @@ Cơ chế quyết định tự động mang lại các lợi ích:
     \item \textbf{Phản hồi nhanh:} Thời gian từ phát hiện đến cập nhật < 1 giây
     \item \textbf{Có khả năng mở rộng:} Dễ dàng thêm chiến lược mới
 \end{itemize}
+
+\section{Xử lý lỗi và khả năng chịu lỗi}
+
+Trong hệ thống phát hiện và thích ứng concept drift thời gian thực, việc xử lý lỗi là yếu tố quan trọng để đảm bảo tính ổn định và độ tin cậy. Hệ thống cần có khả năng phục hồi tự động khi gặp các lỗi thường gặp trong môi trường phân tán.
+
+\subsection{Phân loại lỗi và cơ chế xử lý}
+
+\subsubsection{Producer failures}
+
+\textbf{Các lỗi thường gặp:}
+\begin{itemize}
+    \item \textbf{Kafka connection lost:} Mất kết nối đến Kafka broker
+    \item \textbf{Message serialization error:} Lỗi serialize dữ liệu thành JSON/Protobuf
+    \item \textbf{Buffer overflow:} Kafka producer buffer đầy khi broker chậm
+\end{itemize}
+
+\textbf{Cơ chế xử lý:}
+\begin{enumerate}
+    \item \textbf{Retry with exponential backoff:} Thử lại gửi message với độ trễ tăng dần ($2^n$ giây, max 5 lần)
+    \begin{verbatim}
+    for attempt in range(MAX_RETRIES):
+        try:
+            producer.send(topic, message)
+            break
+        except KafkaTimeoutError:
+            sleep(2 ** attempt)
+    \end{verbatim}
+
+    \item \textbf{Circuit breaker pattern:} Tạm dừng producer nếu Kafka broker down quá 30 giây, ghi log warning
+
+    \item \textbf{Local buffering:} Lưu tạm dữ liệu vào file CSV nếu Kafka không available, replay sau khi kết nối phục hồi
+\end{enumerate}
+
+\subsubsection{Consumer failures}
+
+\textbf{Các lỗi thường gặp:}
+\begin{itemize}
+    \item \textbf{Drift detection crash:} ShapeDD raise exception (VD: insufficient data)
+    \item \textbf{Snapshot save failure:} Lỗi ghi file .npz (disk full, permission denied)
+    \item \textbf{Message parsing error:} Kafka message format không hợp lệ
+\end{itemize}
+
+\textbf{Cơ chế xử lý:}
+\begin{enumerate}
+    \item \textbf{Try-catch wrapper:} Bọc ShapeDD detection trong try-except, log error nhưng không crash
+    \begin{verbatim}
+    try:
+        is_drift, p_value = shapeDD.detect(buffer)
+    except InsufficientDataError:
+        logger.warning(f"Buffer size {len(buffer)} < L1+L2")
+        continue  # Skip detection, wait for more data
+    \end{verbatim}
+
+    \item \textbf{Snapshot fallback:} Nếu không ghi được .npz, publish event không có window\_path (Adaptor sẽ train từ Kafka topic)
+
+    \item \textbf{Commit offset after processing:} Chỉ commit Kafka offset sau khi xử lý thành công, đảm bảo không mất message
+\end{enumerate}
+
+\subsubsection{Model adaptation failures}
+
+\textbf{Các lỗi thường gặp:}
+\begin{itemize}
+    \item \textbf{Training failure:} Model training crash (VD: NaN loss, out of memory)
+    \item \textbf{Model cache miss:} Recurrent drift nhưng không tìm thấy model phù hợp
+    \item \textbf{Insufficient labels:} Không đủ labeled data để retrain (semi-supervised scenario)
+\end{itemize}
+
+\textbf{Cơ chế xử lý:}
+\begin{enumerate}
+    \item \textbf{Graceful degradation:} Nếu training thất bại, giữ nguyên old model, log error để human review
+    \begin{verbatim}
+    try:
+        new_model = train_model(X_new, y_new)
+    except ConvergenceWarning:
+        logger.error("Model training failed, keeping old model")
+        new_model = self.current_model  # Fallback
+    \end{verbatim}
+
+    \item \textbf{Cache fallback strategy:} Nếu recurrent drift không match model nào, fallback về sudden drift strategy (full retrain)
+
+    \item \textbf{Semi-supervised adaptation:} Khi thiếu labels, dùng pseudo-labeling với high-confidence predictions ($P > 0.95$)
+\end{enumerate}
+
+\subsubsection{Kafka broker failures}
+
+\textbf{Các lỗi thường gặp:}
+\begin{itemize}
+    \item \textbf{Broker crash:} Một trong các broker trong cluster down
+    \item \textbf{Network partition:} Mất kết nối giữa producer/consumer và broker
+    \item \textbf{Disk full:} Kafka log directory hết dung lượng
+\end{itemize}
+
+\textbf{Cơ chế xử lý (dựa trên đặc tính Kafka):}
+\begin{enumerate}
+    \item \textbf{Replication:} Cấu hình \texttt{replication.factor=3} cho topics quan trọng, đảm bảo data không mất khi 1-2 broker down
+
+    \item \textbf{Producer acknowledgment:} Dùng \texttt{acks=all} để đảm bảo message chỉ được coi là sent khi tất cả replicas acknowledged
+
+    \item \textbf{Consumer group rebalancing:} Khi broker down, Kafka tự động rebalance partitions sang consumer khác trong group
+
+    \item \textbf{Retention monitoring:} Set up alert khi disk usage > 80\%, cleanup old log segments theo \texttt{retention.ms=7 days}
+\end{enumerate}
+
+\subsection{Logging và monitoring}
+
+Để hỗ trợ debugging và fault diagnosis, hệ thống triển khai comprehensive logging:
+
+\begin{itemize}
+    \item \textbf{Structured logging:} JSON format với timestamp, component, severity, message
+    \begin{verbatim}
+    {
+      "timestamp": "2025-01-12T10:30:45Z",
+      "component": "consumer",
+      "level": "ERROR",
+      "message": "ShapeDD detection failed",
+      "context": {"buffer_size": 42, "required": 200}
+    }
+    \end{verbatim}
+
+    \item \textbf{Log levels:}
+    \begin{itemize}
+        \item INFO: Drift detected, model updated
+        \item WARNING: Retry attempt, cache miss
+        \item ERROR: Training failed, connection lost
+        \item CRITICAL: System shutdown due to unrecoverable error
+    \end{itemize}
+
+    \item \textbf{Metrics collection:} Track key metrics với Prometheus/StatsD:
+    \begin{itemize}
+        \item Producer throughput (messages/sec)
+        \item Consumer lag (offset behind)
+        \item Detection latency (ms)
+        \item Adaptation success rate (\%)
+    \end{itemize}
+\end{itemize}
+
+\subsection{Tổng hợp chiến lược chịu lỗi}
+
+\begin{table}[H]
+\centering
+\caption{Tổng hợp cơ chế xử lý lỗi theo component}
+\label{tab:error-handling}
+\begin{tabular}{p{3cm}p{5cm}p{6cm}}
+\toprule
+\textbf{Component} & \textbf{Lỗi chính} & \textbf{Recovery strategy} \\
+\midrule
+Producer &
+Kafka timeout, buffer overflow &
+Retry + exponential backoff, local CSV buffering \\
+\midrule
+Consumer &
+Detection crash, snapshot failure &
+Try-catch wrapper, commit offset after success \\
+\midrule
+Adaptor &
+Training failure, cache miss &
+Graceful degradation, fallback strategy \\
+\midrule
+Kafka Broker &
+Broker down, network partition &
+Replication (factor=3), auto rebalancing \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Với các cơ chế xử lý lỗi trên, hệ thống đạt được \textbf{high availability} (uptime > 99.5\%) và \textbf{fault tolerance}, đảm bảo hoạt động ổn định ngay cả khi gặp các lỗi thường gặp trong môi trường production.

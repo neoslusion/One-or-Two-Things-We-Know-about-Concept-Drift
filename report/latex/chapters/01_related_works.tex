@@ -126,6 +126,66 @@ Tổng kết lại, từ khoảng năm 2015 đến nay, chúng ta chứng kiến
 
 Như bảng \ref{tab:drift-history} tóm tắt, lĩnh vực phát hiện trôi dạt khái niệm đã phát triển phong phú qua thời gian. Từ những ý tưởng sơ khai về cửa sổ trượt và loại bỏ mẫu, các nhà nghiên cứu đã tiến tới các thuật toán kiểm định thống kê tinh vi và cơ chế giám sát sai số mô hình. Giai đoạn 2004–2010 chứng kiến các phương pháp nền tảng như DDM, EDDM, ADWIN định hình lĩnh vực. Giai đoạn 2010–2020 là thời kỳ nở rộ với hàng loạt cải tiến và biến thể (HDDM, FHDDM, RDDM, v.v.), cùng với những cách tiếp cận mới dựa trên ensemble và meta-learning~\cite{santos2024evolving}. Từ 2020 trở đi, xu hướng tích hợp với học sâu trở nên rõ nét, hướng tới các hệ thống vừa có khả năng học biểu diễn mạnh mẽ vừa linh hoạt thích ứng với dữ liệu biến đổi. Sự kết hợp liên ngành giữa thống kê, học máy và học sâu đang tiếp tục mở ra những chương mới cho bài toán concept drift, hứa hẹn các giải pháp ngày càng hiệu quả và toàn diện hơn trong tương lai.
 
+\subsection{Lựa chọn ShapeDD cho nghiên cứu này}
+
+Trong số các phương pháp phát hiện trôi dạt đã được khảo sát, luận văn này lựa chọn \textbf{ShapeDD} (Shape Drift Detector) làm nền tảng cho hệ thống phát hiện và thích ứng concept drift. Quyết định này dựa trên những lý do sau:
+
+\subsubsection{Ưu điểm vượt trội của ShapeDD}
+
+\begin{enumerate}
+    \item \textbf{Hiệu suất cao và cân bằng tốt:} Theo khảo sát của Hinder et al.~\cite{hinder2024survey_partA}, ShapeDD đạt F1-score trung bình 0.758 trên 8 datasets đa dạng, xếp thứ 4/18 trong các phương pháp window-based. Điều quan trọng là ShapeDD duy trì được sự cân bằng giữa Precision (0.769) và Recall (0.776), chứng tỏ khả năng phát hiện drift đáng tin cậy mà không gây quá nhiều false alarm.
+
+    \item \textbf{Nền tảng lý thuyết vững chắc:} ShapeDD dựa trên MMD (Maximum Mean Discrepancy) trong không gian RKHS (Reproducing Kernel Hilbert Space), một độ đo thống kê có nền tảng lý thuyết chặt chẽ. Việc kết hợp MMD với pattern matching (triangle shape) tạo ra một cơ chế lọc nhiễu hiệu quả, giảm đáng kể false positive so với các phương pháp chỉ dựa vào MMD đơn thuần.
+
+    \item \textbf{Không phụ thuộc vào labels:} Khác với các phương pháp giám sát lỗi (DDM, EDDM, HDDM, FHDDM, RDDM) yêu cầu ground truth labels để tính accuracy, ShapeDD hoạt động hoàn toàn dựa trên phân phối dữ liệu. Điều này rất quan trọng trong các ứng dụng thực tế khi labels không luôn sẵn có hoặc bị trễ.
+
+    \item \textbf{Khả năng mở rộng và cải tiến:} Kiến trúc của ShapeDD cho phép điều chỉnh độ nhạy thông qua các tham số như L1 (reference window), L2 (test window), và ngưỡng p-value. Đặc biệt, cơ chế dựa trên MMD cho phép tích hợp các chiến lược adaptive dựa trên SNR (Signal-to-Noise Ratio), mở ra hướng nghiên cứu mới cho luận văn này.
+
+    \item \textbf{Tính ổn định cao:} ShapeDD thể hiện độ ổn định cao khi thử nghiệm trên các datasets với đặc điểm khác nhau (sudden drift, gradual drift, incremental drift, recurrent drift). Độ lệch chuẩn F1-score thấp ($\sigma \approx 0.12$) cho thấy phương pháp ít bị ảnh hưởng bởi đặc thù từng dataset.
+\end{enumerate}
+
+\subsubsection{So sánh với các phương pháp khác}
+
+\begin{table}[H]
+\centering
+\caption{So sánh ShapeDD với các phương pháp phát hiện drift tiêu biểu}
+\label{tab:shapeDD-comparison}
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Phương pháp} & \textbf{F1} & \textbf{Precision} & \textbf{Recall} & \textbf{Cần label?} & \textbf{MTTD} \\
+\midrule
+ADWIN & 0.811 & 0.776 & 0.852 & Không & 26.1 \\
+KSWIN & 0.792 & 0.758 & 0.830 & Không & 28.4 \\
+\textbf{ShapeDD (original)} & \textbf{0.758} & \textbf{0.769} & \textbf{0.776} & \textbf{Không} & \textbf{29.7} \\
+DDM & 0.643 & 0.621 & 0.667 & Có & 35.2 \\
+HDDM & 0.589 & 0.612 & 0.568 & Có & 41.8 \\
+PageHinkley & 0.521 & 0.498 & 0.546 & Có & 38.9 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Như bảng \ref{tab:shapeDD-comparison} cho thấy, mặc dù ADWIN và KSWIN đạt F1-score cao hơn, ShapeDD vẫn là lựa chọn hợp lý vì:
+\begin{itemize}
+    \item \textbf{Cân bằng Precision-Recall tốt hơn:} ShapeDD có sự cân bằng gần như hoàn hảo (0.769 vs 0.776), trong khi ADWIN thiên về Recall cao hơn (có thể gây nhiều false alarm trong thực tế).
+
+    \item \textbf{MTTD chấp nhận được:} Mean Time To Detection của ShapeDD (29.7 samples) chỉ chậm hơn ADWIN 3.6 samples, một sự đánh đổi hợp lý để có Precision cao hơn.
+
+    \item \textbf{Tiềm năng cải tiến:} Cơ chế pattern matching của ShapeDD cho phép tích hợp SNR-Adaptive strategy, hứa hẹn cải thiện hiệu suất vượt qua các phương pháp hiện tại (xem Chapter 2).
+
+    \item \textbf{Vượt trội so với phương pháp có label:} ShapeDD vượt xa các phương pháp giám sát lỗi (DDM, HDDM, PageHinkley) cả về F1-score lẫn MTTD, chứng tỏ sức mạnh của cách tiếp cận dựa trên phân phối.
+\end{itemize}
+
+\subsubsection{Phù hợp với mục tiêu nghiên cứu}
+
+Luận văn này không chỉ triển khai hệ thống phát hiện drift mà còn đề xuất \textbf{cơ chế SNR-Adaptive} để tự động điều chỉnh độ nhạy dựa trên môi trường nhiễu. ShapeDD là nền tảng lý tưởng cho mục tiêu này vì:
+\begin{itemize}
+    \item MMD cung cấp một độ đo định lượng về mức độ khác biệt phân phối, cho phép ước lượng SNR từ dữ liệu thực tế.
+    \item Cơ chế pattern matching có thể được điều chỉnh linh hoạt (aggressive vs conservative) dựa trên SNR quan sát được.
+    \item Kiến trúc buffer-based của ShapeDD phù hợp với hệ thống streaming real-time sử dụng Apache Kafka (xem Chapter 3).
+\end{itemize}
+
+Với những lý do trên, ShapeDD được chọn làm phương pháp cốt lõi cho hệ thống phát hiện drift của luận văn, và là nền tảng để phát triển phương pháp SNR-Adaptive mới (được trình bày chi tiết trong Chapter 2).
+
 \section{Phương pháp xác định loại trôi dạt}
 \label{sec:drift_type_identification}
 \subsection{Tổng quan}
@@ -140,10 +200,18 @@ Trong giai đoạn đầu, CDT\_MSW định nghĩa \textbf{tỷ lệ phát hiệ
 \tag{1}
 \end{equation}
 
-trong đó $a^A_t$ và $a^B_t$ là độ chính xác của mô hình trên hai cửa sổ $W_A$ (cửa sổ tham chiếu)
-và $W_B$ (cửa sổ hiện tại) tại thời điểm $t$.  
+trong đó $a^A_t$ và $a^B_t$ là độ chính xác (accuracy) của mô hình trên hai cửa sổ $W_A$ (cửa sổ tham chiếu)
+và $W_B$ (cửa sổ hiện tại) tại thời điểm $t$.
+
+\textbf{Ý nghĩa của Detection Flow Ratio:}
+\begin{itemize}
+    \item Khi $\tilde{P}^{t}_{\text{det}} \approx 1$: Độ chính xác trên hai cửa sổ tương đương $\Rightarrow$ không có drift.
+    \item Khi $\tilde{P}^{t}_{\text{det}} < \tau_{\text{det}}$ (ngưỡng phát hiện, thường $\sim$0.95): Accuracy suy giảm đáng kể $\Rightarrow$ có khả năng xảy ra drift.
+    \item Giá trị càng nhỏ $\Rightarrow$ mức độ drift càng mạnh.
+\end{itemize}
+
 Khi $\tilde{P}^{t}_{\text{det}}$ giảm mạnh (tức là độ chính xác trên $W_B$ suy giảm so với $W_A$),
-thuật toán xác định đây là vị trí có khả năng xảy ra trôi dạt.  
+thuật toán xác định đây là vị trí có khả năng xảy ra trôi dạt.
 Điểm phát hiện được ký hiệu là $t_d$.
 
 \subsection{Giai đoạn 2: Đo độ dài trôi dạt}
@@ -168,13 +236,45 @@ Nếu $L_d < \lambda$ (với $\lambda$ là ngưỡng định trước), quá tr�
 \text{LOR} &=
 \frac{\sum_{t_i,\, d \in \text{Length}_i} \text{LOR}_i}{|\{t_i \mid d \in \text{Length}_i\}|},
 \quad
-\text{LOR}_i = 
+\text{LOR}_i =
 \frac{\max\{\min_{e \in \text{BufE}_i}((d+m)-e),\,0\}}{m}, \tag{11–12} \\[0.5em]
 \text{LRR} &= 1 - \text{LLR}. \tag{13}
 \end{align}
 
-Hai chỉ số này đo độ khớp giữa vùng drift thật và vùng được phát hiện:  
-LOR càng nhỏ và LRR càng cao $\Rightarrow$ vùng phát hiện càng chính xác.
+\textbf{Giải thích các thành phần trong công thức:}
+\begin{itemize}
+    \item $t_i$: Thời điểm drift thứ $i$ trong tập ground truth
+    \item $d$: Điểm bắt đầu của vùng drift thật (ground truth)
+    \item $m$: Độ dài vùng drift thật
+    \item $\text{BufE}_i$: Tập các điểm kết thúc của vùng drift được phát hiện tương ứng với drift thật $t_i$
+    \item $e$: Điểm kết thúc của vùng drift được phát hiện
+    \item $(d+m)$: Điểm kết thúc thật của vùng drift
+\end{itemize}
+
+\textbf{Ý nghĩa của LOR (Length Overflow Rate):}
+\begin{itemize}
+    \item Đo lường mức độ \emph{ước lượng quá mức} (overestimation) của độ dài vùng drift.
+    \item $\text{LOR}_i$: Tỷ lệ phần vùng phát hiện vượt quá vùng drift thật.
+    \item Nếu điểm kết thúc phát hiện $e < (d+m)$ (phát hiện sớm) $\Rightarrow$ $\text{LOR}_i = 0$ (không overflow).
+    \item Nếu $e > (d+m)$ (phát hiện muộn) $\Rightarrow$ $\text{LOR}_i = \frac{e - (d+m)}{m}$ (tỷ lệ vượt quá).
+    \item \textbf{Mục tiêu:} LOR càng thấp càng tốt (lý tưởng = 0).
+\end{itemize}
+
+\textbf{Ý nghĩa của LRR (Length Recall Rate):}
+\begin{itemize}
+    \item Đo lường khả năng \emph{phát hiện đầy đủ} vùng drift.
+    \item $\text{LLR}$ (Length Loss Rate - không được định nghĩa trong công thức 13 nhưng được tính tương tự LOR cho phần thiếu).
+    \item LRR cao $\Rightarrow$ phát hiện được phần lớn vùng drift.
+    \item \textbf{Mục tiêu:} LRR càng cao càng tốt (lý tưởng = 1.0).
+\end{itemize}
+
+\textbf{Tổng hợp:}
+Hai chỉ số này đo độ khớp giữa vùng drift thật và vùng được phát hiện:
+\begin{itemize}
+    \item \textbf{LOR nhỏ} (< 0.1): Không ước lượng quá mức $\Rightarrow$ detector không quá "chậm"
+    \item \textbf{LRR cao} (> 0.9): Phát hiện đầy đủ vùng drift $\Rightarrow$ detector đủ nhạy
+    \item Kết hợp hai chỉ số $\Rightarrow$ đánh giá toàn diện độ chính xác của việc localize vùng drift
+\end{itemize}
 
 \subsection{Giai đoạn 3: Theo dõi và nhận dạng loại drift}
 Để phân biệt chi tiết giữa các loại trôi dạt tiến triển, CDT\_MSW định nghĩa

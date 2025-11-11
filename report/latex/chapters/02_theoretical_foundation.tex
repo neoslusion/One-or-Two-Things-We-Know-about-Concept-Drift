@@ -320,7 +320,7 @@ Mỗi drift candidate được xác thực bằng permutation test~\cite{good200
 ShapeDD mang lại một số ưu điểm quan trọng so với các phương pháp phát hiện drift truyền thống:
 
 \begin{enumerate}
-    \item \textbf{Khử nhiễu và giảm báo động giả:} Nhờ cơ chế lọc shape, ShapeDD giảm đáng kể số lần báo động sai do nhiễu thống kê. Thay vì phản ứng với mọi dao động nhỏ trong tín hiệu, phương pháp chỉ tập trung vào các biến động có hình dạng phù hợp với drift thật. Kết quả thực nghiệm cho thấy ShapeDD giảm trung bình khoảng \textbf{20 lần báo động giả} so với phương pháp dùng trực tiếp MMD không lọc shape, chứng tỏ tính ổn định vượt trội trong môi trường nhiều nhiễu.
+    \item \textbf{Khử nhiễu và giảm báo động giả:} Nhờ cơ chế lọc shape, ShapeDD giảm đáng kể số lần báo động sai do nhiễu thống kê. Thay vì phản ứng với mọi dao động nhỏ trong tín hiệu, phương pháp chỉ tập trung vào các biến động có hình dạng phù hợp với drift thật. Việc yêu cầu tín hiệu phải match với triangle pattern giúp filter out các random fluctuations, đảm bảo tính ổn định vượt trội trong môi trường nhiều nhiễu so với phương pháp dùng trực tiếp MMD không lọc shape.
 
     \item \textbf{Độ chính xác định vị cao:} ShapeDD có khả năng xác định chính xác thời điểm xảy ra drift. Nhờ việc khớp dạng tam giác, phương pháp định vị điểm thay đổi gần như trùng khớp với vị trí drift thực (sai lệch chỉ khoảng $\pm l$ hoặc ít hơn, có thể hiệu chỉnh). Trong khi nhiều phương pháp cửa sổ đôi khác chỉ báo động đang có drift trong một khoảng nào đó, ShapeDD cung cấp trực tiếp thời điểm drift với độ trễ rất nhỏ.
 
@@ -375,22 +375,20 @@ Phần này trình bày phương pháp cải tiến ShapeDD SNR-Adaptive - một
 
 \subsubsection{Phát hiện quan trọng: Ảnh hưởng của tỷ lệ tín hiệu-nhiễu (SNR)}
 
-Qua quá trình thử nghiệm và đánh giá với nhiều tập dữ liệu khác nhau, Nghiên cứu phát hiện một kết quả quan trọng: \textbf{không có chiến lược phát hiện drift duy nhất là tối ưu cho mọi môi trường SNR}.
-
-Kết quả thực nghiệm cho thấy:
+Phân tích lý thuyết cho thấy một kết quả quan trọng: \textbf{không có chiến lược phát hiện drift duy nhất là tối ưu cho mọi môi trường SNR}.
 
 \textbf{Môi trường SNR cao} (tín hiệu drift mạnh, nhiễu thấp):
 \begin{itemize}
-    \item Phương pháp ShapeDD\_Adaptive\_v2 với ngưỡng tích cực (aggressive) đạt hiệu suất cao nhất
-    \item Đạt recall cao bằng cách phát hiện được tất cả các sự kiện drift với ít báo động giả
-    \item Ví dụ: enhanced\_sea (F1=0.947), stagger (F1=0.952)
+    \item Ngưỡng tích cực (aggressive threshold) phù hợp hơn
+    \item Có thể phát hiện sớm với recall cao mà không gây nhiều false positive
+    \item Lý do: Tín hiệu drift vượt xa nhiễu, dễ phân biệt
 \end{itemize}
 
 \textbf{Môi trường SNR thấp} (tín hiệu drift yếu, nhiễu cao):
 \begin{itemize}
-    \item Phương pháp ShapeDD gốc với ngưỡng bảo thủ (conservative) vượt trội
+    \item Ngưỡng bảo thủ (conservative threshold) hiệu quả hơn
     \item Đạt precision cao bằng cách chờ tín hiệu rõ ràng vượt ngưỡng nhiễu
-    \item Ví dụ: gen\_random\_mild (F1=0.842), gen\_random\_moderate (F1=0.900)
+    \item Lý do: Tín hiệu drift gần với nhiễu, cần threshold cao để tránh false alarm
 \end{itemize}
 
 \subsubsection{Nền tảng lý thuyết: Lý thuyết phát hiện tín hiệu}
@@ -465,7 +463,7 @@ trong đó:
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.95\textwidth]{image/snr_adaptive_architecture.png}
-\caption{Kiến trúc hệ thống ShapeDD SNR-Adaptive. Hệ thống ước lượng SNR từ luồng dữ liệu đầu vào, sau đó chọn chiến lược phát hiện thích ứng (aggressive hoặc conservative) dựa trên ngưỡng $\tau=0.010$. Chiến lược aggressive sử dụng ShapeDD\_Adaptive\_v2 với độ nhạy medium, trong khi chiến lược conservative sử dụng ShapeDD gốc. Phân bố thực nghiệm cho thấy 58.7\% aggressive và 41.3\% conservative, đạt F1=0.697 và xếp hạng 4/18.}
+\caption{Kiến trúc hệ thống ShapeDD SNR-Adaptive. Hệ thống ước lượng SNR từ luồng dữ liệu đầu vào, sau đó chọn chiến lược phát hiện thích ứng (aggressive hoặc conservative) dựa trên ngưỡng SNR. Chiến lược aggressive sử dụng threshold thấp hơn để phát hiện sớm (phù hợp với high SNR), trong khi chiến lược conservative sử dụng threshold cao hơn để giảm false positive (phù hợp với low SNR). Việc lựa chọn strategy dựa trên tiêu chuẩn Neyman-Pearson nhằm cân bằng Type I và Type II errors.}
 \label{fig:snr_adaptive_architecture}
 \end{figure}
 
@@ -480,110 +478,18 @@ Phương pháp hybrid này mang lại các lợi ích sau:
     \item \textbf{Nền tảng lý thuyết vững chắc:} Dựa trên lý thuyết phát hiện tín hiệu
 \end{enumerate}
 
-\subsubsection{Tối ưu hóa tham số dựa trên đánh giá thực nghiệm}
+\subsubsection{Đánh giá thực nghiệm}
 
-Qua quá trình đánh giá ban đầu, Nghiên cứu quan sát thấy rằng việc lựa chọn tham số (ngưỡng SNR $\tau$ và độ nhạy $s$) có ảnh hưởng đáng kể đến hiệu suất phát hiện. Phân tích lý thuyết và thực nghiệm cho thấy:
-
-\textbf{Hiệu ứng pha loãng SNR trong môi trường buffer:}
-
-Khi sử dụng buffer trượt (sliding buffer) với kích thước lớn (750 mẫu) để phát hiện drift, SNR quan sát được thấp hơn đáng kể so với SNR lý thuyết:
-
+Đánh giá toàn diện phương pháp SNR-Adaptive, bao gồm:
 \begin{itemize}
-    \item SNR lý thuyết (drift độc lập): 0.4 - 4.0
-    \item SNR quan sát trong buffer: 0.005 - 0.020
-    \item Nguyên nhân: Buffer chứa dữ liệu hỗn hợp [Ổn định: 90\%] [Drift: 10\%] [Ổn định: ...]
+    \item Phân tích hiệu ứng pha loãng SNR trong môi trường buffer
+    \item Tối ưu hóa tham số (ngưỡng $\tau$ và độ nhạy $s$) dựa trên tiêu chuẩn Neyman-Pearson
+    \item So sánh hiệu suất với 17 phương pháp baseline khác trên 8 datasets
+    \item Phân tích phân bố chiến lược (aggressive vs conservative) và ảnh hưởng đến F1-score
+    \item Sensitivity analysis với các giá trị threshold khác nhau
 \end{itemize}
 
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.95\textwidth]{image/buffer_dilution.png}
-\caption{Hiệu ứng pha loãng SNR trong môi trường buffer. (Trên) Thành phần buffer 750 mẫu chứa dữ liệu hỗn hợp: 90\% ổn định (xanh lam) và 10\% drift (đỏ), dẫn đến SNR quan sát thấp hơn đáng kể. (Dưới) So sánh SNR lý thuyết (0.4-4.0) với SNR quan sát trong buffer (0.005-0.020), chênh lệch khoảng 100 lần do hiệu ứng pha loãng. Đây là lý do ngưỡng $\tau$ phải được hiệu chỉnh xuống 0.010 thay vì sử dụng giá trị lý thuyết.}
-\label{fig:buffer_dilution}
-\end{figure}
-
-\textbf{Cơ sở lý thuyết cho việc tối ưu tham số:}
-
-Theo tiêu chuẩn Neyman-Pearson~\cite{neyman1933problem} trong lý thuyết phát hiện tín hiệu, ngưỡng tối ưu là ngưỡng cân bằng giữa tỷ lệ false positive (Type I error) và false negative (Type II error) khi chi phí của chúng tương đương. Điều này tương ứng với việc sử dụng cân bằng khoảng 50\% chiến lược tích cực và 50\% chiến lược bảo thủ, đạt được điểm cân bằng tối ưu giữa precision và recall.
-
-\textbf{Cấu hình tham số tối ưu:}
-
-Dựa trên lý thuyết và kết quả thực nghiệm, Luận văn điều chỉnh tham số như sau:
-
-\begin{table}[H]
-\centering
-\caption{So sánh cấu hình tham số}
-\begin{tabular}{lcccc}
-\toprule
-\textbf{Cấu hình} & \textbf{$\tau$} & \textbf{$s$} & \textbf{Chiến lược tích cực} & \textbf{F1 (TB 8 datasets)} \\
-\midrule
-Ban đầu & 0.008 & high & 64.7\% & 0.545 \\
-Tối ưu & 0.010 & medium & 58.7\% & \textbf{0.562} \\
-\midrule
-\textbf{Cải thiện} & +25\% & - & $\rightarrow$ 50\% & \textbf{+3.1\%} \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.95\textwidth]{image/strategy_selection.png}
-\caption{Phân bố lựa chọn chiến lược của ShapeDD SNR-Adaptive. (Trên) Biểu đồ tròn cho thấy 58.7\% lựa chọn chiến lược aggressive (tích cực) và 41.3\% conservative (bảo thủ), gần với mục tiêu cân bằng 50/50 theo tiêu chuẩn Neyman-Pearson. (Dưới) So sánh cân bằng chiến lược giữa các cấu hình: v1 (threshold=0.008, 64.7\% aggressive), v2 (threshold=0.010, 58.7\% aggressive) và tối ưu lý thuyết (50\%). Cấu hình v2 đạt cân bằng tốt nhất với độ lệch chỉ 8.7\% so với mục tiêu.}
-\label{fig:strategy_selection}
-\end{figure}
-
-Lý do lựa chọn:
-\begin{itemize}
-    \item \textbf{Ngưỡng $\tau = 0.010$:} Đạt cân bằng 50/50 theo tiêu chuẩn Neyman-Pearson, phù hợp với SNR quan sát trong buffer (0.005-0.020)
-    \item \textbf{Độ nhạy $s = \text{medium}$:} Giảm false positive trong môi trường SNR bị pha loãng bởi buffer, đồng thời duy trì recall tốt
-\end{itemize}
-
-\textbf{Kết quả thực nghiệm} (Chi tiết trong Chương \ref{chap:experiments}):
-
-\begin{table}[H]
-\centering
-\caption{So sánh hiệu suất các phương pháp ShapeDD (F1-score)}
-\begin{tabular}{lcccc}
-\toprule
-\textbf{Phương pháp} & \textbf{F1 (TB)} & \textbf{Detection Rate} & \textbf{Xếp hạng} & \textbf{Đặc điểm} \\
-\midrule
-ShapeDD\_Adaptive\_None & 0.571 & 63.8\% & 1/18 & Bảo thủ, không lọc \\
-\textbf{ShapeDD\_SNR\_Adaptive} & \textbf{0.562} & \textbf{61.2\%} & \textbf{2/18} & \textbf{Hybrid thích ứng} \\
-ShapeDD\_Adaptive\_v2\_None & 0.557 & 63.8\% & 3/18 & v2, không lọc \\
-ShapeDD (gốc) & 0.544 & 68.8\% & 4/18 & Bảo thủ 100\% \\
-DAWIDD & 0.515 & 80.0\% & 5/18 & Baseline \\
-ADWIN & 0.507 & 58.3\% & 6/18 & Streaming \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.95\textwidth]{image/optimization_comparison.png}
-\caption{So sánh hiệu suất trước và sau tối ưu hóa tham số. Ba panel cho thấy sự cải thiện của cấu hình v2 so với v1: (Trái) F1-score trung bình tăng từ 0.545 lên 0.562 (+3.1\%), (Giữa) Detection rate tăng từ 58.8\% lên 61.2\%, (Phải) Balance Score cải thiện từ 14.7 xuống 8.7 (càng gần 0 càng cân bằng). Việc điều chỉnh threshold từ 0.008 lên 0.010 và sensitivity từ high xuống medium đã mang lại cải thiện đáng kể trên tất cả các chỉ số đánh giá (trung bình 8 datasets).}
-\label{fig:optimization_comparison}
-\end{figure}
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.95\textwidth]{image/threshold_sensitivity.png}
-\caption{Phân tích độ nhạy ngưỡng SNR. (Trái) Cân bằng chiến lược thay đổi theo ngưỡng, cho thấy threshold=0.010 (đường đỏ đứt) đạt 58.7\% gần với mục tiêu 50\% (đường xanh đứt). (Phải) F1-score dự kiến theo ngưỡng, với điểm peak ở vùng 0.008-0.012. Các điểm dữ liệu thực nghiệm (v1 ở 0.008 với F1=0.545, v2 ở 0.010 với F1=0.562) được đánh dấu rõ ràng, xác nhận rằng threshold=0.010 nằm trong vùng tối ưu (trung bình trên 8 datasets).}
-\label{fig:threshold_sensitivity}
-\end{figure}
-
-\textbf{Phân tích kết quả:}
-
-Phương pháp SNR-Adaptive với cấu hình tối ưu đạt F1 = 0.562 (trung bình trên 8 datasets), xếp hạng 2/18 phương pháp được đánh giá - một kết quả rất tốt trong comprehensive benchmark. Phương pháp này đạt được:
-
-\begin{itemize}
-    \item \textbf{Tính thích ứng cân bằng:} Sử dụng 58.7\% chiến lược tích cực và 41.3\% chiến lược bảo thủ, gần với mục tiêu 50/50 theo Neyman-Pearson
-    \item \textbf{Hiệu suất xuất sắc:} Xếp hạng 2/18 (top 11\%) và vượt qua cả ShapeDD gốc (rank 4/18)
-    \item \textbf{Đạt hạng 1 trên drift cường độ cao:} F1=0.727 trên gen\_random\_severe, ties for 1st place
-    \item \textbf{Nền tảng lý thuyết vững chắc:} Tham số được tối ưu dựa trên tiêu chuẩn Neyman-Pearson~\cite{neyman1933problem}
-    \item \textbf{Khả năng tối ưu hóa:} Cải thiện 3.1\% F1-score so với cấu hình ban đầu (0.545 → 0.562)
-    \item \textbf{MTTD cạnh tranh:} 31.4 samples, nhanh hơn ADWIN (68.8), DAWIDD (41.2), MMD (37.9)
-\end{itemize}
-
-Kết quả này chứng minh tính khả thi của việc sử dụng SNR để tự động lựa chọn chiến lược phát hiện. Chi tiết đánh giá toàn diện trên 8 datasets xem Chapter 4, Section 4.6 (Thí nghiệm 2).
+\textbf{Kết quả chi tiết được trình bày trong Chapter~\ref{chap:experiments}, Section 4.6 "Đánh giá SNR-Adaptive".}
 
 \subsection{Khung chiến lược thích ứng}
 
@@ -616,121 +522,3 @@ w_{\text{size}}(t) = w_{\text{base}} \cdot \exp(-\lambda \cdot \Delta(t))
 \end{equation}
 
 trong đó $w_{\text{base}}$ là kích thước cửa sổ cơ sở, $\lambda$ là tham số suy giảm, và $\Delta(t)$ là mức độ drift được phát hiện.
-
-\section{Nền tảng xử lý luồng dữ liệu phân tán với Apache Kafka}
-
-Trong bối cảnh triển khai hệ thống phát hiện concept drift thời gian thực, việc lựa chọn một nền tảng xử lý luồng dữ liệu (stream processing platform) mạnh mẽ và đáng tin cậy là rất quan trọng. Apache Kafka~\cite{kreps2011kafka} đã trở thành nền tảng tiêu chuẩn công nghiệp cho xử lý luồng dữ liệu phân tán, được sử dụng rộng rãi trong các hệ thống big data và real-time analytics. Phần này trình bày nền tảng lý thuyết của Apache Kafka làm cơ sở cho việc triển khai hệ thống phát hiện drift trong Chương~\ref{chap:proposed-model}.
-
-\subsection{Kiến trúc Apache Kafka}
-
-Apache Kafka là một hệ thống xử lý tin nhắn phân tán (distributed messaging system) được thiết kế để xử lý luồng dữ liệu thời gian thực với khối lượng lớn (high-throughput)~\cite{kreps2011kafka}. Kafka được phát triển ban đầu tại LinkedIn và sau đó trở thành một dự án mã nguồn mở của Apache Software Foundation.
-
-\subsubsection{Các thành phần chính}
-
-Kiến trúc Kafka bao gồm các thành phần chính sau~\cite{wang2015building}:
-
-\begin{itemize}
-    \item \textbf{Producer (Nhà sản xuất):} Ứng dụng gửi dữ liệu (messages) vào Kafka. Producer chịu trách nhiệm chọn partition nào sẽ nhận message trong một topic, có thể dựa trên round-robin hoặc semantic partitioning.
-
-    \item \textbf{Consumer (Người tiêu dùng):} Ứng dụng đọc và xử lý dữ liệu từ Kafka. Consumer theo dõi vị trí đọc của mình (offset) trong mỗi partition, cho phép đọc lại dữ liệu khi cần thiết.
-
-    \item \textbf{Broker (Máy chủ):} Các server Kafka lưu trữ và quản lý messages. Một Kafka cluster bao gồm nhiều broker để đảm bảo tính khả dụng cao (high availability) và khả năng mở rộng (scalability).
-
-    \item \textbf{Topic:} Danh mục hoặc feed name mà messages được publish vào. Mỗi topic được chia thành các partition để hỗ trợ tính song song (parallelism) và khả năng mở rộng.
-
-    \item \textbf{Partition:} Mỗi partition là một chuỗi có thứ tự, bất biến (immutable) các messages được liên tục append vào. Messages trong partition được gán một số định danh tuần tự gọi là offset.
-
-    \item \textbf{ZooKeeper:} Hệ thống phối hợp phân tán (distributed coordination) quản lý metadata của Kafka cluster, theo dõi trạng thái của broker và consumer.
-\end{itemize}
-
-\subsubsection{Mô hình Producer-Consumer}
-
-Kafka sử dụng mô hình publish-subscribe, trong đó~\cite{kleppmann2015kafka}:
-
-\begin{enumerate}
-    \item \textbf{Producers} publish messages vào các topic mà không cần biết ai sẽ consume chúng
-    \item \textbf{Consumers} subscribe vào các topic và nhận messages theo thứ tự mà chúng được written
-    \item Mỗi consumer thuộc về một \textbf{consumer group}, và mỗi message chỉ được deliver tới một consumer trong group
-    \item Kafka duy trì offset cho mỗi consumer, cho phép consumer đọc lại (replay) messages khi cần
-\end{enumerate}
-
-Mô hình này cho phép nhiều producer và consumer hoạt động độc lập, tạo ra một hệ thống decoupled và có khả năng mở rộng cao.
-
-\subsection{Đặc điểm kỹ thuật của Kafka}
-
-\subsubsection{High Throughput và Low Latency}
-
-Kafka được thiết kế để xử lý hàng triệu messages mỗi giây với độ trễ thấp~\cite{hiraman2018apache}. Điều này đạt được thông qua:
-
-\begin{itemize}
-    \item \textbf{Sequential I/O:} Kafka ghi messages vào disk theo thứ tự tuần tự, tận dụng đặc điểm của modern disk để đạt hiệu suất cao
-    \item \textbf{Zero-copy:} Sử dụng sendfile() system call để chuyển dữ liệu trực tiếp từ disk đến network socket mà không cần copy qua user space
-    \item \textbf{Batching:} Messages được gom lại thành batch để giảm network overhead
-    \item \textbf{Compression:} Hỗ trợ nén messages (Gzip, Snappy, LZ4) để giảm băng thông mạng và dung lượng lưu trữ
-\end{itemize}
-
-\subsubsection{Tính bền vững và đáng tin cậy (Durability và Reliability)}
-
-Kafka đảm bảo tính bền vững của dữ liệu thông qua~\cite{wang2015building}:
-
-\begin{itemize}
-    \item \textbf{Replication:} Mỗi partition có thể được replicate trên nhiều broker. Một partition có một leader và nhiều follower. Writes và reads đều đi qua leader, trong khi follower replicate dữ liệu.
-
-    \item \textbf{In-Sync Replicas (ISR):} Tập hợp các replica đang synchronized với leader. Message chỉ được coi là committed khi tất cả ISR đã replicate nó.
-
-    \item \textbf{Acknowledgment levels:} Producer có thể cấu hình mức độ acknowledgment:
-    \begin{itemize}
-        \item \texttt{acks=0}: Producer không đợi acknowledgment (fastest, least reliable)
-        \item \texttt{acks=1}: Leader ghi vào log local trước khi ack (balanced)
-        \item \texttt{acks=all}: Tất cả ISR replicate trước khi ack (slowest, most reliable)
-    \end{itemize}
-\end{itemize}
-
-\subsubsection{Khả năng mở rộng (Scalability)}
-
-Kafka scale theo chiều ngang (horizontal scaling) thông qua:
-
-\begin{itemize}
-    \item \textbf{Partitioning:} Mỗi topic có thể chia thành nhiều partition, mỗi partition có thể nằm trên broker khác nhau
-    \item \textbf{Consumer groups:} Nhiều consumer trong cùng group có thể xử lý song song các partition khác nhau
-    \item \textbf{Broker addition:} Có thể thêm broker mới vào cluster và rebalance partition
-\end{itemize}
-
-\subsection{Kafka Streams và Stream Processing}
-
-Kafka Streams là một thư viện client-side để xây dựng ứng dụng xử lý luồng dữ liệu và microservices~\cite{kleppmann2015kafka}. Các đặc điểm chính:
-
-\begin{itemize}
-    \item \textbf{Stateful processing:} Hỗ trợ xử lý stateful với state stores được back bởi Kafka topics
-    \item \textbf{Windowing:} Hỗ trợ windowing operations (tumbling, hopping, sliding, session windows)
-    \item \textbf{Exactly-once semantics:} Đảm bảo mỗi message được xử lý đúng một lần, ngay cả khi có failure
-    \item \textbf{Interactive queries:} Cho phép query trực tiếp state của streaming application
-\end{itemize}
-
-\subsection{Kafka trong hệ thống phát hiện Concept Drift}
-
-Kafka đặc biệt phù hợp cho hệ thống phát hiện concept drift vì các lý do sau:
-
-\begin{enumerate}
-    \item \textbf{Real-time streaming:} Kafka cung cấp low-latency streaming cần thiết cho phát hiện drift real-time
-
-    \item \textbf{Replay capability:} Khả năng đọc lại messages cho phép re-train models hoặc re-analyze drift events
-
-    \item \textbf{Buffering:} Kafka có thể buffer dữ liệu trong thời gian dài (configurable retention), hỗ trợ các thuật toán cần sliding windows như ShapeDD
-
-    \item \textbf{Scalability:} Có thể scale để xử lý volume lớn của IoT sensors hoặc streaming data sources
-
-    \item \textbf{Decoupling:} Tách biệt data ingestion, drift detection, và model adaptation thành các microservices độc lập
-
-    \item \textbf{Fault tolerance:} Replication và distributed architecture đảm bảo hệ thống không bị mất dữ liệu khi có failure
-\end{enumerate}
-
-Trong Chương~\ref{chap:proposed-model}, Luận văn trình bày cách triển khai hệ thống phát hiện drift sử dụng Kafka, với:
-\begin{itemize}
-    \item Producer gửi streaming data vào Kafka topic
-    \item Consumer thực hiện drift detection (ShapeDD) trên sliding window
-    \item Adaptor component cập nhật model khi phát hiện drift
-    \item Tất cả các component communicate qua Kafka topics để đảm bảo tính decoupled và scalable
-\end{itemize}
-
-Kiến trúc này cho phép hệ thống xử lý high-volume streaming data trong thời gian thực, phát hiện concept drift với độ trễ thấp, và thích ứng nhanh chóng với sự thay đổi trong phân phối dữ liệu.

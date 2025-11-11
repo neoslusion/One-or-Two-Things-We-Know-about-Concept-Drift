@@ -16,29 +16,63 @@ Luận văn này giải quyết các thách thức trên bằng cách xây dựn
 
 \section{Mục tiêu đề tài}
 
-\subsection{Nghiên cứu và phân tích các phương pháp phát hiện trôi dạt}
+Luận văn này hướng đến việc xây dựng một hệ thống phát hiện và thích ứng concept drift tự động cho môi trường dữ liệu streaming thời gian thực. Các mục tiêu cụ thể bao gồm:
 
-Mục tiêu đầu tiên của đề tài là tiến hành một nghiên cứu chi tiết và phân tích sâu về các phương pháp phát hiện trôi dạt hiện nay - bao gồm các phương pháp truyền thống và các tiếp cận hiện đại. Luận văn sẽ xem xét cơ sở lý thuyết của các phương pháp, cách tiếp cận triển khai, cũng như tính linh hoạt của chúng. Bằng cách này, luận văn sẽ làm rõ hơn về ưu điểm và hạn chế của các phương pháp để làm cơ sở cho việc lựa chọn và ứng dụng phương pháp phù hợp nhất đối với bài toán đặt ra.
+\subsection{Nghiên cứu và lựa chọn phương pháp phát hiện drift phù hợp}
 
-\subsection{Ứng dụng phương pháp được chọn vào phát hiện trôi dạt trong hệ thống}
+\textbf{Mục tiêu:} Khảo sát toàn diện các phương pháp phát hiện concept drift (window-based và streaming-based), so sánh ưu nhược điểm, và lựa chọn phương pháp phù hợp nhất cho hệ thống.
 
-Sau khi hiểu rõ về cơ sở lý thuyết của phương pháp được chọn, luận văn sẽ tiến hành ứng dụng phương pháp đó cho việc phát hiện trôi dạt trong xử lý dữ liệu. Phương pháp này sẽ được thiết kế và cải tiến để đảm bảo khả năng phát hiện nhanh chóng và chính xác đối với nhiều kiểu dữ liệu phức tạp khác nhau.
+\textbf{Nhiệm vụ cụ thể:}
+\begin{itemize}
+    \item Nghiên cứu lịch sử phát triển của drift detection (từ FLORA 1996 đến deep learning 2024)
+    \item So sánh hiệu suất của 18 methods trên 8 datasets (F1-score, MTTD, Precision-Recall)
+    \item Chứng minh tại sao ShapeDD là lựa chọn tối ưu (balance Precision-Recall, label-free, có khả năng mở rộng với SNR-Adaptive)
+\end{itemize}
 
-\subsection{Tìm hiểu các chiến lược cập nhật mô hình thích ứng}
+\textbf{Output (Chapter 1):} Justification cho việc chọn ShapeDD + SNR-Adaptive strategy.
 
-Sau khi phát hiện được hiện tượng trôi dạt xảy ra, tùy thuộc vào loại trôi dạt cũng như mức độ ảnh hưởng của nó đến mô hình, luận văn sẽ nghiên cứu và đề xuất các chiến lược cập nhật mô hình thích ứng phù hợp. Điều này có thể bao gồm việc điều chỉnh các tham số của mô hình, thay đổi cấu trúc của mô hình, hoặc áp dụng các kỹ thuật học máy mới để cải thiện khả năng phát hiện và thích ứng với dữ liệu mới.
+\subsection{Phát triển cơ sở lý thuyết và cải tiến phương pháp}
 
-\subsection{Kết hợp phương pháp phát hiện trôi dạt với chiến lược cập nhật mô hình}
+\textbf{Mục tiêu:} Xây dựng nền tảng toán học cho ShapeDD và đề xuất phương pháp SNR-Adaptive mới để tự động điều chỉnh độ nhạy dựa trên môi trường nhiễu.
 
-Luận văn sẽ tiến hành nghiên cứu và phát triển một khung tổng thể kết hợp giữa phương pháp phát hiện trôi dạt và chiến lược cập nhật mô hình thích ứng. Khung này sẽ được thiết kế để đảm bảo tính linh hoạt và khả năng mở rộng, cho phép áp dụng hiệu quả trong các môi trường dữ liệu streaming có cấu trúc đa dạng và phức tạp.
+\textbf{Nhiệm vụ cụ thể:}
+\begin{itemize}
+    \item Trình bày lý thuyết MMD, RKHS, và triangle pattern matching
+    \item Phân tích buffer dilution effect (SNR theoretical vs observed)
+    \item Đề xuất SNR-Adaptive với threshold calibration (0.010) dựa trên Neyman-Pearson criterion
+    \item Chứng minh strategy balance (~50% aggressive / ~50% conservative) tối ưu cho Precision-Recall
+\end{itemize}
 
-\subsection{Tùy chỉnh và tối ưu hóa mô hình}
+\textbf{Output (Chapter 2):} Theoretical foundation + SNR-Adaptive algorithm (contribution chính của luận văn).
 
-Dựa trên kết quả nghiên cứu và thử nghiệm, luận văn sẽ tiến hành tùy chỉnh và tối ưu hóa mô hình để phù hợp với các đặc điểm riêng biệt của dữ liệu và các loại trôi dạt khác nhau. Quá trình này sẽ bao gồm việc điều chỉnh các tham số, cải thiện thuật toán, và phát triển các chiến lược thích ứng để đạt được hiệu suất tối ưu trong việc phát hiện.
+\subsection{Triển khai hệ thống phát hiện và thích ứng real-time}
 
-\subsection{Triển khai và đánh giá}
+\textbf{Mục tiêu:} Xây dựng hệ thống end-to-end trên Apache Kafka, tích hợp drift detection, drift type identification (CDT\_MSW), và model adaptation strategies.
 
-Cuối cùng, luận văn sẽ triển khai mô hình đã được tối ưu hóa và tiến hành đánh giá toàn diện trên các tập dữ liệu tổng hợp và thực tế. Quá trình đánh giá sẽ bao gồm việc so sánh hiệu suất với các phương pháp hiện có, phân tích độ chính xác, thời gian phát hiện, và khả năng thích ứng của mô hình trong các điều kiện khác nhau.
+\textbf{Nhiệm vụ cụ thể:}
+\begin{itemize}
+    \item Thiết kế kiến trúc Producer-Consumer-Adaptor với Kafka messaging
+    \item Triển khai ShapeDD SNR-Adaptive trong buffer-based detection (L1=50, L2=150, buffer=750)
+    \item Implement 5 adaptation strategies (sudden$\rightarrow$full reset, incremental$\rightarrow$online update, recurrent$\rightarrow$model cache, etc.)
+    \item Xây dựng error handling mechanisms (retry, circuit breaker, graceful degradation) để đảm bảo fault tolerance
+\end{itemize}
+
+\textbf{Output (Chapter 3):} Production-ready system với high availability (uptime > 99.5\%).
+
+\subsection{Đánh giá hiệu suất và so sánh với baseline methods}
+
+\textbf{Mục tiêu:} Thực nghiệm toàn diện để chứng minh SNR-Adaptive cải thiện hiệu suất so với ShapeDD gốc và các methods khác.
+
+\textbf{Nhiệm vụ cụ thể:}
+\begin{itemize}
+    \item Benchmark trên 8 synthetic datasets với 10 controlled drift points mỗi dataset
+    \item So sánh SNR-Adaptive với 17 baseline methods (ADWIN, KSWIN, DDM, HDDM, etc.)
+    \item Đánh giá metrics: F1-score, Precision, Recall, MTTD, False Positive Rate
+    \item Phân tích strategy selection behavior (aggressive vs conservative) theo SNR environment
+    \item Validate parameter choices (threshold=0.010, sensitivity='medium') qua ablation study
+\end{itemize}
+
+\textbf{Output (Chapter 4):} Experimental results chứng minh hiệu quả của SNR-Adaptive (target F1 $\geq$ 0.690, ranking top 25\%).
 
 \section{Giới hạn đề tài và đối tượng nghiên cứu}
 
