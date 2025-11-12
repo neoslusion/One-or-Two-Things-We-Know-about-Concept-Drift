@@ -1,4 +1,15 @@
 \chapter{Thực nghiệm và đánh giá}
+\label{chap:experiments}
+
+\textbf{Phạm vi thực nghiệm:} Chapter này tập trung đánh giá comprehensive hiệu suất của ShapeDD và SNR-Adaptive trong \textbf{sudden (abrupt) drift scenarios}. Sudden drift được chọn vì: (1) tầm quan trọng thực tế cao trong production systems, (2) theoretical foundation vững chắc (Triangle Shape Property - Theorem 2.1), và (3) cho phép rigorous evaluation với statistical guarantees. Experiments bao gồm:
+
+\begin{itemize}
+    \item \textbf{Experiment 1}: Proof-of-concept với single sudden drift point (10,000 samples)
+    \item \textbf{Experiment 2}: Comprehensive benchmark - 18 methods × 8 datasets × 10 sudden drift points each
+    \item \textbf{Analysis}: Buffer dilution effect, SNR-Adaptive threshold calibration, strategy selection behavior
+\end{itemize}
+
+Các loại drift khác (gradual, incremental, recurrent) được đề cập trong related works và implementation framework (Chapter 1, 3), nhưng không được evaluated trong experiments này.
 
 \section{Giới thiệu}
 
@@ -6,12 +17,12 @@ Chương này trình bày kết quả thực nghiệm toàn diện của hệ th
 
 \begin{enumerate}
     \item Hiệu suất phát hiện drift của ShapeDD so với 9 detector khác
-    \item Khả năng phân loại loại drift (sudden, gradual, incremental, recurrent, blip)
-    \item Hiệu quả của chiến lược thích ứng mô hình theo loại drift
+    \item Khả năng phát hiện sudden drift với precision và recall cao
+    \item Hiệu quả của chiến lược thích ứng mô hình cho sudden drift
     \item Quá trình degradation và recovery của model sau khi drift
 \end{enumerate}
 
-Đánh giá được thực hiện trên dữ liệu tổng hợp với drift đột ngột được kiểm soát chặt chẽ, cho phép đo lường chính xác các metric phát hiện và thích ứng.
+Đánh giá được thực hiện trên dữ liệu tổng hợp với sudden drift được kiểm soát chặt chẽ, cho phép đo lường chính xác các metric phát hiện và thích ứng.
 
 \section{Thiết lập thực nghiệm}
 
@@ -126,7 +137,7 @@ Bảng~\ref{tab:detection-results} trình bày kết quả phát hiện drift c�
 \label{tab:detection-results}
 \begin{tabular}{lccccccc}
 \toprule
-\textbf{Detector} & \textbf{Paradigm} & \textbf{Detected} & \textbf{Delay} & \textbf{TP} & \textbf{FP} & \textbf{F1} & \textbf{MTTD} \\
+\textbf{Detector} & \textbf{Paradigm} & \textbf{Detected} & \textbf{Delay} & \textbf{TP} & \textbf{FP} & \textbf{F1} & \textbf{MTTD (samples)} \\
 \midrule
 D3 & window & Có & - & 0 & 1 & 0.000 & $\infty$ \\
 DAWIDD & window & Có & - & 0 & 1 & 0.000 & $\infty$ \\
@@ -193,7 +204,7 @@ Phân tích chi tiết hiệu suất mô hình qua các giai đoạn: baseline, 
 \label{tab:model-performance}
 \begin{tabular}{lcccccc}
 \toprule
-\textbf{Detector} & \textbf{Baseline} & \textbf{Min Acc} & \textbf{Drop} & \textbf{Recovery} & \textbf{Rate (\%)} & \textbf{Time} \\
+\textbf{Detector} & \textbf{Baseline} & \textbf{Min Acc} & \textbf{Drop} & \textbf{Recovery} & \textbf{Rate (\%)} & \textbf{Time (samples)} \\
 \midrule
 ShapeDD\_Improved & 0.996 & 0.550 & 0.446 & 0.919 & 82.8 & 96 \\
 ADWIN & 0.987 & 0.560 & 0.427 & 0.910 & 82.2 & 79 \\
@@ -406,6 +417,7 @@ Thực nghiệm đã chứng minh các kết quả quan trọng:
     \item Dữ liệu synthetic - chưa validate trên real-world data
     \item Single drift point - chưa test multiple drifts
     \item Không có ground truth labels trong production
+    \item \textbf{Statistical limitations:} Experiment 1 sử dụng single random seed (seed=42), không có cross-validation với multiple seeds. Điều này có thể ảnh hưởng đến tính tổng quát của kết quả. Experiment 2 khắc phục bằng cách test trên 8 diverse datasets, cung cấp statistical robustness tốt hơn.
 \end{itemize}
 
 \textbf{Thách thức triển khai:}
@@ -478,7 +490,7 @@ Bảng~\ref{tab:comprehensive_benchmark} trình bày kết quả trung bình c�
 \label{tab:comprehensive_benchmark}
 \begin{tabular}{lcccc}
 \toprule
-\textbf{Method} & \textbf{F1 (mean)} & \textbf{Std} & \textbf{Detection Rate} & \textbf{MTTD} \\
+\textbf{Method} & \textbf{F1 (mean)} & \textbf{Std} & \textbf{Detection Rate} & \textbf{MTTD (samples)} \\
 \midrule
 \textbf{ShapeDD\_Adaptive\_None} & \textbf{0.571} & 0.286 & 0.638 & 30.2 \\
 \textbf{ShapeDD\_SNR\_Adaptive} & \textbf{0.562} & 0.254 & 0.612 & 31.4 \\
@@ -512,7 +524,7 @@ ShapeDD\_Adaptive\_v2\_High & 0.464 & 0.292 & 0.475 & 33.8 \\
 \label{tab:per_dataset_performance}
 \begin{tabular}{lccccc}
 \toprule
-\textbf{Dataset} & \textbf{F1} & \textbf{Recall} & \textbf{Precision} & \textbf{MTTD} & \textbf{Gap to Winner} \\
+\textbf{Dataset} & \textbf{F1} & \textbf{Recall} & \textbf{Precision} & \textbf{MTTD (samples)} & \textbf{Gap to Winner} \\
 \midrule
 \multicolumn{6}{l}{\textit{\textbf{TOP TIER (F1 > 0.70):}}} \\
 stagger & \textbf{0.833} & 1.0 & 0.714 & 4.8 & +0.036 \\

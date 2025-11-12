@@ -2,15 +2,13 @@
 
 \section{Khái niệm về concept drift và phân loại}
 
-\subsection{Định nghĩa concept drift}
+\subsection{Khái niệm về concept drift}
 
-Concept drift, hay còn gọi là sự trôi dạt khái niệm, đề cập đến những thay đổi trong phân phối dữ liệu được tạo ra theo thời gian, đặc biệt là trong môi trường động và thay đổi theo thời gian, chẳng hạn như trong ứng dụng về IoT~\cite{ramakrishnan2014enabling}. Cụ thể hơn, sự trôi dạt khái niệm là một vấn đề trong đó các mối quan hệ thống kê giữa các giá trị đầu vào và giá trị mục tiêu bị thay đổi theo thời gian theo cách không thể dự đoán được~\cite{schlimmer1986incremental}.
+Concept drift, hay còn gọi là sự trôi dạt khái niệm, đề cập đến những thay đổi trong phân phối dữ liệu được tạo ra, đặc biệt là trong môi trường động và thay đổi theo thời gian, chẳng hạn như trong ứng dụng về IoT~\cite{ramakrishnan2014enabling} hoặc trong công nghiệp nơi dữ liệu luôn được tạo ra theo thời gian và thay đổi liên tục tùy theo môi trường làm việc khác nhau. Cụ thể hơn, sự trôi dạt khái niệm là một vấn đề trong đó các mối quan hệ thống kê giữa các giá trị đầu vào và giá trị mục tiêu bị thay đổi theo thời gian theo cách không thể dự đoán được~\cite{schlimmer1986incremental}.
 
-Sự trôi dạt khái niệm có thể dẫn đến hiệu suất giảm trong quá trình vận hành thực tế của mô hình học máy, điều này trái ngược với hiệu suất được đánh giá trên tập dữ liệu thử nghiệm tĩnh trong quá trình phát triển.
-
+Sự trôi dạt khái niệm có thể dẫn đến hiệu suất giảm trong quá trình vận hành thực tế của mô hình học máy, do bản chất của dữ liệu đầu vào đã bị thay đổi so với khi mô hình học máy được huấn luyện, điều này trái ngược với hiệu suất được đánh giá trên tập dữ liệu thử nghiệm tĩnh trong quá trình phát triển.
 \subsection{Phân loại các loại concept drift}
-
-Có nhiều loại trôi dạt khác nhau, tùy thuộc vào các yếu tố dữ liệu đang thay đổi. Các loại chính của sự trôi dạt khái niệm bao gồm~\cite{sciencedirect2024drift, hovakimyan2024evolving}:
+Có nhiều loại trôi dạt khác nhau, tùy thuộc vào các yếu tố dữ liệu đang thay đổi. Các loại chính của sự trôi dạt khái niệm bao gồm~\cite{sciencedirect2024drift, hovakimyan2024evolving}.
 
 Phân loại theo sự thay đổi phân phối:
 \textbf{Sự trôi dạt ảo (Virtual Drift):} Còn được gọi là sự dịch chuyển biến phụ (covariate shift), đề cập đến tình huống mà sự thay đổi xảy ra trong phân phối các trường hợp đầu vào $P(X)$, trong khi xác suất hậu nghiệm của các giá trị mục tiêu $P(Y|X)$ vẫn không đổi~\cite{moreno2012unifying}.
@@ -39,7 +37,6 @@ Phân loại theo mô hình thay đổi theo thời gian:
 \end{figure}
 
 \subsection{Ảnh hưởng của concept drift}
-
 Sự trôi dạt khái niệm có thể ảnh hưởng lớn đến hiệu suất của mô hình dự đoán, đặc biệt là khi mô hình học từ luồng dữ liệu. Một loạt các dịch vụ/ứng dụng trong bối cảnh hệ thống và mạng truyền thông có thể bị cản trở bởi sự trôi dạt khái niệm như~\cite{ramakrishnan2014enabling}:
 
 \begin{itemize}
@@ -49,9 +46,7 @@ Sự trôi dạt khái niệm có thể ảnh hưởng lớn đến hiệu suấ
     \item \textbf{Thành phố thông minh:} Dữ liệu được thu thập cho nhiều mục đích như đảm bảo an ninh mạng, dự đoán ô nhiễm không khí, dự đoán giao thông đường bộ và dự báo tải điện
 \end{itemize}
 
-Sự phân phối các mẫu lỗi có thể thay đổi theo thời gian do máy móc lão hóa và quy trình bảo trì. Do đó, một kỹ thuật CBM không có khả năng xử lý sự trôi dạt khái niệm sẽ hoạt động kém~\cite{jourdan2021machine}. Thật vậy, sự trôi dạt khái niệm có thể ảnh hưởng đến hiệu quả và tính mạnh mẽ của phân tích luồng dữ liệu~\cite{tripathi2021ensuring}.
-
-Trong môi trường không cố định, có một số cân nhắc mà các mô hình dự đoán phải tính đến để phát hiện và tự thích ứng với sự trôi dạt khái niệm, nếu không, hiệu suất của các mô hình này sẽ giảm sút về độ chính xác và độ mạnh mẽ. Theo thời gian, một mô hình dự đoán có thể cần cập nhật các tham số và cấu trúc của nó bằng cách kết hợp các dữ liệu huấn luyện mới hoặc thay thế hoàn toàn mô hình cũ để xử lý sự trôi dạt khái niệm.
+Sự phân phối của dữ liệu có thể thay đổi theo thời gian do máy móc lão hóa và cần quy trình bảo trì, hoặc do các yếu tố môi trường thay đổi. Do đó, một kỹ thuật CBM không có khả năng xử lý sự trôi dạt khái niệm sẽ hoạt động kém~\cite{jourdan2021machine}. Do đó, sự trôi dạt khái niệm có thể ảnh hưởng đến hiệu quả và tính mạnh mẽ của phân tích luồng dữ liệu~\cite{tripathi2021ensuring}. Trong môi trường không cố định, có một số cân nhắc mà các mô hình dự đoán phải tính đến để phát hiện và tự thích ứng với sự trôi dạt khái niệm, nếu không, hiệu suất của các mô hình này sẽ giảm sút về độ chính xác và độ mạnh mẽ. Theo thời gian, một mô hình dự đoán có thể cần cập nhật lại dữ liệu mới, hoặc thay đổi các tham số và cấu trúc của nó bằng cách kết hợp các dữ liệu huấn luyện mới hoặc thay thế hoàn toàn mô hình cũ để xử lý sự trôi dạt khái niệm.
 
 \section{Cách tiếp cận nghiên cứu}
 
@@ -60,6 +55,8 @@ Chương này trình bày khung phương pháp luận để điều tra phát hi
 Phương pháp luận nghiên cứu bao gồm ba thành phần chính: (1) phân tích lý thuyết của thuật toán ShapeDD và các nền tảng Maximum Mean Discrepancy (MMD) cơ bản, (2) triển khai và tối ưu hóa hệ thống phát hiện cho các bộ dữ liệu tổng hợp và thực tế, và (3) đánh giá thực nghiệm toàn diện trên các mẫu drift và cấu hình tham số khác nhau.
 
 \section{Nền tảng lý thuyết của Shape Drift Detector}
+
+Shape
 
 \subsection{Maximum Mean Discrepancy (MMD)}
 
@@ -226,6 +223,8 @@ Với mọi $l < \min\{t_{i+1} - t_i\}/2$ (drifts đủ xa nhau), ta có:
     \item Denoising robust bằng cách fit parametric curve $\sum_i s_i h_{l_i}(t - t_i)$ thay vì pointwise estimation
     \item Precise localization của drift time $t_0$ thông qua zero-crossing detection của $h'_l$
 \end{itemize}
+
+\textbf{Phạm vi của luận văn:} Theorem 1 chứng minh rigorous triangle shape property cho \textbf{single abrupt drift}. Luận văn này tập trung nghiên cứu chuyên sâu sudden drift scenarios, nơi mà theoretical guarantees mạnh nhất. Các loại drift khác (gradual, incremental) không có closed-form characterization tương tự, đòi hỏi approaches khác và nằm ngoài scope của nghiên cứu này. Việc focus vào sudden drift cho phép thorough analysis với strong mathematical foundation thay vì shallow coverage nhiều types.
 
 \textbf{Bộ lọc hình dạng:} Để phát hiện mẫu tam giác này, ShapeDD sử dụng bộ lọc trọng số $h'_l(t)$ (đạo hàm của $h_l$):
 
@@ -808,9 +807,15 @@ Threshold phải được hiệu chỉnh (calibrated) cho môi trường buffer:
 
 Threshold 0.010 được chọn dựa trên:
 \begin{enumerate}
-    \item \textbf{Empirical observation:} Phân tích SNR quan sát trên 8 datasets
-    \item \textbf{Neyman-Pearson optimization:} Cân bằng Type I/II errors
-    \item \textbf{Strategy balance validation:} Đạt $\sim 50\%$ aggressive / $\sim 50\%$ conservative
+    \item \textbf{Empirical observation:} Phân tích SNR quan sát trên 8 datasets cho thấy observed SNR range [0.005, 0.020], với midpoint = 0.010
+
+    \item \textbf{Neyman-Pearson optimization:} Threshold tối ưu được xác định bằng cách minimize tổng detection errors khi Type I error (false positive) và Type II error (false negative) có cost bằng nhau:
+    \begin{equation}
+    \tau^* = \arg\min_{\tau} \left[ P(\text{FP}|\tau) + P(\text{FN}|\tau) \right]
+    \end{equation}
+    Với equal costs, optimal threshold nằm tại điểm mà precision $\approx$ recall, tương đương strategy distribution $\approx$ 50/50.
+
+    \item \textbf{Strategy balance validation:} Đạt $\sim 50\%$ aggressive / $\sim 50\%$ conservative, xác nhận threshold nằm gần tối ưu Neyman-Pearson
 \end{enumerate}
 
 \textbf{Validation qua thực nghiệm:} Với threshold = 0.010:

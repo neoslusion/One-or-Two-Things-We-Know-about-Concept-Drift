@@ -152,22 +152,37 @@
   year={2016}
 }
 
-@article{gama2004learning,
-  title={Learning with drift detection},
-  author={Gama, João and Medas, Pedro and Castillo, Gladys and Rodrigues, Pedro},
-  journal={Advances in artificial intelligence–SBIA 2004},
-  pages={286--295},
-  year={2004},
-  publisher={Springer}
+@inproceedings{gama2004learning,
+  author = {Gama, João and Medas, Pedro and Castillo, Gladys and Rodrigues, Pedro},
+  year = {2004},
+  month = {09},
+  pages = {286-295},
+  title = {Learning with Drift Detection},
+  volume = {8},
+  isbn = {978-3-540-23237-7},
+  journal = {Intelligent Data Analysis},
+  doi = {10.1007/978-3-540-28645-5_29}
 }
 
 @inproceedings{bifet2007learning,
-  title={Learning from time-changing data with adaptive windowing},
-  author={Bifet, Albert and Gavalda, Ricard},
-  booktitle={Proceedings of the 2007 SIAM international conference on data mining},
-  pages={443--448},
-  year={2007},
-  organization={SIAM}
+  author = {Bifet, Albert and Gavaldà, Ricard},
+  year = {2007},
+  month = {04},
+  pages = {},
+  title = {Learning from Time-Changing Data with Adaptive Windowing},
+  volume = {7},
+  journal = {Proceedings of the 7th SIAM International Conference on Data Mining},
+  doi = {10.1137/1.9781611972771.42}
+}
+
+@inbook{inbook,
+  author = {Wang, Zhixiong and Wang, Wei},
+  year = {2020},
+  month = {01},
+  pages = {273-280},
+  title = {Concept Drift Detection Based on Kolmogorov–Smirnov Test},
+  isbn = {978-981-15-0186-9},
+  doi = {10.1007/978-981-15-0187-6_31}
 }
 
 @article{klinkenberg2004learning,
@@ -319,13 +334,23 @@
   note={Accessed: 2024}
 }
 
-@inproceedings{baena2006early,
-  title={Early drift detection method},
-  author={Baena-Garc{\'i}a, Manuel and del Campo-{\'A}vila, Jos{\'e} and Fidalgo, Ra{\'u}l and Bifet, Albert and Gavald{\`a}, Ricard and Morales-Bueno, Rafael},
-  booktitle={Proc. Int. Workshop Knowledge Discovery from Data Streams},
-  volume={6},
-  pages={77--86},
-  year={2006}
+@article{baena2006early,
+  author = {Baena-García, Manuel and Campo-Ávila, José and Fidalgo-Merino, Raúl and Bifet, Albert and Gavald, Ricard and Morales-Bueno, Rafael},
+  year = {2006},
+  month = {01},
+  pages = {},
+  title = {Early Drift Detection Method}
+}
+
+@inproceedings{HDDM,
+  author = {Pesaranghader, Ali and Viktor, Herna},
+  year = {2016},
+  month = {09},
+  pages = {96-111},
+  title = {Fast Hoeffding Drift Detection Method for Evolving Data Streams},
+  volume = {9852},
+  isbn = {978-3-319-46226-4},
+  doi = {10.1007/978-3-319-46227-1_7}
 }
 
 @inproceedings{li2010contextual,
@@ -438,6 +463,16 @@
   year={2024},
   url={https://riverml.xyz/dev/api/drift/PageHinkley/},
   note={River online machine learning library documentation}
+}
+
+@inproceedings{inproceedings,
+  author = {Mouss, Hayet and Mouss, M.Djamel and Mouss, Kinza and Linda, Sefouhi},
+  year = {2004},
+  month = {08},
+  pages = {815 - 818 Vol.2},
+  title = {Test of Page-Hinckley, an approach for fault detection in an agro-alimentary production system},
+  isbn = {0-7803-8873-9},
+  doi = {10.1109/ASCC.2004.184970}
 }
 
 % ============================================================================
@@ -564,3 +599,41 @@
   note={Learn++.NSE algorithm for incremental learning under concept drift}
 }
 
+@software{river2021,
+  title={River: online machine learning in Python},
+  author={Montiel, Jacob and Halford, Max and Mastelini, Saulo Martiello and Bolmier, Geoffrey and Sourty, Raphael and Vaysse, Robin and Zouitine, Adil and Gomes, Heitor Murilo and Read, Jesse and Abdessalem, Talel and Bifet, Albert},
+  year={2021},
+  publisher={GitHub},
+  url={https://riverml.xyz/},
+  note={Python library for online/incremental machine learning}
+}
+
+@article{pedregosa2011scikit,
+  title={Scikit-learn: Machine Learning in Python},
+  author={Pedregosa, Fabian and Varoquaux, Ga{\"e}l and Gramfort, Alexandre and Michel, Vincent and Thirion, Bertrand and Grisel, Olivier and Blondel, Mathieu and Prettenhofer, Peter and Weiss, Ron and Dubourg, Vincent and others},
+  journal={Journal of Machine Learning Research},
+  volume={12},
+  pages={2825--2830},
+  year={2011},
+  note={Popular Python library for machine learning algorithms and model building}
+}
+
+@inproceedings{raab2020reactive,
+  title={Reactive Soft Prototype Computing for Concept Drift Streams},
+  author={Raab, Christoph and Heusinger, Moritz and Schleif, Frank-Michael},
+  booktitle={Neurocomputing},
+  volume={416},
+  pages={340--351},
+  year={2020},
+  publisher={Elsevier},
+  doi={10.1016/j.neucom.2019.11.111},
+  note={Introduces KSWIN (Kolmogorov-Smirnov Windowing) drift detector}
+}
+
+@inproceedings{pratama2019automatic,
+  title={Automatic construction of multi-layer perceptron network from streaming examples},
+  author={Pratama, Mahardhika and Za'in, Choiru and Ashfahani, Andri and Ong, Yew Soon and Ding, Weiping},
+  booktitle={Proceedings of the 28th ACM international conference on information and knowledge management},
+  pages={1171--1180},
+  year={2019}
+}

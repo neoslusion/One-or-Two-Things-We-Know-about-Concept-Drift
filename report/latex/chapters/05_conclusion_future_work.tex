@@ -8,7 +8,7 @@ Luận văn này đã nghiên cứu và triển khai thành công một hệ th�
 
 \textbf{Kiến trúc streaming real-time:} Xây dựng hệ thống hoàn chỉnh sử dụng Apache Kafka cho xử lý luồng dữ liệu, cho phép phát hiện drift và thích ứng mô hình tự động trong thời gian thực. Kiến trúc modular với các thành phần độc lập: Producer, Consumer (ShapeDD), Drift Classifier, Adaptor và Visualization.
 
-\textbf{Tích hợp ShapeDD detector:} Triển khai phương pháp ShapeDD với adaptive window sizing (ShapeDD\_Improved) đạt hiệu suất phát hiện drift xuất sắc (F1 = 1.0, delay = 4 samples). Hệ thống sử dụng permutation test với 2500 lần hoán vị đảm bảo độ tin cậy thống kê cao.
+\textbf{Tích hợp ShapeDD detector:} Triển khai phương pháp ShapeDD với adaptive window sizing (ShapeDD\_Improved) đạt hiệu suất phát hiện drift tốt nhất trong sudden drift scenario (F1 = 1.0, tied with ADWIN and EDDM, delay = 4 samples). Hệ thống sử dụng permutation test với 2500 lần hoán vị đảm bảo độ tin cậy thống kê cao.
 
 \textbf{Phân loại drift tự động:} Tích hợp phương pháp CDT\_MSW để tự động phân loại drift thành 5 loại (sudden, incremental, gradual, recurrent, blip) dựa trên đặc trưng thay đổi phân phối. Sử dụng KS distance tracking và stability analysis để xác định drift length và category (TCD/PCD).
 
@@ -43,13 +43,21 @@ Luận văn này đã nghiên cứu và triển khai thành công một hệ th�
 
 \textbf{So sánh detector toàn diện:} Đánh giá 10 drift detectors (4 window-based, 6 streaming) trên cùng sudden drift scenario với 10,000 samples. Kết quả cho thấy ShapeDD\_Improved vượt trội về cả accuracy và detection delay.
 
-\textbf{Kết quả nổi bật:} ShapeDD\_Improved đạt được:
+\textbf{Kết quả nổi bật trong Experiment 1 (single drift point):} ShapeDD\_Improved đạt được:
 \begin{itemize}
-    \item F1-score: 1.0 (perfect detection - không false positive, không false negative)
+    \item F1-score: 1.0 (tied với ADWIN và EDDM - ba methods đều perfect detection)
     \item Detection delay: 4 samples (nhanh nhất trong 10 detectors)
     \item Drift type classification: 100\% accurate (phân loại đúng là "sudden")
     \item Recovery rate: 82.8\% sau adaptation
     \item Recovery time: 96 samples để đạt 95\% baseline accuracy
+\end{itemize}
+
+\textbf{Kết quả comprehensive benchmark (Experiment 2 - 18 methods × 8 datasets):} ShapeDD SNR-Adaptive đạt được:
+\begin{itemize}
+    \item F1-score: 0.697, ranked 4th/18 methods (top 22\%)
+    \item Strategy balance: 58.7\% aggressive / 41.3\% conservative (near-optimal 50/50)
+    \item Key finding: Buffer dilution effect - observed SNR ~100× lower than theoretical SNR
+    \item Practical contribution: Threshold calibration từ 0.5 (theory) xuống 0.010 (buffer-based)
 \end{itemize}
 
 \textbf{Phân tích lifecycle đầy đủ:} Theo dõi toàn bộ quá trình từ detection đến recovery:
@@ -112,6 +120,19 @@ Luận văn này đã nghiên cứu và triển khai thành công một hệ th�
 
 \section{Hạn chế và ràng buộc}
 
+\subsection{Hạn chế về scope}
+
+\textbf{Focus on sudden drift only:} Luận văn này tập trung chuyên sâu vào sudden (abrupt) drift detection và adaptation. Quyết định này được đưa ra dựa trên:
+
+\begin{itemize}
+    \item \textbf{Rationale}: Sudden drift có tầm quan trọng thực tế cao nhất (system failures, policy changes, equipment malfunctions critical cho safety) và theoretical foundation vững chắc nhất (Triangle Shape Property - Theorem 2.1)
+    \item \textbf{Trade-off}: Deep analysis of one drift type thoroughly với statistical rigor thay vì shallow coverage của multiple types
+    \item \textbf{Framework ready}: CDT\_MSW và adaptation strategies đã được implement as extensible framework cho 5 drift types
+    \item \textbf{Future work}: Gradual, incremental, và recurrent drift có thể được evaluate trong future research với minimal architecture changes
+\end{itemize}
+
+\textbf{Impact}: Kết quả và conclusions của luận văn này strictly applicable cho sudden drift scenarios. Generalization sang các drift types khác cần additional research và validation. Tuy nhiên, framework architecture đã được design sẵn sàng cho extensions này.
+
 \subsection{Hạn chế về phương pháp luận}
 
 \textbf{Độ nhạy tham số:} Mặc dù các phương pháp của nghiên cứu cho thấy độ bền vững tốt, chúng vẫn yêu cầu điều chỉnh tham số để đạt hiệu suất tối ưu. Tối ưu hóa tham số tự động vẫn còn là thách thức.
@@ -166,6 +187,50 @@ Nghiên cứu có ứng dụng trực tiếp trong nhiều ngành công nghiệp
 \textbf{Sức khỏe cộng đồng:} Hệ thống thích ứng có thể cải thiện mô hình hóa dịch bệnh và phản ứng sức khỏe cộng đồng bằng cách phát hiện và thích ứng với các mẫu bệnh tật thay đổi.
 
 \section{Hướng nghiên cứu tương lai}
+
+\subsection{Mở rộng sang các loại drift khác (Top Priority)}
+
+Luận văn này đã establish strong foundation cho sudden drift detection và adaptation. Future research nên extend sang các drift types còn lại:
+
+\textbf{1. Gradual drift evaluation:}
+\begin{itemize}
+    \item \textbf{Theoretical analysis}: Gradual drift không có closed-form triangle shape như sudden drift - cần derive new theoretical characterization
+    \item \textbf{Algorithm adaptation}: ShapeDD có thể cần modified threshold hoặc window strategy để accommodate slower transitions
+    \item \textbf{Expected challenge}: Lower SNR do drift signal spread over longer time, harder to distinguish from noise
+    \item \textbf{Dataset generation}: Implement gradual transition functions (linear, sigmoid, exponential)
+    \item \textbf{Estimated effort}: 2-3 tuần
+\end{itemize}
+
+\textbf{2. Incremental drift testing:}
+\begin{itemize}
+    \item \textbf{Continuous adaptation strategy evaluation}: Test \texttt{adapt\_incremental\_drift()} với River framework (already implemented)
+    \item \textbf{Metrics}: Cumulative accuracy degradation over time, adaptation efficiency
+    \item \textbf{Challenge}: Balancing update frequency vs stability (catastrophic forgetting risk)
+    \item \textbf{Estimated effort}: 2 tuần
+\end{itemize}
+
+\textbf{3. Recurrent drift scenarios:}
+\begin{itemize}
+    \item \textbf{Model cache effectiveness testing}: Validate \texttt{adapt\_recurrent\_drift()} strategy
+    \item \textbf{Distribution similarity matching accuracy}: KS-test threshold tuning
+    \item \textbf{Memory management strategies}: Cache size limits, eviction policies
+    \item \textbf{Estimated effort}: 2-3 tuần
+\end{itemize}
+
+\textbf{Framework advantage:} Vì system architecture đã extensible, extending sang các drift types này chỉ cần:
+\begin{itemize}
+    \item Generate appropriate synthetic datasets (gradual transition functions)
+    \item Run evaluation pipeline (code reuse ~80\%)
+    \item Analyze results và tune parameters
+    \item Update thesis Chapter 4 với new experimental results
+\end{itemize}
+
+\textbf{Expected deliverables:}
+\begin{itemize}
+    \item Comprehensive comparison table: sudden vs gradual vs incremental vs recurrent
+    \item Parameter sensitivity analysis cho mỗi drift type
+    \item Recommendations: Which detector + strategy for which drift type
+\end{itemize}
 
 \subsection{Tiến bộ lý thuyết}
 

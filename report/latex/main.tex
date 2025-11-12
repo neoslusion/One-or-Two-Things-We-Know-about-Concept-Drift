@@ -9,6 +9,21 @@
 \usepackage{geometry}
 \usepackage{graphicx}
 \usepackage{amsmath,amssymb,amsthm}
+
+% Theorem environments
+\theoremstyle{plain}
+\newtheorem{theorem}{Định lý}[chapter]
+\newtheorem{lemma}[theorem]{Bổ đề}
+\newtheorem{proposition}[theorem]{Mệnh đề}
+\newtheorem{corollary}[theorem]{Hệ quả}
+
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Định nghĩa}
+\newtheorem{example}[theorem]{Ví dụ}
+
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Nhận xét}
+
 \usepackage{algorithm}
 \usepackage{algorithmic}
 \usepackage{url}
@@ -48,7 +63,7 @@
 \renewcommand{\rmdefault}{ptm} % Times New Roman
 \fontfamily{ptm}\selectfont
 % Set default font size to 12pt for body text
-\renewcommand{\normalsize}{\fontsize{12}{14.4}\selectfont}
+\renewcommand{\normalsize}{\fontsize{13}{14.4}\selectfont}
 
 % Header and Footer formatting for Vietnamese thesis
 \pagestyle{fancy}
@@ -194,7 +209,6 @@
 % Appendices
 \cleardoublepage
 \appendix
-\addcontentsline{toc}{chapter}{PHỤ LỤC}
 \input{appendix}
 
 \end{document}

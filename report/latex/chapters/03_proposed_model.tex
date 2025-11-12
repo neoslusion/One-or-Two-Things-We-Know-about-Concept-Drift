@@ -332,97 +332,32 @@ Việc sử dụng Apache Kafka làm backbone cho hệ thống phát hiện drif
 
 Kiến trúc này đã được triển khai và testing trong folder \texttt{drift-monitoring/} của repository, với đầy đủ các component producer, consumer, adaptor, và configuration files.
 
-\section{Phương pháp CDT\_MSW – Nhận diện loại trôi dạt}
-\label{sec:cdt-msw}
+\section{Phương pháp CDT\_MSW và chiến lược thích ứng}
+\label{sec:cdt-msw-implementation}
 
-\subsection{Tổng quan}
+\subsection{Tổng quan về CDT\_MSW}
 
-Trong khi các thuật toán như DDM, ADWIN hay ShapeDD chỉ xác định \emph{thời điểm xảy ra trôi dạt}, thì CDT\_MSW đi xa hơn bằng cách \textbf{nhận dạng loại trôi dạt} dựa trên hình thái thay đổi của phân phối dữ liệu theo thời gian. Phương pháp \textit{Concept Drift Type Identification based on Multi–Sliding Windows (CDT\_MSW)} được đề xuất bởi Guo và cộng sự~\cite{guo2022cdtmsw} nhằm mở rộng chức năng của các bộ phát hiện trôi dạt thông thường. Phương pháp này đặc biệt hữu ích cho các hệ thống học thích ứng (adaptive learning systems), nơi mà mỗi loại trôi dạt đòi hỏi một chiến lược cập nhật mô hình khác nhau.
+Hệ thống sử dụng phương pháp \textbf{CDT\_MSW (Concept Drift Type Identification based on Multi-Sliding Windows)} để nhận diện loại trôi dạt sau khi ShapeDD phát hiện điểm drift. Phương pháp này đã được trình bày chi tiết trong \textbf{Chapter 1, Section 1.2} (Trang~\pageref{sec:cdt-msw-theory}), bao gồm:
 
-\subsection{Nguyên lý hoạt động}
-Phương pháp CDT\_MSW sử dụng cấu trúc \textbf{cửa sổ trượt đa mức (multi–sliding windows)} để theo dõi sự thay đổi của phân phối dữ liệu trước và sau điểm trôi dạt. 
-Ý tưởng chính là quan sát sự tiến hóa của khoảng cách phân phối khi cửa sổ so sánh mở rộng dần theo thời gian. 
-Quá trình nhận diện loại trôi dạt bao gồm ba giai đoạn chính (Hình~\ref{fig:cdt-msw}).
+\begin{itemize}
+    \item Nguyên lý hoạt động với ba giai đoạn: Detection → Growth → Tracking
+    \item Quy tắc phân loại 5 loại drift: sudden, gradual, incremental, recurrent, blip
+    \item Các tham số chính ($w_{ref}$, $\delta$, $\theta_{sudden}$, etc.)
+    \item Ưu điểm so với các phương pháp truyền thống
+\end{itemize}
+
+Trong chương này, chúng ta tập trung vào \textbf{triển khai cụ thể} của CDT\_MSW trong hệ thống, bao gồm cấu hình parameters, integration với Kafka messaging, và error handling.
+
+\subsection{Tích hợp CDT\_MSW vào workflow}
+
+Sau khi ShapeDD phát hiện drift tại thời điểm $t_0$, module \texttt{drift\_detector.py} kích hoạt CDT\_MSW để phân loại drift type:
 
 \begin{enumerate}
-    \item \textbf{Phát hiện ban đầu (Detection):} 
-    Bộ phát hiện trôi dạt (ví dụ ShapeDD) phát hiện một điểm thay đổi tại thời điểm $t_0$. 
-    Một cửa sổ tham chiếu $\mathcal{W}_{ref}$ được lấy từ dữ liệu trước thời điểm $t_0$ để biểu diễn khái niệm cũ.
-    
-    \item \textbf{Giai đoạn mở rộng (Growth process):} 
-    Một cửa sổ quan sát $\mathcal{W}_{post}$ bắt đầu từ $t_0$ được mở rộng dần về phía sau dòng dữ liệu. 
-    Ở mỗi bước, khoảng cách giữa hai phân phối $P_{ref}$ và $P_{post}$ được tính theo một độ đo thống kê như:
-    \begin{equation}
-        d_t = D\left(P(X \in \mathcal{W}_{ref}), P(X \in \mathcal{W}_{post}(t))\right),
-    \end{equation}
-    với $D(\cdot,\cdot)$ là độ đo khoảng cách phân phối, chẳng hạn như Kolmogorov–Smirnov (KS) hoặc Maximum Mean Discrepancy (MMD).
-    Khi sai biệt giữa hai bước liên tiếp $\Delta d_t = |d_t - d_{t-1}|$ giảm xuống dưới ngưỡng ổn định $\delta$ trong $p$ bước liên tục, quá trình mở rộng dừng lại. 
-    Độ dài vùng chuyển tiếp $L_d = t_{stable} - t_0$ được xem là \emph{độ dài trôi dạt (drift length)}.
-
-    \item \textbf{Theo dõi (Tracking process):}
-    Sau khi xác định được $L_d$, thuật toán tiếp tục trượt cửa sổ $\mathcal{W}_{post}$ để theo dõi mức độ khác biệt $r(t)$ giữa phân phối hiện tại và phân phối trước trôi dạt:
-    \begin{equation}
-        r(t) = D\left(P(X \in \mathcal{W}_{ref}), P(X \in \mathcal{W}_{post}(t))\right),
-    \end{equation}
-    giúp xác định xem khái niệm mới có ổn định, dao động, hay quay lại trạng thái cũ.
+    \item \textbf{Snapshot capture}: Lưu cửa sổ tham chiếu $\mathcal{W}_{ref}$ (200 samples trước $t_0$) vào file
+    \item \textbf{Growth phase monitoring}: Theo dõi distance $d_t$ mỗi 50 samples, dừng khi $\Delta d_t < 0.02$
+    \item \textbf{Classification}: So sánh $L_d$ với thresholds để xác định drift type
+    \item \textbf{Message publishing}: Gửi kết quả (drift\_type, $L_d$, confidence) lên Kafka topic \texttt{drift.results}
 \end{enumerate}
-
-% TODO: Tạo sơ đồ CDT_MSW framework (3 giai đoạn: Detection – Growth – Tracking)
-% Có thể sử dụng TikZ hoặc draw.io để vẽ workflow diagram
-% \begin{figure}[H]
-%     \centering
-%     \includegraphics[width=0.9\linewidth]{figures/cdt_msw_framework.pdf}
-%     \caption{Sơ đồ nguyên lý của phương pháp CDT\_MSW với ba giai đoạn: Detection – Growth – Tracking.}
-%     \label{fig:cdt-msw}
-% \end{figure}
-
-\subsection{Quy tắc phân loại loại trôi dạt}
-Dựa trên độ dài trôi dạt $L_d$ và hình dạng của đường cong $r(t)$, CDT\_MSW phân loại các loại trôi dạt theo các quy tắc sau:
-
-\begin{itemize}
-    \item \textbf{Trôi dạt đột ngột (Sudden drift):} 
-    $L_d < \theta_{sudden}$, giá trị $r(t)$ tăng nhanh và đạt trạng thái ổn định trong thời gian ngắn.
-    \item \textbf{Trôi dạt dần dần (Gradual drift):} 
-    $L_d > \theta_{sudden}$, $r(t)$ dao động quanh ngưỡng ổn định và thể hiện sự xen kẽ giữa hai khái niệm.
-    \item \textbf{Trôi dạt tăng dần (Incremental drift):} 
-    Dạng đặc biệt của gradual drift, trong đó $r(t)$ thay đổi đơn điệu (ít dao động ngược chiều).
-    \item \textbf{Trôi dạt lặp lại (Recurring drift):} 
-    Sau khi khái niệm mới ổn định, $r(t)$ giảm xuống dưới ngưỡng tương đồng $\epsilon_{recur}$ và duy trì trong thời gian đủ dài $T_{recur}$, biểu thị sự quay lại của khái niệm cũ.
-    \item \textbf{Trôi dạt tạm thời (Blip drift):} 
-    Sự thay đổi ngắn hạn với $L_d < \theta_{blip}$, khái niệm nhanh chóng quay lại trạng thái ban đầu.
-\end{itemize}
-
-\subsection{Các tham số của CDT\_MSW}
-Phương pháp CDT\_MSW không yêu cầu đặt ngưỡng cố định cho tất cả các luồng dữ liệu; 
-các tham số được điều chỉnh linh hoạt dựa trên tốc độ thay đổi của luồng và độ nhiễu của dữ liệu. 
-Bảng~\ref{tab:cdt-msw-params} liệt kê các tham số thường dùng và gợi ý giá trị khởi tạo được đề xuất trong~\cite{guo2022cdtmsw}.
-
-\begin{table}[H]
-\centering
-\caption{Các tham số chính trong phương pháp CDT\_MSW.}
-\label{tab:cdt-msw-params}
-\begin{tabular}{lll}
-\toprule
-\textbf{Ký hiệu} & \textbf{Ý nghĩa} & \textbf{Giá trị gợi ý} \\
-\midrule
-$w_{ref}$ & Cửa sổ tham chiếu trước drift & 200 mẫu \\
-$w_{basic}$ & Cửa sổ so sánh cơ bản & 50 mẫu \\
-$\delta$ & Ngưỡng ổn định biến thiên & 0.02 \\
-$\theta_{sudden}$ & Ngưỡng phân biệt sudden/progressive & 60 mẫu \\
-$\epsilon_{recur}$ & Ngưỡng tương đồng khi khái niệm quay lại & 0.15 \\
-$T_{recur}$ & Độ dài tối thiểu để xem là recurrent & 120 mẫu \\
-$T_{blip}$ & Độ dài tối đa cho blip drift & 60 mẫu \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\subsection{Ưu điểm của CDT\_MSW}
-So với các phương pháp truyền thống, CDT\_MSW có một số ưu điểm nổi bật:
-\begin{itemize}
-    \item Không phụ thuộc vào mô hình học máy; hoạt động thuần túy trên phân phối dữ liệu nên áp dụng được cho cả dữ liệu giám sát và phi giám sát.
-    \item Có khả năng nhận diện \emph{nhiều loại trôi dạt khác nhau}, bao gồm đột ngột, dần dần, tăng dần, lặp lại và tạm thời.
-    \item Cung cấp thông tin định lượng như độ dài trôi dạt và độ ổn định, giúp lựa chọn chiến lược cập nhật mô hình thích hợp.
-\end{itemize}
 
 \section{Mô hình học máy và quy trình thích ứng}
 \label{sec:model-adaptation}
@@ -455,45 +390,31 @@ Hệ thống sử dụng mô hình học máy với ba giai đoạn hoạt độ
     \item Model được lưu lại và thay thế model cũ
 \end{itemize}
 
-\subsection{Chiến lược thích ứng theo loại drift}
+\subsection{Chiến lược thích ứng và triển khai}
 
-Sau khi nhận diện được loại trôi dạt, hệ thống tự động \textbf{chọn chiến lược cập nhật mô hình} phù hợp.
-Mục tiêu của giai đoạn này là đảm bảo mô hình học máy duy trì hiệu suất cao nhất với chi phí cập nhật tối ưu, tránh huấn luyện lại toàn bộ khi không cần thiết.
+\textbf{Nền tảng lý thuyết:} Như đã trình bày chi tiết trong \textbf{Chapter 1, Section 1.3} (Bảng~\ref{tab:model_update_strategies}), mỗi loại drift cần một chiến lược cập nhật riêng biệt:
 
-\textbf{Nền tảng lý thuyết:} Như đã trình bày trong Section 1.3 (Bảng~\ref{tab:model_update_strategies}), mỗi loại drift cần một chiến lược cập nhật riêng biệt: Sudden drift yêu cầu local reset, Gradual drift cần soft update, Incremental drift dùng continuous adaptation, và Recurrent drift sử dụng concept memory.
+\begin{itemize}
+    \item \textbf{Sudden drift} $\rightarrow$ Local reset / Full retraining
+    \item \textbf{Gradual drift} $\rightarrow$ Soft update với weighted samples
+    \item \textbf{Incremental drift} $\rightarrow$ Continuous adaptation
+    \item \textbf{Recurrent drift} $\rightarrow$ Memory-based adaptation
+    \item \textbf{Blip drift} $\rightarrow$ Minimal update
+\end{itemize}
 
-Hệ thống triển khai các chiến lược lý thuyết này thành năm module cụ thể trong \texttt{adaptation\_strategies.py}:
+\textbf{Triển khai cụ thể:} Hệ thống triển khai các chiến lược lý thuyết này thành năm modules trong \texttt{adaptation\_strategies.py}:
 
-\begin{table}[H]
-\centering
-\caption{Triển khai chiến lược thích ứng trong hệ thống (implementation details).}
-\label{tab:drift-adaptation-impl}
-\begin{tabular}{p{2.5cm}p{5.5cm}p{6.5cm}}
-\toprule
-\textbf{Loại drift} & \textbf{Chiến lược (từ Section 1.3)} & \textbf{Triển khai cụ thể} \\
-\midrule
-\textbf{Sudden} &
-Local reset / Full retraining &
-\texttt{adapt\_sudden\_drift()}: Tạo sklearn pipeline mới, huấn luyện trên post-drift data, discard old model. \\
-\midrule
-\textbf{Incremental} &
-Continuous adaptation &
-\texttt{adapt\_incremental\_drift()}: River online learning với \texttt{learn\_one()}, cập nhật mỗi sample tuần tự. \\
-\midrule
-\textbf{Gradual} &
-Soft update với weighted samples &
-\texttt{adapt\_gradual\_drift()}: Weight = position/total, chỉ dùng 50\% mẫu cuối để giảm ảnh hưởng của old concept. \\
-\midrule
-\textbf{Recurrent} &
-Memory-based adaptation &
-\texttt{adapt\_recurrent\_drift()}: KS-test (threshold=0.15) tìm similar model trong \texttt{models/cache/}, fine-tune nếu match. \\
-\midrule
-\textbf{Blip} &
-Minimal / no update &
-\texttt{adapt\_blip\_drift()}: Bỏ qua hoặc update tối đa 5 samples (conservative approach). \\
-\bottomrule
-\end{tabular}
-\end{table}
+\begin{itemize}
+    \item \texttt{adapt\_sudden\_drift()}: Tạo sklearn pipeline mới, full retraining trên post-drift data \textbf{[FULLY IMPLEMENTED \& EVALUATED]}
+    \item \texttt{adapt\_incremental\_drift()}: River online learning với \texttt{learn\_one()}, cập nhật tuần tự \textbf{[FRAMEWORK ONLY]}
+    \item \texttt{adapt\_gradual\_drift()}: Weighted samples (position/total), chỉ dùng 50\% mẫu cuối \textbf{[FRAMEWORK ONLY]}
+    \item \texttt{adapt\_recurrent\_drift()}: KS-test (threshold=0.15) tìm similar model trong cache, fine-tune \textbf{[FRAMEWORK ONLY]}
+    \item \texttt{adapt\_blip\_drift()}: Conservative - update tối đa 5 samples hoặc skip \textbf{[FRAMEWORK ONLY]}
+\end{itemize}
+
+\textbf{Phạm vi đánh giá:} Luận văn này tập trung đánh giá chuyên sâu \texttt{adapt\_sudden\_drift()} strategy với comprehensive experiments (Chapter 4). Các strategies khác đã được implement as part of extensible framework nhưng chưa được evaluate thoroughly, để dành cho future research.
+
+Chi tiết về rationale và trade-offs của từng chiến lược đã được phân tích đầy đủ trong Chapter 1.
 
 \subsection{Cơ chế quyết định tự động}
 
