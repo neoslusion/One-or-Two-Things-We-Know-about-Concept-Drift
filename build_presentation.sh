@@ -306,7 +306,7 @@ main() {
     show_stats
 
     echo ""
-    print_success "Presentation build completed successfully! 🎉"
+    print_success "Presentation build completed successfully! "
     print_status "You can now present with: $LATEX_DIR/$MAIN_FILE.pdf"
 }
 

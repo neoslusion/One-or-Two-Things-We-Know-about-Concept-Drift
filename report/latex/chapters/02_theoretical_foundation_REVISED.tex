@@ -1,0 +1,444 @@
+% ============================================================================
+% CHAPTER 2: CƠ SỞ LÝ THUYẾT - REVISED VERSION
+% ============================================================================
+% This is the REVISED version with:
+% - MMD moved to background section
+% - No duplication
+% - Clear structure
+% - SNR-Adaptive and implementation moved to Chapter 3
+% ============================================================================
+
+\chapter{Cơ sở lý thuyết}
+
+\section{Khái niệm về concept drift và phân loại}
+
+\subsection{Khái niệm về concept drift}
+
+Concept drift, hay còn gọi là sự trôi dạt khái niệm, đề cập đến những thay đổi trong phân phối dữ liệu được tạo ra, đặc biệt là trong môi trường động và thay đổi theo thời gian, chẳng hạn như trong ứng dụng về IoT~\cite{ramakrishnan2014enabling} hoặc trong công nghiệp nơi dữ liệu luôn được tạo ra theo thời gian và thay đổi liên tục tùy theo môi trường làm việc khác nhau. Cụ thể hơn, sự trôi dạt khái niệm là một vấn đề trong đó các mối quan hệ thống kê giữa các giá trị đầu vào và giá trị mục tiêu bị thay đổi theo thời gian theo cách không thể dự đoán được~\cite{schlimmer1986incremental}.
+
+Sự trôi dạt khái niệm có thể dẫn đến hiệu suất giảm trong quá trình vận hành thực tế của mô hình học máy, do bản chất của dữ liệu đầu vào đã bị thay đổi so với khi mô hình học máy được huấn luyện, điều này trái ngược với hiệu suất được đánh giá trên tập dữ liệu thử nghiệm tĩnh trong quá trình phát triển.
+
+\subsection{Phân loại các loại concept drift}
+
+Có nhiều loại trôi dạt khác nhau, tùy thuộc vào các yếu tố dữ liệu đang thay đổi. Các loại chính của sự trôi dạt khái niệm bao gồm~\cite{sciencedirect2024drift, hovakimyan2024evolving}.
+
+Phân loại theo sự thay đổi phân phối:
+\textbf{Sự trôi dạt ảo (Virtual Drift):} Còn được gọi là sự dịch chuyển biến phụ (covariate shift), đề cập đến tình huống mà sự thay đổi xảy ra trong phân phối các trường hợp đầu vào $P(X)$, trong khi xác suất hậu nghiệm của các giá trị mục tiêu $P(Y|X)$ vẫn không đổi~\cite{moreno2012unifying}.
+
+\textbf{Sự trôi dạt thực (Real Drift):} Sự thay đổi trong xác suất hậu nghiệm của các giá trị mục tiêu (tức là các lớp) $P(Y|X)$ được gọi là sự trôi dạt thực. Sự trôi dạt thực có thể không ảnh hưởng đến sự phân phối các trường hợp đầu vào $P(X)$. Ví dụ, người ta có thể đề cập đến sự thay đổi trong sở thích của người dùng khi họ theo dõi các kênh tin tức phát trực tuyến, trong khi sự phân phối các mục tin tức nhận được thường không thay đổi~\cite{gama2014survey}.
+
+Phân loại theo mô hình thay đổi theo thời gian:
+\textbf{Sự trôi dạt đột ngột (Abrupt Drift):} Biểu thị trường hợp khi sự phân phối dữ liệu thay đổi đột ngột tại một thời điểm cụ thể. Drift đột ngột dễ nhận biết nhưng đòi hỏi cơ chế phát hiện và thích ứng nhanh để tránh suy giảm hiệu suất nghiêm trọng~\cite{basseville1993detection}.
+
+\textbf{Sự trôi dạt dần dần (Gradual Drift):} Sự trôi dạt dần dần biểu thị trường hợp khi sự phân phối dữ liệu thay đổi dần dần theo thời gian qua một khoảng thời gian chuyển tiếp. Trong giai đoạn chuyển tiếp này, dữ liệu có thể đến từ cả phân phối cũ và phân phối mới với tỷ lệ thay đổi dần~\cite{gama2014survey}.
+
+\textbf{Sự trôi dạt tăng dần (Incremental Drift):} Thể hiện sự tiến hóa dần dần của phân phối dữ liệu theo từng bước nhỏ liên tục. Ví dụ như sự tiến hóa dần dần của hệ thống đề xuất người dùng ngày càng tiến hóa và nhiều hơn dựa trên sự thay đổi sở thích của người dùng theo thời gian~\cite{hovakimyan2024evolving}.
+
+\textbf{Sự trôi dạt lặp lại (Recurrent Drift):} Trôi dạt lặp lại là khi dữ liệu quay trở lại trạng thái cũ sau một thời gian, hoặc lặp lại theo chu kỳ. Những thay đổi trong dữ liệu không phải mới mà đã từng xảy ra trước đó. Ví dụ như xu hướng thời trang thay đổi theo mùa, tuần hoàn theo từng năm~\cite{hovakimyan2024evolving}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{image/distribution_based_concept_drift.png}
+\caption{Phân loại dựa trên sự thay đổi phân phối}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{image/patern_based_concept_drift.png}
+\caption{Phân loại dựa trên sự thay đổi theo thời gian}
+\end{figure}
+
+\subsection{Ảnh hưởng của concept drift}
+
+Sự trôi dạt khái niệm có thể ảnh hưởng lớn đến hiệu suất của mô hình dự đoán, đặc biệt là khi mô hình học từ luồng dữ liệu. Một loạt các dịch vụ/ứng dụng trong bối cảnh hệ thống và mạng truyền thông có thể bị cản trở bởi sự trôi dạt khái niệm như~\cite{ramakrishnan2014enabling}:
+
+\begin{itemize}
+    \item \textbf{Hệ thống phát hiện xâm nhập (IDS):} Các mẫu tấn công mạng liên tục thay đổi, đòi hỏi IDS phải thích ứng với các mối đe dọa mới
+    \item \textbf{Hệ thống phân loại và dự đoán lưu lượng:} Mẫu lưu lượng mạng thay đổi theo thời gian, ảnh hưởng đến độ chính xác dự đoán
+    \item \textbf{Industrial IoT (IIoT):} Đặc biệt trong các kỹ thuật bảo trì dựa trên tình trạng (Condition-Based Maintenance - CBM) được sử dụng để dự đoán các điều kiện bất thường và thời gian bảo trì thông qua phân tích dữ liệu IIoT~\cite{jourdan2021machine}
+    \item \textbf{Thành phố thông minh:} Dữ liệu được thu thập cho nhiều mục đích như đảm bảo an ninh mạng, dự đoán ô nhiễm không khí, dự đoán giao thông đường bộ và dự báo tải điện
+\end{itemize}
+
+Sự phân phối của dữ liệu có thể thay đổi theo thời gian do máy móc lão hóa và cần quy trình bảo trì, hoặc do các yếu tố môi trường thay đổi. Do đó, một kỹ thuật CBM không có khả năng xử lý sự trôi dạt khái niệm sẽ hoạt động kém~\cite{jourdan2021machine}. Do đó, sự trôi dạt khái niệm có thể ảnh hưởng đến hiệu quả và tính mạnh mẽ của phân tích luồng dữ liệu~\cite{tripathi2021ensuring}. Trong môi trường không cố định, có một số cân nhắc mà các mô hình dự đoán phải tính đến để phát hiện và tự thích ứng với sự trôi dạt khái niệm, nếu không, hiệu suất của các mô hình này sẽ giảm sút về độ chính xác và độ mạnh mẽ. Theo thời gian, một mô hình dự đoán có thể cần cập nhật lại dữ liệu mới, hoặc thay đổi các tham số và cấu trúc của nó bằng cách kết hợp các dữ liệu huấn luyện mới hoặc thay thế hoàn toàn mô hình cũ để xử lý sự trôi dạt khái niệm.
+
+% ============================================================================
+% SECTION 2.2: STATISTICAL MEASURES FOR DRIFT DETECTION
+% ============================================================================
+% This section contains MMD and other statistical tests
+% MOVED from duplication in ShapeDD section
+% ============================================================================
+
+\section{Các thước đo thống kê cho phát hiện drift}
+
+\subsection{Maximum Mean Discrepancy (MMD)}
+\label{sec:mmd}
+
+Maximum Mean Discrepancy (MMD)~\cite{gretton2012kernel} là một thước đo thống kê mạnh mẽ được sử dụng để so sánh hai phân phối xác suất $P$ và $Q$. MMD đóng vai trò nền tảng trong nhiều phương pháp phát hiện drift hiện đại, bao gồm cả ShapeDD được trình bày trong mục~\ref{sec:shapedd}. Ý tưởng cốt lõi là ánh xạ dữ liệu từ không gian gốc vào không gian đặc trưng cao chiều (feature space) nơi việc so sánh trở nên nhạy cảm hơn với sự khác biệt phân phối.
+
+\subsubsection{Định nghĩa và intuition}
+
+MMD đo lường khoảng cách giữa hai phân phối bằng cách tìm hàm $f$ có thể phân biệt tốt nhất giữa chúng. Nếu hai phân phối giống nhau, giá trị kỳ vọng của bất kỳ hàm nào áp dụng lên chúng sẽ giống nhau. Ngược lại, nếu khác nhau, sẽ tồn tại một hàm cho phép phân biệt rõ ràng.
+
+MMD được định nghĩa chính thức như:
+\begin{equation}
+\text{MMD}(P, Q) = \sup_{f \in \mathcal{F}} \left| \mathbb{E}_{X \sim P}[f(X)] - \mathbb{E}_{Y \sim Q}[f(Y)] \right|
+\end{equation}
+
+trong đó:
+\begin{itemize}
+    \item $P$ và $Q$ là hai phân phối cần được so sánh
+    \item $X \sim P$ đại diện cho biến ngẫu nhiên được lấy mẫu từ phân phối $P$
+    \item $Y \sim Q$ đại diện cho biến ngẫu nhiên được lấy mẫu từ phân phối $Q$
+    \item $\mathcal{F}$ là một lớp hàm $f$ sao cho $\|f\|_{\mathcal{H}} \leq 1$ trong Reproducing Kernel Hilbert Space (RKHS)~\cite{scholkopf2002learning}
+    \item $\sup$ biểu thị supremum (cận trên nhỏ nhất)
+\end{itemize}
+
+\textbf{Intuition:} Trong không gian ban đầu, hai phân phối có thể khó phân biệt. Bằng cách ánh xạ vào RKHS thông qua hàm kernel~\cite{scholkopf2002learning}, các cấu trúc phức tạp của phân phối trở nên rõ ràng hơn. MMD đo lường khoảng cách giữa ``trung bình'' (mean embedding) của hai phân phối trong không gian này.
+
+\subsubsection{Kernel trick và RKHS}
+
+Trong thực tế, việc tìm supremum trên $\mathcal{F}$ là không khả thi về mặt tính toán. Do đó, MMD thường được triển khai trong RKHS~\cite{scholkopf2002learning} sử dụng kernel trick với hàm kernel $k(x, y)$:
+
+\begin{equation}
+k(x, y) = \langle \phi(x), \phi(y) \rangle_{\mathcal{H}}
+\end{equation}
+
+trong đó $\phi(x)$ ánh xạ điểm $x$ vào RKHS $\mathcal{H}$ và $\langle \cdot, \cdot \rangle_{\mathcal{H}}$ là tích vô hướng trong $\mathcal{H}$.
+
+\textbf{Lựa chọn kernel phổ biến:} Gaussian RBF kernel được sử dụng rộng rãi nhất do tính chất universal (có thể xấp xỉ bất kỳ hàm liên tục nào):
+
+\begin{equation}
+k(x, y) = \exp\left(-\frac{\|x - y\|^2}{2\sigma^2}\right)
+\end{equation}
+
+Tham số $\sigma$ (bandwidth) điều khiển độ nhạy: giá trị nhỏ tập trung vào sự khác biệt cục bộ, giá trị lớn nắm bắt cấu trúc toàn cục.
+
+\subsubsection{Công thức tính toán}
+
+MMD bình phương trong RKHS trở thành:
+\begin{equation}
+\label{eq:mmd_squared}
+\text{MMD}^2(P, Q) = \mathbb{E}_{X, X' \sim P}[k(X, X')] + \mathbb{E}_{Y, Y' \sim Q}[k(Y, Y')] - 2\mathbb{E}_{X \sim P, Y \sim Q}[k(X, Y)]
+\end{equation}
+
+\textbf{Giải thích ba thành phần:}
+\begin{itemize}
+    \item \textbf{Thành phần 1:} $\mathbb{E}_{X, X' \sim P}[k(X, X')]$ - độ tương đồng trung bình giữa các điểm trong phân phối $P$
+    \item \textbf{Thành phần 2:} $\mathbb{E}_{Y, Y' \sim Q}[k(Y, Y')]$ - độ tương đồng trung bình giữa các điểm trong phân phối $Q$
+    \item \textbf{Thành phần 3:} $-2\mathbb{E}_{X \sim P, Y \sim Q}[k(X, Y)]$ - độ tương đồng chéo giữa hai phân phối (có dấu âm)
+\end{itemize}
+
+Nếu $P = Q$, ba thành phần này cân bằng nhau và $\text{MMD}^2 = 0$. Nếu $P \neq Q$, sự khác biệt trong cấu trúc nội bộ và tương tác chéo dẫn đến $\text{MMD}^2 > 0$.
+
+\subsubsection{Ước lượng thực nghiệm}
+
+Để ước tính thực nghiệm với mẫu $\{x_i\}_{i=1}^n$ từ $P$ và $\{y_j\}_{j=1}^m$ từ $Q$, có hai ước lượng chính:
+
+\textbf{1. Unbiased estimator ($\widehat{\text{MMD}}^2_u$):}
+\begin{equation}
+\widehat{\text{MMD}}^2_u = \frac{1}{n(n-1)} \sum_{i \neq j} k(x_i, x_j) + \frac{1}{m(m-1)} \sum_{i \neq j} k(y_i, y_j) - \frac{2}{nm} \sum_{i,j} k(x_i, y_j)
+\end{equation}
+
+Ước lượng này là unbiased ($\mathbb{E}[\widehat{\text{MMD}}^2_u] = \text{MMD}^2$) bằng cách loại trừ các cặp $(i,i)$ trong hai tổng đầu (tránh bias do tự tương quan).
+
+\textbf{2. Biased but consistent estimator ($\widehat{\text{MMD}}^2_b$):}
+\begin{equation}
+\widehat{\text{MMD}}^2_b = \mathbf{w}^\top K_{XY} \mathbf{w}
+\end{equation}
+
+trong đó:
+\begin{itemize}
+    \item $K_{XY}$ là kernel matrix kích thước $(n+m) \times (n+m)$ trên tất cả samples $\{x_1, ..., x_n, y_1, ..., y_m\}$
+    \item $\mathbf{w} = (n^{-1}, ..., n^{-1}, -m^{-1}, ..., -m^{-1})^\top$ với $n$ phần tử dương và $m$ phần tử âm
+\end{itemize}
+
+Ước lượng này biased nhưng consistent (hội tụ về $\text{MMD}^2$ khi $n, m \to \infty$).
+
+\textbf{Tính chất thống kê:} Cả hai ước lượng đều hội tụ với tốc độ $O(\sqrt{\min(n,m)^{-1}})$ và bound này chỉ phụ thuộc vào tính chất của kernel, độc lập với số chiều dữ liệu~\cite{gretton2012kernel}.
+
+\textbf{Ví dụ minh họa:} Xét hai phân phối 1D:
+\begin{itemize}
+    \item $P = \mathcal{N}(0, 1)$ - phân phối chuẩn tâm 0, phương sai 1
+    \item $Q = \mathcal{N}(2, 1)$ - phân phối chuẩn tâm 2, phương sai 1
+\end{itemize}
+
+Với Gaussian kernel ($\sigma = 1$), MMD sẽ nắm bắt được sự dịch chuyển trung bình (mean shift) giữa hai phân phối. Khi $n, m \to \infty$, $\widehat{\text{MMD}}^2$ hội tụ về giá trị dương phản ánh khoảng cách thực giữa $P$ và $Q$.
+
+% ============================================================================
+% SECTION 2.3: EXISTING DRIFT DETECTION METHODS
+% ============================================================================
+% Brief overview of existing methods for context
+% ============================================================================
+
+\section{Các phương pháp phát hiện drift hiện có}
+
+Để cung cấp bối cảnh cho ShapeDD, chúng ta tóm tắt ngắn gọn các phương pháp phát hiện drift chính đã được nghiên cứu rộng rãi trong lĩnh vực này.
+
+\subsection{Phương pháp dựa trên hiệu suất mô hình}
+
+\textbf{DDM, EDDM, MDDM, FHDDMS:} Các phương pháp này theo dõi các thống kê lỗi của mô hình và phát hiện drift khi hiệu suất giảm đáng kể. DDM (Drift Detection Method) giám sát tỷ lệ lỗi và độ lệch chuẩn của nó, báo cảnh báo khi giá trị này vượt ngưỡng dựa trên phân phối Bernoulli. EDDM (Early Drift Detection Method) cải tiến bằng cách theo dõi khoảng cách giữa các lỗi, cho phép phát hiện sớm hơn.
+
+\textbf{Ưu điểm:} Trực quan, dễ triển khai, phát hiện drift ảnh hưởng trực tiếp đến mô hình.
+
+\textbf{Nhược điểm:} Phụ thuộc vào nhãn ground truth, có thể bị trễ trong việc phát hiện do cần thu thập đủ lỗi, không áp dụng được cho bài toán không giám sát.
+
+\subsection{Phương pháp dựa trên cửa sổ thích ứng}
+
+\textbf{ADWIN (Adaptive Windowing):} Điều chỉnh động kích thước cửa sổ dựa trên sự thay đổi được quan sát. ADWIN duy trì cửa sổ có thể mở rộng và thu hẹp, kiểm tra xem phân phối ở đầu và cuối cửa sổ có khác nhau đáng kể không. Khi phát hiện sự thay đổi, cửa sổ được cắt bớt để loại bỏ dữ liệu cũ.
+
+\textbf{Ưu điểm:} Đạt được cân bằng giữa độ nhạy và ổn định với đảm bảo lý thuyết $O(\log W)$ về bộ nhớ, tự động thích ứng với tốc độ drift.
+
+\textbf{Nhược điểm:} Chi phí tính toán cao do phải kiểm tra nhiều điểm cắt, có thể phát hiện muộn hơn các phương pháp chuyên biệt cho drift đột ngột.
+
+\subsection{Phương pháp dựa trên độc lập thống kê}
+
+\textbf{DAWIDD (Distance-Aware Window Independence Drift Detection):} Phát hiện drift thông qua việc đo lường sự phụ thuộc giữa features và thời gian. DAWIDD sử dụng khoảng cách Wasserstein và kiểm định độc lập để phát hiện khi đặc trưng dữ liệu bắt đầu phụ thuộc vào thời gian (dấu hiệu của drift).
+
+\textbf{Ưu điểm:} Cho phép phát hiện sớm mà không cần nhãn, có nền tảng lý thuyết vững chắc từ lý thuyết độ đo.
+
+\textbf{Nhược điểm:} Chi phí tính toán cao, đòi hỏi tham số điều chỉnh cẩn thận.
+
+% ============================================================================
+% SECTION 2.4: SHAPEDD - SHAPE-BASED DRIFT DETECTION
+% ============================================================================
+% This is the SIMPLIFIED version of ShapeDD
+% - Keeps theoretical foundation
+% - Removes MMD duplication (references Section 2.2)
+% - Removes implementation details (move to Chapter 3)
+% - Removes SNR-Adaptive (move to Chapter 3)
+% ============================================================================
+
+\section{Phương pháp ShapeDD: Phát hiện trôi dạt dựa trên hình dạng}
+\label{sec:shapedd}
+
+\subsection{Giới thiệu và động cơ}
+
+Trong học máy cổ điển, dữ liệu thường được giả định là \textit{độc lập và phân phối đồng nhất} (i.i.d.) theo một phân phối tĩnh $P_X$. Tuy nhiên, trong các ứng dụng thực tế như luồng dữ liệu từ mạng xã hội, thiết bị IoT hay cảm biến, phân phối dữ liệu thường thay đổi theo thời gian — hiện tượng này được gọi là \textbf{trôi dạt khái niệm (concept drift)}. Khi đó, các mô hình học máy có xu hướng trở nên lỗi thời, đòi hỏi cơ chế phát hiện và điều chỉnh kịp thời.
+
+Các phương pháp \textbf{không giám sát (unsupervised)} cho bài toán phát hiện drift thường dựa trên việc đo \textit{độ khác biệt} giữa hai phân phối dữ liệu trong hai cửa sổ thời gian liên tiếp. Tuy nhiên, do số lượng mẫu trong mỗi cửa sổ thường nhỏ, các phép đo này dễ bị \textbf{nhiễu}, khiến việc phân biệt giữa thay đổi thật và dao động ngẫu nhiên trở nên khó khăn.
+
+\textbf{ShapeDD (Shape-Based Drift Detection)}~\cite{shapeDD2024} được đề xuất nhằm khắc phục vấn đề này bằng cách khai thác \textit{đặc trưng hình dạng} mà tín hiệu drift thể hiện, đặc biệt trong các trường hợp \textbf{drift đột ngột (abrupt drift)}. Thay vì chỉ xem xét giá trị tức thời của thống kê phát hiện drift (như MMD), ShapeDD phân tích \textit{hình dạng} của chuỗi thống kê theo thời gian để phân biệt drift thực sự với nhiễu ngẫu nhiên.
+
+\subsection{Nền tảng lý thuyết}
+
+\subsubsection{Đại lượng độ lớn trôi dạt (σ)}
+
+Xét luồng dữ liệu mà phân phối sinh dữ liệu tại thời điểm $t$ được ký hiệu là $D_t$. Khi xảy ra trôi dạt, ta có $D_t \neq D_s$ với một số $s < t$. ShapeDD định nghĩa đại lượng \textbf{độ lớn trôi dạt} $\sigma$ như là độ đo sự khác biệt giữa hai phân phối quan sát được trong hai cửa sổ thời gian lân cận.
+
+Với hai cửa sổ $W_l(t) = [t - \frac{l}{2}, \, t + \frac{l}{2}]$ và $W_l(s) = [s - \frac{l}{2}, \, s + \frac{l}{2}]$, ta định nghĩa:
+\begin{equation}
+    \sigma_{d,l}(s,t) = d \big( P_{W_l(s)}, \, P_{W_l(t)} \big),
+\end{equation}
+trong đó $P_{W_l(t)}$ là phân phối trung bình trên cửa sổ $W_l(t)$ và $d(\cdot,\cdot)$ là độ đo khoảng cách giữa phân phối. Trong ShapeDD, độ đo $d(\cdot,\cdot)$ thường là Maximum Mean Discrepancy (MMD) được trình bày trong mục~\ref{sec:mmd}.
+
+\subsubsection{Hình dạng đặc trưng của drift đột ngột (Định lý 1)}
+
+Kết quả lý thuyết trung tâm của ShapeDD được phát biểu trong Định lý~1~\cite{shapeDD2024}, mô tả \textit{hình dạng đặc trưng, không phụ thuộc vào phân phối} của tín hiệu $\sigma$ khi xảy ra một trôi dạt đột ngột.
+
+\begin{theorem}[Hình dạng tam giác của drift đột ngột]
+Giả sử phân phối nền $p_t$ thay đổi \textbf{tức thời} tại $t=0$ từ $P$ sang $Q$, khi đó tín hiệu độ lớn trôi dạt có thể được phân tách thành hai phần:
+\begin{equation}
+    \sigma_{\parallel \cdot \parallel, l, p^\cdot}(t)
+    = \underbrace{ \| P - Q \| }_{\text{Độ mạnh drift}} \cdot
+      \underbrace{ h_l(t) }_{\text{Hình dạng drift}},
+\end{equation}
+trong đó $h_l(t)$ chỉ phụ thuộc vào độ dài cửa sổ $l$, được định nghĩa bởi:
+\begin{equation}
+\label{eq:triangular_shape}
+    h_l(t) = \max\left( 0, \, 1 - \frac{|t|}{l} \right).
+\end{equation}
+\end{theorem}
+
+Hàm $h_l(t)$ có dạng \textbf{tam giác cân}, đạt cực đại tại thời điểm xảy ra drift ($t=0$), và suy giảm tuyến tính về hai phía. Đặc tính này hoàn toàn không phụ thuộc vào dạng phân phối hay độ đo khoảng cách sử dụng, mà chỉ bị co giãn theo hệ số $\|P - Q\|$.
+
+\textbf{Ý nghĩa:} Định lý này cho thấy rằng bất kể phân phối $P$ và $Q$ là gì, tín hiệu drift luôn có hình dạng tam giác đặc trưng. Điều này cung cấp cơ sở lý thuyết vững chắc cho việc thiết kế bộ lọc phát hiện drift.
+
+\subsubsection{Tổng quát hóa cho nhiều sự kiện drift}
+
+Khi tồn tại nhiều điểm trôi dạt đột ngột tại các thời điểm $t_1 < t_2 < \dots < t_n$, và độ dài cửa sổ $l$ đủ nhỏ để các tam giác không chồng lên nhau, tổng tín hiệu trôi dạt được biểu diễn như:
+\begin{equation}
+    \sigma_{\parallel \cdot \parallel, l, p^\cdot}(t)
+    = \sum_{i=1}^{n} \| P_{i-1} - P_i \| \, h_l(t - t_i).
+\end{equation}
+
+Như vậy, tín hiệu tổng thể $\sigma(t)$ có thể xem là tổng chập (linear superposition) của nhiều ``hình tam giác'' trôi dạt độc lập.
+
+\subsection{Từ lý thuyết đến thực hành: Nguyên lý matched filtering}
+
+Định lý 1 cung cấp nền tảng lý thuyết cho thuật toán ShapeDD thực tế. Hình dạng tam giác đặc trưng $h_l(t)$ gợi ý cách tiếp cận \textbf{matched filtering} từ lý thuyết xử lý tín hiệu: thiết kế bộ lọc có hình dạng tương ứng với tín hiệu mong đợi để tối đa hóa tỷ lệ tín hiệu-nhiễu (Signal-to-Noise Ratio - SNR).
+
+\textbf{Nguyên lý matched filter:} Trong xử lý tín hiệu, matched filter là bộ lọc tối ưu để phát hiện một tín hiệu đã biết trong nhiễu. Khi hình dạng bộ lọc khớp với hình dạng tín hiệu, đầu ra của bộ lọc đạt giá trị cực đại tại vị trí tín hiệu xuất hiện, đồng thời giảm thiểu ảnh hưởng của nhiễu.
+
+Áp dụng vào phát hiện drift: Nếu drift tạo ra tín hiệu tam giác $h_l(t)$ như Định lý 1, ta thiết kế bộ lọc có dạng tam giác tương ứng. Khi tích chập (convolution) bộ lọc này với chuỗi MMD quan sát được, đầu ra sẽ ``bật lên'' (spike) tại vị trí drift thực sự, trong khi nhiễu ngẫu nhiên bị triệt tiêu.
+
+\textbf{Chiến lược của ShapeDD:}
+\begin{enumerate}
+    \item Tính chuỗi MMD giữa các cửa sổ trượt → tín hiệu $\sigma(t)$ có nhiễu
+    \item Áp dụng matched filter tam giác → lọc nhiễu, làm nổi bật drift
+    \item Phát hiện các điểm cực đại trong tín hiệu đã lọc → drift candidates
+    \item Xác thực bằng permutation test → loại bỏ false positive
+\end{enumerate}
+
+Cách tiếp cận này kết hợp \textit{thống kê (MMD)} với \textit{xử lý tín hiệu (matched filtering)}, tạo nên một phương pháp phát hiện drift vừa có nền tảng lý thuyết vững chắc, vừa hiệu quả trong thực tế.
+
+\subsection{Thuật toán ShapeDD}
+
+Dựa trên nền tảng lý thuyết ở trên, ShapeDD triển khai thuật toán phát hiện drift theo bốn giai đoạn chính.
+
+\subsubsection{Giai đoạn 1: Thu thập dữ liệu}
+
+ShapeDD sử dụng kỹ thuật cửa sổ trượt (sliding window) với chiến lược cửa sổ đôi (double window). Tại mỗi thời điểm $t$, chúng ta duy trì cửa sổ $W_t$ có kích thước tổng cộng $2l_1$:
+
+\begin{equation}
+W_t = \{x_{t-2l_1+1}, x_{t-2l_1+2}, \ldots, x_t\}
+\end{equation}
+
+Cửa sổ này được chia thành hai phần bằng nhau:
+\begin{itemize}
+    \item \textbf{Cửa sổ tham chiếu (reference window):} $W_{ref} = \{x_{t-2l_1+1}, \ldots, x_{t-l_1}\}$ (dữ liệu cũ hơn)
+    \item \textbf{Cửa sổ hiện tại (current window):} $W_{cur} = \{x_{t-l_1+1}, \ldots, x_t\}$ (dữ liệu mới hơn)
+\end{itemize}
+
+\textbf{Lựa chọn kích thước cửa sổ $l_1$:} Đây là tham số quan trọng nhất:
+\begin{itemize}
+    \item $l_1$ nhỏ (50-100): Nhạy với drift nhanh nhưng dễ bị nhiễu
+    \item $l_1$ trung bình (100-200): Cân bằng giữa độ nhạy và ổn định (khuyến nghị)
+    \item $l_1$ lớn (>300): Ổn định nhưng trễ phát hiện cao
+\end{itemize}
+
+\subsubsection{Giai đoạn 2: Tính toán chuỗi MMD}
+
+Tại mỗi vị trí cửa sổ trượt, ShapeDD tính toán Maximum Mean Discrepancy (xem mục~\ref{sec:mmd}) giữa cửa sổ tham chiếu và cửa sổ hiện tại:
+
+\begin{equation}
+\text{MMD}^2_t = \text{MMD}^2(W_{ref}, W_{cur})
+\end{equation}
+
+Sử dụng công thức~\eqref{eq:mmd_squared} với Gaussian RBF kernel:
+\begin{equation}
+k(x_i, x_j) = \exp\left(-\frac{\|x_i - x_j\|^2}{2\sigma^2}\right)
+\end{equation}
+
+Bandwidth $\sigma$ được chọn tự động bằng \textbf{median heuristic}:
+\begin{equation}
+\sigma = \text{median}\left(\{\|x_i - x_j\| : i, j \in W_t, i \neq j\}\right)
+\end{equation}
+
+Quá trình này được lặp lại trên toàn bộ luồng dữ liệu, tạo ra chuỗi thời gian các giá trị MMD: $\{\text{MMD}^2_1, \text{MMD}^2_2, \ldots, \text{MMD}^2_T\}$.
+
+\textbf{Ý nghĩa của chuỗi MMD:} Khi drift xảy ra tại thời điểm $t_d$:
+\begin{itemize}
+    \item Trước drift ($t < t_d - l_1$): Cả hai cửa sổ đều từ phân phối cũ $\Rightarrow$ $\text{MMD}^2_t \approx 0$
+    \item Tại drift ($t_d - l_1 \leq t \leq t_d$): Một cửa sổ từ phân phối cũ, cửa sổ kia từ phân phối mới $\Rightarrow$ $\text{MMD}^2_t$ tăng mạnh
+    \item Sau drift ($t > t_d + l_1$): Cả hai cửa sổ đều từ phân phối mới $\Rightarrow$ $\text{MMD}^2_t \approx 0$
+\end{itemize}
+
+Điều này tạo ra hình dạng tam giác đặc trưng trong chuỗi MMD tại vị trí drift, đúng như Định lý 1 dự đoán.
+
+\subsubsection{Giai đoạn 3: Phát hiện hình dạng qua matched filtering}
+
+Để phát hiện hình dạng tam giác trong chuỗi MMD, ShapeDD áp dụng bộ lọc matched filter. Bộ lọc được thiết kế để nhạy với biên tăng-giảm (rising-falling edge) đặc trưng của tín hiệu drift:
+
+\begin{equation}
+h'_l(t) = \begin{cases}
++1 & \text{nếu } t \in [0, l] \quad \text{(biên tăng)} \\
+-1 & \text{nếu } t \in (l, 2l] \quad \text{(biên giảm)}
+\end{cases}
+\end{equation}
+
+Tín hiệu shape được tính bằng convolution (tích chập):
+\begin{equation}
+\text{shape}(t) = (h'_l * \text{MMD}^2)(t) = \sum_{i=0}^{2l} h'_l(i) \cdot \text{MMD}^2_{t-i}
+\end{equation}
+
+\textbf{Tại sao matched filter hoạt động?} Khi tín hiệu MMD có dạng tam giác (trước drift thấp, tại drift cao, sau drift thấp), tích chập với $h'_l$ tạo ra:
+\begin{itemize}
+    \item Vùng tăng của tam giác × (+1) = giá trị dương lớn
+    \item Vùng giảm của tam giác × (-1) = giá trị dương lớn
+    \item $\Rightarrow$ Tổng lớn tại vị trí drift
+\end{itemize}
+
+Ngược lại, nhiễu ngẫu nhiên (không có cấu trúc tam giác) sẽ bị triệt tiêu khi tích chập với $h'_l$.
+
+\textbf{Zero-crossing detection:} Drift candidate được xác định khi tín hiệu shape đổi dấu:
+\begin{equation}
+\text{Candidate}(t) = [\text{sign}(\text{shape}(t)) \neq \text{sign}(\text{shape}(t-1))]
+\end{equation}
+
+\subsubsection{Giai đoạn 4: Xác thực thống kê qua permutation test}
+
+Mỗi drift candidate được xác thực bằng \textbf{permutation test}~\cite{good2005permutation} để loại bỏ false positive. Đây là bước then chốt đảm bảo tính chính xác của ShapeDD.
+
+\textbf{Quy trình permutation test:}
+\begin{enumerate}
+    \item Tính $\text{MMD}^2_{\text{obs}}$ từ dữ liệu gốc tại vị trí candidate
+    \item Lặp $N_{\text{perm}}$ lần (thường 1000-5000):
+    \begin{enumerate}
+        \item Hoán vị ngẫu nhiên nhãn của hai cửa sổ (trộn lẫn reference và current)
+        \item Tính $\text{MMD}^2_{\text{perm}}$ với dữ liệu hoán vị
+        \item Lưu giá trị vào phân phối null
+    \end{enumerate}
+    \item Tính p-value:
+    \begin{equation}
+    p\text{-value} = \frac{\#\{\text{MMD}^2_{\text{perm}} \geq \text{MMD}^2_{\text{obs}}\}}{N_{\text{perm}}}
+    \end{equation}
+    \item Quyết định: Nếu $p\text{-value} < \alpha$ (thường $\alpha = 0.05$), chấp nhận drift
+\end{enumerate}
+
+\textbf{Tại sao permutation test hiệu quả?} Nếu không có drift thực sự (hai cửa sổ từ cùng phân phối), việc hoán vị nhãn không nên thay đổi nhiều $\text{MMD}^2$ - giá trị quan sát sẽ nằm trong phân phối null. Nếu có drift thực sự (hai cửa sổ từ phân phối khác nhau), $\text{MMD}^2_{\text{obs}}$ sẽ lớn hơn đáng kể so với các giá trị permutation, cho p-value nhỏ.
+
+\subsection{Ưu điểm của ShapeDD}
+
+ShapeDD mang lại một số ưu điểm quan trọng so với các phương pháp phát hiện drift truyền thống:
+
+\textbf{1. Khử nhiễu và giảm báo động giả:} Nhờ cơ chế lọc shape, ShapeDD giảm đáng kể số lần báo động sai do nhiễu thống kê. Thay vì phản ứng với mọi dao động nhỏ trong tín hiệu MMD, phương pháp chỉ tập trung vào các biến động có hình dạng phù hợp với drift thật (tam giác). Việc yêu cầu tín hiệu phải khớp với triangular pattern giúp lọc bỏ các random fluctuations.
+
+\textbf{2. Độ chính xác định vị cao:} ShapeDD có khả năng xác định chính xác thời điểm xảy ra drift. Nhờ việc khớp dạng tam giác, phương pháp định vị điểm thay đổi gần như trùng khớp với vị trí drift thực (sai lệch chỉ khoảng $\pm l/2$ hoặc ít hơn). Trong khi nhiều phương pháp cửa sổ đôi khác chỉ báo động ``đang có drift trong một khoảng nào đó'', ShapeDD cung cấp trực tiếp thời điểm drift với độ trễ rất nhỏ.
+
+\textbf{3. Nền tảng lý thuyết vững chắc:} Định lý 1 cung cấp cơ sở toán học cho việc tại sao ShapeDD hoạt động hiệu quả. Hình dạng tam giác không phụ thuộc vào phân phối cụ thể, làm cho phương pháp có tính tổng quát cao.
+
+\textbf{4. Thích ứng với nhiều kịch bản drift:} Mặc dù giả định lý thuyết ban đầu tập trung vào drift đột ngột, ShapeDD trong thực nghiệm tỏ ra linh hoạt trước nhiều kiểu drift khác nhau. Nhờ việc có thể điều chỉnh độ dài cửa sổ $l$, phương pháp có thể bắt được cả những thay đổi nhanh lẫn chậm.
+
+\subsection{Hạn chế và điều kiện áp dụng}
+
+Bên cạnh ưu điểm, ShapeDD cũng có một số hạn chế cần lưu ý:
+
+\textbf{1. Giả định drift rời rạc:} Lý thuyết hình dạng của ShapeDD giả định mỗi khoảng thời gian chỉ có tối đa một sự kiện drift rõ ràng. Nếu các drift xảy ra liên tục hoặc quá gần nhau (khoảng cách giữa hai lần thay đổi nhỏ hơn $2l$), các mẫu hình tam giác có thể chồng lấn khiến bộ lọc shape không còn nhận dạng đúng được.
+
+\textbf{2. Hạn chế với drift liên tục (gradual drift):} Trong trường hợp concept drift xảy ra một cách từ từ liên tục (ví dụ mô hình trôi nhẹ dần theo thời gian không có điểm cắt rạch ròi), hình dạng tam giác đặc trưng sẽ không còn rõ nét. Nếu phân phối thay đổi dần, tín hiệu $\sigma(t)$ sẽ không tạo thành mũi nhọn mà chỉ nhô lên rất thoải, khiến cách tiếp cận shape có thể kém nhạy. ShapeDD phát huy tốt nhất với các drift kiểu đột ngột hoặc giai đoạn (sudden/step drift).
+
+\textbf{3. Lựa chọn độ dài cửa sổ $l$:} Hiệu quả của ShapeDD phụ thuộc vào tham số $l$. Nếu $l$ quá nhỏ, ước lượng MMD rất nhiễu, khiến khớp shape khó phân biệt tín hiệu; ngược lại nếu $l$ quá lớn, hiệu ứng drift bị làm mờ và còn gây tăng độ trễ phát hiện. Việc chọn $l$ thường phụ thuộc vào đặc điểm của từng bài toán cụ thể.
+
+\textbf{4. Chi phí tính toán của permutation test:} Permutation test là bước tốn thời gian nhất trong ShapeDD: $O(N_{\text{perm}} \cdot l^2)$ cho mỗi candidate. Tuy nhiên, vì chỉ áp dụng cho các candidate (không phải mọi thời điểm), chi phí trung bình vẫn chấp nhận được trong hầu hết ứng dụng thực tế.
+
+\subsection{So sánh với các phương pháp khác}
+
+\textbf{ShapeDD vs DDM:} DDM giám sát lỗi phân loại và phụ thuộc vào nhãn (supervised), trong khi ShapeDD hoạt động không cần nhãn (unsupervised). ShapeDD thường xác định điểm drift nhanh và chính xác hơn vì phản ứng ngay khi phân phối thay đổi, không cần chờ lỗi mô hình tích lũy.
+
+\textbf{ShapeDD vs ADWIN:} ADWIN phải kiểm tra nhiều điểm cắt có thể, dễ gặp vấn đề multiple testing. ShapeDD chỉ xem xét vài điểm ứng viên do shape filter chọn lọc, giảm nguy cơ báo trùng lặp. ShapeDD cho phép định vị chính xác điểm drift, còn ADWIN thường chỉ biết ``một thay đổi đã xảy ra''. Tuy nhiên, ADWIN nổi bật trong xử lý drift dần dần nhờ khả năng thích ứng cửa sổ.
+
+\textbf{ShapeDD vs DAWIDD:} DAWIDD sử dụng khoảng cách Wasserstein và kiểm định độc lập, trong khi ShapeDD dựa trên MMD và matched filtering. So sánh thực nghiệm cho thấy ShapeDD thường có tỷ lệ false positive thấp hơn nhờ cơ chế lọc shape, trong khi DAWIDD có thể phát hiện sớm hơn trong một số trường hợp.
+
+\textbf{Đánh giá tổng quát:} Điểm độc đáo của ShapeDD là khai thác cấu trúc hình dạng lý thuyết của tín hiệu drift - một khía cạnh mà hầu hết phương pháp khác chưa tận dụng. Nhờ đó, ShapeDD đạt được cân bằng tốt giữa độ nhạy và độ đặc hiệu: nhạy vì dùng thống kê mạnh như MMD, đặc hiệu vì yêu cầu khuôn dạng đặc trưng mới báo động.
+
+\subsection{Tóm tắt}
+
+ShapeDD tiếp cận bài toán phát hiện trôi dạt khái niệm từ góc nhìn của \textbf{xử lý tín hiệu}. Phương pháp dựa vào việc chứng minh rằng độ lớn thay đổi của phân phối khi drift xảy ra luôn tạo ra một tín hiệu có \textit{hình tam giác đặc trưng} (Định lý 1). Nhờ đó, ShapeDD có thể:
+\begin{itemize}
+    \item Lọc nhiễu trong tín hiệu trôi dạt thông qua matched filtering
+    \item Ước lượng chính xác thời điểm xảy ra drift
+    \item Đạt độ tin cậy cao trong phát hiện drift đột ngột
+    \item Duy trì tỷ lệ false positive thấp nhờ permutation test
+\end{itemize}
+
+Phương pháp đặc biệt phù hợp cho các ứng dụng đòi hỏi phát hiện nhanh và chính xác các thay đổi đột ngột trong luồng dữ liệu, với khả năng hoạt động trong môi trường không giám sát (không cần nhãn).
+
+% ============================================================================
+% END OF CHAPTER 2
+% ============================================================================
+% Content to move to Chapter 3:
+% - SNR-Adaptive method (lines 418-541 of original)
+% - Implementation details (lines 574-753 of original)
+% - Buffer dilution effect (lines 755-825 of original)
+% - All variants descriptions
+% ============================================================================

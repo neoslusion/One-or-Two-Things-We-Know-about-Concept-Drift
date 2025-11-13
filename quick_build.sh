@@ -65,4 +65,4 @@ fi
 
 cd - > /dev/null
 echo ""
-echo -e "${GREEN}🎉 Build completed!${NC}"
+echo -e "${GREEN} Build completed!${NC}"

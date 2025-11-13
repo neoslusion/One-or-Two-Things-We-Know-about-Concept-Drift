@@ -54,13 +54,84 @@ Chương này trình bày khung phương pháp luận để điều tra phát hi
 
 Phương pháp luận nghiên cứu bao gồm ba thành phần chính: (1) phân tích lý thuyết của thuật toán ShapeDD và các nền tảng Maximum Mean Discrepancy (MMD) cơ bản, (2) triển khai và tối ưu hóa hệ thống phát hiện cho các bộ dữ liệu tổng hợp và thực tế, và (3) đánh giá thực nghiệm toàn diện trên các mẫu drift và cấu hình tham số khác nhau.
 
-\section{Nền tảng lý thuyết của Shape Drift Detector}
+\section{Phương pháp ShapeDD: Phát hiện trôi dạt khái niệm dựa trên hình dạng}
 
-Shape
+\subsection{Giới thiệu và Động cơ}
+
+Trong học máy cổ điển, dữ liệu thường được giả định là \textit{độc lập và phân phối đồng nhất} (i.i.d.) theo một phân phối tĩnh $P_X$. Tuy nhiên, trong các ứng dụng thực tế như luồng dữ liệu từ mạng xã hội, thiết bị IoT hay cảm biến, phân phối dữ liệu thường thay đổi theo thời gian — hiện tượng này được gọi là \textbf{trôi dạt khái niệm (concept drift)}. Khi đó, các mô hình học máy có xu hướng trở nên lỗi thời, đòi hỏi cơ chế phát hiện và điều chỉnh kịp thời.
+
+Các phương pháp \textbf{không giám sát (unsupervised)} cho bài toán phát hiện drift thường dựa trên việc đo \textit{độ khác biệt} giữa hai phân phối dữ liệu trong hai cửa sổ thời gian liên tiếp. Tuy nhiên, do số lượng mẫu trong mỗi cửa sổ thường nhỏ, các phép đo này dễ bị \textbf{nhiễu}, khiến việc phân biệt giữa thay đổi thật và dao động ngẫu nhiên trở nên khó khăn.
+
+\textbf{ShapeDD (Shape-Based Drift Detection)} được đề xuất nhằm khắc phục vấn đề này bằng cách khai thác \textit{đặc trưng hình dạng} mà tín hiệu drift thể hiện, đặc biệt trong các trường hợp \textbf{drift đột ngột (abrupt drift)}.
+
+\subsection{Nền tảng lý thuyết}
+
+\subsubsection{Đại lượng độ lớn trôi dạt (\texorpdfstring{$\sigma$}{σ})}
+
+Xét luồng dữ liệu mà phân phối sinh dữ liệu tại thời điểm $t$ được ký hiệu là $D_t$. Khi xảy ra trôi dạt, ta có $D_t \neq D_s$ với một số $s < t$. ShapeDD định nghĩa đại lượng \textbf{độ lớn trôi dạt} $\sigma$ như là độ đo sự khác biệt giữa hai phân phối quan sát được trong hai cửa sổ thời gian lân cận.
+
+Với hai cửa sổ $W_l(t) = [t - \frac{l}{2}, \, t + \frac{l}{2}]$ và $W_l(s) = [s - \frac{l}{2}, \, s + \frac{l}{2}]$, ta định nghĩa:
+\begin{equation}
+    \sigma_{d,l}(s,t) = d \big( P_{W_l(s)}, \, P_{W_l(t)} \big),
+\end{equation}
+trong đó $P_{W_l(t)}$ là phân phối trung bình trên cửa sổ $W_l(t)$ và $d(\cdot,\cdot)$ là độ đo khoảng cách (ví dụ: MMD, Wasserstein, KL, v.v.).
+
+\subsubsection{Hình dạng đặc trưng của drift đột ngột (Định lý 1)}
+
+Kết quả lý thuyết trung tâm của ShapeDD được phát biểu trong Định lý~1, mô tả \textit{hình dạng đặc trưng, không phụ thuộc vào phân phối} của tín hiệu $\sigma$ khi xảy ra một trôi dạt đột ngột.
+
+Giả sử phân phối nền $p_t$ thay đổi \textbf{tức thời} tại $t=0$ từ $P$ sang $Q$, khi đó tín hiệu độ lớn trôi dạt có thể được phân tách thành hai phần:
+\begin{equation}
+    \sigma_{\parallel \cdot \parallel, l, p^\cdot}(t)
+    = \underbrace{ \| P - Q \| }_{\text{Độ mạnh drift}} \cdot
+      \underbrace{ h_l(t) }_{\text{Hình dạng drift}},
+\end{equation}
+trong đó $h_l(t)$ chỉ phụ thuộc vào độ dài cửa sổ $l$, được định nghĩa bởi:
+\begin{equation}
+    h_l(t) = \max\left( 0, \, 1 - \frac{|l - t|}{l} \right).
+\end{equation}
+
+Hàm $h_l(t)$ có dạng \textbf{tam giác cân}, đạt cực đại tại thời điểm xảy ra drift, và suy giảm tuyến tính về hai phía. Đặc tính này hoàn toàn không phụ thuộc vào dạng phân phối hay độ đo khoảng cách sử dụng, mà chỉ bị co giãn theo hệ số $\|P - Q\|$.
+
+\subsubsection{Tổng quát hoá cho nhiều sự kiện drift (Hệ quả 1)}
+
+Khi tồn tại nhiều điểm trôi dạt đột ngột tại các thời điểm $t_1 < t_2 < \dots < t_n$, và độ dài cửa sổ $l$ đủ nhỏ để các tam giác không chồng lên nhau, tổng tín hiệu trôi dạt được biểu diễn như:
+\begin{equation}
+    \sigma_{\parallel \cdot \parallel, l, p^\cdot}(t)
+    = \sum_{i=1}^{n} \| P_{i-1} - P_i \| \, h_l(t - t_i).
+\end{equation}
+
+Như vậy, tín hiệu tổng thể $\sigma(t)$ có thể xem là tổng chập (linear superposition) của nhiều “hình tam giác” trôi dạt độc lập.
+
+\subsection{Ứng dụng vào Lọc Nhiễu và Phát hiện Drift}
+
+Nhận biết được dạng hình học của tín hiệu trôi dạt giúp ta thực hiện \textbf{ước lượng tham số (parametric estimation)} cho $\sigma$. Cụ thể, thay vì dùng giá trị ước lượng nhiễu $\hat{\sigma}$, ShapeDD tiến hành \textbf{khớp hàm tham số} $\tilde{\sigma}$ có dạng:
+\begin{equation}
+    \tilde{\sigma}(t) = \sum_i a_i \, h_l(t - t_i),
+\end{equation}
+trong đó $a_i$ biểu diễn biên độ (độ mạnh drift) và $t_i$ là vị trí thời gian của sự kiện drift.
+
+Do hàm $h_l(t)$ có cấu trúc hình học cố định và chỉ phụ thuộc vào $l$, việc khớp mô hình $\tilde{\sigma}$ giúp:
+\begin{itemize}
+    \item Lọc bỏ nhiễu ngẫu nhiên trong $\hat{\sigma}$ (\textit{denoising});
+    \item Xác định chính xác hơn thời điểm trôi dạt $t_i$;
+    \item Giảm tỉ lệ báo động giả (false positive rate).
+\end{itemize}
+
+Trong thực nghiệm, quá trình khớp hàm này được thực hiện bằng \textbf{Fast Sequential Function Fitting}, áp dụng trên các tín hiệu thu được từ nhiều độ đo (như MMD) và các độ dài cửa sổ khác nhau, nhằm tạo ra ước lượng cuối cùng có độ chính xác cao.
+
+\subsection{Tóm tắt}
+
+Tóm lại, ShapeDD tiếp cận bài toán phát hiện trôi dạt khái niệm từ góc nhìn của \textbf{xử lý tín hiệu}. Phương pháp dựa vào việc chứng minh rằng độ lớn thay đổi của phân phối khi drift xảy ra luôn tạo ra một tín hiệu có \textit{hình tam giác đặc trưng}. Nhờ đó, ShapeDD có thể:
+\begin{itemize}
+    \item Lọc nhiễu trong tín hiệu trôi dạt,
+    \item Ước lượng chính xác thời điểm xảy ra drift,
+    \item Và đạt độ tin cậy cao trong phát hiện drift đột ngột.
+\end{itemize}
 
 \subsection{Maximum Mean Discrepancy (MMD)}
 
-Shape Drift Detector (ShapeDD) dựa trên Maximum Mean Discrepancy (MMD)~\cite{gretton2012kernel}, một thước đo thống kê được sử dụng để so sánh hai phân phối xác suất $P$ và $Q$. Ý tưởng cốt lõi là ánh xạ dữ liệu từ không gian gốc vào không gian feature cao chiều nơi việc so sánh trở nên nhạy cảm hơn với sự khác biệt phân phối.
+Như đã nhắc đến ở trên, ShapeDD dựa trên Maximum Mean Discrepancy (MMD)~\cite{gretton2012kernel}, một thước đo thống kê được sử dụng để so sánh hai phân phối xác suất $P$ và $Q$. Ý tưởng cốt lõi là ánh xạ dữ liệu từ không gian gốc vào không gian feature cao chiều nơi việc so sánh trở nên nhạy cảm hơn với sự khác biệt phân phối.
 
 \subsubsection{Định nghĩa và intuition}
 
@@ -162,81 +233,7 @@ Các phương pháp phát hiện drift cơ bản đã được trình bày chi t
 
 So với các phương pháp này, ShapeDD mang lại góc nhìn khác biệt bằng cách sử dụng Maximum Mean Discrepancy (MMD) để so sánh trực tiếp phân phối dữ liệu trong không gian kernel, kết hợp với kỹ thuật phát hiện hình dạng (shape detection) để giảm nhiễu và tăng độ chính xác định vị drift.
 
-\subsection{Thuật toán Shape Drift Detector}
-
-Shape Drift Detector (ShapeDD)~\cite{hinder2024survey_partA} là một detector drift dựa trên meta-statistic hoạt động thông qua quá trình đa giai đoạn để xác định concept drift trong luồng dữ liệu. Thuật toán sử dụng MMD như thước đo thống kê cốt lõi và theo một cách tiếp cận có hệ thống bao gồm bốn giai đoạn chính. Điểm mạnh của ShapeDD nằm ở khả năng lọc nhiễu thông qua việc phát hiện "hình dạng" (shape) đặc trưng của drift trong chuỗi thống kê MMD.
-
-\subsubsection{Động lực và ý tưởng cốt lõi}
-
-Nhiều phương pháp phát hiện drift truyền thống dựa trên việc đo lường độ lệch giữa phân phối mẫu trong hai cửa sổ thời gian liên tiếp (ví dụ: cửa sổ hiện tại và cửa sổ tham chiếu). Tuy nhiên, do số lượng mẫu trong mỗi cửa sổ thường hạn chế, phép đo độ lệch này có nhiễu đáng kể – khó phân biệt được sự khác biệt do drift thực sự gây ra so với dao động ngẫu nhiên bên trong phân phối.
-
-\textbf{Cốt lõi của ShapeDD} nằm ở việc khai thác đặc trưng hình dạng của tín hiệu drift để nhận biết điểm thay đổi. Phương pháp sử dụng khái niệm \textit{độ lớn drift} (drift magnitude) $\sigma_{d,l}(t)$ được định nghĩa:
-
-\begin{equation}
-\sigma_{d,l}(t) = d\Big(p_{[t-2l,t-l]},\,p_{[t-l,t]}\Big)
-\label{eq:drift-magnitude-core}
-\end{equation}
-
-trong đó $p_{[a,b]}$ là phân phối dữ liệu trung bình trên đoạn thời gian $[a,b]$, và $d(\cdot,\cdot)$ là một độ đo khoảng cách giữa hai phân phối (ví dụ: MMD, khoảng cách Hellinger, KL divergence).
-
-\textbf{Hình dạng tam giác đặc trưng:} Khi xảy ra drift đột ngột tại thời điểm $t_0$, độ lớn drift $\sigma(t)$ có hình dạng đặc trưng dạng tam giác: tăng lên rồi giảm xuống trong khoảng thời gian tương ứng với độ dài cửa sổ $l$. Tính chất này được chứng minh chính thức trong Theorem sau:
-
-\begin{theorem}[Triangle Shape Property - Hinder et al.~\cite{hinder2024survey_partA}]
-\label{thm:triangle-shape}
-Cho $\|\cdot\|$ là một norm trên không gian các phân phối hữu hạn, $l > 0$, và $p_t$ là drift process với single abrupt drift tại $t = 0$, tức là:
-\[
-p_t = \begin{cases}
-P & t \leq 0 \\
-Q & t > 0
-\end{cases}
-\]
-trong đó $P, Q$ là các phân phối tùy ý. Khi đó:
-\[
-\sigma_{\|\cdot\|,l,p_{\cdot}}(t) = \|P - Q\| \cdot \max\left(0, 1 - \frac{|l - t|}{l}\right) =: \|P - Q\| \cdot h_l(t)
-\]
-
-Đặc biệt, $\sigma$ có thể phân tích thành:
-\begin{itemize}
-    \item \textbf{Scalar part:} $\|P - Q\|$ - phụ thuộc vào norm và distributions nhưng độc lập với $l$
-    \item \textbf{Shape part:} $h_l(t) = \max(0, 1 - |l-t|/l)$ - chỉ phụ thuộc vào $l$, độc lập với norm và distributions
-\end{itemize}
-\end{theorem}
-
-\textbf{Hệ quả cho multiple drifts:} Theorem 1 mở rộng cho drift processes với nhiều abrupt drifts tại $t_1 < ... < t_n$:
-\[
-p_t = \begin{cases}
-P_0 & t < t_1 \\
-P_1 & t \in [t_1, t_2) \\
-\vdots \\
-P_n & t \geq t_n
-\end{cases}
-\]
-
-Với mọi $l < \min\{t_{i+1} - t_i\}/2$ (drifts đủ xa nhau), ta có:
-\[
-\sigma_{\|\cdot\|,l,p_{\cdot}}(t) = \sum_{i=1}^{n} \|P_{i-1} - P_i\| \cdot h_l(t - t_i)
-\]
-
-\textbf{Ý nghĩa thực tiễn:} Theorem 1 cho thấy shape $h_l(t)$ là universal pattern cho abrupt drift, không phụ thuộc vào đặc trưng cụ thể của distributions. Điều này cho phép:
-\begin{itemize}
-    \item Sử dụng chung tham số shape cho nhiều norms và window lengths khác nhau
-    \item Denoising robust bằng cách fit parametric curve $\sum_i s_i h_{l_i}(t - t_i)$ thay vì pointwise estimation
-    \item Precise localization của drift time $t_0$ thông qua zero-crossing detection của $h'_l$
-\end{itemize}
-
-\textbf{Phạm vi của luận văn:} Theorem 1 chứng minh rigorous triangle shape property cho \textbf{single abrupt drift}. Luận văn này tập trung nghiên cứu chuyên sâu sudden drift scenarios, nơi mà theoretical guarantees mạnh nhất. Các loại drift khác (gradual, incremental) không có closed-form characterization tương tự, đòi hỏi approaches khác và nằm ngoài scope của nghiên cứu này. Việc focus vào sudden drift cho phép thorough analysis với strong mathematical foundation thay vì shallow coverage nhiều types.
-
-\textbf{Bộ lọc hình dạng:} Để phát hiện mẫu tam giác này, ShapeDD sử dụng bộ lọc trọng số $h'_l(t)$ (đạo hàm của $h_l$):
-
-\begin{equation}
-h'_l(t) = \begin{cases}
-+1, & t \in [0, l) \\
--1, & t \in (l, 2l] \\
-0, & \text{ngoài } [0,2l]
-\end{cases}
-\end{equation}
-
-Khi tích chập $\hat{\sigma}(t)$ với $h'_l$, tại vùng quanh drift thật, kết quả tạo thành hàm có đoạn dương rồi đoạn âm. Thời điểm đổi dấu từ dương sang âm chính là vị trí drift $t_0$ cần tìm. Nhờ việc khớp hàm dạng tham số $h_l$, chuỗi tín hiệu drift được "nén" lại chỉ còn vài tham số ($t_0$ và biên độ $s$ cho mỗi sự kiện), giảm thiểu ảnh hưởng nhiễu dao động cục bộ.
+ShapeDD hoạt động theo bốn giai đoạn chính như sau~\cite{shapeDD2024}:
 
 \subsubsection{Giai đoạn 1: Thu thập dữ liệu (Data Collection)}
 
@@ -398,27 +395,27 @@ Bên cạnh ưu điểm, ShapeDD cũng có một số hạn chế và điều ki
     \item \textbf{Trường hợp dữ liệu nhiều chiều phức tạp:} Mặc dù MMD với kernel Gaussian có ưu điểm không phụ thuộc số chiều, nhưng trong thực tế khi phân phối thay đổi chỉ trên một phần không gian đặc trưng, hoặc drift chỉ ảnh hưởng một vài thuộc tính, thì việc phát hiện có thể khó khăn hơn (tín hiệu drift yếu vì khoảng cách toàn cục nhỏ). Khi đó, có thể cần kết hợp ShapeDD với phương pháp lựa chọn đặc trưng hoặc kiểm định theo từng chiều.
 \end{itemize}
 
-\subsubsection{So sánh với các phương pháp phát hiện drift khác}
+% \subsubsection{So sánh với các phương pháp phát hiện drift khác}
 
-\textbf{ShapeDD vs DDM:} DDM (Drift Detection Method) là phương pháp giám sát lỗi phân loại theo thời gian và đưa ra cảnh báo drift khi tỷ lệ lỗi tăng vượt ngưỡng dựa trên mô hình Bernoulli. So với DDM, ShapeDD có những khác biệt quan trọng:
-\begin{itemize}
-    \item ShapeDD hoạt động \textit{không cần nhãn} (unsupervised), trực tiếp phát hiện thay đổi phân phối dữ liệu thay vì chờ sai số mô hình tăng. DDM chỉ hữu dụng trong bối cảnh giám sát (supervised) và phụ thuộc vào chất lượng mô hình hiện tại.
-    \item Về độ chính xác thời gian, ShapeDD thường xác định điểm drift \textit{nhanh và chính xác hơn}. DDM có xu hướng phát hiện muộn – nó đợi đủ bằng chứng sai số tăng mới kích hoạt. ShapeDD phản ứng ngay khi phân phối bắt đầu lệch, chỉ lệch khoảng nửa độ dài cửa sổ $l$.
-    \item ShapeDD khắc phục được vấn đề nhiễu và không phụ thuộc trực tiếp vào hiệu năng mô hình, trong khi DDM có thể nhạy cảm với các dao động ngẫu nhiên trong lỗi.
-\end{itemize}
+% \textbf{ShapeDD vs DDM:} DDM (Drift Detection Method) là phương pháp giám sát lỗi phân loại theo thời gian và đưa ra cảnh báo drift khi tỷ lệ lỗi tăng vượt ngưỡng dựa trên mô hình Bernoulli. So với DDM, ShapeDD có những khác biệt quan trọng:
+% \begin{itemize}
+%     \item ShapeDD hoạt động \textit{không cần nhãn} (unsupervised), trực tiếp phát hiện thay đổi phân phối dữ liệu thay vì chờ sai số mô hình tăng. DDM chỉ hữu dụng trong bối cảnh giám sát (supervised) và phụ thuộc vào chất lượng mô hình hiện tại.
+%     \item Về độ chính xác thời gian, ShapeDD thường xác định điểm drift \textit{nhanh và chính xác hơn}. DDM có xu hướng phát hiện muộn – nó đợi đủ bằng chứng sai số tăng mới kích hoạt. ShapeDD phản ứng ngay khi phân phối bắt đầu lệch, chỉ lệch khoảng nửa độ dài cửa sổ $l$.
+%     \item ShapeDD khắc phục được vấn đề nhiễu và không phụ thuộc trực tiếp vào hiệu năng mô hình, trong khi DDM có thể nhạy cảm với các dao động ngẫu nhiên trong lỗi.
+% \end{itemize}
 
-\textbf{ShapeDD vs ADWIN:} ADWIN (Adaptive Windowing) là phương pháp dựa trên trượt cửa sổ với kích thước thay đổi thích ứng. ADWIN luôn duy trì một cửa sổ dữ liệu có thể mở rộng, và thu hẹp lại khi kiểm định thống kê phát hiện phân phối ở đầu và cuối cửa sổ khác nhau đáng kể.
-\begin{itemize}
-    \item Ưu điểm của ShapeDD so với ADWIN là \textit{giảm thiểu kiểm định nhiều lần}: ADWIN phải kiểm tra rất nhiều điểm cắt có thể trong cửa sổ lớn, dễ gặp vấn đề multiple testing làm tăng xác suất báo sai. ShapeDD chỉ xem xét vài điểm ứng viên do shape filter chọn lọc, giảm hẳn nguy cơ báo trùng lặp hoặc báo giả liên tục.
-    \item ShapeDD cho phép \textit{định vị chính xác} điểm drift (cung cấp trực tiếp $t_0$), còn ADWIN thường chỉ biết "một thay đổi đã xảy ra" và phải ước lượng điểm cắt – độ chính xác có thể kém hơn.
-    \item Về khả năng thích ứng, ADWIN nổi bật trong xử lý drift dần dần: nó có thể từ từ thu hẹp/gia tăng cửa sổ. Trong tình huống drift đột ngột, ADWIN thường phải chờ tích lũy đủ bằng chứng, nên có thể trễ hơn ShapeDD.
-\end{itemize}
+% \textbf{ShapeDD vs ADWIN:} ADWIN (Adaptive Windowing) là phương pháp dựa trên trượt cửa sổ với kích thước thay đổi thích ứng. ADWIN luôn duy trì một cửa sổ dữ liệu có thể mở rộng, và thu hẹp lại khi kiểm định thống kê phát hiện phân phối ở đầu và cuối cửa sổ khác nhau đáng kể.
+% \begin{itemize}
+%     \item Ưu điểm của ShapeDD so với ADWIN là \textit{giảm thiểu kiểm định nhiều lần}: ADWIN phải kiểm tra rất nhiều điểm cắt có thể trong cửa sổ lớn, dễ gặp vấn đề multiple testing làm tăng xác suất báo sai. ShapeDD chỉ xem xét vài điểm ứng viên do shape filter chọn lọc, giảm hẳn nguy cơ báo trùng lặp hoặc báo giả liên tục.
+%     \item ShapeDD cho phép \textit{định vị chính xác} điểm drift (cung cấp trực tiếp $t_0$), còn ADWIN thường chỉ biết "một thay đổi đã xảy ra" và phải ước lượng điểm cắt – độ chính xác có thể kém hơn.
+%     \item Về khả năng thích ứng, ADWIN nổi bật trong xử lý drift dần dần: nó có thể từ từ thu hẹp/gia tăng cửa sổ. Trong tình huống drift đột ngột, ADWIN thường phải chờ tích lũy đủ bằng chứng, nên có thể trễ hơn ShapeDD.
+% \end{itemize}
 
-\textbf{ShapeDD vs HDDM:} HDDM (Hellinger Distance Drift Detection) sử dụng khoảng cách Hellinger tích lũy để phát hiện drift. Kết quả so sánh với HDDM cho thấy ShapeDD thường cho $\beta$-score cao hơn, đặc biệt trong trường hợp nhiễu lớn (HDDM có thể báo nhiều false positive hơn). Tuy nhiên, HDDM trong một số trường hợp phát hiện được drift nhỏ tốt hơn (vì tích lũy dần dần), dẫn đến xác suất phát hiện nhỉnh hơn khi cửa sổ rất nhỏ.
+% \textbf{ShapeDD vs HDDM:} HDDM (Hellinger Distance Drift Detection) sử dụng khoảng cách Hellinger tích lũy để phát hiện drift. Kết quả so sánh với HDDM cho thấy ShapeDD thường cho $\beta$-score cao hơn, đặc biệt trong trường hợp nhiễu lớn (HDDM có thể báo nhiều false positive hơn). Tuy nhiên, HDDM trong một số trường hợp phát hiện được drift nhỏ tốt hơn (vì tích lũy dần dần), dẫn đến xác suất phát hiện nhỉnh hơn khi cửa sổ rất nhỏ.
 
-\textbf{Đánh giá tổng quát:} Điểm độc đáo của ShapeDD là khai thác cấu trúc hình dạng lý thuyết của tín hiệu drift – một khía cạnh mà hầu hết phương pháp khác chưa tận dụng. Nhờ đó, ShapeDD đạt được cân bằng tốt giữa độ nhạy và độ đặc hiệu: nhạy vì dùng các độ đo mạnh như MMD, đặc hiệu vì yêu cầu khuôn dạng đặc trưng mới báo động. Trên tổng thể nhiều bộ dữ liệu, ShapeDD được đánh giá cao nhờ ổn định và chính xác, đặc biệt về phương diện giảm thiểu báo động sai và định vị đúng thời điểm thay đổi.
+% \textbf{Đánh giá tổng quát:} Điểm độc đáo của ShapeDD là khai thác cấu trúc hình dạng lý thuyết của tín hiệu drift – một khía cạnh mà hầu hết phương pháp khác chưa tận dụng. Nhờ đó, ShapeDD đạt được cân bằng tốt giữa độ nhạy và độ đặc hiệu: nhạy vì dùng các độ đo mạnh như MMD, đặc hiệu vì yêu cầu khuôn dạng đặc trưng mới báo động. Trên tổng thể nhiều bộ dữ liệu, ShapeDD được đánh giá cao nhờ ổn định và chính xác, đặc biệt về phương diện giảm thiểu báo động sai và định vị đúng thời điểm thay đổi.
 
-\section{Thuật toán phát hiện drift cải tiến}
+\section{Phương pháp cải tiến đề xuất}
 
 \subsection{ShapeDD SNR-Adaptive: Phương pháp hybrid thích ứng với tỷ lệ tín hiệu-nhiễu}
 

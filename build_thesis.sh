@@ -310,7 +310,7 @@ main() {
     show_stats
     
     echo ""
-    print_success "Build completed successfully! 🎉"
+    print_success "Build completed successfully! "
 }
 
 # Run main function with all arguments
