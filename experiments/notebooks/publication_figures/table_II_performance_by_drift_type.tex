@@ -1,0 +1,20 @@
+\begin{table}[htbp]
+\caption{F1-score performance stratified by drift type.}
+\label{tab:performance_by_drift_type}
+\begin{tabular}{lcccc}
+\toprule
+Drift_Type & Gradual & Incremental & Sudden & Avg \\
+Method &  &  &  &  \\
+\midrule
+DAWIDD & 0.235 & 0.278 & 0.604 & 0.373 \\
+MMD & 0.205 & 0.287 & 0.604 & 0.365 \\
+KS & 0.327 & 0.302 & 0.444 & 0.358 \\
+ShapeDD & 0.133 & 0.154 & 0.591 & 0.292 \\
+ShapeDD_MultiScale & 0.182 & 0.000 & 0.659 & 0.280 \\
+ShapeDD_Baseline_Adaptive & 0.236 & 0.000 & 0.535 & 0.257 \\
+ShapeDD_SNR_Adaptive & 0.158 & 0.000 & 0.583 & 0.247 \\
+D3 & 0.251 & 0.256 & 0.223 & 0.243 \\
+ShapeDD_GradualAware & 0.146 & 0.000 & 0.368 & 0.171 \\
+\bottomrule
+\end{tabular}
+\end{table}
