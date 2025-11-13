@@ -1,18 +1,8 @@
 \chapter{Thực nghiệm và đánh giá}
 \label{chap:experiments}
 
-\textbf{Phạm vi thực nghiệm:} Chapter này tập trung đánh giá comprehensive hiệu suất của ShapeDD và SNR-Adaptive trong \textbf{sudden (abrupt) drift scenarios}. Sudden drift được chọn vì: (1) tầm quan trọng thực tế cao trong production systems, (2) theoretical foundation vững chắc (Triangle Shape Property - Theorem 2.1), và (3) cho phép rigorous evaluation với statistical guarantees. Experiments bao gồm:
-
-\begin{itemize}
-    \item \textbf{Experiment 1}: Proof-of-concept với single sudden drift point (10,000 samples)
-    \item \textbf{Experiment 2}: Comprehensive benchmark - 18 methods × 8 datasets × 10 sudden drift points each
-    \item \textbf{Analysis}: Buffer dilution effect, SNR-Adaptive threshold calibration, strategy selection behavior
-\end{itemize}
-
-Các loại drift khác (gradual, incremental, recurrent) được đề cập trong related works và implementation framework (Chapter 1, 3), nhưng không được evaluated trong experiments này.
-
-\section{Giới thiệu}
-
+\section{Tổng quan thực nghiệm}
+\subsection{Tổng quan mô hình}
 Chương này trình bày kết quả thực nghiệm toàn diện của hệ thống phát hiện concept drift sử dụng ShapeDD và các phương pháp so sánh. Thực nghiệm được thiết kế để đánh giá:
 
 \begin{enumerate}
@@ -23,6 +13,66 @@ Chương này trình bày kết quả thực nghiệm toàn diện của hệ th
 \end{enumerate}
 
 Đánh giá được thực hiện trên dữ liệu tổng hợp với sudden drift được kiểm soát chặt chẽ, cho phép đo lường chính xác các metric phát hiện và thích ứng.
+
+\subsection{Tập dữ liệu sử dụng}
+Trong quá trình tinh chỉnh và cải tiến ShapeDD, luận văn quyết định sử dụng lại các tập dữ liệu~\cite{shapeDD2024} cụ thể mà nhóm tác giả đã sử dụng trong quá trình nghiên cứu và đánh giá phương pháp gốc ShapeDD. Lý do luận văn chọn các tập dữ liệu này là để đảm bảo tính nhất quán và khách quan để có thể so sánh được hiệu suất của phương pháp sau khi tinh chỉnh và cải tiến.
+
+Trong lĩnh vực phát hiện trôi dạt khái niệm, các bộ dữ liệu được chia thành hai loại chính: \textbf{bộ dữ liệu tổng hợp (synthetic datasets)} và \textbf{bộ dữ liệu thực tế (real-world datasets)}. Các bộ dữ liệu tổng hợp cho phép kiểm soát chính xác loại và mức độ của trôi dạt, trong khi các bộ dữ liệu thực tế giúp đánh giá hiệu quả mô hình trong bối cảnh ứng dụng cụ thể.
+
+\subsection{1. Các bộ dữ liệu tổng hợp (Synthetic Datasets)}
+
+Các bộ dữ liệu tổng hợp thường được sử dụng rộng rãi trong các nghiên cứu về concept drift vì chúng cho phép kiểm soát được loại trôi dạt (đột ngột, dần dần, lặp lại), thời điểm xảy ra, và mức độ thay đổi trong phân phối dữ liệu. Chúng thường được tạo bằng cách thay đổi hàm sinh dữ liệu hoặc tham số xác suất giữa các giai đoạn khác nhau của luồng dữ liệu. Dưới đây là một số bộ dữ liệu tiêu biểu:
+
+\begin{itemize}
+  \item \textbf{SEA Concepts} (Street \& Kim, 2001):  
+  Đây là một trong những bộ dữ liệu kinh điển dùng trong kiểm thử các thuật toán phát hiện trôi dạt. Mỗi mẫu dữ liệu gồm ba đặc trưng thực, nhưng chỉ hai đặc trưng đầu tiên được dùng để phân lớp. Nhãn được xác định theo công thức $f(x_1, x_2) = x_1 + x_2 > \theta$, trong đó $\theta$ là ngưỡng thay đổi theo thời gian. Khi $\theta$ thay đổi, ranh giới phân lớp cũng thay đổi, tạo ra trôi dạt đột ngột hoặc dần dần. Bộ dữ liệu này thường được sử dụng để mô phỏng các tình huống \textit{abrupt drift} hoặc \textit{gradual drift}.
+
+  \item \textbf{STAGGER Concepts} (Schlimmer \& Granger, 1986):  
+  Là bộ dữ liệu sinh tổng hợp dựa trên các quy tắc logic liên quan đến ba thuộc tính: màu sắc, hình dạng, và kích thước. Ví dụ: “IF (Color = Red) AND (Shape = Square) THEN Positive”. Khi quy tắc thay đổi, nghĩa là khái niệm phân lớp thay đổi – đây chính là trôi dạt khái niệm rời rạc (sudden drift). Bộ dữ liệu này được thiết kế nhằm kiểm tra khả năng thích nghi của mô hình học quy tắc trong môi trường thay đổi.
+
+  \item \textbf{Rotating Hyperplane} (Hulten et al., 2001):  
+  Bộ dữ liệu này sinh ra từ một siêu phẳng trong không gian nhiều chiều, có dạng $w_1x_1 + w_2x_2 + \ldots + w_dx_d = \theta$. Khi các trọng số $w_i$ thay đổi theo thời gian, mặt phẳng phân chia cũng quay dần, gây ra trôi dạt \textit{gradual} hoặc \textit{incremental}. Bộ dữ liệu này rất phổ biến trong các nghiên cứu về \textit{online learning} và \textit{stream mining} vì nó cho phép điều chỉnh tốc độ thay đổi khái niệm.
+
+  \item \textbf{Sine1 / Sine2}:  
+  Hai bộ dữ liệu này được sinh dựa trên hàm sin. Trong Sine1, các mẫu được gán nhãn dựa trên điều kiện $y = \sin(x_1) > x_2$, trong khi ở Sine2 điều kiện phân lớp thay đổi ngược lại. Khi chuyển đổi giữa hai quy tắc, ta có sự thay đổi hình dạng ranh giới quyết định, tạo nên trôi dạt hình học rõ rệt. Chúng được dùng để đánh giá khả năng thích nghi hình dạng ranh giới (shape-based drift) của mô hình.
+
+  \item \textbf{Gauss Dataset}:  
+  Là tập dữ liệu được tạo từ hai hoặc nhiều phân phối Gaussian. Khi các tham số trung bình ($\mu$) hoặc hiệp phương sai ($\Sigma$) của các cụm thay đổi, ranh giới giữa các lớp cũng thay đổi. Bộ dữ liệu này cho phép mô phỏng cả trôi dạt phân phối (\textit{virtual drift}) lẫn trôi dạt khái niệm (\textit{real drift}) tùy theo cách gán nhãn.
+
+\end{itemize}
+
+Nhìn chung, các bộ dữ liệu tổng hợp giúp nhà nghiên cứu dễ dàng điều chỉnh các yếu tố như:
+\begin{itemize}
+  \item Tốc độ trôi dạt (drift speed)
+  \item Hình dạng và mức độ phức tạp của ranh giới phân lớp
+  \item Tỷ lệ nhiễu (noise ratio)
+  \item Số lượng đặc trưng (number of features)
+\end{itemize}
+Chính vì vậy, chúng là công cụ lý tưởng để đánh giá định lượng hiệu suất và độ nhạy của các thuật toán phát hiện trôi dạt như DDM, EDDM, ADWIN, hoặc ShapeDD.
+
+
+\begin{table*}[htbp]
+\centering
+\caption{Common Synthetic Datasets Used in Concept Drift Research}
+\label{tab:synthetic_datasets}
+\begin{tabular}{lccccp{8cm}}
+\toprule
+\textbf{Dataset} & \textbf{\#Features} & \textbf{\#Classes} & \textbf{Drift Type} & \textbf{Domain} & \textbf{Description} \\
+\midrule
+STAGGER & 3 & 2 & Abrupt & Boolean / Categorical & Classic dataset with 3 categorical attributes (size, color, shape). Concept drift is introduced by switching between three classification rules (e.g., \textit{size=small} \& \textit{color=red}). Simulates sudden rule changes. \\
+SEA Concepts & 3 & 2 & Abrupt & Numeric / Stream & Consists of 3 numerical features. The class boundary changes by modifying the threshold of one feature, simulating abrupt boundary shifts. \\
+Rotating Hyperplane & 10 & 2 & Gradual / Incremental & Numeric / Linear model & Data generated from a 10-D hyperplane that slowly rotates, producing continuous boundary movement. Drift rate and noise are controllable. \\
+Random RBF & Variable & Variable & Abrupt / Gradual / Incremental & Numeric / Cluster-based & Generates samples from several drifting radial basis function (RBF) centers. Cluster movement and weight changes cause complex nonlinear drift. \\
+Random Tree & Variable & Variable & Reoccurring / Abrupt & Categorical / Decision-tree based & Data generated from a random decision tree. Altering tree parameters (depth, leaves, etc.) induces recurring or sudden drift. \\
+LED Generator & 24 & 10 & Abrupt & Binary / Multiclass & Simulates LED digit recognition (0–9) with 24 binary inputs. Drifts occur by changing bit patterns that encode the digits. \\
+Waveform & 40 & 3 & Abrupt & Numeric / Signal & Based on waveform generation (sine, square, triangle). Drift occurs when the waveform mixture changes abruptly. \\
+Sine1 / Sine2 & 2 & 2 & Abrupt & Numeric / Geometric & Simple 2-D concept where classes are separated by a sinusoidal boundary; drift simulated by switching sine phase. \\
+Circle & 2 & 2 & Gradual & Numeric / Geometric & Two-dimensional circular decision boundary; center or radius moves smoothly to simulate gradual drift. \\
+Rotating Chessboard & 2 & 2 & Gradual & Numeric / Image pattern & Checkerboard-like pattern whose orientation slowly rotates over time, producing structured rotational drift. \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
 
 \section{Thiết lập thực nghiệm}
 
