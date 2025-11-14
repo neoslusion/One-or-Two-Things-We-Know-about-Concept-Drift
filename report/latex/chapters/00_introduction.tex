@@ -1,31 +1,57 @@
 \chapter{Giới thiệu đề tài}
 
 \section{Thực trạng chung}
-Trong những năm gần đây, lĩnh vực trí tuệ nhân tạo ngày càng phát triển nhanh chóng. Việc ứng dụng thành quả của trí tuệ nhân tạo ngày càng được phổ biến rộng rãi, không chỉ trong đời sống hằng ngày mà cả trong công việc. Các ứng dụng học máy không còn bị giới hạn trong phòng thí nghiệm mà đã được triển khai vào đời sống thực tế trong các lĩnh vực sản xuất như bảo trì thông minh và kiểm soát chất lượng. Khi đó, các câu hỏi liên quan đến độ tin cậy và độ bền liên tục của chúng nảy sinh.
+Trong những năm gần đây, lĩnh vực trí tuệ nhân tạo ngày càng phát triển nhanh chóng. 
+Việc ứng dụng thành quả của trí tuệ nhân tạo ngày càng được phổ biến rộng rãi, không chỉ trong đời sống hằng ngày mà cả trong công việc. 
+Các ứng dụng học máy không còn bị giới hạn trong phòng thí nghiệm mà đã được triển khai vào đời sống thực tế trong các lĩnh vực sản 
+xuất như bảo trì thông minh và kiểm soát chất lượng. Khi đó, các câu hỏi liên quan đến độ tin cậy và độ bền liên tục của chúng nảy sinh.
 
-Các tập dữ liệu tĩnh được sử dụng để huấn luyện các mô hình học máy chỉ có thể nắm bắt được một phần nhỏ các điều kiện có thể xảy ra trong thế giới thực. Các trường hợp trôi dạt, chẳng hạn như thay đổi điều kiện môi trường, thiết bị và vận hành có thể, theo thời gian, làm giảm đáng kể hiệu suất của các mô hình học máy, gây ảnh hưởng đến sự an toàn, độ tin cậy của mô hình và kinh tế nếu không được giải quyết đúng cách. Do đó, cần phải (1) phát hiện sự trôi dạt sớm nhất có thể và (2) điều chỉnh hiệu quả mô hình theo các điều kiện thay đổi động.
+Các tập dữ liệu tĩnh được sử dụng để huấn luyện các mô hình học máy chỉ có thể nắm bắt được một phần nhỏ các điều kiện có 
+thể xảy ra trong thế giới thực. Các trường hợp trôi dạt, chẳng hạn như thay đổi điều kiện môi trường, thiết bị và vận hành có thể, 
+theo thời gian, làm giảm đáng kể hiệu suất của các mô hình học máy, gây ảnh hưởng đến sự an toàn, độ tin cậy của 
+mô hình và kinh tế nếu không được giải quyết đúng cách. Do đó, cần phải (1) phát hiện sự trôi dạt sớm nhất có thể và (2) điều chỉnh 
+hiệu quả mô hình theo các điều kiện thay đổi động.
 
 \section{Tổng quan về bài toán}
-Đối với việc xử lý dữ liệu streaming, việc xử lý và phân tích dữ liệu đang trở thành một thách thức lớn do tính phức tạp và tính động của dữ liệu này. Một thách thức quan trọng là xử lý hiện tượng \textbf{concept drift} - một hiện tượng xảy ra khi phân phối dữ liệu đầu vào $P(X)$ hoặc mối quan hệ giữa đầu vào và đầu ra $P(y|X)$ thay đổi theo thời gian - điều này ảnh hưởng trực tiếp đến hiệu suất của các mô hình học máy và các hệ thống ra quyết định tự động.
+Đối với việc xử lý dữ liệu streaming, việc xử lý và phân tích dữ liệu đang trở thành một thách thức lớn do tính phức tạp 
+và tính động của dữ liệu này. Một thách thức quan trọng là xử lý hiện tượng \textbf{concept drift} - một hiện tượng xảy ra 
+khi phân phối dữ liệu đầu vào $P(X)$ hoặc mối quan hệ giữa đầu vào và đầu ra $P(y|X)$ thay đổi theo thời gian - điều này ảnh 
+hưởng trực tiếp đến hiệu suất của các mô hình học máy và các hệ thống ra quyết định tự động.
 
-Đối với các ứng dụng học máy trong môi trường sản xuất công nghiệp như IoT, việc phát hiện drift trong thời gian thực (real-time) hoặc gần thời gian thực là yêu cầu bắt buộc để đảm bảo chất lượng và độ tin cậy của hệ thống. Tuy nhiên, việc xây dựng hệ thống như vậy đặt ra nhiều thách thức: (1) phát hiện drift chính xác, (2) từ sự kiện drift đó xác định được loại drift để chọn chiến lược thích ứng phù hợp, (3) thay đổi hoặc cập nhật mô hình nhanh chóng mà không làm gián đoạn dịch vụ.
+Đối với các ứng dụng học máy trong môi trường sản xuất công nghiệp như IoT, việc phát hiện drift trong thời gian thực (real-time) 
+hoặc gần thời gian thực là yêu cầu bắt buộc để đảm bảo chất lượng và độ tin cậy của hệ thống. Tuy nhiên, việc xây dựng hệ thống 
+như vậy đặt ra nhiều thách thức: (1) phát hiện drift chính xác, (2) từ sự kiện drift đó xác định được loại drift để chọn chiến lược 
+thích ứng phù hợp, (3) thay đổi hoặc cập nhật mô hình nhanh chóng mà không làm gián đoạn dịch vụ.
 
-Trong đề tài này, luận văn cố gắng giải quyết các thách thức trên bằng cách xây dựng một hệ thống end-to-end kết hợp: (1) phát hiện drift không giám sát sử dụng phương pháp ShapeDD - một phương pháp phát hiện trôi dạt, (2) phân loại loại drift tự động sử dụng CDT\_MSW, (3) adaptation strategies đa dạng cho từng loại drift, và (4) kiến trúc streaming real-time sử dụng Apache Kafka cho việc xử lý event-driven có khả năng mở rộng. Điều này đòi hỏi sự kết hợp giữa việc nhanh chóng phát hiện và phân loại drift, cùng với việc áp dụng các chiến lược thích ứng mô hình phù hợp để duy trì hiệu suất của hệ thống trong môi trường dữ liệu streaming động.
+Trong đề tài này, luận văn cố gắng giải quyết các thách thức trên bằng cách xây dựng một hệ thống end-to-end kết hợp: (1) phát hiện drift 
+không giám sát sử dụng phương pháp ShapeDD - một phương pháp phát hiện trôi dạt, (2) phân loại loại drift tự động sử dụng CDT\_MSW, (3) 
+adaptation strategies đa dạng cho từng loại drift, và (4) kiến trúc streaming real-time sử dụng Apache Kafka cho việc xử lý event-driven 
+có khả năng mở rộng. Điều này đòi hỏi sự kết hợp giữa việc nhanh chóng phát hiện và phân loại drift, cùng với việc áp dụng các chiến lược
+thích ứng mô hình phù hợp để duy trì hiệu suất của hệ thống trong môi trường dữ liệu streaming động.
 
 \section{Mục tiêu đề tài}
 \subsection{Nghiên cứu shapeDD và các phương pháp phát hiện drift truyền thống}
-Khảo sát toàn diện các phương pháp phát hiện concept drift cũng như là phương pháp ShapeDD, so sánh hiệu năng và cách thức hoạt động của chúng, bằng cách này luận văn sẽ hiểu rõ hơn về mục tiêu, cách thức hoạt động của các phương pháp, từ đó có thể ứng dụng cải thiện cho phương pháp ShapeDD.
-\subsection{Ứng dụng phương pháp shapeDD cho việc phát hiện drift}
-Sau khi nắm bắt được cơ sở lý thuyết, cách hoạt động của ShapeDD, luận văn sẽ ứng dụng tiến hành đánh giá hiệu năng trên các trường hợp trôi dạt khác nhau, dựa trên các những gì quan sát được, luận văn sẽ đề xuất áp dụng những cải thiện cho phương pháp hiện có để có thể thích nghi tốt hơn với các môi trường khác nhau.
+Khảo sát toàn diện các phương pháp phát hiện concept drift cũng như là phương pháp ShapeDD, so sánh hiệu năng và cách thức hoạt động của 
+chúng, bằng cách này luận văn sẽ hiểu rõ hơn về mục tiêu, cách thức hoạt động của các phương pháp, từ đó có thể ứng dụng cải thiện cho phương pháp ShapeDD.
+\subsection{Ứng dụng những đề xuất cải tiến}
+Sau khi nắm bắt được cơ sở lý thuyết, cách hoạt động của ShapeDD, luận văn sẽ ứng dụng tiến hành đánh giá hiệu năng trên các 
+trường hợp trôi dạt khác nhau, dựa trên các những gì quan sát được, luận văn sẽ đề xuất áp dụng những cải thiện cho phương pháp 
+hiện có để có thể thích nghi tốt hơn với các môi trường khác nhau.
 \subsection{Kết hợp với mô hình phân loại hiện tượng trôi dạt cùng với CDT\_MSW}
-Từ những gì đã nghiên cứu và cải thiện, luận văn sẽ kết hợp với mô hình phân loại hiện tượng trôi dạt CDT\_MSW để xây dựng một hệ thống phát hiện và thích ứng trôi dạt hoàn chỉnh, bằng cách vừa xác định và phân loại để có thể đưa ra quyết định chính xác cho việc cập nhật mô hình.
+Từ những gì đã nghiên cứu và cải thiện, luận văn sẽ kết hợp với mô hình phân loại hiện tượng trôi dạt CDT\_MSW 
+để xây dựng một hệ thống phát hiện và thích ứng trôi dạt hoàn chỉnh, bằng cách vừa xác định và phân loại để có 
+thể đưa ra quyết định chính xác cho việc cập nhật mô hình.
 \subsection{Tùy chỉnh và tối ưu hóa phương pháp}
-Luận văn sẽ tiến hành các thử nghiệm, tùy chỉnh các tham số của các phương pháp để đảm bảo rằng mô hình phù hợp và hiệu quả với bài toán phát hiện trôi dạt với các kiểu dữ liệu cũng như hiện tượng trôi dạt khác nhau.
+Luận văn sẽ tiến hành các thử nghiệm, tùy chỉnh các tham số của các phương pháp để đảm bảo rằng mô hình phù hợp và 
+hiệu quả với bài toán phát hiện trôi dạt với các kiểu dữ liệu cũng như hiện tượng trôi dạt khác nhau.
 \subsection{Triển khai và đánh giá}
-Cuối cùng, luận văn sẽ triển khai hệ thống phát hiện và thích ứng trôi dạt trên môi trường dữ liệu streaming real-time sử dụng Apache Kafka, đánh giá hiệu năng của hệ thống trong các kịch bản thực tế để đảm bảo tính khả thi và hiệu quả của giải pháp đề xuất.
+Cuối cùng, luận văn sẽ triển khai hệ thống phát hiện và thích ứng trôi dạt trên môi trường dữ liệu streaming real-time 
+sử dụng Apache Kafka, đánh giá hiệu năng của hệ thống trong các kịch bản thực tế để đảm bảo tính khả thi và 
+hiệu quả của giải pháp đề xuất.
 \section{Giới hạn đề tài và đối tượng nghiên cứu}
 \subsection{Phạm vi đề tài}
-Phạm vi của đề tài này tập trung vào việc nghiên cứu và phát triển hệ thống phát hiện và thích ứng concept drift trong môi trường động. Cụ thể, luận văn sẽ tập trung vào việc phát triển hệ thống kết hợp các phương pháp sau:
+Phạm vi của đề tài này tập trung vào việc nghiên cứu và phát triển hệ thống phát hiện và thích ứng concept drift trong môi trường động. 
+Cụ thể, luận văn sẽ tập trung vào việc phát triển hệ thống kết hợp các phương pháp sau:
 \begin{itemize}
     \item Nghiên cứu và cải thiện phương pháp ShapeDD để phát hiện concept drift không giám sát, so sánh với các phương pháp phát hiện drift truyền thống.
     \item Tích hợp mô hình CDT\_MSW để phân loại các loại drift tự động, từ đó hỗ trợ việc lựa chọn chiến lược thích ứng phù hợp.
