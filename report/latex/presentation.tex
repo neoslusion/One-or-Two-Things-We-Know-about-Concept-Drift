@@ -292,11 +292,152 @@
   \end{columns}
 \end{frame}
 
-% ==============================================================================
-% SECTION 3: PROPOSED SYSTEM
-% ==============================================================================
-\section{Hệ thống đề xuất}
 
+% Adaptive gamma
+\begin{frame}{1. Adaptive Kernel Bandwidth (Gamma)}
+\textbf{Áp dụng:} \texttt{shape\_adaptive}, \texttt{shape\_adaptive\_v2}, \texttt{shape\_sensitive}, \texttt{shape\_gradual\_aware}
+
+\vspace{6pt}
+\textbf{Giải thích lý thuyết mở rộng:}
+\begin{itemize}
+  \item \textbf{Vai trò của kernel bandwidth:} Trong MMD với RBF kernel $k(x,y)=\exp(-\gamma\|x-y\|^2)$, tham số $\gamma$ điều khiển độ nhạy theo khoảng cách. $\gamma$ quá nhỏ (kernel rộng) làm mờ sự khác biệt giữa hai phân phối; $\gamma$ quá lớn (kernel hẹp) gây nhiễu do chỉ so sánh điểm gần.
+  \item \textbf{Heuristics toán học:} median heuristic (dựa trên khoảng cách trung vị) và Scott's rule (dựa trên độ lệch chuẩn và chiều dữ liệu) xuất phát từ lý thuyết ước lượng mật độ kernel — giúp cân bằng bias/variance trong ước lượng MMD.
+  \item \textbf{Hệ quả cho kiểm định:} Power của test MMD phụ thuộc mạnh vào lựa chọn $\gamma$. Việc chọn $\gamma$ thích nghi làm tăng khả năng phát hiện drift ở nhiều tình huống (thay vì một $\gamma$ cố định chỉ tốt cho một loại drift).
+\end{itemize}
+\end{frame}
+
+% Smoothing
+\begin{frame}{2. Smoothing nhẹ để giảm nhiễu}
+\textbf{Áp dụng:} smoothing window nhỏ trong các phiên bản adaptive
+
+\vspace{6pt}
+\textbf{Giải thích lý thuyết mở rộng:}
+\begin{itemize}
+  \item \textbf{Mục tiêu:} loại bỏ nhiễu tần số cao (high-frequency noise) mà không làm mờ cạnh (edges) tương ứng với drift abrupt.
+  \item \textbf{Tại sao window nhỏ?} Smoothing linear (ví dụ uniform filter) có đặc tính low-pass. Cửa sổ lớn cắt bỏ tín hiệu có băng thông tương ứng (các chuyển đổi ngắn), gây mất detection cho abrupt drift. Cửa sổ nhỏ (size=3) giảm variance nhưng giữ lại đặc trưng thời gian.
+  \item \textbf{Lý thuyết liên quan:} trade-off bias–variance trong xử lý tín hiệu: smoothing giảm variance (ít false alarms), nhưng tăng bias (có thể giảm recall). Việc chọn cửa sổ nhỏ là một compromise hữu ích khi cần giữ độ phân giải thời gian.
+\end{itemize}
+\end{frame}
+
+% Percentile thresholds
+\begin{frame}{3. Ngưỡng dựa trên Percentile thay vì mean $\pm$ kσ}
+\textbf{Áp dụng:} percentile-based threshold trong \texttt{shape\_adaptive\_v2}, \texttt{shape\_gradual\_aware}
+
+\vspace{6pt}
+\textbf{Giải thích lý thuyết mở rộng:}
+\begin{itemize}
+  \item \textbf{Vấn đề với mean $\pm$ kσ:} Khi phân phối của thống kê (shape) lệch ( skewed ) hoặc nặng đuôi (heavy-tailed), mean và std không đại diện cho baseline — dẫn đến threshold không phù hợp.
+  \item \textbf{Percentile-based:} chọn percentile (ví dụ 10th) của các giá trị shape dương làm baseline — tiếp cận nonparametric, robust với ngoại lệ.
+  \item \textbf{Hệ quả thống kê:} percentile phản ánh vị trí tương đối trong phân phối thống kê, nên thích hợp cho môi trường phi tĩnh hoặc khi magnitude drift thay đổi theo thời gian.
+\end{itemize}
+\end{frame}
+
+% Sensitivity modes
+\begin{frame}{4. Chế độ Sensitivity (low, medium, high, ultrahigh)}
+\textbf{Áp dụng:} các hàm adaptive
+
+\vspace{6pt}
+\textbf{Giải thích lý thuyết mở rộng:}
+\begin{itemize}
+  \item \textbf{Cơ sở:} trong Signal Detection Theory, lựa chọn ngưỡng trực tiếp điều khiển trade-off giữa \emph{False Positive Rate} (α) và \emph{Detection Power} (1−β). Sensitivity mode là một cách thực tế để bật/tắt mức độ bảo thủ.
+  \item \textbf{Ý nghĩa toán học:} thay đổi sensitivity tương đương thay đổi $\eta$ trong quy tắc likelihood ratio: $\Lambda(x)\gtrless \eta$ → thay đổi $\eta$ thay đổi ROC point (operating point).
+  \item \textbf{Ứng dụng:} chọn 'high' để tối đa recall khi drift nhỏ; chọn 'low' để tối ưu precision khi dữ liệu nhiều nhiễu.
+\end{itemize}
+\end{frame}
+
+% MMD + FDR
+\begin{frame}{5. MMD kết hợp FDR (Benjamini–Hochberg)}
+\textbf{Áp dụng:} kiểm định MMD + điều chỉnh nhiều kiểm định
+
+\vspace{6pt}
+\textbf{Giải thích lý thuyết mở rộng:}
+\begin{itemize}
+  \item \textbf{MMD permutation test:} trả về p-value cho mỗi candidate — liệu hai cửa sổ dữ liệu trước/sau có khác nhau về phân phối không.
+  \item \textbf{Vấn đề multiple-testing:} trong chuỗi lớn, ta thực hiện nhiều phép kiểm định → tỉ lệ false positive tích lũy. BH-FDR điều chỉnh để kiểm soát kỳ vọng tỉ lệ false discoveries (FDR).
+  \item \textbf{Mối quan hệ với Neyman–Pearson:} MMD cung cấp kiểm định cho mỗi vị trí (kiểm định đơn lẻ). BH-FDR là bước bổ sung để duy trì kiểm soát lỗi khi kết hợp nhiều quyết định.
+\end{itemize}
+\end{frame}
+
+% Skip FDR when dense
+\begin{frame}{6. Bỏ FDR khi mật độ drift lớn (dense drift)}
+\textbf{Áp dụng:} logic skip-FDR trong \texttt{shape\_adaptive\_v2}
+
+\vspace{6pt}
+\textbf{Giải thích lý thuyết mở rộng:}
+\begin{itemize}
+  \item \textbf{Giả định FDR:} BH-FDR giả định phần lớn giả thuyết H0 là đúng (sparsity). Nếu giả định này bị vi phạm (nhiều H1), FDR sẽ trở nên quá bảo thủ và làm mất power.
+  \item \textbf{Hệ quả thực nghiệm:} trong multi-drift streams, FDR có thể loại bỏ phần lớn các phát hiện thật → giảm recall mạnh.
+  \item \textbf{Chiến lược của bạn:} kiểm tra \emph{detection density} và chỉ áp dụng FDR khi density thấp (sparse). Đây là một áp dụng thực tế của lý thuyết multiple testing khi giả định sparsity bị nghi ngờ.
+\end{itemize}
+\end{frame}
+
+% Detect plateau
+\begin{frame}{7. Nhận diện Plateau cho Gradual Drift}
+\textbf{Áp dụng:} \texttt{shape\_gradual\_aware} — phát hiện plateau bằng đạo hàm và curvature
+
+\vspace{6pt}
+\textbf{Giải thích lý thuyết mở rộng:}
+\begin{itemize}
+  \item \textbf{Đặc trưng của gradual drift:} khi drift xảy ra chậm, các thống kê hai-mẫu (MMD) sẽ tăng và giữ ở mức cao trong một khoảng rộng — tạo plateau hơn là đỉnh nhọn.
+  \item \textbf{Tiêu chí hình học:}
+    \begin{itemize}
+      \item Slope gần 0: $|f'(t)| < \varepsilon$ (không tăng/giảm rõ rệt).
+      \item Curvature nhỏ: $|f''(t)| < \delta$ (không có turn sắc).
+      \item Elevation: $f(t)$ vượt baseline → không phải plateau do noise.
+      \item Width threshold: plateau phải đủ rộng để loại bỏ nhiễu ngẫu nhiên.
+    \end{itemize}
+  \item \textbf{Cơ sở toán học:} curvature $\kappa = \frac{|f''|}{(1 + f'^2)^{3/2}}$ — dùng để phân biệt peak (cao $\kappa$) và plateau (thấp $\kappa$).
+  \item \textbf{Ý nghĩa thực tế:} bổ sung này khắc phục hạn chế cơ bản của zero-crossing peak detector, làm tăng khả năng phát hiện drift từ từ.
+\end{itemize}
+\end{frame}
+
+% Multiscale
+\begin{frame}{8. Multi-scale Detection (Wavelet-like)}
+\textbf{Áp dụng:} \texttt{shape\_multiscale}
+
+\vspace{6pt}
+\textbf{Giải thích lý thuyết mở rộng:}
+\begin{itemize}
+  \item \textbf{Vấn đề:} một kích thước cửa sổ cố định không bắt được mọi tốc độ drift — drift nhanh cần window nhỏ, drift chậm cần window lớn.
+  \item \textbf{Multi-scale idea:} phân tích ở nhiều scale (ví dụ $l_1\in\{25,50,100,200\}$) tương tự phân tích đa phân giải (wavelet), cho phép phát hiện các đặc trưng thời gian khác nhau.
+  \item \textbf{Lý thuyết liên quan:} transform đa độ phân giải giúp cô lập tín hiệu ở các băng tần thời gian khác nhau; hợp nhất kết quả theo một quy tắc (voting, OR-rule) cho detector robust.
+\end{itemize}
+\end{frame}
+
+% SNR adaptive
+\begin{frame}{9. SNR-based Strategy Selection}
+\textbf{Áp dụng:} \texttt{shape\_snr\_adaptive} và \texttt{shape\_snr\_adaptive\_v2}
+
+\vspace{6pt}
+\textbf{Giải thích lý thuyết mở rộng:}
+\begin{itemize}
+  \item \textbf{Định nghĩa SNR ở đây:} tỷ số giữa biến thiên \emph{signal} (magnitude của phân phối trái–phải) và biến thiên \emph{noise} (biến đổi ngẫu nhiên trong vùng không có drift).
+  \item \textbf{Lý thuyết:} theo Neyman–Pearson, ngưỡng tối ưu tỉ lệ nghịch với SNR: SNR cao cho phép hạ ngưỡng để tăng power mà vẫn giữ false alarm thấp; SNR thấp đòi hỏi ngưỡng cao để tránh false alarms.
+  \item \textbf{Chiến lược thực thi:} ước lượng SNR từ dữ liệu (estimate\_snr / robust bootstrap) → chọn giữa conservative (shape gốc) và aggressive (adaptive\_v2).
+  \item \textbf{Ưu điểm:} giảm lỗi mô hình cố định; detector tự thích nghi với môi trường dữ liệu.
+\end{itemize}
+\end{frame}
+
+% Bootstrap + hybrid ensemble
+\begin{frame}{10. Bootstrap SNR + Confidence-weighted Hybrid}
+\textbf{Áp dụng:} \texttt{shape\_snr\_adaptive\_v2}
+
+\vspace{6pt}
+\textbf{Giải thích lý thuyết mở rộng:}
+\begin{itemize}
+  \item \textbf{Bootstrap:} dùng bootstrap để thu được phân bố ước lượng SNR, xử lý uncertainty trong ước lượng (Efron \& Tibshirani).
+  \item \textbf{Confidence metric:} xác suất $P(\text{SNR} > \text{threshold} \mid \text{bootstrap})$ dùng để quyết định chiến lược:
+    \begin{itemize}
+      \item High confidence $\Rightarrow$ aggressive;
+      \item Low confidence $\Rightarrow$ conservative;
+      \item Trung gian $\Rightarrow$ hybrid ensemble.
+    \end{itemize}
+  \item \textbf{Hybrid ensemble:} kết hợp hai detector với trọng số theo confidence. P-value kết hợp theo OR-rule (min p-value) để ưu tiên sensitivity.
+  \item \textbf{Lý do hiệu quả:} ensemble giảm rủi ro chọn sai mô hình do variance cao trong ước lượng SNR; confidence-weighting cho phép chuyển tiếp mượt giữa chiến lược, tránh chuyển đổi "đột ngột".
+\end{itemize}
+\end{frame}
+
+\section{Hệ thống đề xuất}
 \begin{frame}{Kiến trúc tổng thể}
   \begin{figure}
     \centering
@@ -629,96 +770,473 @@
 \end{frame}
 
 % ==============================================================================
-% SECTION 5: CONCLUSION
+% SECTION 5: SOTA LANDSCAPE 2024-2025
 % ==============================================================================
-\section{Kết luận}
+\section{Bối cảnh SOTA 2024-2025}
 
-\begin{frame}{Đóng góp của nghiên cứu}
-  \begin{enumerate}
-    \item \textbf{Lý thuyết:}
-    \begin{itemize}
-      \item Phân tích toán học chi tiết về ShapeDD và MMD
-      \item Giải thích cơ sở lý thuyết của threshold selection
-    \end{itemize}
-
-    \vspace{0.3em}
-    \item \textbf{Phương pháp:}
-    \begin{itemize}
-      \item Đề xuất ShapeDD\_Adaptive\_v2 với recall cải thiện
-      \item Tích hợp drift detection + classification + adaptation
-    \end{itemize}
-
-    \vspace{0.3em}
-    \item \textbf{Thực nghiệm:}
-    \begin{itemize}
-      \item Đánh giá comprehensive trên 8 datasets với 10 drifts mỗi stream
-      \item So sánh với 13 phương pháp state-of-the-art
-    \end{itemize}
-
-    \vspace{0.3em}
-    \item \textbf{Thực hành:}
-    \begin{itemize}
-      \item Hướng dẫn triển khai end-to-end với Apache Kafka
-      \item Jupyter notebooks với reproducible experiments
-    \end{itemize}
-  \end{enumerate}
+\begin{frame}{SOTA Methods (2024-2025)}
+  \begin{table}
+    \centering
+    \footnotesize
+    \begin{tabular}{llccc}
+      \toprule
+      \textbf{Method} & \textbf{Type} & \textbf{F1} & \textbf{Labels} & \textbf{Year} \\
+      \midrule
+      \textbf{CDSeer} & Semi-supervised & \textbf{0.86} & \textbf{1\%} & 2024 \\
+      \textbf{DriftLens} & Unsupervised & 15/17 wins & 0\% & 2024 \\
+      \textbf{CV4CDD-4D} & Supervised & 0.81-0.83 & 100\% & 2025 \\
+      \textbf{ADA-ADF} & Time series & \textbf{0.92} & 0\% & 2025 \\
+      \textbf{ShapeDD} & Unsupervised & 0.758 & 0\% & 2024 \\
+      ADWIN & Unsupervised & 0.507 & 0\% & 2007 \\
+      HDDM-W & Model-dependent & 0.80 & Yes & 2016 \\
+      \bottomrule
+    \end{tabular}
+  \end{table}
 \end{frame}
 
-\begin{frame}{Hạn chế và hướng phát triển}
+\begin{frame}{CDSeer: Semi-Supervised SOTA (Oct 2024)}
   \begin{columns}[T]
     \begin{column}{0.48\textwidth}
-      \textbf{Hạn chế hiện tại:}
+      \textbf{Kết quả ấn tượng:}
       \begin{itemize}
-        \item Chi phí tính toán cao (ShapeDD)
-        \item Tham số cần tinh chỉnh theo dataset
-        \item Hiệu suất kém trên gradual drift
-        \item Chưa xử lý multi-dimensional drift
+        \item \textcolor{red}{\textbf{57.1\% precision improvement}}
+        \item \textcolor{red}{\textbf{99\% fewer labels}} (1\% vs 100\%)
+        \item F1-score: \textbf{0.86}
+        \item Validated at \textbf{Ericsson}
       \end{itemize}
-    \end{column}
-    \begin{column}{0.48\textwidth}
-      \textbf{Hướng phát triển:}
+
+      \vspace{0.5em}
+      \textbf{Technical approach:}
       \begin{itemize}
-        \item Ensemble methods kết hợp nhiều detectors
-        \item Adaptive windowing tự động
-        \item Online hyperparameter tuning
-        \item Deep learning cho drift detection
+        \item Confidence-based active learning
+        \item Model-agnostic
+        \item Distribution-agnostic
       \end{itemize}
     \end{column}
   \end{columns}
 
-  \vspace{1em}
-  \begin{alertblock}{Future Research Directions}
+  \vspace{0.3em}
+  \textbf{Citation:} arXiv 2410.09190 (Oct 2024, updated Aug 2025)
+\end{frame}
+
+\begin{frame}{DriftLens: Real-Time Unsupervised (June 2024)}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \textbf{Performance:}
+      \begin{itemize}
+        \item \textbf{15/17 wins} (88\% win rate)
+        \item \textbf{5× faster} than competitors
+        \item \textbf{Correlation ≥ 0.85} with true drift
+        \item Fully unsupervised
+      \end{itemize}
+
+      \vspace{0.5em}
+      \textbf{Key innovations:}
+      \begin{itemize}
+        \item Deep learning embeddings
+        \item Per-label distribution tracking
+        \item Built-in explainability
+        \item Open-source (PyPI)
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \textbf{Architecture:}
+      \begin{enumerate}
+        \item Offline: Estimate reference distributions
+        \item Online: Process windows
+        \item Monitor: Distribution distances
+        \item Explain: Representative samples
+      \end{enumerate}
+
+      \vspace{0.5em}
+      \textbf{Ưu điểm cho production:}
+      \begin{itemize}
+        \item Real-time capability
+        \item Low complexity
+        \item Works on unstructured data
+        \item Drift characterization
+      \end{itemize}
+    \end{column}
+  \end{columns}
+
+  \vspace{0.3em}
+  \textbf{Citation:} arXiv 2406.17813
+\end{frame}
+
+\begin{frame}{Other Notable SOTA Methods}
+  \begin{table}
+    \centering
+    \tiny
+    \begin{tabular}{llp{3cm}c}
+      \toprule
+      \textbf{Method} & \textbf{Specialty} & \textbf{Key Innovation} & \textbf{Performance} \\
+      \midrule
+      \textbf{Meta-ADD} & Meta-learning & Automatic detector selection & Pre-trained classifier \\
+      \textbf{CDDRM} & Explainability & Feature-level drift + causal & F1 = 0.895 (Stagger) \\
+      \textbf{AEF-CDA} & Ensemble & Medical IoT streams & Acc = 99.64\% \\
+      \textbf{Transformer} & Time series & Temporal attention & Few-shot learning \\
+      \textbf{ARF} & Online ensemble & Per-tree ADWIN & Production standard \\
+      \textbf{HAT} & Adaptive trees & Built-in drift handling & Multi-label capable \\
+      \bottomrule
+    \end{tabular}
+  \end{table}
+
+  \vspace{0.5em}
+  \begin{block}{Emerging Paradigms (2024)}
     \begin{itemize}
-      \item Tích hợp với continual learning frameworks
-      \item Phát hiện drift trong high-dimensional data
-      \item Xây dựng benchmark dataset cho drift detection
+      \item \textbf{Test-Time Adaptation (TTA):} Adapt without source data
+      \item \textbf{Continual Learning:} Avoid catastrophic forgetting
+      \item \textbf{OOD Detection:} Separate drift from outliers
+      \item \textbf{Bayesian UQ:} Epistemic vs aleatoric uncertainty
     \end{itemize}
+  \end{block}
+\end{frame}
+
+% ==============================================================================
+% SECTION 6: SYSTEM ARCHITECTURES
+% ==============================================================================
+\section{Kiến trúc hệ thống}
+
+\begin{frame}{4 Architecture Patterns Chính}
+  \begin{enumerate}
+    \item \textbf{Model-Agnostic (65\% research - Chúng ta đang dùng)}
+    \begin{itemize}
+      \item Detector monitors: Feature distributions (X)
+      \item Model: Bất kỳ (LogReg, RF, NN)
+      \item Example: ShapeDD + LogisticRegression
+      \item ✅ Flexible, ❌ May miss performance-relevant drift
+    \end{itemize}
+
+    \vspace{0.3em}
+    \item \textbf{Model-Dependent (30\% research)}
+    \begin{itemize}
+      \item Detector monitors: Model errors/confidence
+      \item Model: Coupled with detector
+      \item Example: DDM, EDDM, ADWIN, CDSeer
+      \item ✅ Detects relevant drift, ❌ Requires labels
+    \end{itemize}
+
+    \vspace{0.3em}
+    \item \textbf{Integrated Model-Detector (20\%, growing)}
+    \begin{itemize}
+      \item Model có built-in detection
+      \item Example: Adaptive Random Forest, HAT
+      \item ✅ Fully automated, ❌ Model-specific
+    \end{itemize}
+
+    \vspace{0.3em}
+    \item \textbf{Production MLOps (Industry standard)}
+    \begin{itemize}
+      \item Complete pipeline: Kafka + Flink + Monitoring
+      \item ✅ Scalable, enterprise-ready
+    \end{itemize}
+  \end{enumerate}
+\end{frame}
+
+\begin{frame}{Kiến trúc hiện tại của chúng ta}
+  \begin{figure}
+    \centering
+    \begin{tikzpicture}[
+      box/.style={rectangle, draw=univblue, thick, fill=blue!10, minimum width=3cm, minimum height=0.8cm, align=center},
+      arrow/.style={->, thick, >=stealth}
+    ]
+      % Data stream
+      \node[box] (data) at (0,3) {Data Stream X};
+
+      % Component 1: Model
+      \node[box, fill=green!10] (model) at (0,1.5) {Component 1:\\LogisticRegression\\(FROZEN)};
+
+      % Predictions
+      \node[box, fill=yellow!10] (pred) at (0,0) {Predictions ŷ};
+
+      % Component 2: Detector (parallel path)
+      \node[box, fill=orange!10] (detector) at (5,1.5) {Component 2:\\ShapeDD SNR-Adaptive\\(Monitors X)};
+
+      % Component 3: Adaptation
+      \node[box, fill=red!10] (adapt) at (5,0) {Component 3:\\Retrain Strategy};
+
+      % Arrows
+      \draw[arrow] (data) -- (model);
+      \draw[arrow] (model) -- (pred);
+      \draw[arrow, dashed] (data) -- (detector);
+      \draw[arrow] (detector) -- node[right] {Drift?} (adapt);
+      \draw[arrow, dashed] (adapt) to[bend right=45] node[below] {Retrain} (model);
+    \end{tikzpicture}
+  \end{figure}
+
+  \begin{alertblock}{Pattern: Model-Agnostic ✅}
+    Detector và Model \textbf{độc lập} - có thể swap model mà không thay detector
   \end{alertblock}
 \end{frame}
 
-\begin{frame}{Kết luận}
-  \begin{block}{Tóm tắt nghiên cứu}
-    Luận văn đã xây dựng thành công hệ thống phát hiện và thích ứng concept drift tự động, kết hợp ShapeDD với CDT\_MSW, đạt hiệu suất vượt trội trên nhiều loại drift khác nhau.
-  \end{block}
+\begin{frame}{Production MLOps Architecture (Industry 2024)}
+  \begin{figure}
+    \centering
+    \tiny
+    \begin{tikzpicture}[
+      box/.style={rectangle, draw, thick, minimum width=2cm, minimum height=0.6cm, align=center, font=\tiny},
+      arrow/.style={->, thick, >=stealth}
+    ]
+      % Layers
+      \node[box, fill=blue!20] (kafka) at (0,3) {Kafka\\Ingestion};
+      \node[box, fill=green!20] (flink) at (0,2) {Flink\\Processing};
+      \node[box, fill=yellow!20] (model) at (0,1) {Model\\Inference};
+      \node[box, fill=orange!20] (detector) at (3,2) {Drift\\Detection};
+      \node[box, fill=red!20] (monitor) at (3,1) {Performance\\Monitor};
+      \node[box, fill=purple!20] (retrain) at (6,1.5) {Auto\\Retrain};
+      \node[box, fill=cyan!20] (dash) at (6,0.5) {Grafana\\Dashboard};
 
-  \vspace{1em}
-  \textbf{Kết quả chính:}
+      % Arrows
+      \draw[arrow] (kafka) -- (flink);
+      \draw[arrow] (flink) -- (model);
+      \draw[arrow] (flink) -- (detector);
+      \draw[arrow] (model) -- (monitor);
+      \draw[arrow] (detector) -- (retrain);
+      \draw[arrow] (monitor) -- (retrain);
+      \draw[arrow] (retrain) -- (dash);
+      \draw[arrow, dashed] (retrain) to[bend left=30] node[right, font=\tiny] {Deploy} (model);
+    \end{tikzpicture}
+  \end{figure}
+
+  \vspace{0.3em}
+  \textbf{Components:}
   \begin{itemize}
-    \item ShapeDD: F1 = 0.758, MTTD = 71.9 samples
-    \item ShapeDD\_v2: Recall cải thiện +15\%, F1 = 0.730
-    \item Recovery rate: 82.8\% sau drift
-    \item Triển khai thành công hệ thống real-time với Kafka
+    \item \textbf{Kafka:} Stream ingestion (millions events/sec)
+    \item \textbf{Flink:} Real-time processing (5× faster than Spark)
+    \item \textbf{3-layer detection:} Data drift + Concept drift + Performance
+    \item \textbf{Automated workflow:} Detect → Alert → Retrain → A/B test → Deploy
   \end{itemize}
+\end{frame}
 
-  \vspace{1em}
-  \begin{center}
-    \large \textbf{Cảm ơn quý Thầy Cô và các bạn đã lắng nghe!}
-  \end{center}
+\begin{frame}{Streaming Models: ARF vs Batch Models}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \textbf{Batch Model (Current):}
+      \begin{itemize}
+        \item LogisticRegression
+        \item Train once, deploy frozen
+        \item Retrain khi drift detected
+        \item Full model replacement
+      \end{itemize}
+
+      \vspace{0.5em}
+      \textbf{Ưu điểm:}
+      \begin{itemize}
+        \item ✅ Controlled experiments
+        \item ✅ Reproducible
+        \item ✅ Simple
+      \end{itemize}
+
+      \textbf{Nhược điểm:}
+      \begin{itemize}
+        \item ❌ High retraining cost
+        \item ❌ Adaptation delay
+        \item ❌ No online learning
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \textbf{Online Model (Proposal):}
+      \begin{itemize}
+        \item Adaptive Random Forest
+        \item Incremental learning (sample-by-sample)
+        \item Built-in per-tree ADWIN
+        \item Dynamic tree replacement
+      \end{itemize}
+
+      \vspace{0.5em}
+      \textbf{Ưu điểm:}
+      \begin{itemize}
+        \item ✅ Real-time adaptation
+        \item ✅ Automatic drift handling
+        \item ✅ Production-ready
+      \end{itemize}
+
+      \textbf{Nhược điểm:}
+      \begin{itemize}
+        \item ❌ Complex evaluation
+        \item ❌ Less control
+      \end{itemize}
+    \end{column}
+  \end{columns}
 
   \vspace{0.5em}
-  \begin{center}
-    \textit{Sẵn sàng trả lời câu hỏi}
-  \end{center}
+  \begin{block}{Proposal: Hybrid Approach}
+    Keep ShapeDD (global) + Add ARF (per-tree ADWIN) → Compare both patterns
+  \end{block}
+\end{frame}
+
+% ==============================================================================
+% SECTION 7: INTEGRATION PROPOSALS
+% ==============================================================================
+\section{Đề xuất tích hợp}
+
+\begin{frame}{Gaps trong phương pháp hiện tại}
+  \begin{table}
+    \centering
+    \footnotesize
+    \begin{tabular}{llcc}
+      \toprule
+      \textbf{Aspect} & \textbf{Current} & \textbf{SOTA} & \textbf{Gap} \\
+      \midrule
+      \rowcolor{red!10}
+      Incremental drift & F1 = 0.143 & F1 = 0.73 & \textcolor{red}{\textbf{-0.587}} \\
+      Labels required & 0\% (detection) & 1\% (CDSeer) & - \\
+      Explainability & None & SHAP, Feature-level & ❌ \\
+      Semi-supervised & No & Yes (CDSeer) & ❌ \\
+      Ensemble & Single model & ARF, Meta-ADD & ❌ \\
+      Method selection & Manual & Meta-learning & ❌ \\
+      \bottomrule
+    \end{tabular}
+  \end{table}
+
+  \vspace{0.5em}
+  \begin{alertblock}{Biggest Gap}
+    \textbf{Incremental drift:} F1 gap = -0.587 (largest weakness)
+  \end{alertblock}
+
+  \vspace{0.3em}
+  \textbf{Opportunities:}
+  \begin{itemize}
+    \item ✅ Integrate CDSeer → Close incremental gap
+    \item ✅ Add explainability → Industry requirement
+    \item ✅ Build ensemble → No universal winner problem
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Proposal 1: Semi-Supervised ShapeDD (CDSeer-inspired)}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \textbf{Current approach:}
+      \begin{enumerate}
+        \item Detect drift (ShapeDD)
+        \item Wait 50 samples
+        \item Collect 800 samples
+        \item Retrain with \textbf{all 800 labels}
+      \end{enumerate}
+
+      \vspace{0.5em}
+      \textbf{Problem:}
+      \begin{itemize}
+        \item Requires 800 labels
+        \item Expensive in production
+        \item Slow adaptation
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \textbf{Proposed approach:}
+      \begin{enumerate}
+        \item Detect drift (ShapeDD)
+        \item \textbf{Confidence-based sampling}
+        \item Request label if conf < 0.6
+        \item Retrain with \textbf{8 labels only} (1\%)
+      \end{enumerate}
+
+      \vspace{0.5em}
+      \textbf{Benefits:}
+      \begin{itemize}
+        \item \textcolor{red}{\textbf{99\% label reduction}}
+        \item F1: 0.562 → \textbf{0.70+} (estimated)
+        \item \textbf{Faster} adaptation
+        \item Handles incremental drift
+      \end{itemize}
+    \end{column}
+  \end{columns}
+
+  \vspace{0.5em}
+  \begin{block}{Implementation}
+    \textbf{Effort:} 2-3 weeks | \textbf{Priority:} Tier 1 (Highest) | \textbf{Impact:} High
+  \end{block}
+\end{frame}
+
+\begin{frame}{Proposal 2: Ensemble Architecture (ShapeDD + ARF)}
+  \begin{figure}
+    \centering
+    \begin{tikzpicture}[
+      box/.style={rectangle, draw, thick, minimum width=2.5cm, minimum height=0.7cm, align=center, font=\small},
+      arrow/.style={->, thick, >=stealth}
+    ]
+      % Data
+      \node[box, fill=blue!20] (data) at (0,3) {Data Stream};
+
+      % Two detection paths
+      \node[box, fill=green!20] (shapedd) at (-2,1.5) {ShapeDD\\(Global)};
+      \node[box, fill=yellow!20] (arf) at (2,1.5) {ARF\\(Per-tree ADWIN)};
+
+      % Detection outputs
+      \node[box, fill=orange!20] (global) at (-2,0) {Global Drift};
+      \node[box, fill=orange!20] (local) at (2,0) {Local Drift};
+
+      % Ensemble decision
+      \node[box, fill=red!20] (decision) at (0,-1) {Ensemble Decision};
+
+      % Arrows
+      \draw[arrow] (data) -- (-2,2.2);
+      \draw[arrow] (-2,2.2) -- (shapedd);
+      \draw[arrow] (data) -- (2,2.2);
+      \draw[arrow] (2,2.2) -- (arf);
+      \draw[arrow] (shapedd) -- (global);
+      \draw[arrow] (arf) -- (local);
+      \draw[arrow] (global) -- (decision);
+      \draw[arrow] (local) -- (decision);
+    \end{tikzpicture}
+  \end{figure}
+
+  \begin{itemize}
+    \item \textbf{ShapeDD:} Model-agnostic, unsupervised, global patterns
+    \item \textbf{ARF:} Model-dependent, per-tree detection, local adaptation
+    \item \textbf{Ensemble:} Redundancy, comparison study, best of both
+  \end{itemize}
+
+  \vspace{0.3em}
+  \begin{block}{Research Contribution}
+    First study comparing \textbf{SNR-based global} vs. \textbf{per-tree local} detection
+  \end{block}
+\end{frame}
+
+\begin{frame}{Proposal 3: Explainability Module (SHAP-based)}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \textbf{Current problem:}
+      \begin{itemize}
+        \item ShapeDD detects drift
+        \item But \textbf{why} drift happened?
+        \item Which features changed?
+        \item Operators need insights
+      \end{itemize}
+
+      \vspace{0.5em}
+      \textbf{Industry requirement:}
+      \begin{itemize}
+        \item 67\% enterprises miss drift
+        \item Need actionable insights
+        \item Root cause analysis
+        \item Trust in ML systems
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \textbf{Proposed solution:}
+      \begin{enumerate}
+        \item Detect drift (ShapeDD)
+        \item Compute \textbf{Shapley values}
+        \item Rank features by contribution
+        \item Visualize top-k drift causes
+      \end{enumerate}
+
+      \vspace{0.5em}
+      \textbf{Output example:}
+      \begin{itemize}
+        \item Feature 3: SHAP = 0.45 ⬆️
+        \item Feature 7: SHAP = 0.32 ⬆️
+        \item Feature 1: SHAP = 0.15 ⬆️
+        \item → Focus on features 3, 7, 1
+      \end{itemize}
+    \end{column}
+  \end{columns}
+
+  \vspace{0.5em}
+  \begin{block}{Implementation}
+    \textbf{Effort:} 1-2 weeks | \textbf{Priority:} Tier 1 | \textbf{Impact:} Differentiator
+  \end{block}
 \end{frame}
 
 % ==============================================================================

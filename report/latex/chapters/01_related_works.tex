@@ -1,6 +1,9 @@
 \chapter{Công trình liên quan}
 
-\textit{Tóm tắt: Trình bày một cách tổng quát về những phương pháp liên quan đã và đang được thực hiện trong quá trình phát hiện hiện tượng trôi dạt. Đồng thời, phần này còn trình bày về cách phân loại hiện tượng trôi dạt dựa trên cửa sổ trượt. Các phương pháp sẽ được luận văn trình bày theo những góc nhìn khác nhau, từ đó có thể đưa ra các so sánh, đánh giá, và làm tiền đề để phát triển mô hình phát hiện trôi dạt cho luận văn này.}
+\textit{Tóm tắt: Trình bày một cách tổng quát về những phương pháp liên quan đã và đang được thực hiện trong quá 
+trình phát hiện hiện tượng trôi dạt. Đồng thời, phần này còn trình bày về cách phân loại hiện tượng trôi dạt dựa 
+trên cửa sổ trượt. Các phương pháp sẽ được luận văn trình bày theo những góc nhìn khác nhau, từ đó có thể đưa ra các 
+so sánh, đánh giá, và làm tiền đề để phát triển mô hình phát hiện trôi dạt cho luận văn này.}
 
 \section{Các phương pháp phát hiện trôi dạt}
 \subsection{Lịch sử phát triển các phương pháp phát hiện trôi dạt khái niệm}
@@ -53,7 +56,10 @@ nhiên trở nên kém đi (tỉ lệ lỗi tăng lên đáng kể khi so sánh 
 (Drift Detection Method) được phát triển từ năm 2004~\cite{gama2004learning} đến nay, trở thành nền tảng quan trọng, đặt nền 
 móng cho các phương pháp sau này.
 
-\textbf{DDM (Drift Detection Method)} theo dõi tỷ lệ lỗi $p_i$ và độ lệch chuẩn $s_i$ của mô hình trên dòng dữ liệu. Ý tưởng là trong quá hoạt động, nếu phân phối dữ liệu ổn định, tỷ lệ dự đoán sai sẽ giảm dần và dao động xung quanh một giá trị thấp. Khi concept drift xảy ra, tỷ lệ lỗi của mô hình đột ngột tăng cao, vượt ra khỏi khoảng tin cậy. DDM sẽ tiến hành ghi nhận giá trị tối thiểu của $p_i + s_i$ trong quá trình học, và đặt hai ngưỡng cảnh báo:
+\textbf{DDM (Drift Detection Method)} theo dõi tỷ lệ lỗi $p_i$ và độ lệch chuẩn $s_i$ của mô hình trên dòng dữ liệu. 
+Ý tưởng là trong quá hoạt động, nếu phân phối dữ liệu ổn định, tỷ lệ dự đoán sai sẽ giảm dần và dao động xung quanh một giá trị thấp. 
+Khi concept drift xảy ra, tỷ lệ lỗi của mô hình đột ngột tăng cao, vượt ra khỏi khoảng tin cậy. 
+DDM sẽ tiến hành ghi nhận giá trị tối thiểu của $p_i + s_i$ trong quá trình học, và đặt hai ngưỡng cảnh báo:
 \begin{itemize}
     \item \textbf{Warning level:} Khi $p_i + s_i \geq p_{min} + 2 \cdot s_{min}$ (ngưỡng 2-sigma), hệ thống bắt đầu lưu dữ liệu mới để chuẩn bị huấn luyện lại
     \item \textbf{Drift level:} Khi $p_i + s_i \geq p_{min} + 3 \cdot s_{min}$ (ngưỡng 3-sigma), drift được xác nhận, mô hình cũ bị loại bỏ và huấn luyện lại từ dữ liệu đã lưu
@@ -266,7 +272,8 @@ L_d = t_{\text{end}} - t_{\text{start}}.
 \label{eq:drift_length}
 \end{equation}
 
-Nếu $L_d < \lambda$ (với $\lambda$ là ngưỡng định trước), quá trình thay đổi được xem là \textbf{sudden drift}; ngược lại, nếu $L_d \ge \lambda$, đó là \textbf{progressive drift} (có thể là gradual hoặc incremental).
+Nếu $L_d < \lambda$ (với $\lambda$ là ngưỡng định trước), quá trình thay đổi được 
+xem là \textbf{sudden drift}; ngược lại, nếu $L_d \ge \lambda$, đó là \textbf{progressive drift} (có thể là gradual hoặc incremental).
 
 Độ chính xác của việc ước lượng vùng drift được đánh giá bằng hai chỉ số~\cite{guo2022cdtmsw}:
 \textbf{LOR (Length Overflow Rate)} và \textbf{LRR (Length Recall Rate)}:
@@ -359,11 +366,16 @@ Trong đó:
 \end{itemize}
 
 \subsection{Tổng hợp và ý nghĩa}
-Tóm lại, CDT\_MSW nhận dạng loại trôi dạt dựa trên hai chỉ số động: \textbf{Detection Flow Ratio} (Công thức~1) và \textbf{Tracking Flow Ratio} (Công thức~5), cùng với các chỉ số đánh giá độ dài và độ chính xác của quá trình phân loại (Công thức~11–15). Cơ chế này cho phép mô hình không chỉ phát hiện thời điểm drift xảy ra, mà còn hiểu được bản chất của sự thay đổi (nhanh, chậm, tuyến tính hay lặp lại), từ đó cung cấp thông tin đầu vào quan trọng cho \textbf{giai đoạn cập nhật mô hình thích ứng} được trình bày trong Mục~\ref{sec:model_adaptation_strategies}.
+Tóm lại, CDT\_MSW nhận dạng loại trôi dạt dựa trên hai chỉ số động: \textbf{Detection Flow Ratio} (Công thức~1) 
+và \textbf{Tracking Flow Ratio} (Công thức~5), cùng với các chỉ số đánh giá độ dài và độ chính xác của quá 
+trình phân loại (Công thức~11–15). Cơ chế này cho phép mô hình không chỉ phát hiện thời điểm drift xảy ra, 
+mà còn hiểu được bản chất của sự thay đổi (nhanh, chậm, tuyến tính hay lặp lại), từ đó cung cấp thông tin đầu vào 
+quan trọng cho \textbf{giai đoạn cập nhật mô hình thích ứng} được trình bày trong Mục~\ref{sec:model_adaptation_strategies}.
 
 \subsection{Phạm vi nghiên cứu của luận văn}
 
-Mặc dù phương pháp CDT\_MSW có khả năng phân loại tất cả 5 loại drift (sudden, gradual, incremental, recurrent, blip), luận văn này \textbf{tập trung đánh giá chuyên sâu sudden drift detection và adaptation}. Lý do:
+Mặc dù phương pháp CDT\_MSW có khả năng phân loại tất cả 5 loại drift (sudden, gradual, incremental, recurrent, blip), 
+luận văn này \textbf{tập trung đánh giá chuyên sâu sudden drift detection và adaptation}. Lý do:
 
 \begin{itemize}
     \item \textbf{Tầm quan trọng thực tế}: Sudden drift xảy ra phổ biến nhất trong production systems (system failures, policy changes, equipment malfunctions) và có tính critical cao cho safety-critical applications
