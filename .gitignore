@@ -82,6 +82,6 @@ temp/
 # Extra files
 [Reference] - *
 *.npz
-*.md
+# *.md
 *.txt
 *.csv
