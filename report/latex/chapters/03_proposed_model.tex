@@ -170,7 +170,7 @@ trong đó $w_{\text{base}}$ là kích thước cửa sổ cơ sở, $\lambda$ l
 
 \subsection{Các biến thể của ShapeDD}
 
-Ngoài phiên bản gốc, nghiên cứu này triển khai và đánh giá nhiều biến thể của ShapeDD để xử lý các thách thức khác nhau trong phát hiện drift. Mỗi biến thể có những cải tiến và trade-offs riêng.
+Sau khi trình bày phương pháp SNR-Adaptive -- đóng góp chính của nghiên cứu này -- phần tiếp theo sẽ phân tích chi tiết các biến thể khác của ShapeDD đã được triển khai và đánh giá. Mỗi biến thể được thiết kế để giải quyết các thách thức cụ thể trong phát hiện drift, với những cải tiến và đánh đổi (trade-offs) riêng.
 
 \textbf{1. ShapeDD Adaptive:} Phiên bản adaptive đầu tiên giới thiệu khái niệm sensitivity levels để điều chỉnh độ nhạy của detector:
 
@@ -354,6 +354,8 @@ Threshold 0.010 được chọn dựa trên:
 Hiệu ứng buffer dilution giải thích tại sao threshold phải được điều chỉnh đáng kể so với giá trị lý thuyết để phương pháp SNR-Adaptive hoạt động hiệu quả trong môi trường production thực tế.
 
 \section{Nền tảng xử lý luồng dữ liệu phân tán với Apache Kafka}
+
+Các phần trước đã trình bày chi tiết các phương pháp phát hiện drift (ShapeDD và các biến thể). Để triển khai các phương pháp này trong môi trường production với dữ liệu streaming real-time, nghiên cứu cần một nền tảng xử lý luồng dữ liệu mạnh mẽ. Phần này giới thiệu Apache Kafka -- nền tảng được chọn làm backbone cho hệ thống phát hiện và thích ứng drift.
 
 Trong bối cảnh triển khai hệ thống phát hiện concept drift thời gian thực, việc lựa chọn một nền tảng xử lý luồng dữ liệu (stream processing platform) mạnh mẽ và đáng tin cậy là rất quan trọng. Apache Kafka~\cite{kreps2011kafka} đã trở thành nền tảng tiêu chuẩn công nghiệp cho xử lý luồng dữ liệu phân tán, được sử dụng rộng rãi trong các hệ thống big data và real-time analytics. Phần này trình bày nền tảng lý thuyết của Apache Kafka làm cơ sở cho việc triển khai hệ thống phát hiện drift trong các phần tiếp theo của chương này.
 
