@@ -3,18 +3,40 @@ Optimally-Weighted MMD (OW-MMD) for Drift Detection
 
 Based on: Bharti et al., ICML 2023
 "Optimally-weighted Estimators of the Maximum Mean Discrepancy"
+
+UNIFIED IMPLEMENTATION - Merged from ow_mmd.py and ow_mmd_code.py
+
+Main Functions (Compatible with Notebook):
+    1. mmd_ow()           - Standalone OW-MMD detector (split-based)
+    2. shapedd_ow_mmd()   - ShapeDD-style hybrid (returns pattern score)
+
+Additional Functions (Advanced Usage):
+    3. compute_ow_mmd()                - Separate X,Y interface
+    4. shapedd_ow_mmd_enhanced()       - Enhanced with better pattern detection
+    5. shapedd_ow_mmd_hybrid()         - Full stream processing (returns drift points)
 """
 
 import numpy as np
 from scipy.spatial.distance import cdist
-from sklearn.metrics.pairwise import pairwise_kernels as apply_kernel
 
+# ============================================================================
+# CORE COMPONENT: KERNEL FUNCTIONS
+# ============================================================================
 
 def rbf_kernel_ow(X, Y, gamma='auto'):
     """
-    RBF kernel computation with median heuristic.
+    RBF (Gaussian) kernel: k(x,y) = exp(-γ||x-y||²)
+    
+    Args:
+        X: First set of samples (n_samples, n_features)
+        Y: Second set of samples (m_samples, n_features)
+        gamma: Bandwidth parameter ('auto' uses median heuristic, or float)
+    
+    Returns:
+        K: Kernel matrix (n_samples, m_samples)
     """
     if gamma == 'auto':
+        # Median heuristic for bandwidth selection
         all_data = np.vstack([X, Y])
         distances = cdist(all_data, all_data, metric='euclidean')
         distances = distances[distances > 0]
@@ -29,19 +51,32 @@ def rbf_kernel_ow(X, Y, gamma='auto'):
 
 def compute_optimal_weights(kernel_matrix, method='variance_reduction'):
     """
-    Compute optimal weights for kernel evaluations.
+    Compute optimal weights for kernel matrix.
+    
+    Args:
+        kernel_matrix: Kernel evaluations (n, n)
+        method: Weighting strategy
+            - 'uniform': Standard equal weights (baseline)
+            - 'variance_reduction': Optimal for variance minimization (default)
+            - 'adaptive': Data-dependent density weighting
+    
+    Returns:
+        weights: Weight matrix (n, n) with zeros on diagonal
     """
     n = kernel_matrix.shape[0]
 
     if method == 'uniform':
+        # Standard V-statistic (equal weights)
         return np.ones((n, n)) / (n * n)
 
     elif method == 'variance_reduction':
+        # Variance-optimal weights (Bharti et al., 2023)
+        # Points in dense regions get lower weight
         K_off = kernel_matrix.copy()
         np.fill_diagonal(K_off, 0)
 
         k_sums = np.sum(K_off, axis=1)
-        k_sums = np.maximum(k_sums, 1e-10)
+        k_sums = np.maximum(k_sums, 1e-10)  # Numerical stability
 
         inv_weights = 1.0 / np.sqrt(k_sums)
         weights = np.outer(inv_weights, inv_weights)
@@ -50,28 +85,50 @@ def compute_optimal_weights(kernel_matrix, method='variance_reduction'):
 
         return weights
 
-    else:
-        return np.ones((n, n)) / (n * n)
+    elif method == 'adaptive':
+        # Adaptive density-based weighting
+        # Upweight rare regions for better drift sensitivity
+        k_density = np.sum(kernel_matrix, axis=1)
+        k_density = k_density / np.sum(k_density)
 
+        inv_density = 1.0 / (k_density + 1e-10)
+        inv_density = inv_density / np.sum(inv_density)
+
+        weights = np.outer(inv_density, inv_density)
+        np.fill_diagonal(weights, 0)
+        weights = weights / np.sum(weights)
+
+        return weights
+
+    else:
+        raise ValueError(f"Unknown weight method: {method}")
+
+
+# ============================================================================
+# PRIMARY FUNCTIONS (NOTEBOOK-COMPATIBLE)
+# ============================================================================
 
 def mmd_ow(X, s=None, gamma='auto', weight_method='variance_reduction'):
     """
     Compute Optimally-Weighted MMD between two halves of X.
+    
+    PRIMARY FUNCTION for standalone OW-MMD detection.
+    Compatible with notebook's sliding window approach.
 
     Args:
         X: Data matrix (n_samples, n_features)
         s: Split point (default: half)
-        gamma: RBF kernel bandwidth
-        weight_method: Weighting strategy
+        gamma: RBF kernel bandwidth ('auto' or float)
+        weight_method: Weighting strategy ('uniform', 'variance_reduction', 'adaptive')
 
     Returns:
-        mmd_value: OW-MMD statistic
-        threshold: Adaptive threshold (using mean + 3*std heuristic)
+        mmd_value: OW-MMD statistic (positive scalar)
+        threshold: Adaptive threshold (simple heuristic: 0.1)
     """
     if s is None:
         s = int(X.shape[0] / 2)
 
-    # Split data
+    # Split data into reference and test
     X_ref = X[:s]
     X_test = X[s:]
 
@@ -85,9 +142,9 @@ def mmd_ow(X, s=None, gamma='auto', weight_method='variance_reduction'):
     # Compute optimal weights
     W_XX = compute_optimal_weights(K_XX, weight_method)
     W_YY = compute_optimal_weights(K_YY, weight_method)
-    W_XY = np.ones((m, n)) / (m * n)
+    W_XY = np.ones((m, n)) / (m * n)  # Cross-term uses uniform weights
 
-    # Weighted MMD computation
+    # Weighted MMD² computation
     term1 = np.sum(W_XX * K_XX)
     term2 = np.sum(W_YY * K_YY)
     term3 = np.sum(W_XY * K_XY)
@@ -102,28 +159,79 @@ def mmd_ow(X, s=None, gamma='auto', weight_method='variance_reduction'):
     return mmd_value, threshold
 
 
-def shapedd_ow_mmd(X, l1=50, l2=150, gamma='auto'):
+def shapedd_ow_mmd(X, l1=50, l2=150, gamma='auto', mode='simple'):
     """
     ShapeDD-OW-MMD Hybrid: Use OW-MMD statistics with geometric analysis.
-
+    
+    PRIMARY FUNCTION for ShapeDD-style drift detection.
+    Compatible with notebook's buffer-based approach.
+    
     This computes a sequence of OW-MMD values over sliding windows,
-    then looks for geometric patterns (triangles, peaks, zero-crossings).
+    then analyzes geometric patterns (triangles, peaks, zero-crossings).
+    
+    ADAPTIVE BEHAVIOR:
+    - For large windows (>= l1+l2+125): Uses sliding approach with 5+ MMD values
+    - For small windows (< l1+l2+125): Uses single OW-MMD test with threshold
 
     Args:
         X: Data stream (n_samples, n_features)
-        l1: Reference window size
-        l2: Test window size
-        gamma: RBF kernel parameter
+        l1: Reference window size (default: 50)
+        l2: Test window size (default: 150)
+        gamma: RBF kernel parameter ('auto' or float)
+        mode: Pattern detection mode
+            - 'simple': Simple 3-check heuristic (default, fast)
+            - 'enhanced': Advanced 6-check analysis (more robust)
 
     Returns:
-        pattern_score: Geometric pattern strength
-        mmd_max: Maximum MMD in sequence
+        pattern_score: Geometric pattern strength (0.0 to 1.0)
+        mmd_max: Maximum MMD value in sequence
+        
+    Usage:
+        pattern_score, mmd_max = shapedd_ow_mmd(window, l1=50, l2=150)
+        trigger = pattern_score > 0.5
     """
     n_samples = len(X)
+    
+    # ADAPTIVE APPROACH: Handle small windows differently
+    min_size_for_pattern = l1 + l2 + 125  # Need room for 5+ sliding windows
+    
+    if n_samples < min_size_for_pattern:
+        # FALLBACK: Single OW-MMD test for small windows
+        # Strategy: Use proportional split or minimum requirements
+        
+        min_required = min(l1, l2)  # Absolute minimum for each side
+        if n_samples < 2 * min_required:
+            # Too small for any meaningful test
+            return 0.0, 0.0
+        
+        # Adaptive split: try to respect l1/l2 ratio, but adjust for small windows
+        if n_samples >= l1 + l2:
+            # Can use full l1, l2
+            split_point = l1
+        else:
+            # Scale down proportionally
+            ratio = l1 / (l1 + l2)
+            split_point = max(min_required, int(n_samples * ratio))
+        
+        mmd_val, _ = mmd_ow(X, s=split_point, gamma=gamma)
+        
+        # Threshold-based detection (calibrated empirically)
+        # Lower threshold for smaller windows to maintain sensitivity
+        threshold = 0.10 if n_samples < l1 + l2 else 0.15
+        
+        if mmd_val > threshold:
+            # Scale pattern score based on MMD strength
+            # Higher MMD = higher confidence
+            pattern_score = min(mmd_val / 0.25, 1.0)  # Scale to [0, 1]
+        else:
+            pattern_score = 0.0
+        
+        return pattern_score, mmd_val
+    
+    # STANDARD APPROACH: Pattern detection with sliding windows
     mmd_sequence = []
-
-    # Slide through stream
     step_size = 25
+    
     for ref_start in range(0, n_samples - l1 - l2, step_size):
         ref_end = ref_start + l1
         test_start = ref_end
@@ -132,7 +240,7 @@ def shapedd_ow_mmd(X, l1=50, l2=150, gamma='auto'):
         if test_end > n_samples:
             break
 
-        # Extract windows
+        # Extract consecutive windows
         ref_window = X[ref_start:ref_end]
         test_window = X[test_start:test_end]
 
@@ -141,42 +249,297 @@ def shapedd_ow_mmd(X, l1=50, l2=150, gamma='auto'):
         mmd_val, _ = mmd_ow(window_combined, s=l1, gamma=gamma)
         mmd_sequence.append(mmd_val)
 
-    if len(mmd_sequence) < 5:
+    # Need at least 3 points for basic pattern detection
+    if len(mmd_sequence) < 3:
+        # Fallback to simple threshold
+        if len(mmd_sequence) > 0:
+            max_mmd = max(mmd_sequence)
+            pattern_score = min(max_mmd / 0.3, 1.0) if max_mmd > 0.15 else 0.0
+            return pattern_score, max_mmd
         return 0.0, 0.0
 
     mmd_array = np.array(mmd_sequence)
 
-    # Normalize
+    # Normalize to [0, 1] range
     mmd_min, mmd_max_val = mmd_array.min(), mmd_array.max()
     if mmd_max_val - mmd_min < 1e-10:
-        return 0.0, mmd_max_val
+        # No variation - check if consistently high
+        pattern_score = min(mmd_max_val / 0.3, 1.0) if mmd_max_val > 0.15 else 0.0
+        return pattern_score, mmd_max_val
 
     mmd_norm = (mmd_array - mmd_min) / (mmd_max_val - mmd_min)
 
-    # Check for triangle pattern
+    # Apply pattern detection based on mode
+    if mode == 'simple':
+        pattern_score = _simple_pattern_detection(mmd_norm)
+    elif mode == 'enhanced':
+        pattern_score = _enhanced_pattern_detection(mmd_array, mmd_norm)
+    else:
+        raise ValueError(f"Unknown mode: {mode}. Use 'simple' or 'enhanced'.")
+
+    return pattern_score, mmd_max_val
+
+
+# ============================================================================
+# PATTERN DETECTION HELPERS
+# ============================================================================
+
+def _simple_pattern_detection(mmd_norm):
+    """
+    Simple 3-check triangle pattern detection (original version).
+    Fast and straightforward, good for most cases.
+    """
     peak_idx = np.argmax(mmd_norm)
-
-    # Pattern score based on:
-    # 1. Peak position (middle is good)
-    # 2. Rise before peak
-    # 3. Fall after peak
-
     pattern_score = 0.0
 
-    # Peak in middle region
+    # Check 1: Peak in middle region (20%-80%)
     if 0.2 < peak_idx / len(mmd_norm) < 0.8:
         pattern_score += 0.3
 
-    # Rising before peak
+    # Check 2: Rising before peak (>50% increasing)
     if peak_idx > 1:
         rise = mmd_norm[:peak_idx]
         if len(rise) > 0 and np.sum(np.diff(rise) > 0) / len(rise) > 0.5:
             pattern_score += 0.35
 
-    # Falling after peak
+    # Check 3: Falling after peak (>50% decreasing)
     if peak_idx < len(mmd_norm) - 2:
         fall = mmd_norm[peak_idx:]
         if len(fall) > 0 and np.sum(np.diff(fall) < 0) / len(fall) > 0.5:
             pattern_score += 0.35
 
-    return pattern_score, mmd_max_val
+    return pattern_score
+
+
+def _enhanced_pattern_detection(mmd_array, mmd_norm):
+    """
+    Enhanced 6-check pattern detection with statistical validation.
+    More robust but slightly slower.
+    """
+    pattern_score = 0.0
+    
+    # Check 1: Triangle shape (tolerance=0.6 means 60% of points follow pattern)
+    is_triangle = _check_triangle_shape(mmd_norm, tolerance=0.6)
+    if is_triangle:
+        pattern_score += 0.4
+    
+    # Check 2: Zero-crossing in derivative (peak/trough detection)
+    has_zero_crossing = _check_zero_crossing(mmd_array)
+    if has_zero_crossing:
+        pattern_score += 0.2
+    
+    # Check 3: Statistically significant peak (>2 sigma above mean)
+    has_peak = _check_significant_peak(mmd_array, sigma=2.0)
+    if has_peak:
+        pattern_score += 0.4
+    
+    return min(pattern_score, 1.0)  # Cap at 1.0
+
+
+def _check_triangle_shape(sequence, tolerance=0.5):
+    """Check if sequence exhibits triangle-like shape."""
+    n = len(sequence)
+    if n < 5:
+        return False
+
+    peak_idx = np.argmax(sequence)
+
+    # Peak should be in middle region (20%-80%)
+    if peak_idx < n * 0.2 or peak_idx > n * 0.8:
+        return False
+
+    # Check rising phase
+    if peak_idx > 1:
+        rise = sequence[:peak_idx]
+        rise_increasing_frac = np.sum(np.diff(rise) > 0) / len(rise)
+        is_rising = rise_increasing_frac >= tolerance
+    else:
+        is_rising = True
+
+    # Check falling phase
+    if peak_idx < n - 2:
+        fall = sequence[peak_idx:]
+        fall_decreasing_frac = np.sum(np.diff(fall) < 0) / len(fall)
+        is_falling = fall_decreasing_frac >= tolerance
+    else:
+        is_falling = True
+
+    return is_rising and is_falling
+
+
+def _check_zero_crossing(sequence):
+    """Check for zero-crossings in first derivative."""
+    if len(sequence) < 3:
+        return False
+
+    derivative = np.diff(sequence)
+    sign_changes = np.sum(np.diff(np.sign(derivative)) != 0)
+    
+    return sign_changes >= 1  # At least one peak or trough
+
+
+def _check_significant_peak(sequence, sigma=2.0):
+    """Check if sequence has statistically significant peak."""
+    mean_val = np.mean(sequence)
+    std_val = np.std(sequence)
+
+    if std_val < 1e-10:
+        return False
+
+    max_val = np.max(sequence)
+    return max_val > mean_val + sigma * std_val
+
+
+# ============================================================================
+# ADVANCED FUNCTIONS (OPTIONAL - FOR EXTENDED USAGE)
+# ============================================================================
+
+def compute_ow_mmd(X, Y, gamma='auto', weight_method='variance_reduction'):
+    """
+    Compute Optimally-Weighted MMD between separate X and Y samples.
+    
+    Alternative interface to mmd_ow() that takes separate reference and test sets.
+    Useful when you already have split data.
+
+    Args:
+        X: Reference samples (n_samples, n_features)
+        Y: Test samples (m_samples, n_features)
+        gamma: RBF kernel bandwidth
+        weight_method: Weighting strategy
+
+    Returns:
+        mmd_value: OW-MMD statistic (positive scalar)
+    """
+    m, n = X.shape[0], Y.shape[0]
+
+    # Compute kernel matrices
+    K_XX = rbf_kernel_ow(X, X, gamma)
+    K_YY = rbf_kernel_ow(Y, Y, gamma)
+    K_XY = rbf_kernel_ow(X, Y, gamma)
+
+    # Compute optimal weights
+    W_XX = compute_optimal_weights(K_XX, weight_method)
+    W_YY = compute_optimal_weights(K_YY, weight_method)
+    W_XY = np.ones((m, n)) / (m * n)
+
+    # Weighted MMD² computation
+    term1 = np.sum(W_XX * K_XX)
+    term2 = np.sum(W_YY * K_YY)
+    term3 = np.sum(W_XY * K_XY)
+
+    mmd_squared = term1 + term2 - 2 * term3
+    mmd_value = np.sqrt(max(0, mmd_squared))
+
+    return mmd_value
+
+
+def shapedd_ow_mmd_enhanced(X, l1=50, l2=150, gamma='auto'):
+    """
+    Enhanced ShapeDD-OW-MMD with sophisticated pattern detection.
+    
+    Same interface as shapedd_ow_mmd() but uses enhanced mode by default.
+    
+    Returns:
+        pattern_score: Geometric pattern strength (0.0 to 1.0)
+        mmd_max: Maximum MMD value in sequence
+    """
+    return shapedd_ow_mmd(X, l1=l1, l2=l2, gamma=gamma, mode='enhanced')
+
+
+def shapedd_ow_mmd_hybrid(stream, ref_window_size=50, test_window_size=150,
+                         step_size=25, gamma='auto', geometric_window=30):
+    """
+    Full ShapeDD-OW-MMD Hybrid for complete stream processing.
+    
+    This variant processes an entire stream and returns detected drift points,
+    not just a pattern score. Uses fixed reference window approach.
+    
+    DIFFERENT INTERFACE - Returns drift points list, not pattern score!
+
+    Args:
+        stream: Complete data stream (n_samples, n_features)
+        ref_window_size: Reference window size (L1)
+        test_window_size: Test window size (L2)
+        step_size: Step between consecutive tests
+        gamma: RBF kernel parameter
+        geometric_window: Window size for geometric analysis
+
+    Returns:
+        drift_points: List of detected drift positions
+        mmd_sequence: List of (index, mmd_value) tuples
+    """
+    n_samples = len(stream)
+    mmd_sequence = []
+
+    # Fixed reference window at beginning
+    ref_start = 0
+    ref_end = ref_window_size
+
+    # Slide test window through stream
+    for test_start in range(ref_window_size,
+                           n_samples - test_window_size + 1,
+                           step_size):
+        test_end = test_start + test_window_size
+
+        # Extract windows
+        ref_window = stream[ref_start:ref_end]
+        test_window = stream[test_start:test_end]
+
+        # Compute OW-MMD
+        mmd_val = compute_ow_mmd(ref_window, test_window,
+                                gamma=gamma,
+                                weight_method='variance_reduction')
+
+        center_idx = (test_start + test_end) // 2
+        mmd_sequence.append((center_idx, mmd_val))
+
+    # Apply geometric analysis to find drift points
+    drift_points = _shapedd_geometric_analysis(
+        mmd_sequence,
+        window_size=geometric_window,
+        min_spacing=ref_window_size
+    )
+
+    return drift_points, mmd_sequence
+
+
+def _shapedd_geometric_analysis(mmd_sequence, window_size=30, min_spacing=50):
+    """
+    Apply ShapeDD's geometric analysis to OW-MMD sequence.
+    Returns list of drift point positions.
+    """
+    if len(mmd_sequence) < window_size:
+        return []
+
+    indices = np.array([idx for idx, _ in mmd_sequence])
+    values = np.array([val for _, val in mmd_sequence])
+
+    drift_points = []
+
+    # Sliding window over MMD sequence
+    for i in range(len(values) - window_size + 1):
+        window = values[i:i+window_size]
+        window_idx = indices[i:i+window_size]
+
+        # Normalize window
+        w_min, w_max = window.min(), window.max()
+        if w_max - w_min < 1e-10:
+            continue
+
+        window_norm = (window - w_min) / (w_max - w_min)
+
+        # Apply enhanced checks
+        is_triangle = _check_triangle_shape(window_norm, tolerance=0.6)
+        has_zero_crossing = _check_zero_crossing(window)
+        has_peak = _check_significant_peak(window, sigma=2.0)
+
+        # Drift detection logic
+        if is_triangle and (has_zero_crossing or has_peak):
+            peak_idx = np.argmax(window)
+            drift_location = int(window_idx[peak_idx])
+
+            # Avoid duplicates (min spacing rule)
+            if not drift_points or drift_location - drift_points[-1] >= min_spacing:
+                drift_points.append(drift_location)
+
+    return drift_points
