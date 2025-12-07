@@ -1,5 +1,8 @@
 \chapter{Công trình liên quan}
 
+Chương trước đã giới thiệu về hiện tượng trôi dạt khái niệm và tầm quan trọng của việc phát hiện sớm. 
+Chương này khảo sát các phương pháp phát hiện drift đã được đề xuất, từ đó làm cơ sở lựa chọn và cải tiến phương pháp cho luận văn.
+
 \textit{Tóm tắt: Trình bày một cách tổng quát về những phương pháp liên quan đã và đang được thực hiện trong quá 
 trình phát hiện hiện tượng trôi dạt. Đồng thời, phần này còn trình bày về cách phân loại hiện tượng trôi dạt dựa 
 trên cửa sổ trượt. Các phương pháp sẽ được luận văn trình bày theo những góc nhìn khác nhau, từ đó có thể đưa ra các 
@@ -22,7 +25,7 @@ Nhóm phương pháp thống kê tập trung vào việc phát hiện thay đổ
 thông qua các phép kiểm định thống kê hoặc quan sát cửa sổ trượt trên dòng dữ liệu. Một trong những kỹ thuật 
 kinh điển là sử dụng các biểu đồ kiểm soát thống kê liên tục như \textit{CUSUM} hay kiểm định \textit{Page-Hinkley (PH)}. 
 
-Chẳng hạn, kiểm định PH \cite{inproceedings} được áp dụng trong bối cảnh concept drift để giám sát trung bình của một chuỗi 
+Chẳng hạn, kiểm định PH~\cite{mouss2004pagehinkley} được áp dụng trong bối cảnh concept drift để giám sát trung bình của một chuỗi 
 số liệu và phát hiện khi nào trung bình thay đổi đáng kể. PH thực chất triển khai biểu đồ CUSUM để nhạy với những thay đổi 
 nhỏ trong giá trị trung bình và có thể phát hiện cả xu hướng tăng lẫn giảm. Tương tự, các kiểm định thống kê hai 
 mẫu (như Kolmogorov–Smirnov, Student t-test) cũng được tận dụng để so sánh phân phối của hai cửa sổ dữ liệu (mới và cũ) 
@@ -42,7 +45,7 @@ cả drift đột ngột lẫn dần dần, và đã tạo nền tảng cho nhi�
 phí tính toán khá cao do phải kiểm tra nhiều kích thước cửa sổ, và nhạy cảm với nhiễu (noise) trong dữ liệu~\cite{hinder2024survey_partA}. Bên cạnh 
 ADWIN, nhiều phương pháp thống kê khác lần lượt xuất hiện. 
 
-Một phương pháp khác là \textbf{KSWIN} (Kolmogorov–Smirnov WINdowing \cite{inbook}), kết hợp kiểm định Kolmogorov–Smirnov với cửa 
+Một phương pháp khác là \textbf{KSWIN} (Kolmogorov–Smirnov WINdowing \cite{wang2020kswin}), kết hợp kiểm định Kolmogorov–Smirnov với cửa 
 sổ trượt nhằm phát hiện thay đổi phân phối một cách phi tham số.  Các phương pháp thống kê thuần túy này có ưu điểm là không phụ 
 thuộc vào mô hình học máy cụ thể, do đó có thể áp dụng trong môi trường phi giám sát (không cần nhãn). Mặt khác, chúng thường đòi
 hỏi giả định mạnh về độc lập và phân phối dữ liệu, và có thể bỏ sót những thay đổi nhỏ nếu kích thước mẫu không đủ lớn. Dù vậy, nhóm 
@@ -237,6 +240,32 @@ Giai đoạn 2010–2020 là thời kỳ nở rộ với hàng loạt cải ti�
 trên ensemble và meta-learning~\cite{santos2024evolving}. Từ 2020 trở đi, xu hướng tích hợp với học sâu trở nên rõ nét, hướng tới các hệ 
 thống vừa có khả năng học biểu diễn mạnh mẽ vừa linh hoạt thích ứng với dữ liệu biến đổi. Sự kết hợp liên ngành giữa thống kê, học máy và học sâu 
 đang tiếp tục mở ra những chương mới cho bài toán concept drift, hứa hẹn các giải pháp ngày càng hiệu quả và toàn diện hơn trong tương lai.
+
+\subsection{So sánh tổng hợp các phương pháp phát hiện drift}
+
+Bảng~\ref{tab:comprehensive-comparison} tổng hợp các phương pháp phát hiện drift theo các tiêu chí quan trọng nhất, giúp lựa chọn phương pháp phù hợp với từng bài toán cụ thể.
+
+\begin{table}[H]
+\centering
+\caption{So sánh các phương pháp phát hiện drift theo các tiêu chí chính}
+\label{tab:comprehensive-comparison}
+\begin{tabular}{@{}p{2.5cm}p{2cm}p{2cm}p{2.5cm}p{2.5cm}p{2.5cm}@{}}
+\toprule
+\textbf{Phương pháp} & \textbf{Cần nhãn?} & \textbf{Loại drift} & \textbf{Độ phức tạp} & \textbf{Độ trễ phát hiện} & \textbf{Phù hợp với} \\
+\midrule
+DDM & Có & Sudden & $O(1)$ & Trung bình & [TODO] \\
+EDDM & Có & Gradual & $O(1)$ & Thấp & [TODO] \\
+ADWIN & Không & Cả hai & $O(\log W)$ & Thấp & [TODO] \\
+HDDM & Có & Sudden & $O(1)$ & Trung bình & [TODO] \\
+KSWIN & Không & Sudden & $O(n \log n)$ & Cao & [TODO] \\
+ShapeDD & Không & Sudden & $O(l^2)$ & Thấp & [TODO] \\
+ShapeDD SNR-Adaptive & Không & Sudden & $O(l^2)$ & Thấp & [TODO] \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.5em}
+\textit{Ghi chú: [TODO] - Cần bổ sung sau khi hoàn thành phần thực nghiệm. $W$ = kích thước cửa sổ ADWIN, $n$ = số mẫu trong cửa sổ, $l$ = kích thước cửa sổ ShapeDD.}
+\end{table}
 
 \section{Phương pháp xác định loại trôi dạt - CDT\_MSW}
 \label{sec:drift_type_identification}

@@ -1,6 +1,10 @@
 \chapter{Mô hình đề xuất cho hệ thống phát hiện và thích ứng concept drift}
 \label{chap:proposed-model}
 
+Dựa trên nền tảng lý thuyết ShapeDD đã trình bày ở Chương~3, chương này đề xuất các cải tiến 
+và xây dựng hệ thống phát hiện drift hoàn chỉnh. Đóng góp chính là phương pháp ShapeDD SNR-Adaptive,
+kết hợp với CDT\_MSW để phân loại drift và các chiến lược thích ứng tương ứng.
+
 \section{Phương pháp cải tiến đề xuất cho ShapeDD}
 
 \subsection{ShapeDD SNR-Adaptive: Phương pháp hybrid thích ứng với tỷ lệ tín hiệu-nhiễu}
@@ -66,35 +70,35 @@ Trong đó:
 Để khắc phục hạn chế của các chiến lược đơn lẻ, Luận văn đề xuất phương pháp \textbf{ShapeDD SNR-Adaptive} - một thuật toán 
 hybrid tự động chọn chiến lược phát hiện dựa trên SNR ước lượng của môi trường:
 
-\textbf{Thuật toán ước lượng SNR:}
+\textbf{SNR Estimation Algorithm:}
 
 \begin{algorithm}[H]
-\caption{Ước lượng SNR từ luồng dữ liệu}
+\caption{SNR Estimation from Data Stream}
 \begin{algorithmic}[1]
-\REQUIRE Dữ liệu $X$, kích thước cửa sổ $w$, số mẫu $k$
-\ENSURE Ước lượng SNR
-\STATE Chia $X$ thành $k$ cửa sổ kích thước $w$
-\STATE Tính trung bình mỗi cửa sổ: $\mu_1, \mu_2, ..., \mu_k$
-\STATE Tính phương sai giữa các cửa sổ: $\sigma^2_{\text{signal}} = \text{Var}(\mu_1, ..., \mu_k)$
-\STATE Tính phương sai trung bình trong mỗi cửa sổ: $\sigma^2_{\text{noise}} = \frac{1}{k}\sum_{i=1}^{k}\text{Var}(X_i)$
+\REQUIRE Data $X$, window size $w$, number of windows $k$
+\ENSURE SNR estimate
+\STATE Split $X$ into $k$ windows of size $w$
+\STATE Compute mean of each window: $\mu_1, \mu_2, ..., \mu_k$
+\STATE Compute inter-window variance: $\sigma^2_{\text{signal}} = \text{Var}(\mu_1, ..., \mu_k)$
+\STATE Compute average intra-window variance: $\sigma^2_{\text{noise}} = \frac{1}{k}\sum_{i=1}^{k}\text{Var}(X_i)$
 \RETURN $\text{SNR} = \frac{\sigma^2_{\text{signal}}}{\sigma^2_{\text{noise}}}$
 \end{algorithmic}
 \end{algorithm}
 
-\textbf{Logic lựa chọn chiến lược:}
+\textbf{Strategy Selection Logic:}
 
 \begin{algorithm}[H]
 \caption{ShapeDD SNR-Adaptive}
 \begin{algorithmic}[1]
-\REQUIRE Dữ liệu $X$, ngưỡng SNR $\tau$, độ nhạy $s$
-\ENSURE Kết quả phát hiện drift
+\REQUIRE Data $X$, SNR threshold $\tau$, sensitivity $s$
+\ENSURE Drift detection result
 \STATE $\text{SNR}_{\text{est}} \leftarrow$ \texttt{estimate\_snr}$(X)$
 \IF{$\text{SNR}_{\text{est}} > \tau$}
-    \STATE \textit{// Môi trường SNR cao - sử dụng chiến lược tích cực}
+    \STATE \textit{// High SNR environment - use aggressive strategy}
     \RETURN \texttt{shape\_adaptive\_v2}$(X, \text{sensitivity}=s)$
 \ELSE
-    \STATE \textit{// Môi trường SNR thấp - sử dụng chiến lược bảo thủ}
-    \RETURN \texttt{shape}$(X)$ \textit{// ShapeDD gốc}
+    \STATE \textit{// Low SNR environment - use conservative strategy}
+    \RETURN \texttt{shape}$(X)$ \textit{// Original ShapeDD}
 \ENDIF
 \end{algorithmic}
 \end{algorithm}
@@ -702,7 +706,6 @@ Hệ thống sử dụng phương pháp \textbf{CDT\_MSW (Concept Drift Type Ide
 
 Trong chương này, chúng ta tập trung vào \textbf{triển khai cụ thể} của CDT\_MSW trong hệ thống, bao gồm cấu hình parameters, integration với Kafka messaging, và error handling.
 
-\subsection{Tích hợp CDT\_MSW vào workflow}
 
 Sau khi ShapeDD phát hiện drift tại thời điểm $t_0$, module \texttt{drift\_detector.py} kích hoạt CDT\_MSW để phân loại drift type:
 
@@ -712,6 +715,36 @@ Sau khi ShapeDD phát hiện drift tại thời điểm $t_0$, module \texttt{dr
     \item \textbf{Classification}: So sánh $L_d$ với thresholds để xác định drift type
     \item \textbf{Message publishing}: Gửi kết quả (drift\_type, $L_d$, confidence) lên Kafka topic \texttt{drift.results}
 \end{enumerate}
+
+\textbf{Thuật toán phân loại loại drift:}
+
+\begin{algorithm}[H]
+\caption{CDT\_MSW Drift Type Classification}
+\begin{algorithmic}[1]
+\REQUIRE Drift timestamp $t_0$, data window $\mathcal{W}$, thresholds $\theta_{sudden}$, $\theta_{stability}$
+\ENSURE Drift type: \{sudden, gradual, incremental, recurrent, blip\}
+\STATE \textit{// Phase 1: Measure drift length}
+\STATE $t_{start} \leftarrow t_0$
+\STATE $L_d \leftarrow 0$
+\WHILE{$\Delta d_t > \theta_{stability}$}
+    \STATE $t_{end} \leftarrow t_{end} + \Delta t$
+    \STATE $L_d \leftarrow t_{end} - t_{start}$
+\ENDWHILE
+\STATE
+\STATE \textit{// Phase 2: Classify based on length and characteristics}
+\IF{$L_d < \theta_{sudden}$}
+    \RETURN \texttt{"sudden"}
+\ELSIF{drift has cyclic pattern with previous concepts}
+    \RETURN \texttt{"recurrent"}
+\ELSIF{transition rate is linear}
+    \RETURN \texttt{"incremental"}
+\ELSIF{transition involves mixed distributions}
+    \RETURN \texttt{"gradual"}
+\ELSE
+    \RETURN \texttt{"blip"}
+\ENDIF
+\end{algorithmic}
+\end{algorithm}
 
 \section{Mô hình học máy và quy trình thích ứng}
 \label{sec:model-adaptation}
@@ -767,6 +800,33 @@ Hệ thống sử dụng mô hình học máy với ba giai đoạn hoạt độ
 \end{itemize}
 
 \textbf{Phạm vi đánh giá:} Luận văn này tập trung đánh giá chuyên sâu \texttt{adapt\_sudden\_drift()} strategy với comprehensive experiments (Chapter 4). Các strategies khác đã được implement as part of extensible framework nhưng chưa được evaluate thoroughly, để dành cho future research.
+
+\textbf{Sudden Drift Adaptation Algorithm:}
+
+\begin{algorithm}[H]
+\caption{Sudden Drift Adaptation Strategy}
+\begin{algorithmic}[1]
+\REQUIRE Drift event $(t_0, \text{drift\_type})$, post-drift data $\mathcal{D}_{post}$, old model $M_{old}$
+\ENSURE New model $M_{new}$
+\STATE \textit{// Step 1: Verify drift type}
+\IF{drift\_type $\neq$ ``sudden''}
+    \RETURN redirect\_to\_other\_strategy(drift\_type)
+\ENDIF
+\STATE
+\STATE \textit{// Step 2: Collect post-drift data}
+\STATE $\mathcal{D}_{train} \leftarrow$ collect\_samples($t_0$, window\_size=800)
+\STATE Wait for sufficient samples or timeout (adaptation\_delay=50)
+\STATE
+\STATE \textit{// Step 3: Train new model}
+\STATE $M_{new} \leftarrow$ sklearn.Pipeline([StandardScaler(), LogisticRegression()])
+\STATE $M_{new}$.fit($\mathcal{D}_{train}$.X, $\mathcal{D}_{train}$.y)
+\STATE
+\STATE \textit{// Step 4: Save and replace model}
+\STATE save\_model($M_{new}$, version=$t_0$)
+\STATE $M_{old} \leftarrow M_{new}$
+\RETURN $M_{new}$
+\end{algorithmic}
+\end{algorithm}
 
 Chi tiết về rationale và trade-offs của từng chiến lược đã được phân tích đầy đủ trong Chapter 1.
 

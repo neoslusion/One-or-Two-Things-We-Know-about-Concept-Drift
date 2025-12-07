@@ -1,16 +1,20 @@
 \chapter{Giới thiệu đề tài}
 
 \section{Thực trạng chung}
-Trong những năm gần đây, lĩnh vực trí tuệ nhân tạo ngày càng phát triển nhanh chóng. 
-Việc ứng dụng thành quả của trí tuệ nhân tạo ngày càng được phổ biến rộng rãi, không chỉ trong đời sống hằng ngày mà cả trong công việc. 
-Các ứng dụng học máy không còn bị giới hạn trong phòng thí nghiệm mà đã được triển khai vào đời sống thực tế trong các lĩnh vực sản 
-xuất như bảo trì thông minh và kiểm soát chất lượng. Khi đó, các câu hỏi liên quan đến độ tin cậy và độ bền liên tục của chúng nảy sinh.
+Hệ thống phát hiện gian lận của một ngân hàng có thể đạt độ chính xác 99\% trong năm đầu vận hành, 
+nhưng sau 18 tháng, tỷ lệ cảnh báo sai tăng đột biến lên gấp ba lần. 
+Một mô hình dự báo bảo trì máy móc trong nhà máy thép hoạt động ổn định suốt mùa khô, 
+nhưng khi mùa mưa đến, hiệu suất giảm mạnh do điều kiện vận hành thay đổi. 
+Đây không phải là lỗi của thuật toán hay của kỹ sư xây dựng mô hình --- mà là hiện tượng 
+\textbf{trôi dạt khái niệm} (concept drift): khi thực tế thay đổi nhưng mô hình vẫn ``đứng yên''.
 
-Các tập dữ liệu tĩnh được sử dụng để huấn luyện các mô hình học máy chỉ có thể nắm bắt được một phần nhỏ các điều kiện có 
-thể xảy ra trong thế giới thực. Các trường hợp trôi dạt, chẳng hạn như thay đổi điều kiện môi trường, thiết bị và vận hành có thể, 
-theo thời gian, làm giảm đáng kể hiệu suất của các mô hình học máy, gây ảnh hưởng đến sự an toàn, độ tin cậy của 
-mô hình và kinh tế nếu không được giải quyết đúng cách. Do đó, cần phải (1) phát hiện sự trôi dạt sớm nhất có thể và (2) điều chỉnh 
-hiệu quả mô hình theo các điều kiện thay đổi động.
+Các mô hình học máy được huấn luyện với giả định rằng dữ liệu trong tương lai sẽ tuân theo cùng phân phối 
+với dữ liệu huấn luyện. Tuy nhiên, môi trường sản xuất công nghiệp hiếm khi tĩnh: 
+thiết bị lão hóa, quy trình thay đổi, hành vi người dùng biến đổi. 
+Kết quả là hiệu suất mô hình suy giảm dần theo thời gian, đôi khi đột ngột, 
+gây ảnh hưởng đến độ tin cậy hệ thống và chi phí vận hành. 
+Để giải quyết vấn đề này, cần có cơ chế (1) phát hiện drift càng sớm càng tốt, 
+và (2) thích ứng mô hình một cách hiệu quả theo các điều kiện mới.
 
 \section{Tổng quan về bài toán}
 Đối với việc xử lý dữ liệu streaming, việc xử lý và phân tích dữ liệu đang trở thành một thách thức lớn do tính phức tạp 

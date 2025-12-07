@@ -1,5 +1,9 @@
 \chapter{Cơ sở lý thuyết}
 
+Sau khi khảo sát các phương pháp phát hiện drift ở Chương~2, chương này trình bày nền tảng lý thuyết 
+của phương pháp ShapeDD --- phương pháp được lựa chọn làm cơ sở phát triển cho luận văn. 
+Chương bắt đầu với định nghĩa formal về concept drift, sau đó đi sâu vào lý thuyết MMD và cơ chế phát hiện của ShapeDD.
+
 \section{Khái niệm về concept drift và phân loại}
 
 \subsection{Khái niệm về concept drift}
@@ -79,6 +83,25 @@ này dễ bị \textbf{nhiễu}, khiến việc phân biệt giữa thay đổi 
 
 \textbf{ShapeDD (Shape-Based Drift Detection)} được đề xuất nhằm khắc phục vấn đề này bằng cách khai thác \textit{đặc trưng hình dạng} 
 mà tín hiệu drift thể hiện, đặc biệt trong các trường hợp \textbf{drift đột ngột (abrupt drift)}.
+
+\subsection{Quy ước ký hiệu}
+
+Trước khi đi vào chi tiết, phần này thống nhất các ký hiệu được sử dụng trong chương:
+
+\begin{itemize}
+    \item $l$: kích thước cửa sổ tổng quát (được dùng trong phần lý thuyết)
+    \item $l_1$, $l_2$: kích thước hai cửa sổ cụ thể của ShapeDD trong triển khai thực tế
+        \begin{itemize}
+            \item $l_1$: nửa cửa sổ nhỏ (half-window) cho so sánh cục bộ, mặc định = 50
+            \item $l_2$: cửa sổ lớn hơn cho MMD computation, mặc định = 150
+        \end{itemize}
+    \item $P$, $Q$: hai phân phối xác suất cần so sánh
+    \item $D_t$: phân phối sinh dữ liệu tại thời điểm $t$
+    \item $\sigma$: đại lượng độ lớn trôi dạt (drift magnitude)
+    \item $h_l(t)$: hình dạng tam giác đặc trưng của tín hiệu drift
+\end{itemize}
+
+\textit{Lưu ý:} Trong các phương pháp khác nhau (ADWIN, DDM, etc.), ký hiệu cửa sổ có thể khác. Luận văn này giữ nguyên ký hiệu gốc khi trình bày từng phương pháp để thuận tiện tra cứu tài liệu gốc.
 
 \subsection{Nền tảng lý thuyết}
 
@@ -239,13 +262,27 @@ trong đó:
 
 \textbf{Tính chất thống kê:} Cả hai ước lượng đều hội tụ với tốc độ $O(\sqrt{\min(n,m)^{-1}})$ và bound này chỉ phụ thuộc vào tính chất của kernel, độc lập với số chiều dữ liệu~\cite{gretton2012kernel}.
 
-\textbf{Ví dụ minh họa:} Xét hai phân phối 1D:
+\textbf{Ví dụ minh họa với tính toán cụ thể:} Xét hai tập mẫu nhỏ từ hai phân phối 1D:
 \begin{itemize}
-    \item $P = \mathcal{N}(0, 1)$ - phân phối chuẩn tâm 0, phương sai 1
-    \item $Q = \mathcal{N}(2, 1)$ - phân phối chuẩn tâm 2, phương sai 1
+    \item $X = \{0.1, -0.3, 0.5\}$ từ $P = \mathcal{N}(0, 1)$
+    \item $Y = \{1.8, 2.3, 2.0\}$ từ $Q = \mathcal{N}(2, 1)$
 \end{itemize}
 
-Với Gaussian kernel ($\sigma = 1$), MMD sẽ nắm bắt được sự dịch chuyển trung bình (mean shift) giữa hai phân phối. Khi $n, m \to \infty$, $\widehat{\text{MMD}}^2$ hội tụ về giá trị dương phản ánh khoảng cách thực giữa $P$ và $Q$.
+Sử dụng Gaussian kernel với $\sigma = 1$: $k(x, y) = \exp(-\frac{(x-y)^2}{2})$
+
+\textit{Bước 1:} Tính các thành phần kernel:
+\begin{align*}
+\frac{1}{n^2}\sum_{i,j} k(x_i, x_j) &= \frac{1}{9}[k(0.1,0.1) + k(0.1,-0.3) + \ldots] \approx 0.92 \\
+\frac{1}{m^2}\sum_{i,j} k(y_i, y_j) &= \frac{1}{9}[k(1.8,1.8) + k(1.8,2.3) + \ldots] \approx 0.94 \\
+\frac{2}{nm}\sum_{i,j} k(x_i, y_j) &= \frac{2}{9}[k(0.1,1.8) + k(0.1,2.3) + \ldots] \approx 0.21
+\end{align*}
+
+\textit{Bước 2:} Tính $\widehat{\text{MMD}}^2$:
+\[
+\widehat{\text{MMD}}^2 = 0.92 + 0.94 - 0.21 = 1.65 > 0
+\]
+
+Kết quả dương ($\widehat{\text{MMD}}^2 = 1.65$) cho thấy hai mẫu có phân phối khác nhau. Giá trị này có thể dùng để kiểm định với permutation test: nếu hai phân phối giống nhau, $\widehat{\text{MMD}}^2$ sẽ gần 0.
 
 \subsection{Cách thức hoạt động của ShapeDD}
 
