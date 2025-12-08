@@ -357,6 +357,129 @@ Threshold 0.010 được chọn dựa trên:
 
 Hiệu ứng buffer dilution giải thích tại sao threshold phải được điều chỉnh đáng kể so với giá trị lý thuyết để phương pháp SNR-Adaptive hoạt động hiệu quả trong môi trường production thực tế.
 
+\subsection{Optimally-Weighted MMD (OW-MMD): Cải thiện hiệu suất tính toán}
+\label{sec:ow-mmd}
+
+Phần này trình bày phương pháp OW-MMD (Optimally-Weighted MMD) -- một cải tiến quan trọng nhằm giải quyết vấn đề hiệu suất tính toán của MMD trong phát hiện drift.
+
+\subsubsection{Vấn đề: Độ phức tạp tính toán cao của MMD gốc}
+
+MMD (Maximum Mean Discrepancy) gốc trong ShapeDD sử dụng permutation test với số lần hoán vị lớn (n\_perm = 2500) để ước lượng p-value. Điều này dẫn đến:
+
+\begin{itemize}
+    \item \textbf{Chi phí tính toán:} $O(n^2 \times \text{n\_perm})$ với $n$ là kích thước cửa sổ
+    \item \textbf{Thời gian chạy:} ~30-60 giây mỗi cửa sổ với buffer 750 samples
+    \item \textbf{Không phù hợp real-time:} Độ trễ quá cao cho hệ thống streaming
+\end{itemize}
+
+\subsubsection{Giải pháp: OW-MMD với variance-reduction weighting}
+
+OW-MMD (Optimally-Weighted MMD) được giới thiệu bởi Bharti et al.~\cite{bharti2023owmmd} tại ICML 2023, áp dụng trọng số tối ưu vào ước lượng MMD để giảm variance và cải thiện sample complexity.
+
+\textbf{Nguyên lý hoạt động:}
+
+MMD gốc sử dụng trọng số uniform:
+\begin{equation}
+\text{MMD}^2 = \frac{1}{m^2} \sum_{i,j} k(x_i, x_j) + \frac{1}{n^2} \sum_{i,j} k(y_i, y_j) - \frac{2}{mn} \sum_{i,j} k(x_i, y_j)
+\end{equation}
+
+OW-MMD thay thế bằng trọng số tối ưu:
+\begin{equation}
+\text{MMD}^2_{\text{OW}} = \sum_{i,j} w^{XX}_{ij} k(x_i, x_j) + \sum_{i,j} w^{YY}_{ij} k(y_i, y_j) - 2\sum_{i,j} w^{XY}_{ij} k(x_i, y_j)
+\end{equation}
+
+Trong đó trọng số được tính theo công thức variance-reduction:
+\begin{equation}
+w_{ij} = \frac{1}{\sqrt{k_i^{\text{sum}}}} \cdot \frac{1}{\sqrt{k_j^{\text{sum}}}}, \quad k_i^{\text{sum}} = \sum_{j} k(x_i, x_j)
+\end{equation}
+
+\textbf{Ý nghĩa:} Các điểm có nhiều neighbor tương đồng (kernel sum cao) được gán trọng số thấp hơn để giảm redundancy, trong khi các điểm isolated được gán trọng số cao hơn.
+
+\subsubsection{Triển khai ShapeDD\_OW\_MMD}
+
+Nghiên cứu này kết hợp OW-MMD vào framework ShapeDD thông qua hybrid approach:
+
+\begin{enumerate}
+    \item \textbf{Stage 1 - Fast geometric detection:} Sử dụng ShapeDD kernel để phát hiện nhanh các peak candidates (không thay đổi)
+    
+    \item \textbf{Stage 2 - OW-MMD validation:} Thay thế permutation MMD bằng OW-MMD với bootstrap-calibrated threshold
+\end{enumerate}
+
+\textbf{Thuật toán:}
+
+\begin{algorithm}[H]
+\caption{ShapeDD\_OW\_MMD Hybrid Detection}
+\begin{algorithmic}[1]
+\REQUIRE Data buffer $X$, window sizes $l_1$, $l_2$
+\ENSURE Drift detection results with p-values
+\STATE \textit{// Stage 1: Fast geometric pattern detection}
+\STATE $K \leftarrow$ RBF kernel matrix of $X$
+\STATE $\sigma(t) \leftarrow$ Compute ShapeDD shape curve via convolution
+\STATE $\text{peaks} \leftarrow$ Find zero-crossings in $\sigma'(t)$ where $\sigma(t) > 0$
+\STATE
+\STATE \textit{// Stage 2: OW-MMD validation at peaks only}
+\FOR{each peak $p$ in peaks}
+    \STATE $X_{ref}, X_{test} \leftarrow$ Split window around $p$
+    \STATE $\text{mmd\_value} \leftarrow$ Compute OW-MMD statistic
+    \STATE $\text{threshold} \leftarrow$ Bootstrap 95th percentile (n=10)
+    \IF{$\text{mmd\_value} > \text{threshold}$}
+        \STATE Mark $p$ as drift with p-value $< 0.05$
+    \ENDIF
+\ENDFOR
+\end{algorithmic}
+\end{algorithm}
+
+\subsubsection{Cải tiến hiệu suất đạt được}
+
+So sánh hiệu suất ShapeDD gốc và ShapeDD\_OW\_MMD:
+
+\begin{table}[H]
+\centering
+\caption{So sánh hiệu suất ShapeDD và ShapeDD\_OW\_MMD}
+\label{tab:owmmd-performance}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Metric} & \textbf{ShapeDD (MMD)} & \textbf{ShapeDD\_OW\_MMD} \\
+\midrule
+Bootstrap samples & 2500 & 10 \\
+Kernel computations & $O(n^2 \times 2500)$ & $O(n^2 \times 10)$ \\
+Speedup & 1× (baseline) & $\sim$3× faster \\
+F1-score & Baseline & Comparable \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Khi nào sử dụng OW-MMD}
+
+\begin{itemize}
+    \item \textbf{Nên dùng:} Khi cần giảm thời gian phát hiện, môi trường real-time, high-throughput streaming
+    \item \textbf{Trade-off:} Có thể có slight accuracy loss so với full permutation test
+    \item \textbf{Không khuyến nghị:} Khi accuracy là ưu tiên cao nhất và thời gian không bị giới hạn
+\end{itemize}
+
+\subsection{Tổng kết các cải tiến ShapeDD}
+
+Bảng dưới đây tóm tắt các cải tiến được đề xuất trong nghiên cứu này, với mục tiêu và kết quả đạt được:
+
+\begin{table}[H]
+\centering
+\caption{Tổng kết các cải tiến ShapeDD}
+\label{tab:shapedd-improvements-summary}
+\begin{tabular}{|l|p{4cm}|p{4cm}|p{3cm}|}
+\hline
+\textbf{Cải tiến} & \textbf{Vấn đề giải quyết} & \textbf{Phương pháp} & \textbf{Kết quả} \\
+\hline
+SNR-Adaptive & Threshold cố định không phù hợp mọi môi trường & Hybrid strategy selection dựa trên SNR estimation & F1-score cải thiện 5-10\% \\
+\hline
+Adaptive v2 & Bugs trong sensitivity logic của v1 & 5 critical fixes (threshold, smoothing, FDR) & Precision-Recall balanced \\
+\hline
+OW-MMD & Chi phí tính toán cao của permutation test & Variance-reduction weighting, reduced bootstrap & ~3× faster \\
+\hline
+Buffer calibration & SNR bị "pha loãng" trong rolling buffer & Empirical threshold calibration & Accurate in production \\
+\hline
+\end{tabular}
+\end{table}
+
 \section{Nền tảng xử lý luồng dữ liệu phân tán với Apache Kafka}
 
 Các phần trước đã trình bày chi tiết các phương pháp phát hiện drift (ShapeDD và các biến thể). Để triển khai các phương pháp này trong môi trường production với dữ liệu streaming real-time, nghiên cứu cần một nền tảng xử lý luồng dữ liệu mạnh mẽ. Phần này giới thiệu Apache Kafka -- nền tảng được chọn làm backbone cho hệ thống phát hiện và thích ứng drift.
