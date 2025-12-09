@@ -981,7 +981,7 @@ def shape_snr_adaptive(X, l1=50, l2=150, n_perm=2500, snr_threshold=0.010,
     """
 
     # Step 1: Estimate SNR from data
-    estimated_snr = estimate_snr(X, window_size=min(200, len(X) // 10))
+    estimated_snr = estimate_snr_robust(X, window_size=min(200, len(X) // 10), method='mmd')
 
     print(f"  [SNR-Adaptive] Estimated SNR: {estimated_snr:.3f}")
 
