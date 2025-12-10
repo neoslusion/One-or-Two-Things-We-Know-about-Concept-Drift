@@ -139,38 +139,393 @@ Phương pháp hybrid này mang lại các lợi ích sau:
 
 \textbf{Kết quả chi tiết được trình bày trong Chapter~\ref{chap:experiments}, Section 4.6 "Đánh giá SNR-Adaptive".}
 
-\subsection{Khung chiến lược thích ứng}
+% ============================================================================
+% NEW SECTION: THEORETICAL FOUNDATIONS FOR TECHNICAL IMPROVEMENTS
+% ============================================================================
 
-\subsection{Phương pháp Meta-Learning}
+\subsection{Nền tảng lý thuyết cho các cải tiến kỹ thuật}
+\label{sec:technical-improvements-theory}
 
-Luận văn phát triển khung meta-learning tự động lựa chọn chiến lược thích ứng dựa trên đặc trưng drift được phát hiện:
+Sau khi trình bày phương pháp SNR-Adaptive -- đóng góp chính của nghiên cứu --
+phần này xây dựng nền tảng lý thuyết cho các cải tiến kỹ thuật được áp dụng trong
+ShapeDD Adaptive v2 và các biến thể. Ba cải tiến này dựa trên lý thuyết vững chắc
+từ ba lĩnh vực khác nhau: kernel density estimation (KDE), order statistics, và
+signal processing. Việc hiểu rõ nền tảng lý thuyết là then chốt để đánh giá tính
+đúng đắn và hiệu quả của các cải tiến.
 
-\textbf{Trích xuất feature:} Đối với mỗi episode drift được phát hiện, nghiên cứu trích xuất feature mô tả:
+% ----------------------------------------------------------------------------
+% SUBSECTION 1: SCOTT'S RULE
+% ----------------------------------------------------------------------------
+
+\subsubsection{Adaptive Kernel Bandwidth Selection: Scott's Rule}
+\label{sec:scotts-rule}
+
+\textbf{Vấn đề bandwidth selection trong kernel methods:}
+
+Trong phát hiện drift sử dụng kernel-based methods như MMD, việc chọn bandwidth
+$\gamma$ của RBF kernel là quan trọng~\cite{scott2015multivariate}:
+
+\begin{equation}
+k(x, y) = \exp\left(-\gamma \|x - y\|^2\right), \quad \gamma = \frac{1}{2\sigma^2}
+\end{equation}
+
+Bandwidth $\sigma$ kiểm soát độ nhạy của kernel:
 \begin{itemize}
-    \item Mức độ drift: $|\Delta(t_1, t_2)|$
-    \item Tốc độ drift: $\frac{|\Delta(t_1, t_2)|}{t_2 - t_1}$
-    \item Chiều bị ảnh hưởng: Số lượng feature cho thấy thay đổi đáng kể
-    \item Ngữ cảnh lịch sử: Các mẫu drift trước đây và kết quả thích ứng
+    \item \textbf{$\sigma$ quá nhỏ} ($\gamma$ lớn): Kernel quá nhạy, mỗi điểm chỉ ảnh hưởng
+    lên vùng rất hẹp $\Rightarrow$ overfitting, nhiễu được khuếch đại
+    \item \textbf{$\sigma$ quá lớn} ($\gamma$ nhỏ): Kernel quá mượt, mất chi tiết
+    $\Rightarrow$ underfitting, bỏ lỡ drift nhỏ
 \end{itemize}
 
-\textbf{Lựa chọn chiến lược:} Meta-classifier được huấn luyện trên các episode drift lịch sử dự đoán 
-chiến lược thích ứng phù hợp nhất:
+\textbf{Scott's Rule - Asymptotically Optimal Bandwidth:}
+
+Scott (1992)~\cite{scott1992multivariate} đề xuất bandwidth selection rule tối ưu
+tiệm cận dựa trên Normal Reference Rule:
 
 \begin{equation}
-s^* = \arg\max_{s \in \mathcal{S}} P(s|\mathbf{f}_{\text{drift}})
+\sigma_{\text{Scott}} = \hat{\sigma} \cdot n^{-1/(d+4)}
+\label{eq:scotts-rule}
 \end{equation}
 
-trong đó $\mathbf{f}_{\text{drift}}$ biểu thị các feature drift được trích xuất và $\mathcal{S}$ là tập hợp các chiến lược thích ứng có sẵn.
+trong đó:
+\begin{itemize}
+    \item $\hat{\sigma}$ = sample standard deviation của dữ liệu
+    \item $n$ = số lượng samples
+    \item $d$ = số chiều (dimensionality)
+\end{itemize}
 
-\subsection{Quản lý cửa sổ thích ứng}
+\textbf{Nền tảng lý thuyết - Minimizing AMISE:}
 
-Luận văn đề xuất chiến lược quản lý cửa sổ thích ứng điều chỉnh kích thước cửa sổ dựa trên đặc trưng drift:
+Scott's rule được dẫn xuất bằng cách minimize Asymptotic Mean Integrated Squared Error
+(AMISE) của kernel density estimator~\cite{silverman1986density}:
 
 \begin{equation}
-w_{\text{size}}(t) = w_{\text{base}} \cdot \exp(-\lambda \cdot \Delta(t))
+\text{AMISE}(h) = \frac{R(K)}{nh^d} + \frac{h^4 m_2(K)^2 R(f'')}{4}
 \end{equation}
 
-trong đó $w_{\text{base}}$ là kích thước cửa sổ cơ sở, $\lambda$ là tham số suy giảm, và $\Delta(t)$ là mức độ drift được phát hiện.
+trong đó:
+\begin{itemize}
+    \item $R(K) = \int K^2(x)dx$ (roughness của kernel)
+    \item $m_2(K) = \int x^2 K(x)dx$ (second moment)
+    \item $R(f'') = \int [f''(x)]^2 dx$ (curvature của true density)
+    \item $h = \sigma$ (bandwidth)
+\end{itemize}
+
+Minimize $\text{AMISE}(h)$ theo $h$:
+\begin{equation}
+h^* = \left[\frac{R(K)}{m_2(K)^2 R(f'') n}\right]^{1/(d+4)}
+\end{equation}
+
+Đối với Gaussian kernel và giả thiết $f$ là Normal distribution:
+\begin{equation}
+h^*_{\text{Gaussian}} = \left(\frac{4}{2d+1}\right)^{1/(d+4)} \sigma n^{-1/(d+4)} \approx 1.06 \sigma n^{-1/(d+4)}
+\end{equation}
+
+Scott's rule sử dụng hệ số 1.0 thay vì 1.06 để đơn giản hóa.
+
+\textbf{Tại sao Scott's rule phù hợp với drift detection:}
+
+\begin{enumerate}
+    \item \textbf{Adaptive to data scale:} $\hat{\sigma}$ tự động điều chỉnh theo phân phối dữ liệu
+
+    \item \textbf{Dimensionality-aware:} Exponent $-1/(d+4)$ giảm bandwidth khi $d$ tăng,
+    tránh "curse of dimensionality"
+
+    \item \textbf{Sample-size adaptive:} $n^{-1/(d+4)}$ tăng smoothing khi data ít,
+    giảm smoothing khi data nhiều
+
+    \item \textbf{Theoretical guarantee:} Asymptotically optimal trong giả thiết Normal distribution
+\end{enumerate}
+
+\textbf{So sánh với các phương pháp khác:}
+
+\begin{table}[H]
+\centering
+\caption{So sánh các phương pháp bandwidth selection}
+\label{tab:bandwidth-comparison}
+\begin{tabular}{|l|p{3.5cm}|p{3cm}|p{3cm}|}
+\hline
+\textbf{Phương pháp} & \textbf{Công thức} & \textbf{Ưu điểm} & \textbf{Nhược điểm} \\
+\hline
+Fixed $\gamma$ & $\gamma = 1.0$ (constant) & Đơn giản, nhanh & Không thích ứng, suboptimal \\
+\hline
+Silverman's rule & $1.06 \sigma n^{-1/5}$ & Tối ưu cho 1D & Chỉ dùng cho $d=1$ \\
+\hline
+Scott's rule & $\sigma n^{-1/(d+4)}$ & Tối ưu multi-D, adaptive & Giả thiết Normal \\
+\hline
+Cross-validation & Optimize trên validation set & Data-driven, optimal & Chi phí tính toán cao \\
+\hline
+Median heuristic & $\text{median}(\|x_i - x_j\|)$ & Robust với outliers & Không có lý thuyết tối ưu \\
+\hline
+\end{tabular}
+\end{table}
+
+\textbf{Trade-offs trong ShapeDD:}
+
+\begin{itemize}
+    \item \textbf{Pros:} Tự động, không cần tuning, asymptotically optimal
+    \item \textbf{Cons:} Giả thiết Normal có thể không phù hợp với mọi distribution
+    \item \textbf{Khi nào dùng:} Default choice cho hầu hết scenarios, đặc biệt khi không biết trước phân phối
+\end{itemize}
+
+% ----------------------------------------------------------------------------
+% SUBSECTION 2: PERCENTILE THRESHOLD
+% ----------------------------------------------------------------------------
+
+\subsubsection{Percentile-Based Robust Thresholding}
+\label{sec:percentile-threshold}
+
+\textbf{Vấn đề với mean-based threshold:}
+
+ShapeDD Adaptive v1 sử dụng mean của shape statistics làm baseline threshold:
+\begin{equation}
+\text{baseline}_{\text{mean}} = \frac{1}{|\mathcal{P}|} \sum_{s \in \mathcal{P}} s
+\end{equation}
+
+trong đó $\mathcal{P}$ = tập positive shape values (candidate peaks).
+
+\textbf{Vấn đề:} Mean rất nhạy cảm với outliers~\cite{maronna2019robust}:
+\begin{itemize}
+    \item Một vài extreme peaks (ví dụ: spurious noise spikes) có thể kéo mean lên cao
+    \item Threshold quá cao $\Rightarrow$ bỏ lỡ các drift thực sự (high False Negative)
+    \item Không robust trong noisy environments
+\end{itemize}
+
+\textbf{Order Statistics và Percentiles:}
+
+Percentile là một order statistic robust hơn mean~\cite{david2003order}.
+Cho $n$ observations $x_1, ..., x_n$, $p$-th percentile được định nghĩa:
+
+\begin{equation}
+Q_p = x_{(\lceil np \rceil)}
+\end{equation}
+
+trong đó $x_{(1)} \leq x_{(2)} \leq ... \leq x_{(n)}$ là order statistics.
+
+\textbf{Robustness Properties:}
+
+Breakdown point của estimator đo khả năng chống outliers~\cite{hampel1986robust}:
+
+\begin{itemize}
+    \item \textbf{Mean}: Breakdown point = 0 (một outlier duy nhất có thể làm sai lệch tùy ý)
+    \item \textbf{Median (50th percentile)}: Breakdown point = 50\% (cần $>50\%$ data là outliers mới bị sai lệch)
+    \item \textbf{$p$-th percentile}: Breakdown point = $\min(p, 1-p)$
+\end{itemize}
+
+\textbf{Tại sao chọn 10th percentile:}
+
+ShapeDD Adaptive v2 sử dụng 10th percentile:
+\begin{equation}
+\text{baseline}_{\text{percentile}} = Q_{0.10}(\mathcal{P})
+\label{eq:percentile-baseline}
+\end{equation}
+
+Lý do lựa chọn này:
+
+\begin{enumerate}
+    \item \textbf{Robust với noise spikes:} Breakdown point = 10\%, có thể chịu được 10\% outliers
+
+    \item \textbf{Conservative estimate:} 10th percentile thấp hơn mean $\Rightarrow$ threshold thấp hơn
+    $\Rightarrow$ không bỏ lỡ drift (high Recall)
+
+    \item \textbf{Balance:} Không quá thấp như minimum (dễ bị nhiễu), không quá cao như median (có thể miss drift)
+
+    \item \textbf{Theoretical support:} Trong robust statistics, lower percentiles (5-15\%) thường được
+    dùng để ước lượng "typical small value" không bị ảnh hưởng bởi extreme values~\cite{rousseeuw1987robust}
+\end{enumerate}
+
+\textbf{Phân tích toán học:}
+
+Giả sử $\mathcal{P}$ chứa:
+\begin{itemize}
+    \item 90\% true drift signals: $s_{\text{drift}} \sim \mathcal{N}(\mu_{\text{drift}}, \sigma^2_{\text{drift}})$
+    \item 10\% noise spikes: $s_{\text{noise}} \sim \mathcal{N}(\mu_{\text{noise}}, \sigma^2_{\text{noise}})$,
+    với $\mu_{\text{noise}} \gg \mu_{\text{drift}}$
+\end{itemize}
+
+Khi đó:
+\begin{align}
+\text{Mean} &\approx 0.9\mu_{\text{drift}} + 0.1\mu_{\text{noise}} \quad \text{(bị kéo lên bởi noise)} \\
+Q_{0.10} &\approx \mu_{\text{drift}} - 1.28\sigma_{\text{drift}} \quad \text{(không bị ảnh hưởng bởi noise)}
+\end{align}
+
+Do đó, percentile-based threshold vững vàng hơn trong noisy environments.
+
+\textbf{Trade-offs:}
+
+\begin{table}[H]
+\centering
+\caption{So sánh các baseline estimators}
+\label{tab:baseline-comparison}
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{Estimator} & \textbf{Robustness} & \textbf{Computational Cost} & \textbf{Bias} & \textbf{Variance} \\
+\hline
+Mean & ❌ Low & ✅ O(n) & ✅ Unbiased & ❌ High (with outliers) \\
+\hline
+Median & ✅ High & ⚠️ O(n log n) & ⚠️ Slightly biased & ✅ Low \\
+\hline
+10th Percentile & ✅ Good & ⚠️ O(n log n) & ⚠️ Biased low & ✅ Low \\
+\hline
+Trimmed mean & ✅ Good & ⚠️ O(n log n) & ✅ Unbiased & ✅ Medium \\
+\hline
+\end{tabular}
+\end{table}
+
+10th percentile được chọn vì balance tốt giữa robustness và computational efficiency.
+
+% ----------------------------------------------------------------------------
+% SUBSECTION 3: MINIMAL SMOOTHING
+% ----------------------------------------------------------------------------
+
+\subsubsection{Minimal Smoothing for Abrupt Drift Detection}
+\label{sec:minimal-smoothing}
+
+\textbf{Mục đích của smoothing trong signal processing:}
+
+Smoothing (làm mượt) được áp dụng để giảm nhiễu trong time series~\cite{hamming1989digital}.
+Trong ShapeDD, shape statistic $\sigma(t)$ được smooth trước khi phát hiện peaks:
+
+\begin{equation}
+\sigma_{\text{smooth}}(t) = \frac{1}{w} \sum_{i=-w/2}^{w/2} \sigma(t+i)
+\end{equation}
+
+trong đó $w$ là window size.
+
+\textbf{Trade-off cơ bản trong smoothing:}
+
+\begin{itemize}
+    \item \textbf{Large window} ($w$ lớn): Giảm nhiễu tốt, nhưng làm mờ (blur) sharp transitions
+    \item \textbf{Small window} ($w$ nhỏ): Bảo toàn transitions, nhưng giảm nhiễu kém
+\end{itemize}
+
+Đây là manifestation của \textbf{uncertainty principle} trong signal processing: không thể
+đồng thời có resolution cao cả về thời gian VÀ tần số~\cite{cohen1995time}.
+
+\textbf{Vấn đề với ShapeDD Adaptive v1:}
+
+Adaptive v1 sử dụng window size $w = \lceil\sqrt{l_1}\rceil$. Với $l_1 = 50$:
+\begin{equation}
+w = \lceil\sqrt{50}\rceil = 8
+\end{equation}
+
+\textbf{Vấn đề:} Window $w=8$ quá lớn cho abrupt drift:
+\begin{itemize}
+    \item Abrupt drift tạo sharp peak (discontinuity) trong $\sigma(t)$
+    \item Smoothing với $w=8$ làm "spread out" peak qua 8 time points
+    \item Peak position bị shift, amplitude bị giảm
+    \item Detection bị delay và kém chính xác
+\end{itemize}
+
+\textbf{Signal Processing Theory - Edge Preservation:}
+
+Trong edge detection (phát hiện cạnh), một nguyên lý quan trọng là \textbf{preserving
+edge sharpness}~\cite{canny1986computational}. Để bảo toàn edge (drift boundary),
+smoothing filter phải thỏa mãn:
+
+\begin{equation}
+w \ll \Delta t_{\text{transition}}
+\end{equation}
+
+trong đó $\Delta t_{\text{transition}}$ là độ rộng của transition.
+
+Đối với abrupt drift: $\Delta t_{\text{transition}} \approx 1$ (instant jump)
+$\Rightarrow$ cần $w$ càng nhỏ càng tốt.
+
+\textbf{Tại sao chọn window = 3:}
+
+ShapeDD Adaptive v2 sử dụng $w = 3$ (3-point moving average):
+\begin{equation}
+\sigma_{\text{smooth}}(t) = \frac{1}{3}[\sigma(t-1) + \sigma(t) + \sigma(t+1)]
+\end{equation}
+
+Lý do:
+
+\begin{enumerate}
+    \item \textbf{Minimum viable smoothing:} $w=3$ là window nhỏ nhất có ý nghĩa thống kê
+    (sử dụng past, present, future)
+
+    \item \textbf{Edge preservation:} Với $w=3$, sharp peak chỉ bị spread qua 3 points,
+    giữ được vị trí và amplitude gần như nguyên vẹn
+
+    \item \textbf{Frequency response analysis:} 3-point MA filter có cutoff frequency:
+    \begin{equation}
+    f_c \approx \frac{0.443}{w} = \frac{0.443}{3} \approx 0.148 \text{ (normalized)}
+    \end{equation}
+
+    Với $w=8$: $f_c \approx 0.055$ (loại bỏ quá nhiều high-frequency content, bao gồm cả drift signal)
+
+    \item \textbf{Empirical validation:} Experiments cho thấy $w=3$ balance tốt nhất
+    giữa noise reduction và drift boundary preservation
+\end{enumerate}
+
+\textbf{Mathematical Analysis - Peak Amplitude Preservation:}
+
+Cho ideal triangular peak (drift signal):
+\begin{equation}
+\sigma_{\text{ideal}}(t) = \begin{cases}
+0 & t < t_0 \\
+A & t = t_0 \text{ (peak)} \\
+0 & t > t_0
+\end{cases}
+\end{equation}
+
+Sau khi smoothing với window $w$:
+\begin{equation}
+\sigma_{\text{smooth}}(t_0) = \frac{A}{w} \quad \text{(amplitude giảm $w$ lần)}
+\end{equation}
+
+\begin{itemize}
+    \item Với $w=3$: Amplitude giảm 33\% → vẫn detectable
+    \item Với $w=8$: Amplitude giảm 87.5\% → có thể miss detection
+\end{itemize}
+
+\textbf{Savitzky-Golay vs Simple Moving Average:}
+
+Có thể sử dụng Savitzky-Golay filter (polynomial smoothing) thay vì simple MA~\cite{savitzky1964smoothing}:
+
+\begin{table}[H]
+\centering
+\caption{So sánh smoothing filters}
+\label{tab:smoothing-comparison}
+\begin{tabular}{|l|p{4cm}|p{4cm}|}
+\hline
+\textbf{Filter} & \textbf{Ưu điểm} & \textbf{Nhược điểm} \\
+\hline
+3-point MA & Đơn giản, nhanh, preserve edges tốt & Giảm nhiễu kém hơn polynomial \\
+\hline
+Savitzky-Golay (order 2, window 5) & Giảm nhiễu tốt hơn, smooth hơn & Phức tạp hơn, có thể over-smooth edges \\
+\hline
+Gaussian filter & Optimal theo nhiều criteria & Không preserve edges \\
+\hline
+Median filter & Robust với impulse noise & Không smooth continuous signals \\
+\hline
+\end{tabular}
+\end{table}
+
+Nghiên cứu này chọn 3-point MA vì:
+\begin{itemize}
+    \item Computational efficiency (O(n) vs O(nw) cho Savitzky-Golay)
+    \item Edge preservation tốt nhất
+    \item Đủ để giảm high-frequency noise mà không làm mờ drift signal
+\end{itemize}
+
+\textbf{Kết luận:}
+
+Ba cải tiến kỹ thuật này đều dựa trên nền tảng lý thuyết vững chắc:
+\begin{enumerate}
+    \item \textbf{Scott's Rule}: Kernel density estimation theory → Optimal bandwidth selection
+    \item \textbf{Percentile Threshold}: Order statistics \& robust estimation → Outlier resistance
+    \item \textbf{Minimal Smoothing}: Signal processing \& edge detection → Sharp drift preservation
+\end{enumerate}
+
+Sự kết hợp của ba cải tiến này tạo nên ShapeDD Adaptive v2 với khả năng phát hiện
+drift vừa robust (chống nhiễu), vừa sensitive (phát hiện drift nhỏ), và vừa accurate
+(localization chính xác).
+
+% ============================================================================
+% END OF THEORETICAL FOUNDATIONS SECTION
+% ============================================================================
 
 \subsection{Các biến thể của ShapeDD}
 
@@ -179,10 +534,7 @@ Sau khi trình bày phương pháp SNR-Adaptive -- đóng góp chính của nghi
 \textbf{1. ShapeDD Adaptive:} Phiên bản adaptive đầu tiên giới thiệu khái niệm sensitivity levels để điều chỉnh độ nhạy của detector:
 
 \begin{itemize}
-    \item \textbf{Gamma selection:} Sử dụng Scott's rule để tự động chọn bandwidth kernel:
-    \begin{equation}
-    \gamma = \frac{1}{2\sigma^2}, \quad \sigma = \sigma_{\text{data}} \cdot n^{-1/(d+4)}
-    \end{equation}
+    \item \textbf{Gamma selection:} Sử dụng Scott's rule (xem Section~\ref{sec:scotts-rule}) để tự động chọn bandwidth kernel phù hợp với phân phối dữ liệu và số chiều. Phương pháp này đảm bảo bandwidth tối ưu tiệm cận mà không cần tuning thủ công.
 
     \item \textbf{Sensitivity levels:} Năm mức độ nhạy với các threshold multipliers khác nhau:
     \begin{itemize}
@@ -216,20 +568,21 @@ Phiên bản adaptive\_v2 khắc phục các vấn đề nghiêm trọng trong a
     \item \textbf{Minimal smoothing (Giảm làm mượt):}
     \begin{itemize}
         \item \textit{Vấn đề:} Smoothing window $= \sqrt{l_1}$ quá lớn, làm mờ drift signals
-        \item \textit{Giải pháp:} Giảm xuống còn 3-point moving average:
+        \item \textit{Giải pháp:} Giảm xuống còn 3-point moving average (xem Section~\ref{sec:minimal-smoothing}):
         \begin{equation}
         \text{smooth\_window} = 3 \quad (\text{thay vì } \max(3, \lceil\sqrt{l_1}\rceil))
         \end{equation}
+        \item Cải tiến này dựa trên signal processing theory và edge preservation, đảm bảo phát hiện chính xác drift boundaries mà không làm mờ sharp transitions.
     \end{itemize}
 
     \item \textbf{Percentile-based threshold (Ngưỡng robust):}
     \begin{itemize}
         \item \textit{Vấn đề:} Mean-based baseline dễ bị ảnh hưởng bởi outliers
-        \item \textit{Giải pháp:} Sử dụng 10th percentile của positive shapes:
+        \item \textit{Giải pháp:} Sử dụng 10th percentile của positive shapes (xem Section~\ref{sec:percentile-threshold}):
         \begin{equation}
         \text{baseline} = \text{percentile}(\text{positive\_shapes}, 10)
         \end{equation}
-        \item Robust hơn với extreme values và noise spikes
+        \item Dựa trên order statistics theory, phương pháp này có breakdown point 10\%, robust hơn nhiều so với mean (breakdown point = 0).
     \end{itemize}
 
     \item \textbf{Adaptive FDR (FDR có điều kiện):}
@@ -479,6 +832,82 @@ Buffer calibration & SNR bị "pha loãng" trong rolling buffer & Empirical thre
 \hline
 \end{tabular}
 \end{table}
+
+% ============================================================================
+% APPLICATION LAYER: USING DRIFT DETECTION RESULTS
+% These sections moved here after all detection methods are explained
+% ============================================================================
+
+\subsection{Ứng dụng kết quả phát hiện drift: Các chiến lược thích ứng}
+\label{sec:drift-adaptation-strategies}
+
+Sau khi trình bày đầy đủ các phương pháp phát hiện drift (SNR-Adaptive, OW-MMD, và các biến thể), phần này giới thiệu các chiến lược sử dụng kết quả phát hiện drift để thích ứng mô hình học máy. Trong khi các phần trước tập trung vào câu hỏi \textbf{"Làm thế nào để phát hiện drift?"}, phần này trả lời câu hỏi \textbf{"Sau khi phát hiện drift, ta nên làm gì?"}.
+
+\subsubsection{Khung chiến lược thích ứng}
+
+Nghiên cứu đề xuất một khung chiến lược thích ứng tổng quát, trong đó khi drift được phát hiện, hệ thống có thể lựa chọn một trong các chiến lược sau:
+
+\begin{itemize}
+    \item \textbf{Model retraining:} Huấn luyện lại mô hình từ đầu với dữ liệu mới
+    \item \textbf{Incremental learning:} Cập nhật mô hình hiện tại với dữ liệu mới
+    \item \textbf{Window adjustment:} Điều chỉnh kích thước cửa sổ training data
+    \item \textbf{Feature selection:} Chọn lại tập features phù hợp với distribution mới
+    \item \textbf{Ensemble update:} Cập nhật trọng số của các base models trong ensemble
+\end{itemize}
+
+Việc lựa chọn chiến lược phù hợp phụ thuộc vào:
+\begin{enumerate}
+    \item \textbf{Drift characteristics:} Mức độ, tốc độ, và loại drift (abrupt, gradual, incremental)
+    \item \textbf{Model complexity:} Chi phí retraining của mô hình
+    \item \textbf{Computational resources:} Tài nguyên có sẵn (CPU, memory, time)
+    \item \textbf{Business constraints:} Yêu cầu về latency, accuracy, và stability
+\end{enumerate}
+
+\subsubsection{Phương pháp Meta-Learning}
+
+Luận văn phát triển khung meta-learning tự động lựa chọn chiến lược thích ứng dựa trên đặc trưng drift được phát hiện:
+
+\textbf{Trích xuất feature:} Đối với mỗi episode drift được phát hiện, nghiên cứu trích xuất feature mô tả:
+\begin{itemize}
+    \item Mức độ drift: $|\Delta(t_1, t_2)|$
+    \item Tốc độ drift: $\frac{|\Delta(t_1, t_2)|}{t_2 - t_1}$
+    \item Chiều bị ảnh hưởng: Số lượng feature cho thấy thay đổi đáng kể
+    \item Ngữ cảnh lịch sử: Các mẫu drift trước đây và kết quả thích ứng
+\end{itemize}
+
+\textbf{Lựa chọn chiến lược:} Meta-classifier được huấn luyện trên các episode drift lịch sử dự đoán
+chiến lược thích ứng phù hợp nhất:
+
+\begin{equation}
+s^* = \arg\max_{s \in \mathcal{S}} P(s|\mathbf{f}_{\text{drift}})
+\end{equation}
+
+trong đó $\mathbf{f}_{\text{drift}}$ biểu thị các feature drift được trích xuất và $\mathcal{S}$ là tập hợp các chiến lược thích ứng có sẵn.
+
+\textbf{Learning from experience:} Meta-learner được cập nhật liên tục dựa trên kết quả của các chiến lược đã áp dụng, cho phép hệ thống học được chiến lược tối ưu theo thời gian.
+
+\subsubsection{Quản lý cửa sổ thích ứng}
+
+Luận văn đề xuất chiến lược quản lý cửa sổ thích ứng điều chỉnh kích thước cửa sổ dựa trên đặc trưng drift:
+
+\begin{equation}
+w_{\text{size}}(t) = w_{\text{base}} \cdot \exp(-\lambda \cdot \Delta(t))
+\end{equation}
+
+trong đó $w_{\text{base}}$ là kích thước cửa sổ cơ sở, $\lambda$ là tham số suy giảm, và $\Delta(t)$ là mức độ drift được phát hiện.
+
+\textbf{Rationale:} Khi drift magnitude lớn ($\Delta(t)$ cao), cửa sổ training nên nhỏ hơn để tập trung vào dữ liệu mới nhất. Khi drift magnitude nhỏ hoặc không có drift, cửa sổ lớn hơn giúp model ổn định và tránh overfitting.
+
+\textbf{Adaptive adjustment:} Window size được điều chỉnh động:
+\begin{itemize}
+    \item High drift magnitude ($\Delta > \tau_{\text{high}}$): Giảm window size → focus vào recent data
+    \item Low drift magnitude ($\Delta < \tau_{\text{low}}$): Tăng window size → maintain stability
+    \item Medium drift: Giữ nguyên window size cơ sở
+\end{itemize}
+
+% ============================================================================
+% END OF APPLICATION LAYER
+% ============================================================================
 
 \section{Nền tảng xử lý luồng dữ liệu phân tán với Apache Kafka}
 
