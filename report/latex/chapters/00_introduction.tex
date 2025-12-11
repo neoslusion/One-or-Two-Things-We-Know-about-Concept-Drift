@@ -60,6 +60,8 @@ Cụ thể, luận văn sẽ tập trung vào việc phát triển hệ thống 
     \item Đánh giá hiệu năng của hệ thống trên các tập dữ liệu thực tế và các kịch bản drift khác nhau.
 \end{itemize}
 
+\textbf{Trọng tâm đánh giá:} Mặc dù hệ thống được thiết kế để hỗ trợ nhiều loại drift (sudden, gradual, incremental, recurrent, blip), luận văn này \textbf{tập trung đánh giá chuyên sâu vào sudden drift (trôi dạt đột ngột)}. Lý do cho sự lựa chọn này bao gồm: (1) sudden drift có tầm quan trọng thực tế cao nhất trong các hệ thống production, (2) ShapeDD có nền tảng lý thuyết vững chắc nhất cho abrupt drift (Triangle Shape Property), và (3) để đảm bảo chất lượng nghiên cứu với phân tích sâu thay vì coverage nông. Các loại drift khác đã được implement trong framework và có thể được đánh giá trong nghiên cứu tương lai.
+
 \subsection{Đối tượng nghiên cứu}
 Đối tượng nghiên cứu của đề tài này là các mô hình và phương pháp phát hiện, phân loại và thích ứng concept drift, bao gồm:
 \begin{itemize}

@@ -361,13 +361,13 @@ Do đó, percentile-based threshold vững vàng hơn trong noisy environments.
 \hline
 \textbf{Estimator} & \textbf{Robustness} & \textbf{Computational Cost} & \textbf{Bias} & \textbf{Variance} \\
 \hline
-Mean & ❌ Low & ✅ O(n) & ✅ Unbiased & ❌ High (with outliers) \\
+Mean & Low & O(n) & Unbiased & High (with outliers) \\
 \hline
-Median & ✅ High & ⚠️ O(n log n) & ⚠️ Slightly biased & ✅ Low \\
+Median & High & O(n log n) & Slightly biased & Low \\
 \hline
-10th Percentile & ✅ Good & ⚠️ O(n log n) & ⚠️ Biased low & ✅ Low \\
+10th Percentile & Good & O(n log n) & Biased low & Low \\
 \hline
-Trimmed mean & ✅ Good & ⚠️ O(n log n) & ✅ Unbiased & ✅ Medium \\
+Trimmed mean & Good & O(n log n) & Unbiased & Medium \\
 \hline
 \end{tabular}
 \end{table}
@@ -1247,7 +1247,7 @@ Kiến trúc này đã được triển khai và testing trong folder \texttt{dr
 
 \subsection{Tổng quan về CDT\_MSW}
 
-Hệ thống sử dụng phương pháp \textbf{CDT\_MSW (Concept Drift Type Identification based on Multi-Sliding Windows)} để nhận diện loại trôi dạt sau khi ShapeDD phát hiện điểm drift. Phương pháp này đã được trình bày chi tiết trong \textbf{Chapter 1, Section 1.2} (Trang~\pageref{sec:cdt-msw-theory}), bao gồm:
+Hệ thống sử dụng phương pháp \textbf{CDT\_MSW (Concept Drift Type Identification based on Multi-Sliding Windows)} để nhận diện loại trôi dạt sau khi ShapeDD phát hiện điểm drift. Phương pháp này đã được trình bày chi tiết trong \textbf{Chương~\ref{sec:drift_type_identification}} (Trang~\pageref{sec:cdt-msw-theory}), bao gồm:
 
 \begin{itemize}
     \item Nguyên lý hoạt động với ba giai đoạn: Detection → Growth → Tracking
@@ -1331,7 +1331,7 @@ Hệ thống sử dụng mô hình học máy với ba giai đoạn hoạt độ
 
 \subsection{Chiến lược thích ứng và triển khai}
 
-\textbf{Nền tảng lý thuyết:} Như đã trình bày chi tiết trong \textbf{Chapter 1, Section 1.3} (Bảng~\ref{tab:model_update_strategies}), mỗi loại drift cần một chiến lược cập nhật riêng biệt:
+\textbf{Nền tảng lý thuyết:} Như đã trình bày chi tiết trong \textbf{Mục~\ref{sec:model_adaptation_strategies}} (Bảng~\ref{tab:model_update_strategies}), mỗi loại drift cần một chiến lược cập nhật riêng biệt:
 
 \begin{itemize}
     \item \textbf{Sudden drift} $\rightarrow$ Local reset / Full retraining

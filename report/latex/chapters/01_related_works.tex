@@ -1,8 +1,5 @@
 \chapter{Công trình liên quan}
 
-Chương trước đã giới thiệu về hiện tượng trôi dạt khái niệm và tầm quan trọng của việc phát hiện sớm. 
-Chương này khảo sát các phương pháp phát hiện drift đã được đề xuất, từ đó làm cơ sở lựa chọn và cải tiến phương pháp cho luận văn.
-
 \textit{Tóm tắt: Trình bày một cách tổng quát về những phương pháp liên quan đã và đang được thực hiện trong quá 
 trình phát hiện hiện tượng trôi dạt. Đồng thời, phần này còn trình bày về cách phân loại hiện tượng trôi dạt dựa 
 trên cửa sổ trượt. Các phương pháp sẽ được luận văn trình bày theo những góc nhìn khác nhau, từ đó có thể đưa ra các 
@@ -70,7 +67,7 @@ DDM sẽ tiến hành ghi nhận giá trị tối thiểu của $p_i + s_i$ tron
 
 DDM đơn giản, hiệu quả cho sudden drift, nhưng phản ứng chậm với gradual drift do chỉ dựa vào sự gia tăng đột biến của lỗi~\cite{gama2004learning}.
 
-\textbf{EDDM} cải thiện khả năng phát hiện gradual drift bằng cách thay đổi metric theo dõi. Thay vì theo dõi trực tiếp tỷ lệ lỗi, EDDM tập trung 
+\textbf{EDDM (Early Drift Detection Method)} cải thiện khả năng phát hiện gradual drift bằng cách thay đổi metric theo dõi. Thay vì theo dõi trực tiếp tỷ lệ lỗi, EDDM tập trung 
 vào giá trị khoảng cách giữa các lần dự đoán sai liên tiếp~\cite{baena2006early}. Ý tưởng là khi không có drift, các lỗi phân bố ngẫu nhiên với 
 khoảng cách lớn, khi drift bắt đầu xuất hiện, các lỗi xuất hiện thường xuyên hơn. EDDM tính trung bình và độ lệch chuẩn của khoảng cách giữa các lỗi, 
 phát hiện drift khi khoảng cách giảm mạnh so với giá trị tối đa đã ghi nhận. Nhờ vậy, EDDM nhạy hơn với các thay đổi từ từ, báo hiệu sớm 
@@ -88,10 +85,10 @@ Hoeffding để xây dựng tiêu chí phát hiện drift phi tham số (non-par
 Bất đẳng thức Hoeffding cho phép HDDM đặt ngưỡng phát hiện drift mà không cần giả định về phân phối của dữ liệu, làm cho phương pháp linh hoạt hơn 
 trong các tình huống thực tế.
 
-\textbf{FHDDM (Fast HDDM, 2016)} được giới thiệu như phiên bản tăng tốc của HDDM, cải thiện cả tốc độ và độ nhạy trong việc phát hiện drift. 
+\textbf{FHDDM (Fast HDDM)} được giới thiệu như phiên bản tăng tốc của HDDM, cải thiện cả tốc độ và độ nhạy trong việc phát hiện drift. 
 FHDDM vẫn dựa trên bất đẳng thức Hoeffding nhưng tối ưu thuật toán tính toán để phù hợp với dòng dữ liệu tốc độ cao (high-speed data streams). 
 Các cải tiến về mặt kỹ thuật giúp FHDDM phản ứng nhanh hơn với cả drift đột ngột lẫn drift dần dần, đồng thời giảm độ phức tạp tính toán so với HDDM gốc. 
-\textbf{FHDDMS (Fast HDDM with Multiple Sliding Windows, 2016)} mở rộng FHDDM bằng cách duy trì hai cửa sổ trượt với kích thước khác nhau:
+\textbf{FHDDMS (Fast HDDM with Multiple Sliding Windows)} mở rộng FHDDM bằng cách duy trì hai cửa sổ trượt với kích thước khác nhau:
 \begin{itemize}
     \item \textbf{Cửa sổ ngắn:} Phát hiện sudden drift nhanh hơn do nhạy với thay đổi cục bộ
     \item \textbf{Cửa sổ dài:} Phát hiện gradual drift với tỷ lệ false negative thấp hơn do có nhiều dữ liệu hơn để ước lượng ổn định
