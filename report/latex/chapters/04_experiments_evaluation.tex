@@ -144,10 +144,11 @@ Thí nghiệm so sánh hiệu suất của 10 drift detector, chia thành hai nh
     \begin{itemize}
         \item L1 = 50, L2 = 150, n\_perm = 2500, $\alpha = 0.05$
     \end{itemize}
-    \item \textbf{ShapeDD\_Improved:} Adaptive version
+    \item \textbf{ShapeDD\_SNR\_Adaptive:} Hybrid SNR-aware version
     \begin{itemize}
-        \item L1 = 0.05 × stream\_length (adaptive)
-        \item L2 = 2 × L1, n\_perm = 2500, sensitivity = 'none'
+        \item L1 = 50, L2 = 150, n\_perm = 2500 (fixed, consistent parameters)
+        \item Auto-selects aggressive or conservative strategy based on estimated SNR
+        \item Uses shape\_adaptive\_v2 for high SNR, original shape for low SNR
     \end{itemize}
 \end{itemize}
 
@@ -192,7 +193,7 @@ Bảng~\ref{tab:detection-results} trình bày kết quả phát hiện drift c�
 D3 & window & Có & - & 0 & 1 & 0.000 & $\infty$ \\
 DAWIDD & window & Có & - & 0 & 1 & 0.000 & $\infty$ \\
 ShapeDD & window & Có & - & 0 & 1 & 0.000 & $\infty$ \\
-\textbf{ShapeDD\_Improved} & window & \textbf{Có} & \textbf{4} & \textbf{1} & \textbf{0} & \textbf{1.000} & \textbf{4.0} \\
+\textbf{ShapeDD\_SNR\_Adaptive} & window & \textbf{Có} & \textbf{4} & \textbf{1} & \textbf{0} & \textbf{1.000} & \textbf{4.0} \\
 \midrule
 ADWIN & streaming & Có & 59 & 1 & 0 & 1.000 & 59.0 \\
 DDM & streaming & Có & - & 0 & 1 & 0.000 & $\infty$ \\
@@ -207,7 +208,7 @@ FHDDM & streaming & Có & - & 0 & 1 & 0.000 & $\infty$ \\
 \textbf{Phân tích kết quả phát hiện:}
 
 \begin{itemize}
-    \item \textbf{ShapeDD\_Improved} đạt hiệu suất tốt nhất:
+    \item \textbf{ShapeDD\_SNR\_Adaptive} đạt hiệu suất tốt nhất:
     \begin{itemize}
         \item F1-Score: 1.0 (perfect detection)
         \item Detection delay: 4 samples (nhanh nhất)
@@ -230,7 +231,7 @@ FHDDM & streaming & Có & - & 0 & 1 & 0.000 & $\infty$ \\
     \end{itemize}
 \end{itemize}
 
-\textbf{Lý do ShapeDD\_Improved vượt trội:}
+\textbf{Lý do ShapeDD\_SNR\_Adaptive vượt trội:}
 \begin{itemize}
     \item Adaptive window sizing: L1 = 0.05 × stream\_length = 500
     \item Phù hợp với magnitude của drift trong dữ liệu
@@ -250,7 +251,7 @@ Phân tích chi tiết hiệu suất mô hình qua các giai đoạn: baseline, 
 \toprule
 \textbf{Detector} & \textbf{Baseline} & \textbf{Min Acc} & \textbf{Drop} & \textbf{Recovery} & \textbf{Rate (\%)} & \textbf{Time (samples)} \\
 \midrule
-ShapeDD\_Improved & 0.996 & 0.550 & 0.446 & 0.919 & 82.8 & 96 \\
+ShapeDD\_SNR\_Adaptive & 0.996 & 0.550 & 0.446 & 0.919 & 82.8 & 96 \\
 ADWIN & 0.987 & 0.560 & 0.427 & 0.910 & 82.2 & 79 \\
 EDDM & 0.989 & 0.560 & 0.429 & 0.904 & 80.3 & 83 \\
 \bottomrule
@@ -305,7 +306,7 @@ EDDM & 0.989 & 0.560 & 0.429 & 0.904 & 80.3 & 83 \\
 \toprule
 \textbf{Detector} & \textbf{Runtime (s)} & \textbf{ms/sample} & \textbf{Memory (MB)} & \textbf{Throughput} \\
 \midrule
-ShapeDD\_Improved & 16.15 & 1.615 & 18.76 & 619 samples/s \\
+ShapeDD\_SNR\_Adaptive & 16.15 & 1.615 & 18.76 & 619 samples/s \\
 ADWIN & 3.12 & 0.312 & 0.00 & 3205 samples/s \\
 EDDM & 2.71 & 0.271 & 0.00 & 3690 samples/s \\
 \midrule
@@ -328,7 +329,7 @@ ShapeDD (standard) & 19.95 & 1.995 & 1.66 & 501 samples/s \\
     
     \item \textbf{Window-based detectors} chậm hơn nhưng chính xác hơn:
     \begin{itemize}
-        \item ShapeDD\_Improved: 1.615 ms/sample
+        \item ShapeDD\_SNR\_Adaptive: 1.615 ms/sample
         \item Memory: 18.76 MB (lưu trữ window và permutation results)
         \item Trade-off: Chậm hơn 5x nhưng F1 = 1.0
     \end{itemize}
@@ -385,7 +386,7 @@ Hệ thống triển khai chiến lược "full model reset" cho sudden drift, �
 
 Thực nghiệm đã chứng minh các kết quả quan trọng:
 
-\textbf{1. Hiệu quả của ShapeDD\_Improved:}
+\textbf{1. Hiệu quả của ShapeDD\_SNR\_Adaptive:}
 \begin{itemize}
     \item Đạt F1-score hoàn hảo (1.0) trong phát hiện sudden drift
     \item Detection delay chỉ 4 samples - nhanh nhất trong 10 detectors
@@ -411,7 +412,7 @@ Thực nghiệm đã chứng minh các kết quả quan trọng:
 
 \subsection{So sánh với các phương pháp khác}
 
-\textbf{ShapeDD\_Improved vs. Streaming detectors:}
+\textbf{ShapeDD\_SNR\_Adaptive vs. Streaming detectors:}
 \begin{itemize}
     \item \textbf{Accuracy:} ShapeDD = 1.0 vs. ADWIN/EDDM = 1.0 (ngang bằng)
     \item \textbf{Speed:} Streaming nhanh hơn 5-10x
@@ -458,7 +459,7 @@ Thực nghiệm đã chứng minh các kết quả quan trọng:
 
 \textbf{Lựa chọn detector phù hợp:}
 \begin{itemize}
-    \item \textbf{Cần accuracy cao:} Chọn ShapeDD\_Improved
+    \item \textbf{Cần accuracy cao:} Chọn ShapeDD\_SNR\_Adaptive
     \item \textbf{Cần tốc độ:} Chọn ADWIN hoặc EDDM
     \item \textbf{Limited resources:} Chọn streaming detectors
     \item \textbf{Cần interpretability:} Chọn DDM (rule-based)
@@ -722,7 +723,7 @@ Kết quả thực nghiệm chứng minh hiệu quả của hệ thống phát h
 
 \textbf{Thành tựu chính từ Thí nghiệm 1:}
 \begin{enumerate}
-    \item \textbf{Phát hiện drift chính xác:} ShapeDD\_Improved đạt F1 = 1.0 với detection delay chỉ 4 samples
+    \item \textbf{Phát hiện drift chính xác:} ShapeDD\_SNR\_Adaptive đạt F1 = 1.0 với detection delay chỉ 4 samples
 
     \item \textbf{Phân loại drift tự động:} Hệ thống phân loại đúng sudden drift và chọn chiến lược thích ứng phù hợp
 
@@ -744,7 +745,7 @@ Kết quả thực nghiệm chứng minh hiệu quả của hệ thống phát h
 
 \textbf{Số liệu quan trọng:}
 \begin{itemize}
-    \item \textbf{Thí nghiệm 1:} 10 drift detectors, 3/10 thành công, ShapeDD\_Improved nhanh nhất (4 samples delay)
+    \item \textbf{Thí nghiệm 1:} 10 drift detectors, 3/10 thành công, ShapeDD\_SNR\_Adaptive nhanh nhất (4 samples delay)
     \item \textbf{Thí nghiệm 2:} 18 methods × 8 datasets = 144 experiments, SNR-Adaptive rank 2/18
     \item Model degradation: 44\% accuracy drop (Thí nghiệm 1)
     \item Model recovery: 82.8\% recovery rate (Thí nghiệm 1)

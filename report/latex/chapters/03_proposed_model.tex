@@ -1110,7 +1110,7 @@ Producer component (\texttt{producer.py}) chịu trách nhiệm sinh dữ liệu
 
 \textbf{Khởi tạo Kafka Producer:}
 \begin{itemize}
-    \item Sử dụng \texttt{kafka-python} library để connect tới Kafka broker
+    \item Sử dụng \texttt{confluent\_kafka} library để connect tới Kafka broker
     \item Cấu hình serialization: JSON format cho messages
     \item Retry logic và error handling cho network failures
     \item Batch configuration để tối ưu throughput
@@ -1136,14 +1136,28 @@ Producer component (\texttt{producer.py}) chịu trách nhiệm sinh dữ liệu
 
 \subsection{Triển khai Consumer với ShapeDD}
 
-Consumer component (\texttt{consumer\_stream.py}) đọc dữ liệu từ Kafka và thực hiện drift detection sử dụng ShapeDD. Kiến trúc consumer:
+Consumer component (\texttt{consumer\_stream.py}) đọc dữ liệu từ Kafka và thực hiện drift detection sử dụng ShapeDD. Consumer triển khai mô hình \textbf{4-Phase Lifecycle} để đảm bảo đánh giá drift chính xác:
+
+\textbf{4-Phase Lifecycle Model:}
+\begin{enumerate}
+    \item \textbf{Phase 1 - PRETRAINING (Samples 0-499):} Thu thập dữ liệu và train sklearn Pipeline (StandardScaler + LogisticRegression). Model được freeze sau khi train xong.
+    
+    \item \textbf{Phase 2 - WARMUP (Samples 500-599):} Đánh giá baseline accuracy trên 100 samples. Kết quả dùng làm reference để phát hiện performance degradation.
+    
+    \item \textbf{Phase 3 - FROZEN DEPLOYMENT (Samples 600+):} Model chỉ predict, không học thêm. Drift detection được kích hoạt với ShapeDD SNR-Adaptive. Accuracy được track liên tục.
+    
+    \item \textbf{Phase 4 - ADAPTATION (Triggered):} Khi drift được phát hiện, Consumer publish event lên Kafka. Adaptor nhận event và cập nhật model. Consumer hot-reload model mới từ topic \texttt{model.updated}.
+\end{enumerate}
+
+Kiến trúc consumer:
 
 \textbf{Kafka Consumer configuration:}
 \begin{itemize}
     \item Subscribe vào topic \texttt{sensor.stream}
-    \item Consumer group: \texttt{drift-detector-group} (cho phép scale horizontal)
-    \item Auto-commit offset sau khi xử lý thành công
-    \item Deserialize JSON messages thành Python objects
+    \item Consumer group: \texttt{shapedd-detector} (matching config.py)
+    \item Auto-offset reset: \texttt{earliest} để đọc từ đầu stream
+    \item Auto-commit offset: enabled
+    \item Subscribe thêm topic \texttt{model.updated} để hot-reload model khi Adaptor cập nhật
 \end{itemize}
 
 \textbf{Buffer-based processing:}
@@ -1165,11 +1179,15 @@ Consumer component (\texttt{consumer\_stream.py}) đọc dữ liệu từ Kafka 
 \textbf{Event publishing:}
 \begin{verbatim}
 {
-    "detection_time": 1234567890,
+    "event": "drift_detected",
+    "idx": 1504,
     "p_value": 0.012,
-    "strategy": "aggressive",
-    "snr_estimate": 0.015,
-    "drift_location": 5432
+    "detector": "shapedd",
+    "window_path": "./snapshots/drift_window_1504_xxx.npz",
+    "drift_type": "sudden",
+    "drift_category": "sudden",
+    "drift_detected_at": 1504,
+    "ts": 1234567890.123
 }
 \end{verbatim}
 
@@ -1211,10 +1229,10 @@ Hệ thống sử dụng multiple Kafka topics để decouple các components:
 \toprule
 \textbf{Topic} & \textbf{Producer} & \textbf{Consumer} \\
 \midrule
-sensor.stream & Data Producer & Drift Detector \\
+sensor.stream & Data Producer & Drift Detector (Consumer) \\
 drift.results & Drift Detector & Model Adaptor \\
-model.updates & Model Adaptor & Inference Service \\
-metrics.monitoring & All components & Monitoring Dashboard \\
+model.updated & Model Adaptor & Drift Detector (hot reload) \\
+model.accuracy & Drift Detector & Monitoring/Visualization \\
 \bottomrule
 \end{tabular}
 \end{table}

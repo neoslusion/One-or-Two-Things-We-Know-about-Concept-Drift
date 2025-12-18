@@ -9,9 +9,9 @@ INITIAL_TRAINING_SIZE = 500  # Samples for initial model training (pre-drift)
 TRAINING_WARMUP = 100        # Additional samples for baseline evaluation
 DEPLOYMENT_START = INITIAL_TRAINING_SIZE + TRAINING_WARMUP  # 600
 
-# Buffer and batch settings
-BUFFER_SIZE = 1000   # Detection window size
-CHUNK_SIZE = 1000    # Frequency of drift checks
+# Buffer and batch settings (matching MultiDetectors_Evaluation_DetectionOnly.ipynb)
+BUFFER_SIZE = 750    # Detection window size (notebook uses 750)
+CHUNK_SIZE = 150     # Frequency of drift checks (notebook uses 150)
 WINDOW_SIZE = 200    # For sliding window methods
 
 # ShapeDD algorithm parameters (matching DriftMonitoring.ipynb)
