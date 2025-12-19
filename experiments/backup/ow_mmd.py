@@ -433,7 +433,95 @@ def compute_ow_mmd(X, Y, gamma='auto', weight_method='variance_reduction'):
     return mmd_value
 
 
-def shapedd_ow_mmd_buffer(X, l1=50, l2=150, gamma='auto', weight_method='variance_reduction'):
+def compute_ow_mmd_squared(X, Y, gamma='auto', weight_method='variance_reduction'):
+    """
+    Compute Optimally-Weighted MMD² (squared) between X and Y.
+    
+    Returns MMD² directly (can be negative due to variance reduction).
+    This is the correct statistic for hypothesis testing.
+
+    Args:
+        X: Reference samples (n_samples, n_features)
+        Y: Test samples (m_samples, n_features)
+        gamma: RBF kernel bandwidth
+        weight_method: Weighting strategy
+
+    Returns:
+        mmd_squared: OW-MMD² statistic (can be negative)
+    """
+    m, n = X.shape[0], Y.shape[0]
+
+    # Compute kernel matrices
+    K_XX = rbf_kernel_ow(X, X, gamma)
+    K_YY = rbf_kernel_ow(Y, Y, gamma)
+    K_XY = rbf_kernel_ow(X, Y, gamma)
+
+    # Compute optimal weights
+    W_XX = compute_optimal_weights(K_XX, weight_method)
+    W_YY = compute_optimal_weights(K_YY, weight_method)
+    W_XY = np.ones((m, n)) / (m * n)
+
+    # Weighted MMD² computation
+    term1 = np.sum(W_XX * K_XX)
+    term2 = np.sum(W_YY * K_YY)
+    term3 = np.sum(W_XY * K_XY)
+
+    mmd_squared = term1 + term2 - 2 * term3
+
+    return mmd_squared
+
+
+def bootstrap_ow_mmd_threshold(X_ref, n_bootstrap=100, gamma='auto', percentile=95,
+                                weight_method='variance_reduction'):
+    """
+    Estimate OW-MMD² threshold under null hypothesis using bootstrap.
+    
+    Under the null hypothesis (no drift), both windows come from the same
+    distribution. We generate bootstrap samples from X_ref and compute
+    OW-MMD² between random splits to build an empirical null distribution.
+    
+    NOTE: Uses MMD² (not sqrt) for proper statistical testing since
+    OW-MMD² can be negative due to variance reduction weighting.
+    
+    Args:
+        X_ref: Reference samples (n_samples, n_features)
+        n_bootstrap: Number of bootstrap iterations (default: 100)
+        gamma: RBF kernel bandwidth ('auto' or float)
+        percentile: Percentile for threshold (default: 95 for α=0.05)
+        weight_method: Weighting strategy for OW-MMD
+    
+    Returns:
+        threshold: OW-MMD² value at given percentile of null distribution
+        null_dist: Array of null OW-MMD² values for p-value computation
+    """
+    null_mmds = []
+    n = len(X_ref)
+    
+    if n < 10:
+        # Too few samples for meaningful bootstrap
+        return 0.01, np.array([0.0])
+    
+    half_n = n // 2
+    
+    for _ in range(n_bootstrap):
+        # Bootstrap: randomly split reference into two halves
+        # Under null, both halves come from same distribution
+        idx = np.random.permutation(n)
+        X1 = X_ref[idx[:half_n]]
+        X2 = X_ref[idx[half_n:2*half_n]]
+        
+        # Compute OW-MMD² under null (both from same distribution)
+        mmd_sq_null = compute_ow_mmd_squared(X1, X2, gamma=gamma, weight_method=weight_method)
+        null_mmds.append(mmd_sq_null)
+    
+    null_dist = np.array(null_mmds)
+    threshold = np.percentile(null_dist, percentile)
+    
+    return threshold, null_dist
+
+
+def shapedd_ow_mmd_buffer(X, l1=50, l2=150, gamma='auto', weight_method='variance_reduction',
+                          n_bootstrap=100):
     """
     TRUE ShapeDD-OW-MMD following original ShapeDD's two-stage approach.
 
@@ -459,6 +547,7 @@ def shapedd_ow_mmd_buffer(X, l1=50, l2=150, gamma='auto', weight_method='varianc
         l2: Validation window size for OW-MMD (default: 150)
         gamma: RBF kernel parameter ('auto' or float)
         weight_method: Weighting strategy for OW-MMD
+        n_bootstrap: Number of bootstrap samples for p-value calibration (default: 100)
 
     Returns:
         res: Array of shape (n_samples, 3) where:
@@ -553,43 +642,29 @@ def shapedd_ow_mmd_buffer(X, l1=50, l2=150, gamma='auto', weight_method='varianc
         if len(X_ref) < 10 or len(X_test) < 10:
             continue  # Skip if windows too small
 
-        # VALIDATION: Compute OW-MMD at this peak
-        m, n_test = len(X_ref), len(X_test)
-
-        # Compute kernel matrices
-        K_XX = rbf_kernel_ow(X_ref, X_ref, gamma)
-        K_YY = rbf_kernel_ow(X_test, X_test, gamma)
-        K_XY = rbf_kernel_ow(X_ref, X_test, gamma)
-
-        # Compute optimal weights
-        W_XX = compute_optimal_weights(K_XX, weight_method)
-        W_YY = compute_optimal_weights(K_YY, weight_method)
-        W_XY = np.ones((m, n_test)) / (m * n_test)
-
-        # Weighted MMD² computation
-        term1 = np.sum(W_XX * K_XX)
-        term2 = np.sum(W_YY * K_YY)
-        term3 = np.sum(W_XY * K_XY)
-
-        mmd_squared = term1 + term2 - 2 * term3
-        mmd_stat = np.sqrt(max(0, mmd_squared))
+        # VALIDATION: Compute OW-MMD² at this peak (use squared for proper testing)
+        mmd_squared = compute_ow_mmd_squared(X_ref, X_test, gamma=gamma, 
+                                              weight_method=weight_method)
 
         # Store results at this peak position
         res[pos, 0] = shape_curve[peak_idx]  # Geometric pattern strength
-        res[pos, 1] = mmd_stat                # OW-MMD statistic
+        res[pos, 1] = mmd_squared             # OW-MMD² statistic
 
-        # Convert to p-value equivalent
-        # Adaptive threshold based on typical OW-MMD values
-        threshold = 0.1  # Conservative threshold
-
-        ratio = mmd_stat / (threshold + 1e-10)
-        if ratio >= 1.0:
-            # Strong drift signal at geometric peak
-            p_value = min(0.05, 0.05 / (ratio + 1e-6))
-        else:
-            # Weaker signal but still at geometric peak
-            # More lenient than simple thresholding
-            p_value = 0.05 * (2.0 - ratio) if ratio > 0.5 else 0.1
+        # ====================================================================
+        # Bootstrap-calibrated p-value (replaces fixed threshold heuristic)
+        # ====================================================================
+        # Generate null distribution using FULL validation window (a to b)
+        # Under null hypothesis, the entire window comes from same distribution
+        X_full = X[a:b]
+        _, null_dist = bootstrap_ow_mmd_threshold(
+            X_full, n_bootstrap=n_bootstrap, gamma=gamma, 
+            percentile=95, weight_method=weight_method
+        )
+        
+        # Compute p-value: proportion of null samples >= observed MMD²
+        # Note: MMD² can be negative, so we compare values directly
+        p_value = (null_dist >= mmd_squared).sum() / len(null_dist)
+        p_value = max(p_value, 1.0 / (n_bootstrap + 1))  # Avoid exact zero
 
         res[pos, 2] = p_value
 
