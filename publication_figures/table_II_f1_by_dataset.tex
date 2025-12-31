@@ -1,0 +1,19 @@
+\begin{table}[htbp]
+\caption{F1-Score by method and dataset. Best scores per column are shown in \textbf{bold}. Methods ranked by mean F1-Score.}
+\label{tab:f1_by_dataset}
+\begin{tabular}{clccccccccc}
+\toprule
+Dataset & Rank & electricity_sorted & hyperplane & led_abrupt & rbf_slow & rbfblips & sea_gradual & stagger & standard_sea & Mean \\
+Method &  &  &  &  &  &  &  &  &  &  \\
+\midrule
+ShapeDD & 1 & 0.238 & 0.278 & 0.254 & 0.195 & 0.607 & 0.331 & 0.784 & 0.252 & \textbf{0.367} \\
+ShapeDD_OW_MMD & 2 & \textbf{0.247} & 0.250 & \textbf{0.269} & 0.176 & \textbf{0.617} & 0.325 & 0.806 & 0.235 & 0.366 \\
+MMD & 3 & 0.159 & \textbf{0.285} & 0.255 & 0.270 & 0.593 & 0.390 & 0.639 & 0.270 & 0.358 \\
+DAWIDD & 4 & 0.141 & 0.264 & 0.249 & 0.257 & 0.592 & \textbf{0.406} & 0.585 & 0.254 & 0.344 \\
+ShapeDD_SNR_Adaptive & 5 & 0.200 & 0.078 & 0.163 & 0.098 & 0.599 & 0.292 & 0.830 & 0.174 & 0.304 \\
+KS & 6 & 0.096 & 0.284 & 0.124 & \textbf{0.307} & 0.314 & 0.367 & 0.389 & \textbf{0.336} & 0.277 \\
+MMD_OW & 7 & 0.240 & 0.000 & 0.094 & 0.000 & 0.000 & 0.000 & \textbf{0.998} & 0.000 & 0.166 \\
+D3 & 8 & 0.000 & 0.006 & 0.000 & 0.006 & 0.000 & 0.000 & 0.000 & 0.000 & 0.002 \\
+\bottomrule
+\end{tabular}
+\end{table}

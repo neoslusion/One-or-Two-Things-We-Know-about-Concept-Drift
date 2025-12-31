@@ -1,0 +1,18 @@
+\begin{table}[htbp]
+\caption{Comprehensive drift detection performance across all datasets. F1 is reported as mean $\pm$ standard deviation. Best values per metric are shown in \textbf{bold}. MTTD = Mean Time To Detection (samples, lower is better). TP/FP/FN = cumulative counts across all experiments.}
+\label{tab:comprehensive_performance}
+\begin{tabular}{clccccccc}
+\toprule
+Rank & Method & F1 ($\mu \pm \sigma$) & Precision & Recall & MTTD & TP & FP & FN \\
+\midrule
+1 & ShapeDD & $\mathbf{0.367 \pm 0.228}$ & 0.355 & 0.490 & 57.000 & 1026 & 2156 & 1224 \\
+2 & ShapeDD_OW_MMD & $0.365 \pm 0.236$ & 0.382 & 0.464 & 56.000 & 971 & 1869 & 1279 \\
+3 & MMD & $0.358 \pm 0.191$ & 0.315 & 0.547 & 60.000 & 1163 & 3382 & 1087 \\
+4 & DAWIDD & $0.344 \pm 0.187$ & 0.298 & 0.546 & 59.000 & 1161 & 3742 & 1089 \\
+5 & ShapeDD_SNR_Adaptive & $0.304 \pm 0.277$ & \textbf{0.438} & 0.292 & 55.000 & 641 & 786 & 1609 \\
+6 & KS & $0.277 \pm 0.120$ & 0.199 & \textbf{0.757} & 48.000 & 1668 & 8726 & 582 \\
+7 & MMD_OW & $0.167 \pm 0.327$ & 0.174 & 0.208 & \textbf{46.000} & 409 & 570 & 1841 \\
+8 & D3 & $0.002 \pm 0.017$ & 0.008 & 0.001 & 54.000 & 2 & 6 & 2248 \\
+\bottomrule
+\end{tabular}
+\end{table}
