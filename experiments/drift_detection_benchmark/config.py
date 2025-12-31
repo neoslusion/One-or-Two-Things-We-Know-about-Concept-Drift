@@ -25,7 +25,11 @@ plt.rcParams['grid.alpha'] = 0.3
 # ============================================================================
 # DATA STREAM CONFIGURATION
 # ============================================================================
-STREAM_SIZE = 2000
+# Standard benchmark sizes (per MOA/River conventions):
+# - 10,000-40,000 samples for synthetic datasets
+# - With 10 drift events: ~1,000-4,000 samples per segment
+# - Minimum: STREAM_SIZE > (n_drift_events + 1) * max(CHUNK_SIZE, SHAPE_L2) * 2
+STREAM_SIZE = 10000  # 10 drifts = ~909 samples per segment (sufficient for L2=150)
 RANDOM_SEED = 42  # Fixed seed for reproducibility (deprecated - use RANDOM_SEEDS instead)
 
 # ============================================================================

@@ -298,24 +298,12 @@ EDDM & 0.989 & 0.560 & 0.429 & 0.904 & 80.3 & 83 \\
 
 Đánh giá hiệu quả tính toán của các detector thành công trong việc xử lý 10,000 samples.
 
-\begin{table}[H]
-\centering
-\caption{Chi phí tính toán và bộ nhớ}
-\label{tab:computational-cost}
-\begin{tabular}{lcccc}
-\toprule
-\textbf{Detector} & \textbf{Runtime (s)} & \textbf{ms/sample} & \textbf{Memory (MB)} & \textbf{Throughput} \\
-\midrule
-ShapeDD\_SNR\_Adaptive & 16.15 & 1.615 & 18.76 & 619 samples/s \\
-ADWIN & 3.12 & 0.312 & 0.00 & 3205 samples/s \\
-EDDM & 2.71 & 0.271 & 0.00 & 3690 samples/s \\
-\midrule
-D3 & 2.98 & 0.298 & 0.00 & 3356 samples/s \\
-DAWIDD & 3.71 & 0.371 & 0.00 & 2695 samples/s \\
-ShapeDD (standard) & 19.95 & 1.995 & 1.66 & 501 samples/s \\
-\bottomrule
-\end{tabular}
-\end{table}
+% =============================================================================
+% AUTO-GENERATED TABLE: Runtime Statistics
+% Source: experiments/drift_detection_benchmark/publication_figures/table_III_runtime_stats.tex
+% To regenerate: Run main.py in drift_detection_benchmark, then copy output here
+% =============================================================================
+\input{../../experiments/drift_detection_benchmark/publication_figures/table_III_runtime_stats.tex}
 
 \textbf{Phân tích:}
 
@@ -501,29 +489,26 @@ Thực nghiệm đã chứng minh các kết quả quan trọng:
 
 \subsection{Kết quả tổng hợp}
 
-Bảng~\ref{tab:comprehensive_benchmark} trình bày kết quả trung bình của tất cả 18 phương pháp trên 8 datasets.
+Bảng~\ref{tab:comprehensive_performance} trình bày kết quả trung bình của tất cả các phương pháp trên các datasets.
 
-\begin{table}[h]
+% =============================================================================
+% AUTO-GENERATED TABLE: Comprehensive Performance Summary
+% Source: experiments/drift_detection_benchmark/publication_figures/table_I_comprehensive_performance.tex
+% To regenerate: Run main.py in drift_detection_benchmark, then copy output here
+% =============================================================================
+\input{../../experiments/drift_detection_benchmark/publication_figures/table_I_comprehensive_performance.tex}
+
+% =============================================================================
+% AUTO-GENERATED FIGURE: Critical Difference Diagram (Nemenyi Test)
+% Source: experiments/drift_detection_benchmark/publication_figures/critical_difference_f1.pdf
+% To regenerate: Run main.py in drift_detection_benchmark
+% =============================================================================
+\begin{figure}[h]
 \centering
-\caption{Kết quả benchmark toàn diện (18 methods × 8 datasets = 144 experiments)}
-\label{tab:comprehensive_benchmark}
-\begin{tabular}{lcccc}
-\toprule
-\textbf{Method} & \textbf{F1 (mean)} & \textbf{Std} & \textbf{Detection Rate} & \textbf{MTTD (samples)} \\
-\midrule
-\textbf{ShapeDD\_Adaptive\_None} & \textbf{0.571} & 0.286 & 0.638 & 30.2 \\
-\textbf{ShapeDD\_SNR\_Adaptive} & \textbf{0.562} & 0.254 & 0.612 & 31.4 \\
-ShapeDD\_Adaptive\_v2\_None & 0.557 & 0.281 & 0.638 & 30.2 \\
-ShapeDD & 0.544 & 0.224 & 0.688 & 27.5 \\
-DAWIDD & 0.515 & 0.132 & 0.800 & 41.2 \\
-ADWIN & 0.507 & 0.345 & 0.583 & 68.8 \\
-MMD & 0.500 & 0.195 & 0.788 & 37.9 \\
-ShapeDD\_Adaptive\_v2\_High & 0.464 & 0.292 & 0.475 & 33.8 \\
-\midrule
-\multicolumn{5}{l}{\textit{(10 phương pháp khác có F1 < 0.45)}} \\
-\bottomrule
-\end{tabular}
-\end{table}
+\includegraphics[width=0.85\textwidth]{../../experiments/drift_detection_benchmark/publication_figures/critical_difference_f1.pdf}
+\caption{Critical Difference diagram sử dụng Nemenyi post-hoc test. Các phương pháp được nối với nhau bằng đường ngang không có sự khác biệt thống kê đáng kể (p > 0.05). CD = Critical Difference tại mức ý nghĩa $\alpha = 0.05$.}
+\label{fig:critical_difference}
+\end{figure}
 
 \textbf{Nhận xét chính:}
 \begin{itemize}
@@ -537,30 +522,24 @@ ShapeDD\_Adaptive\_v2\_High & 0.464 & 0.292 & 0.475 & 33.8 \\
 
 Để hiểu rõ hơn về điểm mạnh và điểm yếu của ShapeDD SNR-Adaptive, nghiên cứu phân tích chi tiết hiệu suất trên từng dataset.
 
-\begin{table}[h]
+% =============================================================================
+% AUTO-GENERATED FIGURE: F1-Score Heatmap
+% Source: experiments/drift_detection_benchmark/publication_figures/figure_1_f1_heatmap.pdf
+% To regenerate: Run main.py in drift_detection_benchmark
+% =============================================================================
+\begin{figure}[h]
 \centering
-\caption{Hiệu suất ShapeDD SNR-Adaptive trên từng dataset}
-\label{tab:per_dataset_performance}
-\begin{tabular}{lccccc}
-\toprule
-\textbf{Dataset} & \textbf{F1} & \textbf{Recall} & \textbf{Precision} & \textbf{MTTD (samples)} & \textbf{Gap to Winner} \\
-\midrule
-\multicolumn{6}{l}{\textit{\textbf{TOP TIER (F1 > 0.70):}}} \\
-stagger & \textbf{0.833} & 1.0 & 0.714 & 4.8 & +0.036 \\
-enhanced\_sea & \textbf{0.818} & 0.9 & 0.750 & 7.6 & +0.134 \\
-gen\_random\_severe & \textbf{0.727} & 0.8 & 0.667 & 14.5 & \textbf{0.000} \\
-\midrule
-\multicolumn{6}{l}{\textit{\textbf{MID TIER (F1 = 0.45-0.70):}}} \\
-gen\_random\_ultra\_severe & 0.667 & 0.7 & 0.636 & 4.0 & +0.070 \\
-gen\_random\_moderate & 0.583 & 0.7 & 0.500 & 14.9 & +0.083 \\
-gen\_random\_mild & 0.455 & 0.5 & 0.417 & 17.6 & +0.188 \\
-\midrule
-\multicolumn{6}{l}{\textit{\textbf{BOTTOM TIER (F1 < 0.30):}}} \\
-hyperplane & 0.267 & 0.2 & 0.400 & 43.0 & +0.289 \\
-standard\_sea & 0.143 & 0.1 & 0.250 & 145.0 & +0.429 \\
-\bottomrule
-\end{tabular}
-\end{table}
+\includegraphics[width=0.95\textwidth]{../../experiments/drift_detection_benchmark/publication_figures/figure_1_f1_heatmap.pdf}
+\caption{Heatmap F1-Score theo phương pháp và dataset. Giá trị cao hơn (màu xanh lá) biểu thị hiệu suất tốt hơn. Các phương pháp được sắp xếp theo F1-Score trung bình giảm dần.}
+\label{fig:f1_heatmap}
+\end{figure}
+
+% =============================================================================
+% AUTO-GENERATED TABLE: F1-Score by Dataset
+% Source: experiments/drift_detection_benchmark/publication_figures/table_II_f1_by_dataset.tex
+% To regenerate: Run main.py in drift_detection_benchmark, then copy output here
+% =============================================================================
+\input{../../experiments/drift_detection_benchmark/publication_figures/table_II_f1_by_dataset.tex}
 
 \textbf{Phân tích chi tiết:}
 
@@ -640,10 +619,15 @@ Adaptive\_v2\_High (aggressive) & 0.464 & 0.292 & gen\_random\_ultra\_severe & h
 
 Hình~\ref{fig:performance_by_intensity} cho thấy mối quan hệ giữa drift intensity và hiệu suất phát hiện.
 
+% =============================================================================
+% AUTO-GENERATED FIGURE: Method Comparison with 95% CI
+% Source: experiments/drift_detection_benchmark/publication_figures/figure_5_method_comparison.pdf
+% To regenerate: Run main.py in drift_detection_benchmark
+% =============================================================================
 \begin{figure}[h]
 \centering
-\includegraphics[width=0.8\textwidth]{image/f1_comparison.png}
-\caption{So sánh hiệu suất top 10 methods. SNR-Adaptive xếp hạng 2/18 với F1 = 0.562. Phương pháp đạt hiệu suất cao nhất trên drift cường độ cao (gen\_random\_severe: F1 = 0.727, tie for 1st).}
+\includegraphics[width=0.9\textwidth]{../../experiments/drift_detection_benchmark/publication_figures/figure_5_method_comparison.pdf}
+\caption{So sánh hiệu suất các phương pháp phát hiện drift với khoảng tin cậy 95\%. Giá trị F1, Precision và Recall được hiển thị với thanh sai số biểu thị khoảng tin cậy.}
 \label{fig:performance_by_intensity}
 \end{figure}
 

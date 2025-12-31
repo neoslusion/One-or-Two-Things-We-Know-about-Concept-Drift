@@ -5,11 +5,32 @@ Contains functions for generating publication-ready LaTeX tables:
 - Comprehensive performance summary
 - F1-Score by dataset
 - Runtime statistics
+
+Uses booktabs style and highlights best values with bold formatting.
 """
 
 from pathlib import Path
 import pandas as pd
 import numpy as np
+
+
+def bold_best_in_column(series, higher_is_better=True):
+    """Return series with best value wrapped in \\textbf{}."""
+    if higher_is_better:
+        best_val = series.max()
+    else:
+        best_val = series.min()
+    return series.apply(lambda x: f"\\textbf{{{x}}}" if x == best_val else str(x))
+
+
+def format_with_bold_best(df, metric_cols, higher_is_better_dict):
+    """Format dataframe with bold best values per column."""
+    df_formatted = df.copy()
+    for col in metric_cols:
+        if col in df_formatted.columns:
+            higher = higher_is_better_dict.get(col, True)
+            df_formatted[col] = bold_best_in_column(df_formatted[col], higher)
+    return df_formatted
 
 
 def export_all_tables(all_results, stream_size, output_dir="./publication_figures"):
@@ -85,24 +106,51 @@ def export_all_tables(all_results, stream_size, output_dir="./publication_figure
     })
 
     pub_table = pub_table.sort_values('F1', ascending=False).reset_index(drop=True)
-    pub_table['F1_formatted'] = pub_table.apply(
-        lambda row: f"${row['F1']:.3f} \\pm {row['F1_std']:.3f}$", axis=1
-    )
 
-    latex_table = pub_table[['Method', 'F1_formatted', 'Precision', 'Recall', 'MTTD', 'TP', 'FP', 'FN']].copy()
-    latex_table.columns = ['Method', 'F1 ($\\mu \\pm \\sigma$)', 'Precision', 'Recall', 'MTTD', 'TP', 'FP', 'FN']
+    # Add rank column
+    pub_table['Rank'] = range(1, len(pub_table) + 1)
 
-    for col in ['Precision', 'Recall']:
-        latex_table[col] = latex_table[col].apply(lambda x: f"{x:.3f}")
+    # Find best values for bolding
+    best_f1 = pub_table['F1'].max()
+    best_precision = pub_table['Precision'].max()
+    best_recall = pub_table['Recall'].max()
+    best_mttd = pub_table['MTTD'].min()  # Lower is better
+
+    # Format F1 with std, bold if best
+    def format_f1(row):
+        f1_str = f"{row['F1']:.3f} \\pm {row['F1_std']:.3f}"
+        if row['F1'] == best_f1:
+            return f"$\\mathbf{{{f1_str}}}$"
+        return f"${f1_str}$"
+
+    pub_table['F1_formatted'] = pub_table.apply(format_f1, axis=1)
+
+    # Format other metrics with bold for best
+    def format_metric(val, best_val, higher_is_better=True):
+        formatted = f"{val:.3f}"
+        if (higher_is_better and val == best_val) or (not higher_is_better and val == best_val):
+            return f"\\textbf{{{formatted}}}"
+        return formatted
+
+    pub_table['Precision_fmt'] = pub_table['Precision'].apply(lambda x: format_metric(x, best_precision))
+    pub_table['Recall_fmt'] = pub_table['Recall'].apply(lambda x: format_metric(x, best_recall))
+    pub_table['MTTD_fmt'] = pub_table['MTTD'].apply(lambda x: format_metric(x, best_mttd, higher_is_better=False) if pd.notna(x) and x > 0 else "-")
+
+    latex_table = pub_table[['Rank', 'Method', 'F1_formatted', 'Precision_fmt', 'Recall_fmt', 'MTTD_fmt', 'TP', 'FP', 'FN']].copy()
+    latex_table.columns = ['Rank', 'Method', 'F1 ($\\mu \\pm \\sigma$)', 'Precision', 'Recall', 'MTTD', 'TP', 'FP', 'FN']
 
     latex_output = latex_table.to_latex(
         index=False,
         escape=False,
-        column_format='l' + 'c' * (len(latex_table.columns) - 1),
-        caption='Comprehensive drift detection performance. F1 is reported as mean $\\pm$ standard deviation across all datasets. MTTD = Mean Time To Detection (samples). TP/FP/FN = cumulative counts.',
+        column_format='c' + 'l' + 'c' * (len(latex_table.columns) - 2),
+        caption='Comprehensive drift detection performance across all datasets. F1 is reported as mean $\\pm$ standard deviation. Best values per metric are shown in \\textbf{bold}. MTTD = Mean Time To Detection (samples, lower is better). TP/FP/FN = cumulative counts across all experiments.',
         label='tab:comprehensive_performance',
         position='htbp'
     )
+
+    # Replace hlines with booktabs commands
+    latex_output = latex_output.replace('\\toprule', '\\toprule')  # Already correct if using recent pandas
+    latex_output = latex_output.replace('\\hline', '\\midrule')
 
     latex_file = output_dir / "table_I_comprehensive_performance.tex"
     with open(latex_file, 'w') as f:
@@ -125,13 +173,25 @@ def export_all_tables(all_results, stream_size, output_dir="./publication_figure
     f1_by_dataset['Mean'] = f1_by_dataset.mean(axis=1).round(3)
     f1_by_dataset = f1_by_dataset.sort_values('Mean', ascending=False)
 
-    latex_dataset = f1_by_dataset.to_latex(
+    # Bold best value per column
+    f1_formatted = f1_by_dataset.copy()
+    for col in f1_formatted.columns:
+        best_val = f1_formatted[col].max()
+        f1_formatted[col] = f1_formatted[col].apply(
+            lambda x: f"\\textbf{{{x:.3f}}}" if x == best_val else f"{x:.3f}"
+        )
+
+    # Add rank column
+    f1_formatted.insert(0, 'Rank', range(1, len(f1_formatted) + 1))
+
+    latex_dataset = f1_formatted.to_latex(
         escape=False,
-        column_format='l' + 'c' * len(f1_by_dataset.columns),
-        caption='F1-Score by method and dataset. Best scores per dataset are highlighted.',
+        column_format='c' + 'l' + 'c' * (len(f1_formatted.columns) - 1),
+        caption='F1-Score by method and dataset. Best scores per column are shown in \\textbf{bold}. Methods ranked by mean F1-Score.',
         label='tab:f1_by_dataset',
         position='htbp'
     )
+    latex_dataset = latex_dataset.replace('\\hline', '\\midrule')
 
     latex_file2 = output_dir / "table_II_f1_by_dataset.tex"
     with open(latex_file2, 'w') as f:

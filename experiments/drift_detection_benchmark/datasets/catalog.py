@@ -40,7 +40,7 @@ DATASET_CATALOG = {
         "n_drift_events": 10,
         "ground_truth_type": "exact",  # Synthetic - exact drift positions known
         "params": {
-            "n_features": 3
+            "n_features": 10  # MOA standard: 10 features with 2 drifting
         }
     },
     "gen_random_mild": {
@@ -254,11 +254,12 @@ DATASET_CATALOG = {
         }
     },
     "led_abrupt": {
-        "enabled": False,
+        "enabled": True,  # ENABLED: Classic discrete/binary feature benchmark
         "type": "led_abrupt",
         "n_drift_events": 10,
+        "ground_truth_type": "exact",
         "params": {
-            "has_noise": False
+            "has_noise": False  # Clean signal for controlled evaluation
         }
     },
 }
