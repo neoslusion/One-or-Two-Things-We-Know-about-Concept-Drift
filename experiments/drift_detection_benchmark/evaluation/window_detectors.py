@@ -20,7 +20,7 @@ from shape_dd import shape, shape_snr_adaptive
 from d3 import d3
 from dawidd import dawidd
 from mmd import mmd
-from ow_mmd import mmd_ow, shapedd_ow_mmd_buffer
+from ow_mmd import mmd_ow, shapedd_ow_mmd
 from ks import ks
 
 from ..config import (
@@ -73,8 +73,9 @@ def evaluate_drift_detector(method_name, X, true_drifts, chunk_size=None, overla
     detections = []
     last_detection = -10**9
 
-    # METHOD 1: Buffer-based approach for ShapeDD methods
-    if 'ShapeDD' in method_name:
+    # METHOD 1: Buffer-based approach for ShapeDD methods (permutation-based)
+    # Note: ShapeDD_OW_MMD uses sliding window approach (METHOD 2) for speed
+    if method_name in ['ShapeDD', 'ShapeDD_SNR_Adaptive']:
 
         # Configuration
         BUFFER_SIZE = 750           # Large rolling buffer
@@ -108,9 +109,6 @@ def evaluate_drift_detector(method_name, X, true_drifts, chunk_size=None, overla
 
                     elif method_name == 'ShapeDD_SNR_Adaptive':
                         shp_results = shape_snr_adaptive(buffer_X, SHAPE_L1, SHAPE_L2, SHAPE_N_PERM)
-
-                    elif method_name == 'ShapeDD_OW_MMD':
-                        shp_results = shapedd_ow_mmd_buffer(buffer_X, SHAPE_L1, SHAPE_L2, gamma='auto')
 
                     # Step 3: Check recent chunk within buffer for drift
                     # Look at last CHECK_FREQUENCY samples in buffer
@@ -146,7 +144,7 @@ def evaluate_drift_detector(method_name, X, true_drifts, chunk_size=None, overla
                 # Method-specific detection
                 if method_name == 'D3':
                     score = d3(window)
-                    trigger = score > 0.7
+                    trigger = score > 0.5  # Lowered from 0.7 per literature recommendations
 
                 elif method_name == 'DAWIDD':
                     _, p_value = dawidd(window, 'rbf')
@@ -164,6 +162,14 @@ def evaluate_drift_detector(method_name, X, true_drifts, chunk_size=None, overla
                     # Optimally-Weighted MMD
                     stat, threshold = mmd_ow(window, gamma='auto')
                     trigger = stat > threshold
+
+                elif method_name == 'ShapeDD_OW_MMD':
+                    # ShapeDD with OW-MMD: Fast threshold-based approach
+                    # Uses triangular pattern detection + optimally-weighted MMD
+                    pattern_score, mmd_max = shapedd_ow_mmd(
+                        window, l1=SHAPE_L1, l2=SHAPE_L2, gamma='auto'
+                    )
+                    trigger = pattern_score > 0.5  # Pattern strength threshold
 
                 else:
                     trigger = False
