@@ -143,8 +143,12 @@ def evaluate_drift_detector(method_name, X, true_drifts, chunk_size=None, overla
             try:
                 # Method-specific detection
                 if method_name == 'D3':
+                    # D3 returns (1 - AUC): low score = high AUC = drift detected
+                    # No drift: AUC ≈ 0.5 → score ≈ 0.5
+                    # Drift: AUC → 1.0 → score → 0.0
+                    # Paper default threshold: τ = 0.75, so score < 0.25
                     score = d3(window)
-                    trigger = score > 0.5  # Lowered from 0.7 per literature recommendations
+                    trigger = score < 0.25  # AUC > 0.75 (paper default τ=0.75)
 
                 elif method_name == 'DAWIDD':
                     _, p_value = dawidd(window, 'rbf')

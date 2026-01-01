@@ -510,6 +510,13 @@ Bảng~\ref{tab:comprehensive_performance} trình bày kết quả trung bình c
 \label{fig:critical_difference}
 \end{figure}
 
+% =============================================================================
+% AUTO-GENERATED TABLE: Statistical Significance (Nemenyi Test)
+% Source: experiments/drift_detection_benchmark/publication_figures/table_IV_statistical_significance.tex
+% To regenerate: Run main.py in drift_detection_benchmark
+% =============================================================================
+\input{../../experiments/drift_detection_benchmark/publication_figures/table_IV_statistical_significance.tex}
+
 \textbf{Nhận xét chính:}
 \begin{itemize}
     \item \textbf{ShapeDD\_SNR\_Adaptive xếp hạng 2/18} với F1 = 0.562
@@ -532,6 +539,39 @@ Bảng~\ref{tab:comprehensive_performance} trình bày kết quả trung bình c
 \includegraphics[width=0.95\textwidth]{../../experiments/drift_detection_benchmark/publication_figures/figure_1_f1_heatmap.pdf}
 \caption{Heatmap F1-Score theo phương pháp và dataset. Giá trị cao hơn (màu xanh lá) biểu thị hiệu suất tốt hơn. Các phương pháp được sắp xếp theo F1-Score trung bình giảm dần.}
 \label{fig:f1_heatmap}
+\end{figure}
+
+% =============================================================================
+% AUTO-GENERATED FIGURE: Precision Heatmap
+% Source: experiments/drift_detection_benchmark/publication_figures/figure_2_precision_heatmap.pdf
+% =============================================================================
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.95\textwidth]{../../experiments/drift_detection_benchmark/publication_figures/figure_2_precision_heatmap.pdf}
+\caption{Heatmap Precision theo phương pháp và dataset. Precision cao cho thấy ít false positive detections.}
+\label{fig:precision_heatmap}
+\end{figure}
+
+% =============================================================================
+% AUTO-GENERATED FIGURE: Recall Heatmap
+% Source: experiments/drift_detection_benchmark/publication_figures/figure_3_recall_heatmap.pdf
+% =============================================================================
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.95\textwidth]{../../experiments/drift_detection_benchmark/publication_figures/figure_3_recall_heatmap.pdf}
+\caption{Heatmap Recall theo phương pháp và dataset. Recall cao cho thấy phương pháp phát hiện được nhiều drift thực sự.}
+\label{fig:recall_heatmap}
+\end{figure}
+
+% =============================================================================
+% AUTO-GENERATED FIGURE: MTTD Heatmap
+% Source: experiments/drift_detection_benchmark/publication_figures/figure_4_mttd_heatmap.pdf
+% =============================================================================
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.95\textwidth]{../../experiments/drift_detection_benchmark/publication_figures/figure_4_mttd_heatmap.pdf}
+\caption{Heatmap Mean Time To Detection (MTTD) theo phương pháp và dataset. Giá trị thấp hơn (màu xanh) biểu thị phát hiện nhanh hơn.}
+\label{fig:mttd_heatmap}
 \end{figure}
 
 % =============================================================================
@@ -631,6 +671,28 @@ Hình~\ref{fig:performance_by_intensity} cho thấy mối quan hệ giữa drift
 \label{fig:performance_by_intensity}
 \end{figure}
 
+% =============================================================================
+% AUTO-GENERATED FIGURE: Runtime Comparison
+% Source: experiments/drift_detection_benchmark/publication_figures/figure_7_runtime_comparison.pdf
+% =============================================================================
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.9\textwidth]{../../experiments/drift_detection_benchmark/publication_figures/figure_7_runtime_comparison.pdf}
+\caption{So sánh thời gian thực thi của các phương pháp phát hiện drift. Thời gian được đo trên stream 10,000 samples với 30 lần chạy độc lập.}
+\label{fig:runtime_comparison}
+\end{figure}
+
+% =============================================================================
+% AUTO-GENERATED FIGURE: Speed-Accuracy Trade-off
+% Source: experiments/drift_detection_benchmark/publication_figures/figure_8_speed_accuracy_tradeoff.pdf
+% =============================================================================
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.85\textwidth]{../../experiments/drift_detection_benchmark/publication_figures/figure_8_speed_accuracy_tradeoff.pdf}
+\caption{Đường biên Pareto cho trade-off giữa tốc độ và độ chính xác. Các phương pháp nằm gần góc trên bên trái (F1 cao, runtime thấp) là tối ưu. Đường đứt nét biểu thị Pareto frontier.}
+\label{fig:speed_accuracy_tradeoff}
+\end{figure}
+
 \textbf{Xu hướng quan sát:}
 \begin{itemize}
     \item \textbf{High intensity (>= 1.0):} SNR-Adaptive mạnh (F1 = 0.667-0.727)
@@ -644,6 +706,43 @@ Hình~\ref{fig:performance_by_intensity} cho thấy mối quan hệ giữa drift
     \item Low intensity → low SNR → conservative strategy → missed detections
     \item Buffer dilution giảm observed SNR → threshold 0.010 có thể quá cao cho subtle drifts
 \end{itemize}
+
+\subsection{Visualization các detection timeline}
+
+Hình~\ref{fig:timeline_stagger} và~\ref{fig:timeline_hyperplane} minh họa timeline phát hiện drift của các phương pháp trên hai dataset đại diện.
+
+% =============================================================================
+% AUTO-GENERATED FIGURE: Detection Timeline - Stagger Dataset
+% Source: experiments/drift_detection_benchmark/publication_figures/figure_6_timeline_stagger.pdf
+% =============================================================================
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.95\textwidth]{../../experiments/drift_detection_benchmark/publication_figures/figure_6_timeline_stagger.pdf}
+\caption{Timeline phát hiện drift trên STAGGER dataset. Đường đứt nét đỏ biểu thị vị trí drift thực sự. Các điểm tròn biểu thị thời điểm phát hiện của mỗi phương pháp qua 30 lần chạy.}
+\label{fig:timeline_stagger}
+\end{figure}
+
+% =============================================================================
+% AUTO-GENERATED FIGURE: Detection Timeline - Hyperplane Dataset
+% Source: experiments/drift_detection_benchmark/publication_figures/figure_6_timeline_hyperplane.pdf
+% =============================================================================
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.95\textwidth]{../../experiments/drift_detection_benchmark/publication_figures/figure_6_timeline_hyperplane.pdf}
+\caption{Timeline phát hiện drift trên Rotating Hyperplane dataset. Dataset này có gradual drift, thách thức hơn cho các phương pháp window-based.}
+\label{fig:timeline_hyperplane}
+\end{figure}
+
+% =============================================================================
+% AUTO-GENERATED FIGURE: Detection Timeline - Electricity Dataset
+% Source: experiments/drift_detection_benchmark/publication_figures/figure_6_timeline_electricity_sorted.pdf
+% =============================================================================
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.95\textwidth]{../../experiments/drift_detection_benchmark/publication_figures/figure_6_timeline_electricity_sorted.pdf}
+\caption{Timeline phát hiện drift trên Electricity dataset (real-world). Dataset thực tế này có drift patterns phức tạp và không đều.}
+\label{fig:timeline_electricity}
+\end{figure}
 
 \subsection{Đánh giá chiến lược adaptive selection}
 

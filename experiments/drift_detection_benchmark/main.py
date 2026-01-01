@@ -68,7 +68,10 @@ if __name__ == "__main__" and __package__ is None:
         generate_all_figures,
         export_all_tables,
     )
-    from experiments.drift_detection_benchmark.analysis.statistics import print_results_summary
+    from experiments.drift_detection_benchmark.analysis.statistics import (
+        print_results_summary,
+        generate_statistical_report,
+    )
 else:
     # Running as module: python -m experiments.drift_detection_benchmark.main
     from .config import (
@@ -90,7 +93,7 @@ else:
         generate_all_figures,
         export_all_tables,
     )
-    from .analysis.statistics import print_results_summary
+    from .analysis.statistics import print_results_summary, generate_statistical_report
 
 # Suppress warnings
 warnings.filterwarnings('ignore')
@@ -273,6 +276,19 @@ def main():
     # RESULTS SUMMARY
     # ========================================================================
     print_results_summary(all_results, STREAM_SIZE)
+
+    # ========================================================================
+    # NEMENYI POST-HOC TEST & CRITICAL DIFFERENCE DIAGRAM
+    # ========================================================================
+    print("\n" + "="*80)
+    print("GENERATING STATISTICAL SIGNIFICANCE REPORT")
+    print("="*80)
+    import pandas as pd
+    df_results = pd.DataFrame(all_results)
+    statistical_report = generate_statistical_report(
+        df_results,
+        output_dir='./publication_figures'
+    )
 
     # ========================================================================
     # GENERATE VISUALIZATIONS

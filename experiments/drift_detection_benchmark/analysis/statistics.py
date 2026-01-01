@@ -11,7 +11,16 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 from scipy.stats import wilcoxon, friedmanchisquare
+import matplotlib.pyplot as plt
 import warnings
+
+# Try to import scikit-posthocs for Nemenyi test
+try:
+    import scikit_posthocs as sp
+    POSTHOCS_AVAILABLE = True
+except ImportError:
+    POSTHOCS_AVAILABLE = False
+    print("Warning: scikit-posthocs not installed. Nemenyi test will be skipped.")
 
 warnings.filterwarnings('ignore')
 
@@ -318,4 +327,335 @@ def print_results_summary(all_results, stream_size):
         print("\n" + "=" * 80)
 
     return results_df
+
+
+def run_nemenyi_posthoc(df_results, metric='f1_score', output_dir=None):
+    """
+    Run Nemenyi post-hoc test after Friedman test.
+
+    The Nemenyi test performs pairwise comparisons between all methods
+    to determine which specific pairs are significantly different.
+
+    Args:
+        df_results: DataFrame with columns ['method', 'dataset', metric]
+        metric: Which metric to analyze (default: 'f1_score')
+        output_dir: Directory to save results (optional)
+
+    Returns:
+        dict: Contains p-value matrix, average ranks, and CD value
+    """
+    if not POSTHOCS_AVAILABLE:
+        print("scikit-posthocs not available. Cannot run Nemenyi test.")
+        return None
+
+    print("\n" + "="*80)
+    print("NEMENYI POST-HOC TEST")
+    print("="*80)
+
+    # Pivot data: rows = datasets, columns = methods, values = metric scores
+    pivot_df = df_results.pivot_table(
+        index='dataset',
+        columns='method',
+        values=metric,
+        aggfunc='mean'
+    )
+
+    print(f"\nAnalyzing {metric} across {len(pivot_df)} datasets and {len(pivot_df.columns)} methods")
+    print(f"Methods: {list(pivot_df.columns)}")
+
+    # Run Nemenyi test
+    # scikit-posthocs expects data in long format or matrix format
+    nemenyi_result = sp.posthoc_nemenyi_friedman(pivot_df.values)
+    nemenyi_result.index = pivot_df.columns
+    nemenyi_result.columns = pivot_df.columns
+
+    print("\nNemenyi p-value matrix:")
+    print(nemenyi_result.round(4))
+
+    # Calculate average ranks
+    ranks = pivot_df.rank(axis=1, ascending=False)  # Higher is better for F1
+    avg_ranks = ranks.mean().sort_values()
+
+    print("\nAverage Ranks (lower is better):")
+    for method, rank in avg_ranks.items():
+        print(f"  {method:30s}: {rank:.3f}")
+
+    # Calculate Critical Difference (CD) for Nemenyi test
+    k = len(pivot_df.columns)  # Number of methods
+    n = len(pivot_df)  # Number of datasets
+
+    # Critical value for Nemenyi test at alpha=0.05
+    # q_alpha values for different k (from statistical tables)
+    q_alpha_table = {
+        2: 1.960, 3: 2.343, 4: 2.569, 5: 2.728,
+        6: 2.850, 7: 2.949, 8: 3.031, 9: 3.102, 10: 3.164
+    }
+    q_alpha = q_alpha_table.get(k, 3.0)  # Default to 3.0 if k not in table
+
+    cd = q_alpha * np.sqrt(k * (k + 1) / (6 * n))
+
+    print(f"\nCritical Difference (CD) at α=0.05: {cd:.3f}")
+    print(f"Methods with rank difference > {cd:.3f} are significantly different")
+
+    # Identify significantly different pairs
+    print("\nSignificantly different pairs (p < 0.05):")
+    sig_pairs = []
+    for i, m1 in enumerate(nemenyi_result.columns):
+        for j, m2 in enumerate(nemenyi_result.columns):
+            if i < j and nemenyi_result.iloc[i, j] < 0.05:
+                rank_diff = abs(avg_ranks[m1] - avg_ranks[m2])
+                print(f"  {m1} vs {m2}: p={nemenyi_result.iloc[i,j]:.4f}, rank diff={rank_diff:.3f}")
+                sig_pairs.append((m1, m2, nemenyi_result.iloc[i, j]))
+
+    if len(sig_pairs) == 0:
+        print("  No significantly different pairs found")
+
+    # Save p-value matrix if output_dir specified
+    if output_dir:
+        import os
+        nemenyi_result.to_csv(os.path.join(output_dir, 'nemenyi_pvalues.csv'))
+        avg_ranks.to_csv(os.path.join(output_dir, 'average_ranks.csv'))
+        print(f"\nResults saved to {output_dir}")
+
+    return {
+        'pvalue_matrix': nemenyi_result,
+        'average_ranks': avg_ranks,
+        'critical_difference': cd,
+        'significant_pairs': sig_pairs,
+        'pivot_data': pivot_df
+    }
+
+
+def plot_critical_difference_diagram(df_results, metric='f1_score', output_path=None):
+    """
+    Generate Critical Difference (CD) diagram for method comparison.
+
+    The CD diagram shows average ranks of methods with horizontal bars
+    connecting methods that are NOT significantly different (Nemenyi test).
+
+    This is the standard visualization used in machine learning benchmark papers
+    (Demsar 2006, "Statistical Comparisons of Classifiers over Multiple Data Sets").
+
+    Args:
+        df_results: DataFrame with columns ['method', 'dataset', metric]
+        metric: Which metric to analyze (default: 'f1_score')
+        output_path: Path to save the figure (optional)
+
+    Returns:
+        matplotlib figure object
+    """
+    if not POSTHOCS_AVAILABLE:
+        print("scikit-posthocs not available. Cannot generate CD diagram.")
+        return None
+
+    # Pivot data
+    pivot_df = df_results.pivot_table(
+        index='dataset',
+        columns='method',
+        values=metric,
+        aggfunc='mean'
+    )
+
+    # Calculate ranks (higher metric = rank 1)
+    ranks = pivot_df.rank(axis=1, ascending=False)
+    avg_ranks = ranks.mean().sort_values()
+
+    # Calculate CD
+    k = len(pivot_df.columns)
+    n = len(pivot_df)
+    q_alpha_table = {
+        2: 1.960, 3: 2.343, 4: 2.569, 5: 2.728,
+        6: 2.850, 7: 2.949, 8: 3.031, 9: 3.102, 10: 3.164
+    }
+    q_alpha = q_alpha_table.get(k, 3.0)
+    cd = q_alpha * np.sqrt(k * (k + 1) / (6 * n))
+
+    # Run Nemenyi test
+    nemenyi_result = sp.posthoc_nemenyi_friedman(pivot_df.values)
+    nemenyi_result.index = pivot_df.columns
+    nemenyi_result.columns = pivot_df.columns
+
+    # Create figure
+    fig, ax = plt.subplots(figsize=(12, 6))
+
+    # Plot settings
+    methods = list(avg_ranks.index)
+    ranks_values = list(avg_ranks.values)
+    n_methods = len(methods)
+
+    # Y positions for methods
+    y_positions = list(range(n_methods))
+
+    # Draw rank axis
+    ax.set_xlim(0.5, n_methods + 0.5)
+    ax.set_ylim(-1, n_methods + 1)
+
+    # Draw horizontal line for ranks
+    ax.axhline(y=n_methods, color='black', linewidth=2)
+
+    # Draw tick marks for ranks
+    for i in range(1, n_methods + 1):
+        ax.plot([i, i], [n_methods - 0.1, n_methods + 0.1], 'k-', linewidth=1)
+        ax.text(i, n_methods + 0.3, str(i), ha='center', va='bottom', fontsize=10)
+
+    # CD bar
+    cd_x = 1
+    ax.plot([cd_x, cd_x + cd], [n_methods + 0.8, n_methods + 0.8], 'k-', linewidth=2)
+    ax.plot([cd_x, cd_x], [n_methods + 0.7, n_methods + 0.9], 'k-', linewidth=2)
+    ax.plot([cd_x + cd, cd_x + cd], [n_methods + 0.7, n_methods + 0.9], 'k-', linewidth=2)
+    ax.text(cd_x + cd/2, n_methods + 1.1, f'CD = {cd:.2f}', ha='center', va='bottom', fontsize=10)
+
+    # Plot methods on left and right sides
+    left_methods = []
+    right_methods = []
+
+    for i, (method, rank) in enumerate(avg_ranks.items()):
+        if rank <= (n_methods + 1) / 2:
+            left_methods.append((method, rank))
+        else:
+            right_methods.append((method, rank))
+
+    # Draw left side methods (lower ranks = better)
+    for i, (method, rank) in enumerate(left_methods):
+        y = n_methods - 1 - i * 0.8
+        ax.plot([rank, 0.3], [n_methods, y], 'k-', linewidth=1)
+        ax.plot(rank, n_methods, 'ko', markersize=8)
+        ax.text(0.2, y, method, ha='right', va='center', fontsize=11, fontweight='bold')
+
+    # Draw right side methods (higher ranks = worse)
+    for i, (method, rank) in enumerate(right_methods):
+        y = n_methods - 1 - i * 0.8
+        ax.plot([rank, n_methods + 0.7], [n_methods, y], 'k-', linewidth=1)
+        ax.plot(rank, n_methods, 'ko', markersize=8)
+        ax.text(n_methods + 0.8, y, method, ha='left', va='center', fontsize=11, fontweight='bold')
+
+    # Draw bars connecting methods that are NOT significantly different
+    # Group methods by non-significant differences
+    groups = []
+    used = set()
+
+    for i, m1 in enumerate(methods):
+        if m1 in used:
+            continue
+        group = [m1]
+        for j, m2 in enumerate(methods):
+            if i != j and m2 not in used:
+                if nemenyi_result.loc[m1, m2] >= 0.05:  # Not significantly different
+                    # Check if m2 is within CD of all group members
+                    if all(abs(avg_ranks[m2] - avg_ranks[g]) <= cd for g in group):
+                        group.append(m2)
+        if len(group) > 1:
+            groups.append(group)
+            used.update(group)
+
+    # Draw connecting bars for non-significant groups
+    bar_y = n_methods - 0.3
+    for group in groups:
+        group_ranks = [avg_ranks[m] for m in group]
+        min_rank = min(group_ranks)
+        max_rank = max(group_ranks)
+        ax.plot([min_rank, max_rank], [bar_y, bar_y], 'b-', linewidth=4, alpha=0.6)
+        bar_y -= 0.25
+
+    ax.set_title(f'Critical Difference Diagram - {metric.replace("_", " ").title()}\n(Nemenyi test, α=0.05)',
+                 fontsize=14, fontweight='bold')
+    ax.axis('off')
+
+    plt.tight_layout()
+
+    if output_path:
+        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path.replace('.pdf', '.png'), dpi=300, bbox_inches='tight')
+        print(f"CD diagram saved to {output_path}")
+
+    return fig
+
+
+def generate_statistical_report(df_results, output_dir):
+    """
+    Generate comprehensive statistical report with all tests and diagrams.
+
+    Args:
+        df_results: DataFrame with benchmark results
+        output_dir: Directory to save all outputs
+
+    Returns:
+        dict: All statistical analysis results
+    """
+    import os
+    os.makedirs(output_dir, exist_ok=True)
+
+    print("\n" + "="*80)
+    print("COMPREHENSIVE STATISTICAL REPORT")
+    print("="*80)
+
+    results = {}
+
+    # 1. Nemenyi post-hoc test
+    nemenyi_results = run_nemenyi_posthoc(df_results, metric='f1_score', output_dir=output_dir)
+    results['nemenyi'] = nemenyi_results
+
+    # 2. Critical Difference diagram
+    cd_path = os.path.join(output_dir, 'critical_difference_f1.pdf')
+    cd_fig = plot_critical_difference_diagram(df_results, metric='f1_score', output_path=cd_path)
+    results['cd_figure'] = cd_fig
+
+    # 3. Generate LaTeX table for statistical results
+    if nemenyi_results:
+        latex_stats = generate_statistical_latex_table(nemenyi_results, output_dir)
+        results['latex_table'] = latex_stats
+
+    print("\n" + "="*80)
+    print("Statistical report complete!")
+    print(f"Outputs saved to: {output_dir}")
+    print("="*80)
+
+    return results
+
+
+def generate_statistical_latex_table(nemenyi_results, output_dir):
+    """
+    Generate LaTeX table summarizing statistical test results.
+
+    Args:
+        nemenyi_results: Results from run_nemenyi_posthoc
+        output_dir: Directory to save the table
+
+    Returns:
+        str: LaTeX table string
+    """
+    import os
+
+    avg_ranks = nemenyi_results['average_ranks']
+    cd = nemenyi_results['critical_difference']
+
+    # Create table
+    latex = r"""\begin{table}[htbp]
+\caption{Method rankings and statistical significance (Friedman-Nemenyi test, $\alpha$=0.05).
+Methods connected by bars in the CD diagram are not significantly different.}
+\label{tab:statistical_significance}
+\begin{tabular}{lcc}
+\toprule
+Method & Average Rank & Rank \\
+\midrule
+"""
+
+    for rank_pos, (method, avg_rank) in enumerate(avg_ranks.items(), 1):
+        latex += f"{method} & {avg_rank:.3f} & {rank_pos} \\\\\n"
+
+    latex += r"""\midrule
+\multicolumn{3}{l}{Critical Difference (CD) = """ + f"{cd:.3f}" + r"""} \\
+\bottomrule
+\end{tabular}
+\end{table}
+"""
+
+    # Save to file
+    output_path = os.path.join(output_dir, 'table_IV_statistical_significance.tex')
+    with open(output_path, 'w') as f:
+        f.write(latex)
+
+    print(f"LaTeX table saved to {output_path}")
+
+    return latex
 
