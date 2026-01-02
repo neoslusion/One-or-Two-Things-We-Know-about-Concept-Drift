@@ -41,31 +41,15 @@ Luận văn này đã nghiên cứu và triển khai thành công một hệ th�
 
 \subsection{Đóng góp thực nghiệm}
 
-\textbf{So sánh detector toàn diện:} Đánh giá 10 drift detectors (4 window-based, 6 streaming) trên cùng sudden drift scenario với 10,000 samples. Kết quả cho thấy ShapeDD\_Improved vượt trội về cả accuracy và detection delay.
+\textbf{So sánh detector toàn diện:} Đánh giá 8 drift detectors trên 7 datasets đa dạng (bao gồm synthetic và real-world data), với 10 drift points mỗi dataset. Kết quả cho thấy các phương pháp có trade-offs khác nhau phù hợp với các use cases khác nhau.
 
-\textbf{Kết quả nổi bật trong Experiment 1 (single drift point):} ShapeDD\_Improved đạt được:
+\textbf{Kết quả comprehensive benchmark (8 methods × 7 datasets):}
 \begin{itemize}
-    \item F1-score: 1.0 (tied với ADWIN và EDDM - ba methods đều perfect detection)
-    \item Detection delay: 4 samples (nhanh nhất trong 10 detectors)
-    \item Drift type classification: 100\% accurate (phân loại đúng là "sudden")
-    \item Recovery rate: 82.8\% sau adaptation
-    \item Recovery time: 96 samples để đạt 95\% baseline accuracy
-\end{itemize}
-
-\textbf{Kết quả comprehensive benchmark (Experiment 2 - 18 methods × 8 datasets):} ShapeDD SNR-Adaptive đạt được:
-\begin{itemize}
-    \item F1-score: 0.697, ranked 4th/18 methods (top 22\%)
-    \item Strategy balance: 58.7\% aggressive / 41.3\% conservative (near-optimal 50/50)
+    \item \textbf{KS đạt hiệu suất tốt nhất:} F1 = 0.686, cân bằng tốt giữa Precision (0.769) và Recall (0.766)
+    \item \textbf{MMD-based methods có Precision cao:} ShapeDD\_OW\_MMD đạt Precision = 0.847, phù hợp cho low false alarm requirements
+    \item \textbf{ShapeDD\_SNR\_Adaptive:} F1 = 0.236, ranked 6th/8 methods, nhưng MTTD nhanh nhất (24 samples) và zero false positives
     \item Key finding: Buffer dilution effect - observed SNR ~100× lower than theoretical SNR
     \item Practical contribution: Threshold calibration từ 0.5 (theory) xuống 0.010 (buffer-based)
-\end{itemize}
-
-\textbf{Phân tích lifecycle đầy đủ:} Theo dõi toàn bộ quá trình từ detection đến recovery:
-\begin{itemize}
-    \item Baseline accuracy: 0.996 (pre-drift)
-    \item Degradation: Giảm xuống 0.550 (44\% drop)
-    \item Adaptation: Full model reset với 800 post-drift samples
-    \item Recovery: Phục hồi lên 0.919 (91.9\%)
 \end{itemize}
 
 \section{Những phát hiện và hiểu biết chính}
