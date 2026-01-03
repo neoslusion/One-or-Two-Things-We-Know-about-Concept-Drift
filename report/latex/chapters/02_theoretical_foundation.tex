@@ -1,8 +1,8 @@
 \chapter{Cơ sở lý thuyết}
 
-Sau khi khảo sát các phương pháp phát hiện drift ở Chương~2, chương này trình bày nền tảng lý thuyết 
+\textit{Sau khi khảo sát các phương pháp phát hiện drift ở Chương~2, chương này trình bày nền tảng lý thuyết 
 của phương pháp ShapeDD --- phương pháp được lựa chọn làm cơ sở phát triển cho luận văn. 
-Chương bắt đầu với định nghĩa formal về concept drift, sau đó đi sâu vào lý thuyết MMD và cơ chế phát hiện của ShapeDD.
+Chương bắt đầu với định nghĩa chi tiết về concept drift, sau đó đi sâu vào lý thuyết MMD và cơ chế phát hiện của ShapeDD.}
 
 \section{Khái niệm về concept drift và phân loại}
 
@@ -68,7 +68,7 @@ Một loạt các dịch vụ/ứng dụng trong bối cảnh hệ thống và m
 
 Sự phân phối của dữ liệu có thể thay đổi theo thời gian do máy móc lão hóa và cần quy trình bảo trì, hoặc do các yếu tố môi trường thay đổi. Do đó, một kỹ thuật CBM không có khả năng xử lý sự trôi dạt khái niệm sẽ hoạt động kém~\cite{jourdan2021machine}. Do đó, sự trôi dạt khái niệm có thể ảnh hưởng đến hiệu quả và tính mạnh mẽ của phân tích luồng dữ liệu~\cite{tripathi2021ensuring}. Trong môi trường không cố định, có một số cân nhắc mà các mô hình dự đoán phải tính đến để phát hiện và tự thích ứng với sự trôi dạt khái niệm, nếu không, hiệu suất của các mô hình này sẽ giảm sút về độ chính xác và độ mạnh mẽ. Theo thời gian, một mô hình dự đoán có thể cần cập nhật lại dữ liệu mới, hoặc thay đổi các tham số và cấu trúc của nó bằng cách kết hợp các dữ liệu huấn luyện mới hoặc thay thế hoàn toàn mô hình cũ để xử lý sự trôi dạt khái niệm.
 
-\section{Phương pháp ShapeDD: Phương pháp phát hiện trôi dạt dựa trên hình dạng và khử nhiễu tín hiệu}
+\section{ShapeDD - Phương pháp phát hiện trôi dạt dựa trên hình dạng và khử nhiễu tín hiệu}
 
 \subsection{Giới thiệu}
 
@@ -84,26 +84,26 @@ này dễ bị \textbf{nhiễu}, khiến việc phân biệt giữa thay đổi 
 \textbf{ShapeDD (Shape-Based Drift Detection)} được đề xuất nhằm khắc phục vấn đề này bằng cách khai thác \textit{đặc trưng hình dạng} 
 mà tín hiệu drift thể hiện, đặc biệt trong các trường hợp \textbf{drift đột ngột (abrupt drift)}.
 
-\subsection{Quy ước ký hiệu}
+% \subsection{Quy ước ký hiệu}
 
-Trước khi đi vào chi tiết, phần này thống nhất các ký hiệu được sử dụng trong chương:
+% Trước khi đi vào chi tiết, phần này thống nhất các ký hiệu được sử dụng trong chương:
 
-\begin{itemize}
-    \item $l$: kích thước cửa sổ tổng quát (được dùng trong phần lý thuyết)
-    \item $l_1$, $l_2$: kích thước hai cửa sổ cụ thể của ShapeDD trong triển khai thực tế
-        \begin{itemize}
-            \item $l_1$: nửa cửa sổ nhỏ (half-window) cho so sánh cục bộ, mặc định = 50
-            \item $l_2$: cửa sổ lớn hơn cho MMD computation, mặc định = 150
-        \end{itemize}
-    \item $P$, $Q$: hai phân phối xác suất cần so sánh
-    \item $D_t$: phân phối sinh dữ liệu tại thời điểm $t$
-    \item $\sigma$: đại lượng độ lớn trôi dạt (drift magnitude)
-    \item $h_l(t)$: hình dạng tam giác đặc trưng của tín hiệu drift
-\end{itemize}
+% \begin{itemize}
+%     \item $l$: kích thước cửa sổ tổng quát (được dùng trong phần lý thuyết)
+%     \item $l_1$, $l_2$: kích thước hai cửa sổ cụ thể của ShapeDD trong triển khai thực tế
+%         \begin{itemize}
+%             \item $l_1$: nửa cửa sổ nhỏ (half-window) cho so sánh cục bộ, mặc định = 50
+%             \item $l_2$: cửa sổ lớn hơn cho MMD computation, mặc định = 150
+%         \end{itemize}
+%     \item $P$, $Q$: hai phân phối xác suất cần so sánh
+%     \item $D_t$: phân phối sinh dữ liệu tại thời điểm $t$
+%     \item $\sigma$: đại lượng độ lớn trôi dạt (drift magnitude)
+%     \item $h_l(t)$: hình dạng tam giác đặc trưng của tín hiệu drift
+% \end{itemize}
 
-\textit{Lưu ý:} Trong các phương pháp khác nhau (ADWIN, DDM, etc.), ký hiệu cửa sổ có thể khác. Luận văn này giữ nguyên ký hiệu gốc khi trình bày từng phương pháp để thuận tiện tra cứu tài liệu gốc.
+% \textit{Lưu ý:} Trong các phương pháp khác nhau (ADWIN, DDM, etc.), ký hiệu cửa sổ có thể khác. Luận văn này giữ nguyên ký hiệu gốc khi trình bày từng phương pháp để thuận tiện tra cứu tài liệu gốc.
 
-\subsection{Nền tảng lý thuyết}
+\subsection{Cơ sở lý thuyết}
 
 \subsubsection{Đại lượng độ lớn trôi dạt (\texorpdfstring{$\sigma$}{σ})}
 
@@ -197,8 +197,7 @@ trong đó:
     \item $\mathcal{F}$ là một lớp hàm $f$ sao cho $\|f\|_{\mathcal{H}} \leq 1$ trong Reproducing Kernel Hilbert Space (RKHS)~\cite{scholkopf2002learning}
     \item $\sup$ biểu thị supremum (cận trên nhỏ nhất)
 \end{itemize}
-
-\textbf{Intuition:} Trong không gian ban đầu, hai phân phối có thể khó phân biệt. Bằng cách ánh xạ vào RKHS thông qua hàm kernel~\cite{scholkopf2002learning}, 
+Trong không gian ban đầu, hai phân phối có thể khó phân biệt. Bằng cách ánh xạ vào RKHS thông qua hàm kernel~\cite{scholkopf2002learning}, 
 các cấu trúc phức tạp của phân phối trở nên rõ ràng hơn. MMD đo lường khoảng cách giữa "trung bình" (mean embedding) của hai phân phối trong không gian này.
 
 \subsubsection{Kernel trick và RKHS}
@@ -211,23 +210,19 @@ k(x, y) = \langle \phi(x), \phi(y) \rangle_{\mathcal{H}}
 \end{equation}
 
 Trong đó $\phi(x)$ ánh xạ điểm $x$ vào RKHS $\mathcal{H}$ và $\langle \cdot, \cdot \rangle_{\mathcal{H}}$ là tích vô hướng trong $\mathcal{H}$.
-
 \textbf{Lựa chọn kernel phổ biến:} Gaussian RBF kernel được sử dụng rộng rãi nhất do tính chất universal (có thể xấp xỉ bất kỳ hàm liên tục nào):
-
 \begin{equation}
 k(x, y) = \exp\left(-\frac{\|x - y\|^2}{2\sigma^2}\right)
 \end{equation}
 
 Tham số $\sigma$ (bandwidth) điều khiển độ nhạy: giá trị nhỏ tập trung vào sự khác biệt cục bộ, giá trị lớn nắm bắt cấu trúc toàn cục.
-
-\subsubsection{Công thức tính toán}
-
-MMD bình phương trong RKHS trở thành:
+% \subsubsection{Công thức tính toán}
+Khi đó, MMD bình phương trong RKHS trở thành:
 \begin{equation}
 \text{MMD}^2(P, Q) = \mathbb{E}_{X, X' \sim P}[k(X, X')] + \mathbb{E}_{Y, Y' \sim Q}[k(Y, Y')] - 2\mathbb{E}_{X \sim P, Y \sim Q}[k(X, Y)]
 \end{equation}
-
-\textbf{Giải thích ba thành phần:}
+% \textbf{Giải thích ba thành phần:}
+Trong đó:
 \begin{itemize}
     \item \textbf{Thành phần 1:} $\mathbb{E}_{X, X' \sim P}[k(X, X')]$ - độ tương đồng trung bình giữa các điểm trong phân phối $P$
     \item \textbf{Thành phần 2:} $\mathbb{E}_{Y, Y' \sim Q}[k(Y, Y')]$ - độ tương đồng trung bình giữa các điểm trong phân phối $Q$
@@ -236,53 +231,53 @@ MMD bình phương trong RKHS trở thành:
 
 Nếu $P = Q$, ba thành phần này cân bằng nhau và $\text{MMD}^2 = 0$. Nếu $P \neq Q$, sự khác biệt trong cấu trúc nội bộ và tương tác chéo dẫn đến $\text{MMD}^2 > 0$.
 
-\subsubsection{Ước lượng thực nghiệm}
+% \subsubsection{Ước lượng thực nghiệm}
 
-Để ước tính thực nghiệm với mẫu $\{x_i\}_{i=1}^n$ từ $P$ và $\{y_j\}_{j=1}^m$ từ $Q$, có hai ước lượng chính:
+% Để ước tính thực nghiệm với mẫu $\{x_i\}_{i=1}^n$ từ $P$ và $\{y_j\}_{j=1}^m$ từ $Q$, có hai ước lượng chính:
 
-\textbf{1. Unbiased estimator ($\widehat{\text{MMD}}^2_u$):}
-\begin{equation}
-\widehat{\text{MMD}}^2_u = \frac{1}{n(n-1)} \sum_{i \neq j} k(x_i, x_j) + \frac{1}{m(m-1)} \sum_{i \neq j} k(y_i, y_j) - \frac{2}{nm} \sum_{i,j} k(x_i, y_j)
-\end{equation}
+% \textbf{1. Unbiased estimator ($\widehat{\text{MMD}}^2_u$):}
+% \begin{equation}
+% \widehat{\text{MMD}}^2_u = \frac{1}{n(n-1)} \sum_{i \neq j} k(x_i, x_j) + \frac{1}{m(m-1)} \sum_{i \neq j} k(y_i, y_j) - \frac{2}{nm} \sum_{i,j} k(x_i, y_j)
+% \end{equation}
 
-Ước lượng này là unbiased ($\mathbb{E}[\widehat{\text{MMD}}^2_u] = \text{MMD}^2$) bằng cách loại trừ các cặp $(i,i)$ trong hai tổng đầu (tránh bias do tự tương quan).
+% Ước lượng này là unbiased ($\mathbb{E}[\widehat{\text{MMD}}^2_u] = \text{MMD}^2$) bằng cách loại trừ các cặp $(i,i)$ trong hai tổng đầu (tránh bias do tự tương quan).
 
-\textbf{2. Biased but consistent estimator ($\widehat{\text{MMD}}^2_b$):}
-\begin{equation}
-\widehat{\text{MMD}}^2_b = \mathbf{w}^\top K_{XY} \mathbf{w}
-\end{equation}
+% \textbf{2. Biased but consistent estimator ($\widehat{\text{MMD}}^2_b$):}
+% \begin{equation}
+% \widehat{\text{MMD}}^2_b = \mathbf{w}^\top K_{XY} \mathbf{w}
+% \end{equation}
 
-trong đó:
-\begin{itemize}
-    \item $K_{XY}$ là kernel matrix kích thước $(n+m) \times (n+m)$ trên tất cả samples $\{x_1, ..., x_n, y_1, ..., y_m\}$
-    \item $\mathbf{w} = (n^{-1}, ..., n^{-1}, -m^{-1}, ..., -m^{-1})^\top$ với $n$ phần tử dương và $m$ phần tử âm
-\end{itemize}
+% trong đó:
+% \begin{itemize}
+%     \item $K_{XY}$ là kernel matrix kích thước $(n+m) \times (n+m)$ trên tất cả samples $\{x_1, ..., x_n, y_1, ..., y_m\}$
+%     \item $\mathbf{w} = (n^{-1}, ..., n^{-1}, -m^{-1}, ..., -m^{-1})^\top$ với $n$ phần tử dương và $m$ phần tử âm
+% \end{itemize}
 
-Ước lượng này biased nhưng consistent (hội tụ về $\text{MMD}^2$ khi $n, m \to \infty$).
+% Ước lượng này biased nhưng consistent (hội tụ về $\text{MMD}^2$ khi $n, m \to \infty$).
 
-\textbf{Tính chất thống kê:} Cả hai ước lượng đều hội tụ với tốc độ $O(\sqrt{\min(n,m)^{-1}})$ và bound này chỉ phụ thuộc vào tính chất của kernel, độc lập với số chiều dữ liệu~\cite{gretton2012kernel}.
+% \textbf{Tính chất thống kê:} Cả hai ước lượng đều hội tụ với tốc độ $O(\sqrt{\min(n,m)^{-1}})$ và bound này chỉ phụ thuộc vào tính chất của kernel, độc lập với số chiều dữ liệu~\cite{gretton2012kernel}.
 
-\textbf{Ví dụ minh họa với tính toán cụ thể:} Xét hai tập mẫu nhỏ từ hai phân phối 1D:
-\begin{itemize}
-    \item $X = \{0.1, -0.3, 0.5\}$ từ $P = \mathcal{N}(0, 1)$
-    \item $Y = \{1.8, 2.3, 2.0\}$ từ $Q = \mathcal{N}(2, 1)$
-\end{itemize}
+% \textbf{Ví dụ minh họa với tính toán cụ thể:} Xét hai tập mẫu nhỏ từ hai phân phối 1D:
+% \begin{itemize}
+%     \item $X = \{0.1, -0.3, 0.5\}$ từ $P = \mathcal{N}(0, 1)$
+%     \item $Y = \{1.8, 2.3, 2.0\}$ từ $Q = \mathcal{N}(2, 1)$
+% \end{itemize}
 
-Sử dụng Gaussian kernel với $\sigma = 1$: $k(x, y) = \exp(-\frac{(x-y)^2}{2})$
+% Sử dụng Gaussian kernel với $\sigma = 1$: $k(x, y) = \exp(-\frac{(x-y)^2}{2})$
 
-\textit{Bước 1:} Tính các thành phần kernel:
-\begin{align*}
-\frac{1}{n^2}\sum_{i,j} k(x_i, x_j) &= \frac{1}{9}[k(0.1,0.1) + k(0.1,-0.3) + \ldots] \approx 0.92 \\
-\frac{1}{m^2}\sum_{i,j} k(y_i, y_j) &= \frac{1}{9}[k(1.8,1.8) + k(1.8,2.3) + \ldots] \approx 0.94 \\
-\frac{2}{nm}\sum_{i,j} k(x_i, y_j) &= \frac{2}{9}[k(0.1,1.8) + k(0.1,2.3) + \ldots] \approx 0.21
-\end{align*}
+% \textit{Bước 1:} Tính các thành phần kernel:
+% \begin{align*}
+% \frac{1}{n^2}\sum_{i,j} k(x_i, x_j) &= \frac{1}{9}[k(0.1,0.1) + k(0.1,-0.3) + \ldots] \approx 0.92 \\
+% \frac{1}{m^2}\sum_{i,j} k(y_i, y_j) &= \frac{1}{9}[k(1.8,1.8) + k(1.8,2.3) + \ldots] \approx 0.94 \\
+% \frac{2}{nm}\sum_{i,j} k(x_i, y_j) &= \frac{2}{9}[k(0.1,1.8) + k(0.1,2.3) + \ldots] \approx 0.21
+% \end{align*}
 
-\textit{Bước 2:} Tính $\widehat{\text{MMD}}^2$:
-\[
-\widehat{\text{MMD}}^2 = 0.92 + 0.94 - 0.21 = 1.65 > 0
-\]
+% \textit{Bước 2:} Tính $\widehat{\text{MMD}}^2$:
+% \[
+% \widehat{\text{MMD}}^2 = 0.92 + 0.94 - 0.21 = 1.65 > 0
+% \]
 
-Kết quả dương ($\widehat{\text{MMD}}^2 = 1.65$) cho thấy hai mẫu có phân phối khác nhau. Giá trị này có thể dùng để kiểm định với permutation test: nếu hai phân phối giống nhau, $\widehat{\text{MMD}}^2$ sẽ gần 0.
+% Kết quả dương ($\widehat{\text{MMD}}^2 = 1.65$) cho thấy hai mẫu có phân phối khác nhau. Giá trị này có thể dùng để kiểm định với permutation test: nếu hai phân phối giống nhau, $\widehat{\text{MMD}}^2$ sẽ gần 0.
 
 \subsection{Cách thức hoạt động của ShapeDD}
 
@@ -365,9 +360,7 @@ Thống kê MMD có trọng số sau đó được tính như:
 - &\frac{2}{l_1^2} \sum_{i=1}^{l_1} \sum_{j=l_1+1}^{2l_1} K_{ij} \quad \text{(tương đồng chéo)}
 \end{align}
 
-Đây chính là công thức MMD giữa hai phân phối được định nghĩa bởi hai nửa cửa sổ.
-
-Tính toán này được thực hiện trên toàn bộ luồng dữ liệu sử dụng phương pháp cửa sổ trượt, tạo ra chuỗi thời gian các giá trị MMD: $\{\text{MMD}^2_1, \text{MMD}^2_2, \ldots, \text{MMD}^2_T\}$.
+Đây chính là công thức MMD giữa hai phân phối được định nghĩa bởi hai nửa cửa sổ. Tính toán này được thực hiện trên toàn bộ luồng dữ liệu sử dụng phương pháp cửa sổ trượt, tạo ra chuỗi thời gian các giá trị MMD: $\{\text{MMD}^2_1, \text{MMD}^2_2, \ldots, \text{MMD}^2_T\}$.
 
 \textbf{Ý nghĩa của chuỗi MMD:} Khi drift xảy ra tại thời điểm $t_d$:
 \begin{itemize}

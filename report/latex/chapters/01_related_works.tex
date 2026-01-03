@@ -252,14 +252,10 @@ Trong giai đoạn đầu, CDT\_MSW định nghĩa \textbf{tỷ lệ phát hiệ
 \end{equation}
 Trong đó $a^A_t$ và $a^B_t$ là độ chính xác (accuracy) của mô hình trên hai cửa sổ $W_A$ (cửa sổ tham chiếu) và $W_B$ (cửa sổ hiện tại) tại thời điểm $t$.
 
-\textbf{Ý nghĩa của Detection Flow Ratio:}
-
 \begin{itemize}
-    \item Khi $\tilde{P}^{t}_{\text{det}} \approx 1$: Độ chính xác trên hai cửa sổ tương đương $\Rightarrow$ không có drift.
-    \item Khi $\tilde{P}^{t}_{\text{det}} < \tau_{\text{det}}$ (ngưỡng phát hiện, thường $\sim$0.95): Accuracy suy giảm đáng kể $\Rightarrow$ có khả năng xảy ra drift.
-    \item Giá trị càng nhỏ $\Rightarrow$ mức độ drift càng mạnh.
+    \item Khi $\tilde{P}^{t}_{\text{det}} \approx 1$: Độ chính xác trên hai cửa sổ tương đương với việc không có drift.
+    \item Khi $\tilde{P}^{t}_{\text{det}} < \tau_{\text{det}}$ (ngưỡng phát hiện, thường $\sim$0.95): Accuracy suy giảm đáng kể, điều đó thể hiện có khả năng xảy ra drift.
 \end{itemize}
-
 Khi $\tilde{P}^{t}_{\text{det}}$ giảm mạnh (tức là độ chính xác trên $W_B$ suy giảm so với $W_A$), thuật toán xác định đây là vị trí có khả năng xảy ra trôi dạt. Điểm phát hiện được ký hiệu là $t_d$.
 
 \subsection{Giai đoạn 2: Đo độ dài trôi dạt}
@@ -277,7 +273,7 @@ Nếu $L_d < \lambda$ (với $\lambda$ là ngưỡng định trước), quá tr�
 xem là \textbf{sudden drift}; ngược lại, nếu $L_d \ge \lambda$, đó là \textbf{progressive drift} (có thể là gradual hoặc incremental).
 
 Độ chính xác của việc ước lượng vùng drift được đánh giá bằng hai chỉ số~\cite{guo2022cdtmsw}:
-\textbf{LOR (Length Overflow Rate)} và \textbf{LRR (Length Recall Rate)}:
+\textbf{LOR (Length Overflow Rate)} và \textbf{LRR (Length Recall Rate)} như sau:
 
 \begin{align}
 \text{LOR} &=
@@ -287,8 +283,7 @@ xem là \textbf{sudden drift}; ngược lại, nếu $L_d \ge \lambda$, đó là
 \frac{\max\{\min_{e \in \text{BufE}_i}((d+m)-e),\,0\}}{m}, \tag{11–12} \\[0.5em]
 \text{LRR} &= 1 - \text{LLR}. \tag{13}
 \end{align}
-
-\textbf{Giải thích các thành phần trong công thức:}
+Trong đó:
 \begin{itemize}
     \item $t_i$: Thời điểm drift thứ $i$ trong tập ground truth
     \item $d$: Điểm bắt đầu của vùng drift thật (ground truth)
@@ -297,7 +292,6 @@ xem là \textbf{sudden drift}; ngược lại, nếu $L_d \ge \lambda$, đó là
     \item $e$: Điểm kết thúc của vùng drift được phát hiện
     \item $(d+m)$: Điểm kết thúc thật của vùng drift
 \end{itemize}
-
 \textbf{Ý nghĩa của LOR (Length Overflow Rate):}
 \begin{itemize}
     \item Đo lường mức độ \emph{ước lượng quá mức} (overestimation) của độ dài vùng drift.
@@ -306,7 +300,6 @@ xem là \textbf{sudden drift}; ngược lại, nếu $L_d \ge \lambda$, đó là
     \item Nếu $e > (d+m)$ (phát hiện muộn) $\Rightarrow$ $\text{LOR}_i = \frac{e - (d+m)}{m}$ (tỷ lệ vượt quá).
     \item \textbf{Mục tiêu:} LOR càng thấp càng tốt (lý tưởng = 0).
 \end{itemize}
-
 \textbf{Ý nghĩa của LRR (Length Recall Rate):}
 \begin{itemize}
     \item Đo lường khả năng \emph{phát hiện đầy đủ} vùng drift.
@@ -331,8 +324,7 @@ Hai chỉ số này đo độ khớp giữa vùng drift thật và vùng đượ
 \tilde{P}^{i}_{\text{tra}} = \frac{a^{*}_{B_0}}{a^{i}_{A_0}},
 \tag{5}
 \end{equation}
-
-trong đó:
+Trong đó:
 \begin{itemize}
   \item $a^{*}_{B_0}$: độ chính xác của mô hình huấn luyện trên cửa sổ $W'_B$ tại vị trí ban đầu;
   \item $a^{i}_{A_0}$: độ chính xác của mô hình trên cửa sổ $W'_A$ khi trượt đến vị trí $i$.
@@ -373,19 +365,19 @@ trình phân loại (Công thức~11–15). Cơ chế này cho phép mô hình k
 mà còn hiểu được bản chất của sự thay đổi (nhanh, chậm, tuyến tính hay lặp lại), từ đó cung cấp thông tin đầu vào 
 quan trọng cho \textbf{giai đoạn cập nhật mô hình thích ứng} được trình bày trong Mục~\ref{sec:model_adaptation_strategies}.
 
-\subsection{Phạm vi nghiên cứu của luận văn}
+% \subsection{Phạm vi nghiên cứu của luận văn}
 
-Mặc dù phương pháp CDT\_MSW có khả năng phân loại tất cả 5 loại drift (sudden, gradual, incremental, recurrent, blip), 
-luận văn này \textbf{tập trung đánh giá chuyên sâu sudden drift detection và adaptation}. Lý do:
+% Mặc dù phương pháp CDT\_MSW có khả năng phân loại tất cả 5 loại drift (sudden, gradual, incremental, recurrent, blip), 
+% luận văn này \textbf{tập trung đánh giá chuyên sâu sudden drift detection và adaptation}. Lý do:
 
-\begin{itemize}
-    \item \textbf{Tầm quan trọng thực tế}: Sudden drift xảy ra phổ biến nhất trong production systems (system failures, policy changes, equipment malfunctions) và có tính critical cao cho safety-critical applications
-    \item \textbf{Nền tảng lý thuyết vững chắc}: ShapeDD's Triangle Shape Property (Theorem 2.1) được chứng minh rigorous cho abrupt drift. Gradual/incremental drift không có closed-form characterization tương tự
-    \item \textbf{Chất lượng nghiên cứu}: Deep analysis of one drift type thoroughly với statistical rigor > shallow coverage của multiple types
-    \item \textbf{Framework extensible}: Architecture đã được thiết kế để support tất cả drift types - các types khác có thể được nghiên cứu trong future work với minimal code changes
-\end{itemize}
+% \begin{itemize}
+%     \item \textbf{Tầm quan trọng thực tế}: Sudden drift xảy ra phổ biến nhất trong production systems (system failures, policy changes, equipment malfunctions) và có tính critical cao cho safety-critical applications
+%     \item \textbf{Nền tảng lý thuyết vững chắc}: ShapeDD's Triangle Shape Property (Theorem 2.1) được chứng minh rigorous cho abrupt drift. Gradual/incremental drift không có closed-form characterization tương tự
+%     \item \textbf{Chất lượng nghiên cứu}: Deep analysis of one drift type thoroughly với statistical rigor > shallow coverage của multiple types
+%     \item \textbf{Framework extensible}: Architecture đã được thiết kế để support tất cả drift types - các types khác có thể được nghiên cứu trong future work với minimal code changes
+% \end{itemize}
 
-Do đó, CDT\_MSW được giới thiệu như một \textit{phương pháp lý thuyết} hỗ trợ drift type identification, nhưng \textit{đánh giá thực nghiệm} của luận văn tập trung vào sudden drift scenarios. Implementation của adaptation strategies (Section~\ref{sec:model_adaptation_strategies}) cũng được thiết kế với architecture support cho tất cả 5 types, nhưng \textit{thorough evaluation chỉ cho sudden drift strategy}.
+% Do đó, CDT\_MSW được giới thiệu như một \textit{phương pháp lý thuyết} hỗ trợ drift type identification, nhưng \textit{đánh giá thực nghiệm} của luận văn tập trung vào sudden drift scenarios. Implementation của adaptation strategies (Section~\ref{sec:model_adaptation_strategies}) cũng được thiết kế với architecture support cho tất cả 5 types, nhưng \textit{thorough evaluation chỉ cho sudden drift strategy}.
 
 \section{Các chiến lược cập nhật mô hình thích ứng}
 \label{sec:model_adaptation_strategies}
@@ -424,7 +416,6 @@ Ví dụ, thêm tầng mới hoặc nhánh mới để học khái niệm mới 
 Trong đó $\Delta \mathcal{M}$ là tập các node hoặc layer mới được thêm. Phương pháp này hữu ích với các trôi dạt dài hạn (progressive drift) hoặc trôi dạt phức hợp (hybrid drift).
 \end{enumerate}
 
-\subsection{Bảng tổng hợp}
 \begin{table}[H]
 \centering
 \caption{Mối quan hệ giữa loại trôi dạt và chiến lược cập nhật mô hình thích ứng}
@@ -446,8 +437,7 @@ Thay đổi cấu trúc mô hình (dynamic architecture), hoặc học chuyển 
 \bottomrule
 \end{tabular}
 \end{table}
-
-\subsection{Nhận xét tổng hợp}
+% \subsection{Nhận xét tổng hợp}
 Từ các kết quả trên có thể rút ra ba quan sát chính:
 \begin{enumerate}
 \item Việc xác định đúng loại trôi dạt giúp chọn chiến lược thích ứng hiệu quả, tránh huấn luyện lại toàn bộ.
