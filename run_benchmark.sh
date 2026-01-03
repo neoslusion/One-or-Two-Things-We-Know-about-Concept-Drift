@@ -84,10 +84,18 @@ ELAPSED=$((END_TIME - START_TIME))
 
 echo ""
 echo -e "${GREEN}============================================${NC}"
-echo -e "${GREEN}Benchmark Complete!${NC}"
+echo -e "${GREEN}Main Benchmark Complete!${NC}"
 echo -e "${GREEN}============================================${NC}"
 echo -e "Duration: ${ELAPSED} seconds ($(echo "scale=1; ${ELAPSED}/60" | bc) minutes)"
 echo -e "Results: ${BENCHMARK_DIR}/publication_figures/"
+echo ""
+
+# Generate SNR-Adaptive specific figures
+echo -e "${BLUE}============================================${NC}"
+echo -e "${BLUE}Generating SNR-Adaptive Figures${NC}"
+echo -e "${BLUE}============================================${NC}"
+python3 "${BENCHMARK_DIR}/visualizations/generate_all_figures.py"
+echo -e "Results: report/latex/image/"
 echo ""
 
 # Deactivate virtual environment

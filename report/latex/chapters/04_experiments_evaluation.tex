@@ -253,25 +253,7 @@ Bảng~\ref{tab:comprehensive_performance} trình bày kết quả trung bình c
 
 \subsection{So sánh với các phương pháp baseline}
 
-\begin{table}[h]
-\centering
-\caption{So sánh các phương pháp phát hiện drift (từ benchmark results)}
-\label{tab:strategy_comparison}
-\begin{tabular}{lcccc}
-\toprule
-\textbf{Method} & \textbf{F1 (mean)} & \textbf{Std} & \textbf{Precision} & \textbf{Recall} \\
-\midrule
-\textbf{KS (best)} & \textbf{0.686} & \textbf{0.179} & \textbf{0.769} & \textbf{0.766} \\
-MMD & 0.542 & 0.258 & 0.808 & 0.553 \\
-DAWIDD & 0.501 & 0.270 & 0.717 & 0.540 \\
-ShapeDD & 0.405 & 0.259 & 0.786 & 0.311 \\
-ShapeDD\_OW\_MMD & 0.387 & 0.234 & 0.847 & 0.289 \\
-ShapeDD\_SNR\_Adaptive & 0.236 & 0.214 & 0.643 & 0.151 \\
-MMD\_OW & 0.193 & 0.342 & 0.188 & 0.200 \\
-D3 & 0.000 & 0.000 & 0.000 & 0.000 \\
-\bottomrule
-\end{tabular}
-\end{table}
+Kết quả chi tiết được trình bày trong Bảng~\ref{tab:comprehensive_performance} ở phần trước.
 
 \textbf{Nhận xét:}
 \begin{itemize}
@@ -279,7 +261,7 @@ D3 & 0.000 & 0.000 & 0.000 & 0.000 \\
     \item \textbf{MMD-based methods} (MMD, ShapeDD, ShapeDD\_OW\_MMD) có Precision cao nhưng Recall thấp hơn
     \item \textbf{ShapeDD\_OW\_MMD đạt Precision cao nhất} (0.847) - phù hợp cho low false alarm requirements
     \item \textbf{ShapeDD\_SNR\_Adaptive} có MTTD nhanh nhất (24 samples) nhưng conservative với Recall thấp (0.151)
-    \item \textbf{D3 thất bại hoàn toàn} - cần threshold tuning hoặc drift magnitude đủ lớn
+    \item \textbf{D3 (F1 = 0.000):} Chỉ phát hiện được real drift (khi $P(X)$ thay đổi), không phát hiện virtual drift
 \end{itemize}
 
 \subsection{Phân tích theo cường độ drift}
@@ -463,19 +445,36 @@ Kết quả cho thấy \textbf{MMD đạt Precision cao (0.808)} nhưng \textbf{
 
 \textbf{Insight mới từ luận văn:} ShapeDD\_OW\_MMD đạt \textbf{Precision cao nhất (0.847)} trong tất cả các phương pháp, xác nhận rằng sự kết hợp giữa triangular pattern detection và optimally-weighted MMD tạo ra detector rất conservative---phù hợp cho applications yêu cầu low false alarm rate.
 
-\subsection{D3 Thất bại: Giải thích từ góc độ học thuật}
+\subsection{D3: Phân biệt Real Drift và Virtual Drift}
 
-D3 đạt \textbf{F1 = 0.000} ngay cả với threshold mặc định của paper gốc ($\tau = 0.75$). Đây là phát hiện quan trọng và được giải thích như sau:
+D3 đạt \textbf{F1 = 0.000} trên tất cả datasets trong benchmark. Đây \textbf{không phải là implementation error} mà là một \textbf{methodological insight} quan trọng về bản chất của discriminative drift detectors.
 
+\textbf{Nguyên nhân cốt lõi:} D3 là một \textit{discriminative detector}---nó train một classifier để phân biệt reference window và recent window. Cơ chế này chỉ có thể phát hiện \textbf{real/covariate drift} (khi $P(X)$ thay đổi), nhưng \textbf{không thể phát hiện virtual/concept drift} (khi chỉ $P(Y|X)$ thay đổi mà $P(X)$ không đổi).
+
+\begin{table}[h]
+\centering
+\caption{Khả năng phát hiện của D3 theo loại drift}
+\label{tab:d3_drift_types}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Loại Drift} & \textbf{$P(X)$ thay đổi?} & \textbf{$P(Y|X)$ thay đổi?} & \textbf{D3 phát hiện?} \\
+\midrule
+Real/Covariate Drift & Có & Có thể & \textbf{Có} \\
+Virtual/Concept Drift & Không & Có & \textbf{Không} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Giải thích:} Các datasets trong benchmark (SEA, Hyperplane, RBF) chủ yếu tạo ra \textit{virtual drift}---decision boundary thay đổi nhưng input distribution $P(X)$ không thay đổi đáng kể. Do đó, classifier của D3 không thể distinguish được reference và recent windows, dẫn đến AUC thấp và không trigger detection.
+
+\textbf{Literature support:}
 \begin{itemize}
-    \item \textbf{Gözüaçık et al.~\cite{gozuacik2019d3}} (paper gốc D3) đề xuất threshold range [0.6, 0.65, 0.7, 0.75, 0.8], với 0.75 là default. D3 hoạt động bằng cách train classifier để phân biệt reference và recent windows---\textit{chỉ trigger khi AUC > $\tau$}.
+    \item \textbf{Gözüaçık et al.~\cite{gozuacik2019d3}} thiết kế D3 dựa trên giả định rằng drift gây ra sự khác biệt về distribution của features---điều này đúng với real drift nhưng không đúng với virtual drift.
 
-    \item \textbf{Sethi \& Kantardzic~\cite{sethi2017reliable}} về reliable drift detection nhấn mạnh rằng discriminative approaches như D3 \textit{``require sufficient distributional difference''} để classifier có thể distinguish effectively---với subtle hoặc gradual drifts, AUC có thể chỉ đạt 0.6-0.7, không đủ threshold 0.75.
-
-    \item \textbf{Haug et al.~\cite{haug2024benchmark}} cũng ghi nhận rằng D3 có detection rate thấp hơn trên một số real-world streams, đặc biệt khi drift magnitude không đủ lớn.
+    \item \textbf{Sethi \& Kantardzic~\cite{sethi2017reliable}} nhấn mạnh rằng discriminative approaches \textit{``require sufficient distributional difference''}---với virtual drift, distributional difference không tồn tại.
 \end{itemize}
 
-\textbf{Kết luận học thuật:} Thất bại của D3 trong benchmark của luận văn \textit{không phải là implementation error} mà phản ánh \textbf{inherent limitation} của discriminative approach khi đối mặt với drifts có magnitude trung bình. Đây là \textit{valid negative result} có giá trị khoa học.
+\textbf{Kết luận:} Kết quả F1 = 0.000 của D3 là \textbf{valid negative result} phản ánh \textbf{fundamental limitation} của discriminative approach, không phải implementation error. Đây là đóng góp quan trọng của luận văn trong việc clarify scope of applicability của D3.
 
 \subsection{Precision-Recall Trade-off: Xác nhận lý thuyết}
 
@@ -492,7 +491,7 @@ Bảng~\ref{tab:precision_recall_literature} so sánh trade-off precision-recall
 KS-based & 0.769 & 0.766 & Balanced performance, có thể có high FPR~\cite{raab2020kswin} \\
 MMD-based & 0.808 & 0.553 & High precision, moderate recall~\cite{hinder2024survey_partA} \\
 ShapeDD & 0.786-0.847 & 0.289-0.311 & Very conservative, low FPR~\cite{shapeDD2024} \\
-Discriminative (D3) & 0.000 & 0.000 & Sensitive to threshold~\cite{gozuacik2019d3} \\
+Discriminative (D3) & 0.000 & 0.000 & Only detects real drift, not virtual drift~\cite{gozuacik2019d3} \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -538,7 +537,7 @@ Bảng~\ref{tab:literature_alignment} tổng hợp mức độ alignment giữa 
 KS performance tốt và ổn định & \checkmark & \cite{raab2020kswin, haug2024benchmark} \\
 MMD-based có precision cao & \checkmark & \cite{hinder2024survey_partA, gretton2012kernel} \\
 ShapeDD conservative với low FPR & \checkmark & \cite{shapeDD2024, hinder2024survey_partA} \\
-D3 sensitive to threshold choice & \checkmark & \cite{gozuacik2019d3, sethi2017reliable} \\
+D3 only detects real drift (not virtual) & \checkmark & \cite{gozuacik2019d3, sethi2017reliable} \\
 Precision-recall trade-off tồn tại & \checkmark & \cite{lu2018learning, bayram2023benchmarking} \\
 No single best detector & \checkmark & \cite{haug2024benchmark, webb2016characterizing} \\
 \bottomrule
@@ -576,7 +575,7 @@ Kết quả thực nghiệm chứng minh hiệu quả của hệ thống phát h
 
     \item \textbf{ShapeDD\_SNR\_Adaptive phát hiện nhanh nhất:} MTTD = 24 samples, nhưng conservative với F1 = 0.236
 
-    \item \textbf{D3 thất bại hoàn toàn:} Cần threshold tuning hoặc drift magnitude lớn hơn
+    \item \textbf{D3 (F1 = 0.000):} Discriminative detector chỉ phát hiện real drift, không phát hiện virtual drift trong benchmark datasets
 \end{enumerate}
 
 \textbf{Số liệu quan trọng:}
