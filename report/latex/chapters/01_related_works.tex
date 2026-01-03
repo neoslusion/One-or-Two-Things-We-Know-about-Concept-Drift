@@ -15,7 +15,7 @@ pháp “phát hiện” drift tách rời, các mô hình lúc này thường t
 Bước ngoặt xảy ra vào giữa những năm 2000 khi các thuật toán chuyên biệt để phát hiện điểm thay đổi bắt đầu ra đời. 
 Nhìn chung, các phương pháp phát hiện trôi dạt có thể phân thành các nhóm chính theo kỹ thuật 
 cốt lõi, bao gồm: (1) nhóm phương pháp thống kê (phân tích thay đổi phân phối dữ liệu), (2) nhóm phương pháp 
-theo dõi hiệu năng mô hình (dựa trên sai số/độ chính xác), (3) nhóm phương pháp học máy truyền
+theo dõi hiệu năng mô hình (dựa trên sai số/ độ chính xác), (3) nhóm phương pháp học máy truyền
 thống (ví dụ sử dụng ensemble hoặc mô hình phụ để nhận biết drift), và (4) nhóm phương pháp học sâu (deep learning) mới nổi gần đây.
 \subsubsection{Các phương pháp thống kê}
 Nhóm phương pháp thống kê tập trung vào việc phát hiện thay đổi phân phối dữ liệu một cách trực tiếp, thường 
@@ -131,7 +131,7 @@ EDDM & 2006 & Khoảng cách giữa lỗi & Phát hiện gradual drift sớm hơ
 HDDM & 2015 & Hoeffding bound & Phi tham số, không giả định phân phối \\
 FHDDM & 2016 & Tối ưu tốc độ & Nhanh cho high-speed stream \\
 FHDDMS & 2016 & Dual windows & Cân bằng sudden/gradual detection \\
-MDDM & - & McDiarmid + weights & Nhấn mạnh dữ liệu gần đây \\
+MDDM & 2017 & McDiarmid + weights & Nhấn mạnh dữ liệu gần đây \\
 RDDM & 2017 & Rút ngắn warning & Phản ứng nhanh với sudden drift \\
 \bottomrule
 \end{tabular}
@@ -146,23 +146,23 @@ Bên cạnh việc dùng trực tiếp thống kê hoặc sai số mô hình, c�
 mô hình học máy hoặc tổ hợp nhiều mô hình. Những phương pháp này thường có tính "chủ động" hơn: không chỉ chờ hiệu năng giảm mà còn tìm 
 dấu hiệu thay đổi trong cấu trúc dữ liệu hoặc trong phản ứng của nhiều mô hình khác nhau.
 
-\textbf{Paired Learners} (Bach \& Maloof, 2008) là một ví dụ tiêu biểu, sử dụng hai mô hình học song song trên dòng dữ liệu: một mô 
+\textbf{Paired Learners}~\cite{bach2008paired} là một ví dụ tiêu biểu, sử dụng hai mô hình học song song trên dòng dữ liệu: một mô 
 hình "ổn định" (stable learner) được huấn luyện trên toàn bộ dữ liệu tích lũy (dài hạn), và một mô hình "nhanh" (reactive learner) liên 
 tục huấn luyện trên cửa sổ ngắn hạn gần đây. Khi có concept drift, mô hình nhanh sẽ thích nghi sớm và phân phối dự đoán của nó sẽ khác 
 biệt rõ so với mô hình ổn định. Paired Learners theo dõi mức độ bất đồng (disagreement) giữa hai mô hình này: nếu sai khác vượt ngưỡng, ta 
 kết luận đã có drift. Cách tiếp cận này cho phép phát hiện cả drift đột ngột (mô hình nhanh thay đổi tức thời) lẫn drift dần dần (mô hình 
 nhanh dần dần phân kỳ khỏi mô hình cũ).
 
-Một hướng khác là tận dụng \textit{ensemble learning} – sử dụng nhiều mô hình phân loại chạy song song – không chỉ để nâng cao độ 
+Một hướng khác là tận dụng \textbf{ensemble learning} – sử dụng nhiều mô hình phân loại chạy song song – không chỉ để nâng cao độ 
 chính xác, mà còn để nhận biết concept drift thông qua sự đa dạng (diversity) của ensemble. Ví dụ, 
 phương pháp \textbf{ACE} (Adaptive Classifier Ensemble, 2009) duy trì một tập phân loại viên và liên tục đánh giá mỗi mô hình trên luồng dữ 
 liệu. Khi có mô hình suy giảm độ chính xác, nó bị thay thế bởi mô hình mới huấn luyện trên dữ liệu gần đây. Việc mô hình cũ bị loại bỏ 
-chính là dấu hiệu của drift (tức concept cũ không còn phù hợp). Tương tự, \textbf{Learn++.NSE} (Elwell \& Polikar, 2011) mở rộng ý tưởng 
+chính là dấu hiệu của drift (tức concept cũ không còn phù hợp). Tương tự, \textbf{Learn++.NSE}~\cite{elwell2011learn} mở rộng ý tưởng 
 ensemble bằng cách gán trọng số thời gian (temporal weights) cho các classifier theo độ tuổi – classifier mới được thêm vào để học concept 
 mới còn classifier cũ mờ dần. Nhìn chung, các phương pháp ensemble cho phép "phát hiện" drift một cách gián tiếp thông qua cơ chế tự điều 
 chỉnh: drift được phản ánh khi cấu trúc hoặc thành phần của ensemble thay đổi.
 
-Ngoài ra, một số phương pháp sử dụng \textbf{classifier-based drift detection}: huấn luyện một mô hình phân loại nhằm phân biệt "dữ liệu cũ" 
+Ngoài ra, một số phương pháp sử dụng \textbf{Classifier-based Drift Detection}: huấn luyện một mô hình phân loại nhằm phân biệt "dữ liệu cũ" 
 và "dữ liệu mới"; nếu mô hình này đạt độ chính xác cao nghĩa là hai phân phối khác nhau rõ (drift lớn). Trong môi trường unsupervised, các 
 phương pháp \textbf{one-class} như OCDD (One-Class Drift Detector) dùng one-class SVM hoặc autoencoder để mô tả dữ liệu và khi reconstruction error 
 tăng cao, đó là dấu hiệu drift.
@@ -238,37 +238,11 @@ trên ensemble và meta-learning~\cite{santos2024evolving}. Từ 2020 trở đi,
 thống vừa có khả năng học biểu diễn mạnh mẽ vừa linh hoạt thích ứng với dữ liệu biến đổi. Sự kết hợp liên ngành giữa thống kê, học máy và học sâu 
 đang tiếp tục mở ra những chương mới cho bài toán concept drift, hứa hẹn các giải pháp ngày càng hiệu quả và toàn diện hơn trong tương lai.
 
-\subsection{So sánh tổng hợp các phương pháp phát hiện drift}
-
-Bảng~\ref{tab:comprehensive-comparison} tổng hợp các phương pháp phát hiện drift theo các tiêu chí quan trọng nhất, giúp lựa chọn phương pháp phù hợp với từng bài toán cụ thể.
-
-\begin{table}[H]
-\centering
-\caption{So sánh các phương pháp phát hiện drift theo các tiêu chí chính}
-\label{tab:comprehensive-comparison}
-\begin{tabular}{@{}p{2.5cm}p{2cm}p{2cm}p{2.5cm}p{2.5cm}p{2.5cm}@{}}
-\toprule
-\textbf{Phương pháp} & \textbf{Cần nhãn?} & \textbf{Loại drift} & \textbf{Độ phức tạp} & \textbf{Độ trễ phát hiện} & \textbf{Phù hợp với} \\
-\midrule
-DDM & Có & Sudden & $O(1)$ & Trung bình & [TODO] \\
-EDDM & Có & Gradual & $O(1)$ & Thấp & [TODO] \\
-ADWIN & Không & Cả hai & $O(\log W)$ & Thấp & [TODO] \\
-HDDM & Có & Sudden & $O(1)$ & Trung bình & [TODO] \\
-KSWIN & Không & Sudden & $O(n \log n)$ & Cao & [TODO] \\
-ShapeDD & Không & Sudden & $O(l^2)$ & Thấp & [TODO] \\
-ShapeDD SNR-Adaptive & Không & Sudden & $O(l^2)$ & Thấp & [TODO] \\
-\bottomrule
-\end{tabular}
-
-\vspace{0.5em}
-\textit{Ghi chú: [TODO] - Cần bổ sung sau khi hoàn thành phần thực nghiệm. $W$ = kích thước cửa sổ ADWIN, $n$ = số mẫu trong cửa sổ, $l$ = kích thước cửa sổ ShapeDD.}
-\end{table}
-
 \section{Phương pháp xác định loại trôi dạt - CDT\_MSW}
 \label{sec:drift_type_identification}
 \label{sec:cdt-msw-theory}
 \subsection{Tổng quan}
-Sau khi phát hiện được thời điểm xảy ra trôi dạt (drift event), tại thời điểm đó, việc xác định loại trôi dạt là điều cần thiết để có thể có những hành động phù hợp để can thiệp vào mô hình.  Khác với các phương pháp truyền thống chỉ xác định có trôi dạt hay không, phương pháp \textbf{CDT\_MSW} (Concept Drift Type identification based on Multi-Sliding Windows) được Guo \textit{et al.}~\cite{guo2022cdtmsw} đề xuất nhằm \emph{phân biệt bản chất và tốc độ thay đổi của quá trình drift}. Phương pháp này dựa trên việc quan sát hành vi thay đổi của độ chính xác giữa nhiều cửa sổ trượt (traditional sliding windows và adaptive windows), qua đó nhận dạng các loại drift như: \emph{sudden}, \emph{gradual}, \emph{incremental}, và \emph{recurrent}.
+Sau khi phát hiện được thời điểm xảy ra trôi dạt, tại thời điểm đó, việc xác định loại trôi dạt là điều cần thiết để có thể có những hành động phù hợp để can thiệp vào mô hình.  Khác với các phương pháp truyền thống chỉ xác định có trôi dạt hay không, phương pháp \textbf{CDT\_MSW} (Concept Drift Type identification based on Multi-Sliding Windows) được Guo \textit{et al.}~\cite{guo2022cdtmsw} đề xuất nhằm \emph{phân biệt bản chất và tốc độ thay đổi của quá trình drift}. Phương pháp này dựa trên việc quan sát hành vi thay đổi của độ chính xác giữa nhiều cửa sổ trượt (traditional sliding windows và adaptive windows), qua đó nhận dạng các loại drift như: \emph{sudden}, \emph{gradual}, \emph{incremental}, và \emph{recurrent}.
 
 \subsection{Giai đoạn 1: Phát hiện trôi dạt}
 Trong giai đoạn đầu, CDT\_MSW định nghĩa \textbf{tỷ lệ phát hiện} (Detection Flow Ratio) để đo lường sự thay đổi giữa hai cửa sổ dữ liệu $W_A$ và $W_B$:
@@ -279,6 +253,7 @@ Trong giai đoạn đầu, CDT\_MSW định nghĩa \textbf{tỷ lệ phát hiệ
 Trong đó $a^A_t$ và $a^B_t$ là độ chính xác (accuracy) của mô hình trên hai cửa sổ $W_A$ (cửa sổ tham chiếu) và $W_B$ (cửa sổ hiện tại) tại thời điểm $t$.
 
 \textbf{Ý nghĩa của Detection Flow Ratio:}
+
 \begin{itemize}
     \item Khi $\tilde{P}^{t}_{\text{det}} \approx 1$: Độ chính xác trên hai cửa sổ tương đương $\Rightarrow$ không có drift.
     \item Khi $\tilde{P}^{t}_{\text{det}} < \tau_{\text{det}}$ (ngưỡng phát hiện, thường $\sim$0.95): Accuracy suy giảm đáng kể $\Rightarrow$ có khả năng xảy ra drift.

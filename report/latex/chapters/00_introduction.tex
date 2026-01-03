@@ -17,24 +17,15 @@ gây ảnh hưởng đến độ tin cậy hệ thống và chi phí vận hành
 và (2) thích ứng mô hình một cách hiệu quả theo các điều kiện mới.
 
 \section{Tổng quan về bài toán}
-Đối với việc xử lý dữ liệu streaming, việc xử lý và phân tích dữ liệu đang trở thành một thách thức lớn do tính phức tạp 
-và tính động của dữ liệu này. Một thách thức quan trọng là xử lý hiện tượng \textbf{concept drift} - một hiện tượng xảy ra 
-khi phân phối dữ liệu đầu vào $P(X)$ hoặc mối quan hệ giữa đầu vào và đầu ra $P(y|X)$ thay đổi theo thời gian - điều này ảnh 
+Việc xử lý và phân tích dữ liệu đang trở thành một thách thức lớn do tính phức tạp và tính động của dữ liệu trong bối cảnh hiện nay. 
+Một thách thức quan trọng là xử lý hiện tượng concept drift - một hiện tượng xảy ra khi phân phối dữ liệu đầu vào $P(X)$ hoặc mối quan hệ giữa đầu vào và đầu ra $P(y|X)$ thay đổi theo thời gian - điều này ảnh 
 hưởng trực tiếp đến hiệu suất của các mô hình học máy và các hệ thống ra quyết định tự động.
 
 Đối với các ứng dụng học máy trong môi trường sản xuất công nghiệp như IoT, việc phát hiện drift trong thời gian thực (real-time) 
 hoặc gần thời gian thực là yêu cầu bắt buộc để đảm bảo chất lượng và độ tin cậy của hệ thống. Tuy nhiên, việc xây dựng hệ thống 
-như vậy đặt ra nhiều thách thức: (1) phát hiện drift chính xác, (2) từ sự kiện drift đó xác định được loại drift để chọn chiến lược 
-thích ứng phù hợp, (3) thay đổi hoặc cập nhật mô hình nhanh chóng mà không làm gián đoạn dịch vụ.
+như vậy đặt ra nhiều thách thức: (1) phát hiện chính xác thời điểm xảy ra trôi dạt, (2) từ thông tin thu thập được có thể đưa ra được chiến lược phù hợp đối với mô hình học máy, (3) thay đổi hoặc cập nhật mô hình nhanh chóng mà không làm gián đoạn dịch vụ.
 
-Trong đề tài này, tác giả giải quyết các thách thức trên bằng cách xây dựng một hệ thống end-to-end với bốn thành phần chính:
-\begin{enumerate}
-    \item Phát hiện drift không giám sát sử dụng phương pháp ShapeDD - một phương pháp phát hiện trôi dạt;
-    \item Phân loại loại drift tự động sử dụng CDT\_MSW;
-    \item Chiến lược thích ứng (adaptation strategies) đa dạng cho từng loại drift;
-    \item Kiến trúc streaming real-time sử dụng Apache Kafka cho việc xử lý event-driven có khả năng mở rộng.
-\end{enumerate}
-Điều này đòi hỏi sự kết hợp giữa việc nhanh chóng phát hiện và phân loại drift, cùng với việc áp dụng các chiến lược thích ứng mô hình phù hợp để duy trì hiệu suất của hệ thống trong môi trường dữ liệu streaming động.
+Từ những thách thức trên, đề tài này đặt ra những mục tiêu nghiên cứu và phát triển một hệ thống tự động phát hiện và thích ứng với hiện tượng concept drift trong môi trường dữ liệu streaming real-time.
 
 \section{Mục tiêu đề tài}
 \subsection{Nghiên cứu ShapeDD và các phương pháp phát hiện drift truyền thống}
@@ -53,14 +44,13 @@ Phạm vi của đề tài này tập trung vào việc nghiên cứu và phát 
 Cụ thể, luận văn sẽ tập trung vào việc phát triển hệ thống kết hợp các phương pháp sau:
 \begin{itemize}
     \item Nghiên cứu và cải thiện phương pháp ShapeDD để phát hiện concept drift không giám sát, so sánh với các phương pháp phát hiện drift truyền thống.
-    \item Tích hợp mô hình CDT\_MSW để phân loại các loại drift tự động, từ đó hỗ trợ việc lựa chọn chiến lược thích ứng phù hợp.
     \item Xây dựng các chiến lược thích ứng mô hình đa dạng tương ứng với từng loại drift được phát hiện.
     \item Thiết kế và triển khai kiến trúc streaming real-time sử dụng Apache Kafka cho việc xử lý event-driven có khả năng mở rộng.
     \item Tùy chỉnh và tối ưu hóa các tham số của phương pháp để đảm bảo hiệu quả với các kiểu dữ liệu và hiện tượng trôi dạt khác nhau.
     \item Đánh giá hiệu năng của hệ thống trên các tập dữ liệu thực tế và các kịch bản drift khác nhau.
 \end{itemize}
 
-\textbf{Trọng tâm đánh giá:} Mặc dù hệ thống được thiết kế để hỗ trợ nhiều loại drift (sudden, gradual, incremental, recurrent, blip), luận văn này \textbf{tập trung đánh giá chuyên sâu vào sudden drift (trôi dạt đột ngột)}. Lý do cho sự lựa chọn này bao gồm: (1) sudden drift có tầm quan trọng thực tế cao nhất trong các hệ thống production, (2) ShapeDD có nền tảng lý thuyết vững chắc nhất cho abrupt drift (Triangle Shape Property), và (3) để đảm bảo chất lượng nghiên cứu với phân tích sâu thay vì coverage nông. Các loại drift khác đã được implement trong framework và có thể được đánh giá trong nghiên cứu tương lai.
+\textbf{Trọng tâm đánh giá:} Mặc dù hệ thống được thiết kế để hỗ trợ nhiều loại drift (sudden, gradual, incremental, recurrent, blip), luận văn này \textbf{tập trung đánh giá chuyên sâu vào sudden drift (trôi dạt đột ngột)}. Lý do cho sự lựa chọn này bao gồm: (1) sudden drift có tầm quan trọng thực tế cao nhất trong các hệ thống production, (2) ShapeDD có nền tảng lý thuyết vững chắc nhất cho hiện tượng trôi dạt đột ngột, và (3) để đảm bảo chất lượng nghiên cứu với phân tích sâu thay vì coverage nông. Các loại drift khác đã được implement trong framework và có thể được đánh giá trong nghiên cứu tương lai.
 
 \subsection{Đối tượng nghiên cứu}
 Đối tượng nghiên cứu của đề tài này là các mô hình và phương pháp phát hiện, phân loại và thích ứng concept drift, bao gồm:
