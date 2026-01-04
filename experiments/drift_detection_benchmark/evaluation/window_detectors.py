@@ -16,7 +16,7 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../backup')))
 
-from shape_dd import shape, shape_snr_adaptive
+from shape_dd import shape, shape_snr_adaptive, shape_mmdagg
 from d3 import d3
 from dawidd import dawidd
 from mmd import mmd
@@ -30,7 +30,7 @@ from ..utils import create_sliding_windows
 from .metrics import calculate_detection_metrics_enhanced
 
 
-def evaluate_drift_detector(method_name, X, true_drifts, chunk_size=None, overlap=None):
+def evaluate_drift_detector(method_name, X, true_drifts, chunk_size=None, overlap=None, verbose=False):
     """
     Evaluate drift detector on a stream (NO MODEL ADAPTATION).
 
@@ -58,6 +58,7 @@ def evaluate_drift_detector(method_name, X, true_drifts, chunk_size=None, overla
         true_drifts: List of true drift positions
         chunk_size: Detection window size (default: from config)
         overlap: Window overlap (default: from config)
+        verbose: Whether to print detailed progress (default: False)
 
     Returns:
         dict: Results including detections, metrics, and runtime
@@ -67,15 +68,13 @@ def evaluate_drift_detector(method_name, X, true_drifts, chunk_size=None, overla
     if overlap is None:
         overlap = OVERLAP
 
-    print(f"Running: {method_name}")
-
     start_time = time.time()
     detections = []
     last_detection = -10**9
 
     # METHOD 1: Buffer-based approach for ShapeDD methods
     # All ShapeDD variants use consistent buffer-based evaluation for fair comparison
-    if method_name in ['ShapeDD', 'ShapeDD_SNR_Adaptive', 'ShapeDD_OW_MMD']:
+    if method_name in ['ShapeDD', 'ShapeDD_SNR_Adaptive', 'ShapeDD_OW_MMD', 'ShapeDD_MMDAgg']:
 
         # Configuration
         BUFFER_SIZE = 750           # Large rolling buffer
@@ -84,10 +83,8 @@ def evaluate_drift_detector(method_name, X, true_drifts, chunk_size=None, overla
         # Rolling buffer (stores recent samples)
         buffer = deque(maxlen=BUFFER_SIZE)
 
-        print(f"  Buffer size: {BUFFER_SIZE} samples")
-        print(f"  Check frequency: every {CHECK_FREQUENCY} samples")
-        print(f"  Window sizes: L1={SHAPE_L1}, L2={SHAPE_L2} (CONSISTENT for fair comparison)")
-        print(f"  Processing stream...")
+        if verbose:
+            print(f"  {method_name}: Buffer={BUFFER_SIZE}, Check every {CHECK_FREQUENCY}, L1={SHAPE_L1}, L2={SHAPE_L2}")
 
         # Process stream sample by sample
         for idx in range(len(X)):
@@ -108,11 +105,16 @@ def evaluate_drift_detector(method_name, X, true_drifts, chunk_size=None, overla
                         shp_results = shape(buffer_X, SHAPE_L1, SHAPE_L2, SHAPE_N_PERM)
 
                     elif method_name == 'ShapeDD_SNR_Adaptive':
+                        # DEPRECATED: now redirects to shape_mmdagg internally
                         shp_results = shape_snr_adaptive(buffer_X, SHAPE_L1, SHAPE_L2, SHAPE_N_PERM)
 
                     elif method_name == 'ShapeDD_OW_MMD':
                         # OW-MMD variant: uses fixed threshold instead of permutation (faster)
                         shp_results = shapedd_ow_mmd_buffer(buffer_X, SHAPE_L1, SHAPE_L2)
+
+                    elif method_name == 'ShapeDD_MMDAgg':
+                        # Aggregated MMD: uses multiple kernel bandwidths (JMLR 2023)
+                        shp_results = shape_mmdagg(buffer_X, SHAPE_L1, SHAPE_L2, n_bandwidths=10, alpha=0.05)
 
                     # Step 3: Check recent chunk within buffer for drift
                     # Look at last CHECK_FREQUENCY samples in buffer
@@ -132,16 +134,19 @@ def evaluate_drift_detector(method_name, X, true_drifts, chunk_size=None, overla
                         if drift_idx - last_detection >= COOLDOWN:
                             detections.append(drift_idx)
                             last_detection = drift_idx
-                            print(f"    [Sample {idx}] DRIFT DETECTED at position {drift_idx} (p-value: {min_pvalue:.6f})")
+                            if verbose:
+                                print(f"    DRIFT at {drift_idx} (p={min_pvalue:.4f})")
 
                 except Exception as e:
                     pass  # Skip failed detections
 
     # METHOD 2: Sliding window approach for other methods
+
     else:
         # Create sliding windows
         windows, window_centers = create_sliding_windows(X, chunk_size, overlap)
-        print(f"  Processing {len(windows)} windows...")
+        if verbose:
+            print(f"  {method_name}: {len(windows)} windows")
 
         for window_idx, (window, center_idx) in enumerate(zip(windows, window_centers)):
             try:

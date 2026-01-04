@@ -109,26 +109,33 @@ def run_benchmark():
     Returns:
         tuple: (all_results, dataset_summaries) containing all experiment results
     """
+    from .utils.logging import get_logger, reset_logger
+    
+    # Reset and get fresh logger
+    reset_logger()
+    logger = get_logger(output_dir="./publication_figures", log_to_file=True, verbose=True)
+    
     enabled_datasets = get_enabled_datasets()
 
     all_results = []
     dataset_summaries = []
 
     # Calculate expected totals for validation
-    n_methods = len(WINDOW_METHODS) + len(STREAMING_METHODS)
+    all_methods = list(WINDOW_METHODS) + list(STREAMING_METHODS)
+    n_methods = len(all_methods)
     n_datasets = len(enabled_datasets)
     expected_experiments = N_RUNS * n_datasets * n_methods
 
-    print(f"{'='*80}")
-    print(f"BENCHMARK CONFIGURATION")
-    print(f"{'='*80}")
-    print(f"  N_RUNS: {N_RUNS}")
-    print(f"  Datasets: {n_datasets} ({', '.join([d[0] for d in enabled_datasets])})")
-    print(f"  Window methods: {len(WINDOW_METHODS)} ({', '.join(WINDOW_METHODS)})")
-    print(f"  Streaming methods: {len(STREAMING_METHODS)} ({', '.join(STREAMING_METHODS) if STREAMING_METHODS else 'None'})")
-    print(f"  Expected total experiments: {expected_experiments}")
-    print(f"{'='*80}\n")
-
+    # Log configuration
+    logger.config(
+        n_runs=N_RUNS,
+        n_datasets=n_datasets,
+        n_methods=n_methods,
+        datasets=[d[0] for d in enabled_datasets],
+        methods=all_methods
+    )
+    
+    logger.start_benchmark()
     benchmark_start_time = time.time()
 
     # ========================================================================
@@ -136,35 +143,39 @@ def run_benchmark():
     # ========================================================================
     for run_idx, seed in enumerate(RANDOM_SEEDS, 1):
         run_start_time = time.time()
-
-        print(f"\n{'#'*80}")
-        print(f"# RUN {run_idx}/{N_RUNS} (seed={seed})")
-        print(f"# Progress: {run_idx/N_RUNS*100:.1f}% complete | Experiments so far: {len(all_results)}")
-        print(f"{'#'*80}")
+        
+        logger.start_run(run_idx, N_RUNS, seed, len(all_results))
 
         for dataset_idx, (dataset_name, dataset_config) in enumerate(enabled_datasets, 1):
-            print(f"\n{'='*80}")
-            print(f"RUN {run_idx}/{N_RUNS} | DATASET {dataset_idx}/{len(enabled_datasets)}: {dataset_name.upper()}")
-            print(f"{'='*80}")
-
             # Generate dataset with THIS RUN's seed
             X, y, true_drifts, info = generate_drift_stream(
                 dataset_config,
                 total_size=STREAM_SIZE,
-                seed=seed  # Different seed per run
+                seed=seed
+            )
+            
+            logger.start_dataset(
+                run_idx, N_RUNS,
+                dataset_idx, len(enabled_datasets),
+                dataset_name,
+                info['n_features'],
+                info['n_drifts']
             )
 
             dataset_results = []
 
             # Evaluate window-based methods
             for method in WINDOW_METHODS:
+                logger.log_method_start(method)
+                
                 result = evaluate_drift_detector(
                     method, X, true_drifts,
                     chunk_size=CHUNK_SIZE,
-                    overlap=OVERLAP
+                    overlap=OVERLAP,
+                    verbose=False  # Suppress internal prints
                 )
 
-                # Add metadata (including run information)
+                # Add metadata
                 result['paradigm'] = 'window'
                 result['dataset'] = dataset_name
                 result['n_features'] = info['n_features']
@@ -173,16 +184,18 @@ def run_benchmark():
                 result['intens'] = info['intens']
                 result['dims'] = info['dims']
                 result['ground_truth_type'] = dataset_config.get('ground_truth_type', 'unknown')
-
-                # Add run tracking for statistical analysis
                 result['run_id'] = run_idx
                 result['seed'] = seed
 
+                logger.log_method_result(method, dataset_name, result)
+                
                 dataset_results.append(result)
                 all_results.append(result)
 
             # Evaluate streaming methods
             for method in STREAMING_METHODS:
+                logger.log_method_start(method)
+                
                 result = evaluate_streaming_detector(
                     method, X, y, true_drifts
                 )
@@ -195,18 +208,20 @@ def run_benchmark():
                 result['intens'] = info['intens']
                 result['dims'] = info['dims']
                 result['ground_truth_type'] = dataset_config.get('ground_truth_type', 'unknown')
-
-                # Add run tracking
                 result['run_id'] = run_idx
                 result['seed'] = seed
 
+                logger.log_method_result(method, dataset_name, result)
+                
                 dataset_results.append(result)
                 all_results.append(result)
 
-            # Dataset summary (computed per run)
+            # Dataset summary
             if dataset_results:
                 avg_f1 = np.mean([r['f1_score'] for r in dataset_results])
                 detection_rate = np.mean([r['detection_rate'] for r in dataset_results])
+                
+                logger.end_dataset(dataset_name, len(dataset_results), avg_f1)
 
                 dataset_summaries.append({
                     'dataset': dataset_name,
@@ -218,38 +233,22 @@ def run_benchmark():
                     'run_id': run_idx,
                     'seed': seed
                 })
+            
             gc.collect()
 
         # Run summary
         run_elapsed = time.time() - run_start_time
-        print(f"\n  [Run {run_idx} Summary] Completed in {run_elapsed:.1f}s | Total experiments: {len(all_results)}")
+        logger.end_run(run_idx, run_elapsed, len(all_results))
 
     # ========================================================================
     # FINAL VALIDATION AND SUMMARY
     # ========================================================================
     total_elapsed = time.time() - benchmark_start_time
-
-    print(f"\n{'#'*80}")
-    print(f"# ALL {N_RUNS} RUNS COMPLETED!")
-    print(f"{'#'*80}")
-    print(f"  Total experiments: {len(all_results)}")
-    print(f"  Expected experiments: {expected_experiments}")
-    print(f"  Total runtime: {total_elapsed/60:.1f} minutes")
-
-    # Validation check
-    if len(all_results) != expected_experiments:
-        print(f"\n  WARNING: Experiment count mismatch!")
-        print(f"      Expected {expected_experiments}, got {len(all_results)}")
-        print(f"      This may indicate incomplete runs or configuration issues.")
-    else:
-        print(f"\n  Validation PASSED: All {expected_experiments} experiments completed successfully.")
-
-    # Show experiment distribution
-    print(f"\n  Experiments per run: {len(all_results) // N_RUNS if N_RUNS > 0 else 0}")
-    print(f"  Experiments per dataset: {len(all_results) // n_datasets if n_datasets > 0 else 0}")
-    print(f"{'#'*80}")
+    logger.summary(len(all_results), expected_experiments, total_elapsed)
+    logger.close()
 
     return all_results, dataset_summaries
+
 
 
 def main():

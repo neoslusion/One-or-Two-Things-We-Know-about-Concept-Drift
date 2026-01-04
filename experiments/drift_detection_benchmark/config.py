@@ -75,7 +75,7 @@ WINDOW_METHODS = [
     'MMD',          # Maximum Mean Discrepancy
     'KS',           # Kolmogorov-Smirnov test
     'ShapeDD',      # Original method
-    'ShapeDD_SNR_Adaptive',  # SNR-Aware Hybrid
+    'ShapeDD_MMDAgg',  # ShapeDD with Aggregated MMD (JMLR 2023)
     'MMD_OW',       # Optimally-Weighted MMD estimator
     'ShapeDD_OW_MMD',  # ShapeDD + OW-MMD Hybrid
 ]
