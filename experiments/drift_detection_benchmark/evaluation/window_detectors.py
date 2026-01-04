@@ -20,7 +20,7 @@ from shape_dd import shape, shape_snr_adaptive
 from d3 import d3
 from dawidd import dawidd
 from mmd import mmd
-from ow_mmd import mmd_ow, shapedd_ow_mmd
+from ow_mmd import mmd_ow, shapedd_ow_mmd, shapedd_ow_mmd_buffer
 from ks import ks
 
 from ..config import (
@@ -73,9 +73,9 @@ def evaluate_drift_detector(method_name, X, true_drifts, chunk_size=None, overla
     detections = []
     last_detection = -10**9
 
-    # METHOD 1: Buffer-based approach for ShapeDD methods (permutation-based)
-    # Note: ShapeDD_OW_MMD uses sliding window approach (METHOD 2) for speed
-    if method_name in ['ShapeDD', 'ShapeDD_SNR_Adaptive']:
+    # METHOD 1: Buffer-based approach for ShapeDD methods
+    # All ShapeDD variants use consistent buffer-based evaluation for fair comparison
+    if method_name in ['ShapeDD', 'ShapeDD_SNR_Adaptive', 'ShapeDD_OW_MMD']:
 
         # Configuration
         BUFFER_SIZE = 750           # Large rolling buffer
@@ -109,6 +109,10 @@ def evaluate_drift_detector(method_name, X, true_drifts, chunk_size=None, overla
 
                     elif method_name == 'ShapeDD_SNR_Adaptive':
                         shp_results = shape_snr_adaptive(buffer_X, SHAPE_L1, SHAPE_L2, SHAPE_N_PERM)
+
+                    elif method_name == 'ShapeDD_OW_MMD':
+                        # OW-MMD variant: uses fixed threshold instead of permutation (faster)
+                        shp_results = shapedd_ow_mmd_buffer(buffer_X, SHAPE_L1, SHAPE_L2)
 
                     # Step 3: Check recent chunk within buffer for drift
                     # Look at last CHECK_FREQUENCY samples in buffer

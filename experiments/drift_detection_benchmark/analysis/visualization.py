@@ -19,24 +19,31 @@ from scipy import stats
 
 
 def setup_plot_style():
-    """Set up publication-quality plot style."""
+    """Set up publication-quality plot style for thesis."""
     plt.rcParams.update({
         'font.family': 'serif',
-        'font.serif': ['Times New Roman', 'DejaVu Serif'],
+        'font.serif': ['Times New Roman', 'DejaVu Serif', 'Computer Modern Roman'],
         'font.size': 11,
         'axes.labelsize': 12,
-        'axes.titlesize': 14,
+        'axes.titlesize': 13,
         'xtick.labelsize': 10,
         'ytick.labelsize': 10,
-        'legend.fontsize': 10,
-        'figure.dpi': 100,
+        'legend.fontsize': 9,
+        'legend.framealpha': 0.9,
+        'figure.dpi': 150,
         'savefig.dpi': 300,
         'savefig.bbox': 'tight',
-        'axes.grid': False,
-        'axes.spines.top': True,
-        'axes.spines.right': True,
+        'savefig.pad_inches': 0.1,
+        'axes.grid': True,
+        'grid.alpha': 0.3,
+        'grid.linestyle': '--',
+        'axes.spines.top': False,
+        'axes.spines.right': False,
+        'axes.linewidth': 0.8,
+        'lines.linewidth': 1.5,
+        'lines.markersize': 6,
     })
-    sns.set_style("whitegrid", {'grid.linestyle': '--', 'grid.alpha': 0.3})
+    sns.set_palette('colorblind')  # Accessible color palette
 
 
 def categorize_dataset(name):
@@ -55,11 +62,11 @@ def categorize_dataset(name):
 
 
 def save_figure(fig, name, output_dir):
-    """Save figure in PNG and PDF formats."""
-    for fmt in ['png', 'pdf']:
-        filepath = output_dir / f"{name}.{fmt}"
-        fig.savefig(filepath, dpi=300, bbox_inches='tight', format=fmt)
-    print(f"  Saved: {name}.png/.pdf")
+    """Save figure in PNG format only (for thesis)."""
+    filepath = output_dir / f"{name}.png"
+    fig.savefig(filepath, dpi=300, bbox_inches='tight', format='png',
+                facecolor='white', edgecolor='none')
+    print(f"  Saved: {name}.png")
 
 
 def annotate_heatmap_with_best(ax, data, fmt='.3f', higher_is_better=True):
@@ -192,7 +199,17 @@ def plot_critical_difference_diagram(results_df, metric='F1', output_dir=None, a
 
 def generate_all_figures(all_results, output_dir="./publication_figures"):
     """
-    Generate all publication-quality figures.
+    Generate publication-quality figures organized by drift type.
+
+    Output Structure:
+        - Figure 1: Overall Method Ranking (bar chart with 95% CI)
+        - Figure 2: Sudden Drift Performance (heatmap)
+        - Figure 3: Gradual/Incremental Drift Performance (heatmap)
+        - Figure 4: Real-world & Stationary Results (heatmap)
+        - Figure 5: Speed-Accuracy Trade-off (scatter plot)
+        - Figure 6: Runtime Comparison (bar chart)
+        - Figure 7: Detection Timeline (combined for representative datasets)
+        - Figure 8: Critical Difference Diagram
 
     Args:
         all_results: List of result dictionaries from benchmark
@@ -211,9 +228,9 @@ def generate_all_figures(all_results, output_dir="./publication_figures"):
     results_df = pd.DataFrame([{
         'Dataset': r['dataset'],
         'Method': r['method'],
+        'DriftType': categorize_dataset(r['dataset']),
         'N_Features': r.get('n_features', 0),
         'N_Drifts': len(r.get('drift_positions', [])),
-        'Intensity': r.get('intensity', 0),
         'TP': r.get('tp', 0),
         'FP': r.get('fp', 0),
         'FN': r.get('fn', 0),
@@ -222,125 +239,33 @@ def generate_all_figures(all_results, output_dir="./publication_figures"):
         'F1': r.get('f1_score', 0.0),
         'MTTD': r.get('mttd', np.nan) if r.get('mttd') != float('inf') else np.nan,
         'Detection_Rate': r.get('detection_rate', 0.0),
-        'N_Detections': r.get('n_detections', 0),
         'Runtime_s': r.get('runtime_s', 0.0)
     } for r in all_results])
 
+    # Split by drift type
+    sudden_results = results_df[results_df['DriftType'] == 'A_Sudden'].copy()
+    gradual_results = results_df[results_df['DriftType'].isin(['B_Gradual', 'C_Incremental'])].copy()
+    realworld_results = results_df[results_df['DriftType'].isin(['D_Real-World', 'E_Stationary'])].copy()
     drift_results = results_df[results_df['N_Drifts'] > 0].copy()
 
-    if len(drift_results) == 0:
-        print("ERROR: No drift datasets found in results.")
-        return
-
     print("=" * 70)
-    print("GENERATING THESIS FIGURES (9 total)")
+    print("GENERATING THESIS FIGURES (Organized by Drift Type)")
     print("=" * 70)
+    print(f"  Sudden drift datasets: {sudden_results['Dataset'].nunique()}")
+    print(f"  Gradual/Incremental datasets: {gradual_results['Dataset'].nunique()}")
+    print(f"  Real-world/Stationary datasets: {realworld_results['Dataset'].nunique()}")
 
     # ========================================================================
-    # FIGURE 1: F1-Score Heatmap
+    # FIGURE 1: Overall Method Ranking (Bar Chart with 95% CI)
     # ========================================================================
-    print("\n[1/9] F1-Score Heatmap...")
+    print("\n[1/8] Overall Method Ranking...")
 
-    f1_pivot = drift_results.pivot_table(values='F1', index='Method', columns='Dataset', aggfunc='mean')
-    f1_pivot['_avg'] = f1_pivot.mean(axis=1)
-    f1_pivot = f1_pivot.sort_values('_avg', ascending=False).drop('_avg', axis=1)
-
-    # Sort datasets by category
-    dataset_cats = {col: categorize_dataset(col) for col in f1_pivot.columns}
-    sorted_cols = sorted(f1_pivot.columns, key=lambda x: (dataset_cats[x], x))
-    f1_pivot = f1_pivot[sorted_cols]
-
-    fig, ax = plt.subplots(figsize=(max(12, len(sorted_cols) * 1.5), max(6, len(f1_pivot) * 0.7)))
-    sns.heatmap(f1_pivot, annot=True, fmt='.3f', cmap='RdYlGn', vmin=0, vmax=1,
-                cbar_kws={'label': 'F1-Score', 'shrink': 0.8},
-                linewidths=0.5, linecolor='white', annot_kws={'fontsize': 11, 'weight': 'bold'}, ax=ax)
-    ax.set_title('F1-Score by Method and Dataset', fontsize=14, fontweight='bold', pad=15)
-    ax.set_xlabel('Dataset', fontsize=12, fontweight='bold')
-    ax.set_ylabel('Detection Method', fontsize=12, fontweight='bold')
-    ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
-    plt.tight_layout()
-    save_figure(fig, "figure_1_f1_heatmap", output_dir)
-    plt.close()
-
-    # ========================================================================
-    # FIGURE 2: Precision Heatmap
-    # ========================================================================
-    print("\n[2/9] Precision Heatmap...")
-
-    prec_pivot = drift_results.pivot_table(values='Precision', index='Method', columns='Dataset', aggfunc='mean')
-    prec_pivot['_avg'] = prec_pivot.mean(axis=1)
-    prec_pivot = prec_pivot.sort_values('_avg', ascending=False).drop('_avg', axis=1)
-    prec_pivot = prec_pivot[sorted_cols]
-
-    fig, ax = plt.subplots(figsize=(max(12, len(sorted_cols) * 1.5), max(6, len(prec_pivot) * 0.7)))
-    sns.heatmap(prec_pivot, annot=True, fmt='.3f', cmap='RdYlGn', vmin=0, vmax=1,
-                cbar_kws={'label': 'Precision', 'shrink': 0.8},
-                linewidths=0.5, linecolor='white', annot_kws={'fontsize': 11, 'weight': 'bold'}, ax=ax)
-    ax.set_title('Precision by Method and Dataset', fontsize=14, fontweight='bold', pad=15)
-    ax.set_xlabel('Dataset', fontsize=12, fontweight='bold')
-    ax.set_ylabel('Detection Method', fontsize=12, fontweight='bold')
-    ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
-    plt.tight_layout()
-    save_figure(fig, "figure_2_precision_heatmap", output_dir)
-    plt.close()
-
-    # ========================================================================
-    # FIGURE 3: Recall Heatmap
-    # ========================================================================
-    print("\n[3/9] Recall Heatmap...")
-
-    recall_pivot = drift_results.pivot_table(values='Recall', index='Method', columns='Dataset', aggfunc='mean')
-    recall_pivot['_avg'] = recall_pivot.mean(axis=1)
-    recall_pivot = recall_pivot.sort_values('_avg', ascending=False).drop('_avg', axis=1)
-    recall_pivot = recall_pivot[sorted_cols]
-
-    fig, ax = plt.subplots(figsize=(max(12, len(sorted_cols) * 1.5), max(6, len(recall_pivot) * 0.7)))
-    sns.heatmap(recall_pivot, annot=True, fmt='.3f', cmap='RdYlGn', vmin=0, vmax=1,
-                cbar_kws={'label': 'Recall', 'shrink': 0.8},
-                linewidths=0.5, linecolor='white', annot_kws={'fontsize': 11, 'weight': 'bold'}, ax=ax)
-    ax.set_title('Recall by Method and Dataset', fontsize=14, fontweight='bold', pad=15)
-    ax.set_xlabel('Dataset', fontsize=12, fontweight='bold')
-    ax.set_ylabel('Detection Method', fontsize=12, fontweight='bold')
-    ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
-    plt.tight_layout()
-    save_figure(fig, "figure_3_recall_heatmap", output_dir)
-    plt.close()
-
-    # ========================================================================
-    # FIGURE 4: MTTD Heatmap
-    # ========================================================================
-    print("\n[4/9] MTTD Heatmap...")
-
-    mttd_pivot = drift_results.pivot_table(values='MTTD', index='Method', columns='Dataset', aggfunc='mean')
-    mttd_pivot['_avg'] = mttd_pivot.mean(axis=1)
-    mttd_pivot = mttd_pivot.sort_values('_avg', ascending=True).drop('_avg', axis=1)
-    mttd_pivot = mttd_pivot[sorted_cols]
-
-    fig, ax = plt.subplots(figsize=(max(12, len(sorted_cols) * 1.5), max(6, len(mttd_pivot) * 0.7)))
-    sns.heatmap(mttd_pivot, annot=True, fmt='.0f', cmap='RdYlGn_r',
-                cbar_kws={'label': 'MTTD (samples)', 'shrink': 0.8},
-                linewidths=0.5, linecolor='white', annot_kws={'fontsize': 11, 'weight': 'bold'}, ax=ax)
-    ax.set_title('Mean Time To Detection (MTTD) by Method and Dataset', fontsize=14, fontweight='bold', pad=15)
-    ax.set_xlabel('Dataset', fontsize=12, fontweight='bold')
-    ax.set_ylabel('Detection Method', fontsize=12, fontweight='bold')
-    ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
-    plt.tight_layout()
-    save_figure(fig, "figure_4_mttd_heatmap", output_dir)
-    plt.close()
-
-    # ========================================================================
-    # FIGURE 5: Method Comparison Bar Chart (with 95% CI)
-    # ========================================================================
-    print("\n[5/9] Method Comparison Bar Chart...")
-
-    # Compute mean and 95% CI for each method
     method_stats = drift_results.groupby('Method').agg({
         'F1': ['mean', 'std', 'count'],
-        'Precision': ['mean', 'std', 'count'],
-        'Recall': ['mean', 'std', 'count']
+        'Precision': ['mean'],
+        'Recall': ['mean']
     }).round(4)
 
-    # Calculate 95% CI: mean ± t * (std / sqrt(n))
     def calc_ci(mean, std, n, confidence=0.95):
         if n <= 1:
             return 0
@@ -354,144 +279,176 @@ def generate_all_figures(all_results, output_dir="./publication_figures"):
                          method_stats[('F1', 'count')].iloc[i])
                  for i in range(len(method_stats))],
         'Precision': method_stats[('Precision', 'mean')],
-        'Precision_ci': [calc_ci(method_stats[('Precision', 'mean')].iloc[i],
-                                method_stats[('Precision', 'std')].iloc[i],
-                                method_stats[('Precision', 'count')].iloc[i])
-                        for i in range(len(method_stats))],
         'Recall': method_stats[('Recall', 'mean')],
-        'Recall_ci': [calc_ci(method_stats[('Recall', 'mean')].iloc[i],
-                             method_stats[('Recall', 'std')].iloc[i],
-                             method_stats[('Recall', 'count')].iloc[i])
-                     for i in range(len(method_stats))],
     }, index=method_stats.index)
+    method_summary = method_summary.sort_values('F1', ascending=True)
 
-    method_summary = method_summary.sort_values('F1', ascending=False)
-
-    fig, axes = plt.subplots(1, 3, figsize=(16, 6))
-
-    colors = ['steelblue', 'forestgreen', 'coral']
-    titles = ['F1-Score', 'Precision', 'Recall']
-    metrics = ['F1', 'Precision', 'Recall']
-
-    for ax, metric, color, title in zip(axes, metrics, colors, titles):
-        y_pos = range(len(method_summary))
-        bars = ax.barh(y_pos, method_summary[metric],
-                      xerr=method_summary[f'{metric}_ci'],
-                      color=color, edgecolor='black', alpha=0.8, capsize=4)
-        ax.set_yticks(y_pos)
-        ax.set_yticklabels(method_summary.index)
-        ax.set_xlabel(f'{title} (95% CI)', fontsize=11, fontweight='bold')
-        ax.set_title(f'{title} by Method', fontsize=12, fontweight='bold')
-        ax.set_xlim(0, 1.1)
-        ax.grid(axis='x', alpha=0.3)
-
-        # Add value labels
-        for i, (v, ci) in enumerate(zip(method_summary[metric], method_summary[f'{metric}_ci'])):
-            ax.text(min(v + ci + 0.02, 1.05), i, f'{v:.3f}', va='center', fontsize=9)
-
-    axes[1].set_ylabel('')
-    axes[2].set_ylabel('')
-
-    plt.suptitle('Method Performance Comparison (with 95% Confidence Intervals)',
-                fontsize=14, fontweight='bold', y=1.02)
-    plt.tight_layout()
-    save_figure(fig, "figure_5_method_comparison", output_dir)
-    plt.close()
-
-    # ========================================================================
-    # FIGURE 6: Detection Timeline
-    # ========================================================================
-    print("\n[6/9] Detection Timelines...")
-
-    datasets = drift_results['Dataset'].unique()
-
-    for dataset_name in datasets:
-        dataset_results_list = [r for r in all_results if r['dataset'] == dataset_name]
-        if not dataset_results_list:
-            continue
-
-        true_drifts = dataset_results_list[0].get('drift_positions', [])
-        n_drifts = len(true_drifts)
-
-        fig, ax = plt.subplots(figsize=(14, max(4, len(dataset_results_list) * 0.5)))
-
-        for i, drift_pos in enumerate(true_drifts):
-            ax.axvline(drift_pos, color='red', linestyle='--', linewidth=2,
-                      alpha=0.7, label='True Drift' if i == 0 else '')
-
-        for idx, result in enumerate(dataset_results_list):
-            detections = result.get('detections', [])
-            method = result['method']
-            f1 = result.get('f1_score', 0)
-
-            if detections:
-                ax.scatter(detections, [idx]*len(detections), s=80, alpha=0.7,
-                          label=f"{method} (F1={f1:.2f})")
-
-        ax.set_yticks(range(len(dataset_results_list)))
-        ax.set_yticklabels([r['method'] for r in dataset_results_list])
-        ax.set_xlabel('Sample Index', fontsize=11, fontweight='bold')
-        ax.set_ylabel('Method', fontsize=11, fontweight='bold')
-        ax.set_title(f'Detection Timeline - {dataset_name} ({n_drifts} drifts)',
-                    fontsize=12, fontweight='bold')
-        ax.legend(loc='center left', bbox_to_anchor=(1.02, 0.5), fontsize=9)
-        ax.grid(alpha=0.3)
-        plt.tight_layout()
-        save_figure(fig, f"figure_6_timeline_{dataset_name}", output_dir)
-        plt.close()
-
-    # ========================================================================
-    # FIGURE 7: Runtime Comparison
-    # ========================================================================
-    print("\n[7/9] Runtime Comparison...")
-
-    runtime_summary = results_df.groupby('Method').agg({
-        'Runtime_s': ['mean', 'std']
-    }).round(4)
-    runtime_summary.columns = ['Runtime_mean', 'Runtime_std']
-    runtime_summary = runtime_summary.sort_values('Runtime_mean')
-
-    fig, ax = plt.subplots(figsize=(12, 6))
-
-    y_pos = range(len(runtime_summary))
-    bars = ax.barh(y_pos, runtime_summary['Runtime_mean'],
-                   xerr=runtime_summary['Runtime_std'],
-                   color='steelblue', edgecolor='black', alpha=0.8, capsize=5)
-
+    fig, ax = plt.subplots(figsize=(10, 6))
+    y_pos = range(len(method_summary))
+    colors = plt.cm.RdYlGn(method_summary['F1'] / method_summary['F1'].max())
+    
+    bars = ax.barh(y_pos, method_summary['F1'],
+                   xerr=method_summary['F1_ci'],
+                   color=colors, edgecolor='black', alpha=0.9, capsize=4)
+    
     ax.set_yticks(y_pos)
-    ax.set_yticklabels(runtime_summary.index)
-    ax.set_xlabel('Runtime (seconds)', fontsize=11, fontweight='bold')
-    ax.set_ylabel('Method', fontsize=11, fontweight='bold')
-    ax.set_title('Average Runtime by Method', fontsize=12, fontweight='bold')
-    ax.grid(axis='x', alpha=0.3)
-
-    for i, (mean, std) in enumerate(zip(runtime_summary['Runtime_mean'], runtime_summary['Runtime_std'])):
-        ax.text(mean + std + 0.01, i, f'{mean:.3f}s', va='center', fontsize=9)
+    ax.set_yticklabels(method_summary.index, fontsize=10)
+    ax.set_xlabel('F1-Score (with 95% CI)', fontsize=11, fontweight='bold')
+    ax.set_title('Overall Method Ranking', fontsize=13, fontweight='bold')
+    ax.set_xlim(0, 1.0)
+    ax.axvline(0.5, color='gray', linestyle='--', alpha=0.5, label='Random baseline')
+    
+    for i, (v, ci) in enumerate(zip(method_summary['F1'], method_summary['F1_ci'])):
+        ax.text(min(v + ci + 0.02, 0.95), i, f'{v:.3f}', va='center', fontsize=9, fontweight='bold')
 
     plt.tight_layout()
-    save_figure(fig, "figure_7_runtime_comparison", output_dir)
+    save_figure(fig, "figure_1_overall_ranking", output_dir)
     plt.close()
 
     # ========================================================================
-    # FIGURE 8: Speed-Accuracy Trade-off
+    # FIGURE 2: Sudden Drift Performance (Heatmap)
     # ========================================================================
-    print("\n[8/9] Speed-Accuracy Trade-off...")
+    print("\n[2/8] Sudden Drift Performance...")
+
+    if len(sudden_results) > 0 and sudden_results['Dataset'].nunique() > 0:
+        f1_sudden = sudden_results.pivot_table(values='F1', index='Method', columns='Dataset', aggfunc='mean')
+        f1_sudden['Mean'] = f1_sudden.mean(axis=1)
+        f1_sudden = f1_sudden.sort_values('Mean', ascending=False)
+        
+        # Separate Mean column for display
+        mean_col = f1_sudden[['Mean']]
+        f1_sudden_datasets = f1_sudden.drop('Mean', axis=1)
+
+        fig, ax = plt.subplots(figsize=(max(8, len(f1_sudden_datasets.columns) * 1.2), 
+                                         max(5, len(f1_sudden_datasets) * 0.6)))
+        
+        sns.heatmap(f1_sudden_datasets, annot=True, fmt='.2f', cmap='RdYlGn', vmin=0, vmax=1,
+                    cbar_kws={'label': 'F1-Score', 'shrink': 0.8},
+                    linewidths=0.5, linecolor='white', 
+                    annot_kws={'fontsize': 10}, ax=ax)
+        
+        ax.set_title('Sudden Drift: F1-Score by Method and Dataset', fontsize=12, fontweight='bold')
+        ax.set_xlabel('Dataset', fontsize=11)
+        ax.set_ylabel('Method', fontsize=11)
+        ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
+        plt.tight_layout()
+        save_figure(fig, "figure_2_sudden_drift", output_dir)
+        plt.close()
+    else:
+        print("  Skipped: No sudden drift datasets")
+
+    # ========================================================================
+    # FIGURE 3: Gradual/Incremental Drift Performance (Heatmap)
+    # ========================================================================
+    print("\n[3/8] Gradual/Incremental Drift Performance...")
+
+    if len(gradual_results) > 0 and gradual_results['Dataset'].nunique() > 0:
+        f1_gradual = gradual_results.pivot_table(values='F1', index='Method', columns='Dataset', aggfunc='mean')
+        f1_gradual['Mean'] = f1_gradual.mean(axis=1)
+        f1_gradual = f1_gradual.sort_values('Mean', ascending=False)
+        f1_gradual_datasets = f1_gradual.drop('Mean', axis=1)
+
+        fig, ax = plt.subplots(figsize=(max(6, len(f1_gradual_datasets.columns) * 1.5), 
+                                         max(5, len(f1_gradual_datasets) * 0.6)))
+        
+        sns.heatmap(f1_gradual_datasets, annot=True, fmt='.2f', cmap='RdYlGn', vmin=0, vmax=1,
+                    cbar_kws={'label': 'F1-Score', 'shrink': 0.8},
+                    linewidths=0.5, linecolor='white', 
+                    annot_kws={'fontsize': 10}, ax=ax)
+        
+        ax.set_title('Gradual/Incremental Drift: F1-Score', fontsize=12, fontweight='bold')
+        ax.set_xlabel('Dataset', fontsize=11)
+        ax.set_ylabel('Method', fontsize=11)
+        ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha='right')
+        plt.tight_layout()
+        save_figure(fig, "figure_3_gradual_incremental_drift", output_dir)
+        plt.close()
+    else:
+        print("  Skipped: No gradual/incremental drift datasets")
+
+    # ========================================================================
+    # FIGURE 4: Real-world & Stationary Results (Heatmap + FP Analysis)
+    # ========================================================================
+    print("\n[4/8] Real-world & Stationary Analysis...")
+
+    if len(realworld_results) > 0:
+        # Separate real-world (has drift) from stationary (no drift)
+        rw_drift = realworld_results[realworld_results['N_Drifts'] > 0]
+        rw_stationary = realworld_results[realworld_results['N_Drifts'] == 0]
+        
+        fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+        
+        # Left: Real-world datasets (F1)
+        if len(rw_drift) > 0:
+            f1_rw = rw_drift.pivot_table(values='F1', index='Method', columns='Dataset', aggfunc='mean')
+            f1_rw = f1_rw.sort_values(f1_rw.columns[0], ascending=False) if len(f1_rw.columns) > 0 else f1_rw
+            
+            sns.heatmap(f1_rw, annot=True, fmt='.2f', cmap='RdYlGn', vmin=0, vmax=1,
+                        linewidths=0.5, linecolor='white', 
+                        annot_kws={'fontsize': 10}, ax=axes[0])
+            axes[0].set_title('Real-world: F1-Score', fontsize=11, fontweight='bold')
+            axes[0].set_xticklabels(axes[0].get_xticklabels(), rotation=45, ha='right')
+        else:
+            axes[0].text(0.5, 0.5, 'No real-world datasets', ha='center', va='center')
+            axes[0].set_title('Real-world: F1-Score', fontsize=11, fontweight='bold')
+        
+        # Right: Stationary datasets (False Positive analysis)
+        if len(rw_stationary) > 0:
+            fp_stats = rw_stationary.groupby('Method').agg({
+                'FP': 'sum',
+                'Precision': 'mean'
+            }).sort_values('FP', ascending=True)
+            
+            y_pos = range(len(fp_stats))
+            colors = ['green' if fp == 0 else 'orange' if fp < 5 else 'red' for fp in fp_stats['FP']]
+            
+            axes[1].barh(y_pos, fp_stats['FP'], color=colors, edgecolor='black', alpha=0.8)
+            axes[1].set_yticks(y_pos)
+            axes[1].set_yticklabels(fp_stats.index)
+            axes[1].set_xlabel('False Positives', fontsize=10)
+            axes[1].set_title('Stationary: False Positive Count\n(Lower is Better)', fontsize=11, fontweight='bold')
+            
+            for i, fp in enumerate(fp_stats['FP']):
+                axes[1].text(fp + 0.1, i, str(int(fp)), va='center', fontsize=9)
+        else:
+            axes[1].text(0.5, 0.5, 'No stationary datasets', ha='center', va='center')
+            axes[1].set_title('Stationary: False Positive Count', fontsize=11, fontweight='bold')
+        
+        plt.tight_layout()
+        save_figure(fig, "figure_4_realworld_stationary", output_dir)
+        plt.close()
+    else:
+        print("  Skipped: No real-world/stationary datasets")
+
+    # ========================================================================
+    # FIGURE 5: Speed-Accuracy Trade-off
+    # ========================================================================
+    print("\n[5/8] Speed-Accuracy Trade-off...")
 
     tradeoff = drift_results.groupby('Method').agg({
         'F1': 'mean', 'Runtime_s': 'mean'
     }).round(4)
 
-    fig, ax = plt.subplots(figsize=(10, 8))
+    fig, ax = plt.subplots(figsize=(10, 7))
 
+    # Color by method type
+    method_colors = {
+        'D3': 'gray', 'DAWIDD': 'gray', 'MMD': 'gray', 'KS': 'gray',
+        'ShapeDD': 'blue', 'ShapeDD_SNR_Adaptive': 'blue',
+        'MMD_OW': 'green', 'ShapeDD_OW_MMD': 'green'
+    }
+    
+    colors = [method_colors.get(m, 'purple') for m in tradeoff.index]
+    
     scatter = ax.scatter(tradeoff['Runtime_s'], tradeoff['F1'],
-                        s=200, c=range(len(tradeoff)), cmap='tab10',
-                        edgecolors='black', linewidths=1.5, alpha=0.8)
+                        s=200, c=colors, edgecolors='black', linewidths=1.5, alpha=0.8)
 
     for method, row in tradeoff.iterrows():
         ax.annotate(method, (row['Runtime_s'], row['F1']),
                    xytext=(8, 8), textcoords='offset points',
-                   fontsize=10, fontweight='bold')
+                   fontsize=9, fontweight='bold')
 
+    # Pareto frontier
     pareto_points = []
     max_f1 = -1
     for _, row in tradeoff.sort_values('Runtime_s').iterrows():
@@ -504,33 +461,114 @@ def generate_all_figures(all_results, output_dir="./publication_figures"):
         ax.plot(pareto_df['Runtime_s'], pareto_df['F1'],
                'r--', linewidth=2, alpha=0.7, label='Pareto Frontier')
 
-    ax.set_xlabel('Runtime (seconds)', fontsize=12, fontweight='bold')
-    ax.set_ylabel('F1-Score', fontsize=12, fontweight='bold')
-    ax.set_title('Speed-Accuracy Trade-off', fontsize=14, fontweight='bold')
-    ax.grid(alpha=0.3)
+    ax.set_xlabel('Runtime (seconds)', fontsize=11, fontweight='bold')
+    ax.set_ylabel('F1-Score', fontsize=11, fontweight='bold')
+    ax.set_title('Speed-Accuracy Trade-off\n(Upper-left is ideal)', fontsize=12, fontweight='bold')
     ax.legend(loc='lower right')
 
+    # Add quadrant lines
     median_runtime = tradeoff['Runtime_s'].median()
     median_f1 = tradeoff['F1'].median()
     ax.axvline(median_runtime, color='gray', linestyle=':', alpha=0.5)
     ax.axhline(median_f1, color='gray', linestyle=':', alpha=0.5)
 
     plt.tight_layout()
-    save_figure(fig, "figure_8_speed_accuracy_tradeoff", output_dir)
+    save_figure(fig, "figure_5_speed_accuracy", output_dir)
     plt.close()
 
     # ========================================================================
-    # FIGURE 9: Critical Difference Diagram
+    # FIGURE 6: Runtime Comparison
     # ========================================================================
-    print("\n[9/9] Critical Difference Diagram...")
+    print("\n[6/8] Runtime Comparison...")
+
+    runtime_summary = results_df.groupby('Method').agg({
+        'Runtime_s': ['mean', 'std']
+    }).round(4)
+    runtime_summary.columns = ['Runtime_mean', 'Runtime_std']
+    runtime_summary = runtime_summary.sort_values('Runtime_mean')
+
+    fig, ax = plt.subplots(figsize=(10, 5))
+
+    y_pos = range(len(runtime_summary))
+    bars = ax.barh(y_pos, runtime_summary['Runtime_mean'],
+                   xerr=runtime_summary['Runtime_std'],
+                   color='steelblue', edgecolor='black', alpha=0.8, capsize=5)
+
+    ax.set_yticks(y_pos)
+    ax.set_yticklabels(runtime_summary.index)
+    ax.set_xlabel('Runtime (seconds)', fontsize=11, fontweight='bold')
+    ax.set_title('Average Runtime by Method', fontsize=12, fontweight='bold')
+
+    for i, (mean, std) in enumerate(zip(runtime_summary['Runtime_mean'], runtime_summary['Runtime_std'])):
+        ax.text(mean + std + 0.01, i, f'{mean:.2f}s', va='center', fontsize=9)
+
+    plt.tight_layout()
+    save_figure(fig, "figure_6_runtime", output_dir)
+    plt.close()
+
+    # ========================================================================
+    # FIGURE 7: Detection Timeline (Representative example)
+    # ========================================================================
+    print("\n[7/8] Detection Timeline (Representative)...")
+
+    # Pick one representative dataset from sudden drift
+    sudden_datasets = sudden_results['Dataset'].unique()
+    if len(sudden_datasets) > 0:
+        representative = sudden_datasets[0]  # First sudden drift dataset
+        
+        dataset_results_list = [r for r in all_results if r['dataset'] == representative]
+        if dataset_results_list:
+            true_drifts = dataset_results_list[0].get('drift_positions', [])
+            
+            fig, ax = plt.subplots(figsize=(12, max(4, len(dataset_results_list) * 0.5)))
+
+            # Plot true drifts
+            for i, drift_pos in enumerate(true_drifts):
+                ax.axvline(drift_pos, color='red', linestyle='--', linewidth=1.5,
+                          alpha=0.8, label='True Drift' if i == 0 else '')
+
+            # Plot detections
+            colors = plt.cm.tab10(np.linspace(0, 1, len(dataset_results_list)))
+            for idx, (result, color) in enumerate(zip(dataset_results_list, colors)):
+                detections = result.get('detections', [])
+                method = result['method']
+                f1 = result.get('f1_score', 0)
+
+                if detections:
+                    ax.scatter(detections, [idx]*len(detections), s=60, 
+                              color=color, alpha=0.8, marker='o',
+                              label=f"{method} (F1={f1:.2f})")
+
+            ax.set_yticks(range(len(dataset_results_list)))
+            ax.set_yticklabels([r['method'] for r in dataset_results_list], fontsize=9)
+            ax.set_xlabel('Sample Index', fontsize=11, fontweight='bold')
+            ax.set_title(f'Detection Timeline: {representative}', fontsize=12, fontweight='bold')
+            ax.legend(loc='upper right', fontsize=8, ncol=2)
+            ax.grid(alpha=0.3, axis='x')
+
+            plt.tight_layout()
+            save_figure(fig, "figure_7_timeline", output_dir)
+            plt.close()
+
+    # ========================================================================
+    # FIGURE 8: Critical Difference Diagram
+    # ========================================================================
+    print("\n[8/8] Critical Difference Diagram...")
 
     try:
         plot_critical_difference_diagram(drift_results, metric='F1', output_dir=output_dir)
     except Exception as e:
         print(f"  Warning: Could not generate CD diagram: {e}")
-        print("  (Requires at least 3 methods and 3 datasets)")
 
     print("\n" + "=" * 70)
     print(f"All figures saved to: {output_dir.absolute()}")
     print("=" * 70)
-
+    print("\nFigure Summary:")
+    print("  1. Overall Method Ranking (bar chart)")
+    print("  2. Sudden Drift Performance (heatmap)")
+    print("  3. Gradual/Incremental Drift Performance (heatmap)")
+    print("  4. Real-world & Stationary Analysis (heatmap + FP)")
+    print("  5. Speed-Accuracy Trade-off (scatter)")
+    print("  6. Runtime Comparison (bar chart)")
+    print("  7. Detection Timeline (example)")
+    print("  8. Critical Difference Diagram")
