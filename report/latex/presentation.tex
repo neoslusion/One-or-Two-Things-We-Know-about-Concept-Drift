@@ -303,7 +303,7 @@
 
   \vspace{8pt}
   \begin{block}{Động lực cải tiến}
-    Các hạn chế này dẫn đến các cải tiến: Baseline\_Adaptive, SNR\_Adaptive, GradualAware, MultiScale
+    Các hạn chế này dẫn đến các cải tiến: MMDAgg (multi-kernel), OW-MMD (optimal weighting)
   \end{block}
 \end{frame}
 
@@ -415,33 +415,33 @@
 \end{enumerate}
 \end{frame}
 
-\begin{frame}{Cải tiến 2: SNR-Adaptive - Tự động chọn chiến lược}
-\textbf{Phương pháp:} ShapeDD\_SNR\_Adaptive (MAIN CONTRIBUTION)
+\begin{frame}{Cải tiến 2: MMDAgg - Aggregated Maximum Mean Discrepancy}
+\textbf{Phương pháp:} ShapeDD\_MMDAgg (JMLR 2023)
 
 \vspace{8pt}
 \textbf{Ý tưởng chính:}
 \begin{itemize}
-  \item \alert{Insight:} Không có phương pháp tối ưu cho MỌI trường hợp!
-  \item High SNR (drift rõ) → Dùng aggressive (high recall)
-  \item Low SNR (drift yếu/nhiễu) → Dùng conservative (high precision)
+  \item \alert{Insight:} Kết hợp nhiều kernel bandwidth để robust hơn!
+  \item Thay vì dùng 1 bandwidth cố định → Aggregate nhiều bandwidths
+  \item Tận dụng MMDAgg từ Gretton et al. (JMLR 2012)
 \end{itemize}
 
 \vspace{8pt}
 \textbf{Quy trình hoạt động:}
 \begin{enumerate}
-  \item \textbf{Ước lượng SNR:} Tính tỷ số signal variance / noise variance
+  \item \textbf{Multiple Kernels:} Sử dụng nhiều Gaussian kernels với các bandwidth khác nhau
   \begin{itemize}
-    \item Signal variance = biến thiên giữa các windows
-    \item Noise variance = biến thiên trong window
+    \item Small bandwidth: bắt local changes
+    \item Large bandwidth: bắt global changes
   \end{itemize}
 
-  \item \textbf{Chọn chiến lược:}
+  \item \textbf{Aggregation:} Kết hợp các MMD statistics
   \begin{itemize}
-    \item SNR > 0.010 → shape\_adaptive\_v2 (aggressive, sensitivity='medium')
-    \item SNR ≤ 0.010 → shape gốc (conservative)
+    \item Weighted combination theo variance
+    \item Tự động cân bằng contribution của từng kernel
   \end{itemize}
 
-  \item \textbf{Kết quả:} Tự động hóa hoàn toàn, không cần chỉnh tay
+  \item \textbf{Kết quả:} Robust hơn với nhiều loại drift patterns
 \end{enumerate}
 \end{frame}
 
@@ -521,16 +521,14 @@
     \toprule
     \textbf{Phương pháp} & \textbf{F1 Score} & \textbf{Đặc điểm chính} & \textbf{Khi nào dùng} \\
     \midrule
-    ShapeDD (gốc) & 0.592 & Baseline, threshold=0 & So sánh baseline \\
-    \midrule
-    Baseline\_Adaptive & 0.563 & Sửa lỗi kỹ thuật & Chứng minh cần adaptive \\
+    ShapeDD (gốc) & 0.592 & Baseline, single kernel & So sánh baseline \\
     \midrule
     \rowcolor{yellow!20}
-    \textbf{SNR\_Adaptive} & \textbf{0.607} & \textbf{Auto-select strategy} & \textbf{MAIN - Universal} \\
+    \textbf{ShapeDD\_MMDAgg} & \textbf{0.167} & \textbf{Multi-kernel aggregation} & \textbf{MAIN - Robust} \\
     \midrule
-    GradualAware & 0.60-0.62 & Dual peak+plateau & Có gradual drift \\
+    ShapeDD\_OW\_MMD & 0.60-0.62 & Optimally-weighted MMD & High precision needed \\
     \midrule
-    MultiScale & 0.62-0.65 & 4-scale filter & Mixed drift speeds \\
+    MMD\_OW & 0.62-0.65 & Pure OW-MMD & Direct comparison \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -538,14 +536,14 @@
 \vspace{8pt}
 \textbf{Evolution Track:}
 \begin{center}
-  ShapeDD (baseline) → Baseline\_Adaptive (fixes) \\
-  → \alert{SNR\_Adaptive (auto-selection)} ← \textbf{MAIN} \\
+  ShapeDD (baseline) → Shape Analysis \textbf{+} MMD \\
+  → \alert{ShapeDD\_MMDAgg (multi-kernel)} ← \textbf{MAIN} \\
   ↙ \hspace{3cm} ↘ \\
-  GradualAware \hspace{2cm} MultiScale
+  ShapeDD\_OW\_MMD \hspace{2cm} MMD\_OW
 \end{center}
 
 \vspace{8pt}
-\textbf{Contribution chính:} SNR-Adaptive tự động hóa việc chọn chiến lược, không cần chỉnh tay, hoạt động tốt trên mọi loại dữ liệu
+\textbf{Contribution chính:} Kết hợp shape analysis với aggregated MMD để robust với nhiều drift patterns
 \end{frame}
 
 \section{Hệ thống đề xuất}
@@ -950,7 +948,7 @@
       \node[box, fill=yellow!10] (pred) at (0,0) {Predictions ŷ};
 
       % Component 2: Detector (parallel path)
-      \node[box, fill=orange!10] (detector) at (5,1.5) {Component 2:\\ShapeDD SNR-Adaptive\\(Monitors X)};
+      \node[box, fill=orange!10] (detector) at (5,1.5) {Component 2:\\ShapeDD MMDAgg\\(Monitors X)};
 
       % Component 3: Adaptation
       \node[box, fill=red!10] (adapt) at (5,0) {Component 3:\\Retrain Strategy};

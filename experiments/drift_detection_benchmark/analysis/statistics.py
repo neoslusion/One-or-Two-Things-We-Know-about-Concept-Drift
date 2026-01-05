@@ -564,9 +564,10 @@ def plot_critical_difference_diagram(df_results, metric='f1_score', output_path=
     plt.tight_layout()
 
     if output_path:
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
-        plt.savefig(output_path.replace('.pdf', '.png'), dpi=300, bbox_inches='tight')
-        print(f"CD diagram saved to {output_path}")
+        # Save as PNG for LaTeX documents
+        png_path = output_path.replace('.pdf', '.png')
+        plt.savefig(png_path, dpi=300, bbox_inches='tight')
+        print(f"CD diagram saved to {png_path}")
 
     return fig
 
@@ -596,7 +597,7 @@ def generate_statistical_report(df_results, output_dir):
     results['nemenyi'] = nemenyi_results
 
     # 2. Critical Difference diagram
-    cd_path = os.path.join(output_dir, 'critical_difference_f1.pdf')
+    cd_path = os.path.join(output_dir, 'critical_difference_f1.png')
     cd_fig = plot_critical_difference_diagram(df_results, metric='f1_score', output_path=cd_path)
     results['cd_figure'] = cd_fig
 

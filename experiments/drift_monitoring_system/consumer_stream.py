@@ -39,7 +39,7 @@ SHAPE_DD_DIR = REPO_ROOT / "experiments" / "backup"
 if str(SHAPE_DD_DIR) not in sys.path:
     sys.path.append(str(SHAPE_DD_DIR))
 
-from shape_dd import shape_snr_adaptive as shape
+from shape_dd import shape_mmdagg as shape
 
 # Import drift type classifier
 from drift_type_classifier import classify_drift_at_detection, DriftTypeConfig

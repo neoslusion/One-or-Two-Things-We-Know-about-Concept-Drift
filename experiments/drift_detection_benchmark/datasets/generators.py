@@ -125,37 +125,67 @@ def generate_stagger_stream(total_size, n_drift_events, seed=42):
 
     return X, y, drift_positions
 
+def generate_hyperplane_stream(
+    total_size: int,
+    n_drift_events: int,
+    seed: int = 42,
+    n_features: int = 10,
+    noise_percentage: float = 0.05
+):
+    """
+    Generate a data stream with multiple ABRUPT concept drifts.
+    
+    Creates separate stationary Hyperplane segments and concatenates them,
+    producing instant concept changes at drift boundaries.
+    
+    Parameters
 
-def generate_hyperplane_stream(total_size, n_drift_events, seed=42, n_features=10):
-    """Rotating Hyperplane with multiple drifts."""
-    np.random.seed(seed)
+    total_size : int
+        Total number of samples to generate.
+    n_drift_events : int
+        Number of abrupt drift points in the stream.
+    seed : int, default=42
+        Random seed for reproducibility.
+    n_features : int, default=10
+        Number of features in the dataset.
+    noise_percentage : float, default=0.05
+        Probability of label noise (0.0 to 1.0).
+    
+    Returns
 
-    X_list, y_list = [], []
-
+    X : np.ndarray of shape (total_size, n_features)
+        Feature matrix.
+    y : np.ndarray of shape (total_size,)
+        Target labels.
+    drift_positions : list of int
+        Indices where abrupt drifts occur.
+    """
+    # Calculate segment boundaries
     segment_size = total_size // (n_drift_events + 1)
     drift_positions = [(i + 1) * segment_size for i in range(n_drift_events)]
     segments = [0] + drift_positions + [total_size]
-
-    mag_changes = [0.0001, 0.01, 0.005, 0.015]  # Alternate rotation speeds
-
+    
+    X_list, y_list = [], []
+    
     for seg_idx in range(len(segments) - 1):
         start, end = segments[seg_idx], segments[seg_idx + 1]
         size = end - start
-        mag_change = mag_changes[seg_idx % len(mag_changes)]
-
-        stream = synth.Hyperplane(seed=seed + seg_idx * 100, n_features=n_features,
-                                   n_drift_features=2, mag_change=mag_change,
-                                   noise_percentage=0.05)
-
-        for i, (x, y) in enumerate(stream.take(size)):
+        
+        # Each segment has a DIFFERENT concept (different seed)
+        # but STATIONARY within the segment (mag_change=0)
+        stream = synth.Hyperplane(
+            seed=seed + seg_idx * 1000,  # Different seed = different concept
+            n_features=n_features,
+            n_drift_features=2,
+            mag_change=0.0,  # No drift within segment
+            noise_percentage=noise_percentage
+        )
+        
+        for x, y in stream.take(size):
             X_list.append(list(x.values()))
             y_list.append(y)
-
-    X = np.array(X_list)
-    y = np.array(y_list)
-
-    return X, y, drift_positions
-
+    
+    return np.array(X_list), np.array(y_list), drift_positions
 
 def generate_genrandom_stream(total_size, n_drift_events, seed=42,
                                dims=5, intens=0.125, dist="unif", alt=False):

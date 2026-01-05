@@ -1,19 +1,20 @@
-"""
+"""  
 Master Script: Generate ALL Thesis Figures
 
 This script generates all visualizations for the thesis:
-1. Publication figures (heatmaps, timelines, etc.) - via analysis/visualization.py
-2. SNR-Adaptive specific figures (architecture, strategy selection)
+1. Architecture diagram
+2. Related visualization figures
 
 Usage:
     cd experiments/drift_detection_benchmark
     python3 visualizations/generate_all_figures.py
 
 Output:
-    - publication_figures/ - Main benchmark figures (figure_1-8, tables, CD diagram)
-    - report/latex/image/ - SNR-Adaptive architecture and strategy figures
-"""
+    - report/latex/image/ - Architecture and related diagrams
 
+Note: Main benchmark figures (heatmaps, timelines, CD diagram) are generated
+      automatically when running main.py via analysis/visualization.py
+"""
 import os
 import sys
 
@@ -33,24 +34,13 @@ if not os.path.exists(os.path.join(BENCHMARK_DIR, 'main.py')):
 
 os.chdir(SCRIPT_DIR)
 
-print("Step 1/2: Generating SNR-Adaptive architecture diagram...")
+print("Step 1/1: Generating architecture diagram...")
 print("-" * 80)
 try:
     exec(open('create_architecture_diagram.py').read())
     print("✓ Architecture diagram completed")
 except Exception as e:
     print(f"✗ Error generating architecture diagram: {e}")
-    import traceback
-    traceback.print_exc()
-
-print()
-print("Step 2/2: Generating SNR-Adaptive strategy selection figure...")
-print("-" * 80)
-try:
-    exec(open('create_strategy_selection.py').read())
-    print("✓ Strategy selection figure completed")
-except Exception as e:
-    print(f"✗ Error generating strategy selection: {e}")
     import traceback
     traceback.print_exc()
 
@@ -62,8 +52,7 @@ print("="*80)
 # Check generated files
 output_dir = os.path.join(SCRIPT_DIR, '../../../report/latex/image/')
 expected_files = [
-    'snr_adaptive_architecture.png',
-    'strategy_selection.png'
+    'drift_detection_architecture.png',
 ]
 
 print()
@@ -81,7 +70,8 @@ for i, filename in enumerate(expected_files, 1):
 print()
 print("="*80)
 print("NOTE: Main benchmark figures (heatmaps, timelines, CD diagram)")
-print("      are generated via: python3 analysis/visualization.py")
+print("      are generated automatically when running main.py")
+print("      via analysis/visualization.py")
 print("      Output location: publication_figures/")
 print("="*80)
 print()

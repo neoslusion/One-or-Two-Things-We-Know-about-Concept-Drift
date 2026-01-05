@@ -16,7 +16,7 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../backup')))
 
-from shape_dd import shape, shape_snr_adaptive, shape_mmdagg
+from shape_dd import shape, shape_mmdagg
 from d3 import d3
 from dawidd import dawidd
 from mmd import mmd
@@ -74,7 +74,7 @@ def evaluate_drift_detector(method_name, X, true_drifts, chunk_size=None, overla
 
     # METHOD 1: Buffer-based approach for ShapeDD methods
     # All ShapeDD variants use consistent buffer-based evaluation for fair comparison
-    if method_name in ['ShapeDD', 'ShapeDD_SNR_Adaptive', 'ShapeDD_OW_MMD', 'ShapeDD_MMDAgg']:
+    if method_name in ['ShapeDD', 'ShapeDD_OW_MMD', 'ShapeDD_MMDAgg']:
 
         # Configuration
         BUFFER_SIZE = 750           # Large rolling buffer
@@ -103,10 +103,6 @@ def evaluate_drift_detector(method_name, X, true_drifts, chunk_size=None, overla
                     if method_name == 'ShapeDD':
                         # Original ShapeDD (no adaptive features)
                         shp_results = shape(buffer_X, SHAPE_L1, SHAPE_L2, SHAPE_N_PERM)
-
-                    elif method_name == 'ShapeDD_SNR_Adaptive':
-                        # DEPRECATED: now redirects to shape_mmdagg internally
-                        shp_results = shape_snr_adaptive(buffer_X, SHAPE_L1, SHAPE_L2, SHAPE_N_PERM)
 
                     elif method_name == 'ShapeDD_OW_MMD':
                         # OW-MMD variant: uses fixed threshold instead of permutation (faster)
