@@ -1,0 +1,19 @@
+\begin{table}[htbp]
+\caption{Runtime statistics by detection method. Throughput = samples processed per second.}
+\label{tab:runtime_stats}
+\begin{tabular}{lccccc}
+\toprule
+ & Mean (s) & Std (s) & Min (s) & Max (s) & Throughput (samples/s) \\
+Method &  &  &  &  &  \\
+\midrule
+MMD_OW & 0.218900 & 0.017800 & 0.186600 & 0.244200 & 45683 \\
+KS & 0.350600 & 0.115900 & 0.190200 & 0.497400 & 28523 \\
+D3 & 0.372400 & 0.033300 & 0.328700 & 0.438900 & 26853 \\
+MMD & 1.176300 & 0.375200 & 0.725900 & 1.834600 & 8501 \\
+ShapeDD_OW_MMD & 2.927200 & 0.517500 & 2.158000 & 3.589000 & 3416 \\
+DAWIDD & 2.980700 & 0.928700 & 2.440900 & 5.420300 & 3355 \\
+ShapeDD & 4.166000 & 1.525900 & 2.311900 & 7.216600 & 2400 \\
+ShapeDD_MMDAgg & 7.189900 & 1.131500 & 4.697800 & 8.057600 & 1391 \\
+\bottomrule
+\end{tabular}
+\end{table}

@@ -20,7 +20,7 @@ The benchmark includes:
 5. Publication-quality visualizations
 6. LaTeX table export for thesis
 
-Results are saved to ./publication_figures/
+Results are saved to ./experiments/drift_detection_benchmark/publication_figures/
 """
 
 import gc
@@ -113,7 +113,7 @@ def run_benchmark():
     
     # Reset and get fresh logger
     reset_logger()
-    logger = get_logger(output_dir="./publication_figures", log_to_file=True, verbose=True)
+    logger = get_logger(output_dir="./experiments/drift_detection_benchmark/publication_figures", log_to_file=True, verbose=True)
     
     enabled_datasets = get_enabled_datasets()
 
@@ -286,7 +286,7 @@ def main():
     df_results = pd.DataFrame(all_results)
     statistical_report = generate_statistical_report(
         df_results,
-        output_dir='./publication_figures'
+        output_dir='./experiments/drift_detection_benchmark/publication_figures'
     )
 
     # ========================================================================
@@ -295,7 +295,7 @@ def main():
     print("\n" + "="*80)
     print("GENERATING VISUALIZATIONS")
     print("="*80)
-    generate_all_figures(all_results)
+    generate_all_figures(all_results, output_dir='./experiments/drift_detection_benchmark/publication_figures')
 
     # ========================================================================
     # EXPORT LATEX TABLES
@@ -303,7 +303,7 @@ def main():
     print("\n" + "="*80)
     print("EXPORTING LATEX TABLES")
     print("="*80)
-    export_all_tables(all_results, STREAM_SIZE)
+    export_all_tables(all_results, STREAM_SIZE, output_dir='./experiments/drift_detection_benchmark/publication_figures')
 
     # ========================================================================
     # FINAL SUMMARY
@@ -312,7 +312,7 @@ def main():
     print("BENCHMARK COMPLETE!")
     print("="*80)
     print(f"  Total experiments: {len(all_results)}")
-    print(f"  Results saved to: ./publication_figures/")
+    print(f"  Results saved to: ./experiments/drift_detection_benchmark/publication_figures/")
     print("="*80 + "\n")
 
 
