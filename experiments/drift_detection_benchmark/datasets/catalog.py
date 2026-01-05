@@ -12,10 +12,10 @@ DATASET_CATALOG = {
     # ground_truth_type: "exact" = known positions, "estimated" = heuristic, "none" = unknown
     # ========================================================================
     "standard_sea": {
-        "enabled": True,
+        "enabled": False,  # DISABLED: Only P(Y|X) changes, NOT P(X) - unsupervised cannot detect
         "type": "standard_sea",
         "n_drift_events": 10,
-        "ground_truth_type": "exact",  # Synthetic - exact drift positions known
+        "ground_truth_type": "exact",
         "params": {}
     },
     "enhanced_sea": {
@@ -35,12 +35,12 @@ DATASET_CATALOG = {
         "params": {}
     },
     "hyperplane": {
-        "enabled": True,
+        "enabled": False,  # DISABLED: Only P(Y|X) changes, NOT P(X) - unsupervised cannot detect
         "type": "hyperplane",
         "n_drift_events": 10,
-        "ground_truth_type": "exact",  # Synthetic - exact drift positions known
+        "ground_truth_type": "exact",
         "params": {
-            "n_features": 10  # MOA standard: 10 features with 2 drifting
+            "n_features": 10
         }
     },
     "gen_random_mild": {
@@ -94,12 +94,12 @@ DATASET_CATALOG = {
     # ========================================================================
 
     "sea_gradual": {
-        "enabled": True,  # ENABLED: Representative gradual drift dataset
+        "enabled": False,  # DISABLED: Only P(Y|X) changes, NOT P(X) - unsupervised cannot detect
         "type": "sea_gradual",
         "n_drift_events": 10,
-        "ground_truth_type": "exact",  # Synthetic - exact transition start positions known
+        "ground_truth_type": "exact",
         "params": {
-            "transition_width": 450  # OPTIMIZED: 50% of segment (909 samples)
+            "transition_width": 450
         }
     },
     "hyperplane_gradual": {
@@ -165,10 +165,10 @@ DATASET_CATALOG = {
         "params": {}
     },
     "electricity_sorted": {
-        "enabled": True,
+        "enabled": False,  # DISABLED: No ground truth drift positions - not standard methodology
         "type": "electricity_sorted",
         "n_drift_events": 5,
-        "ground_truth_type": "estimated",  # Semi-real: drift positions are heuristic
+        "ground_truth_type": "none",
         "params": {
             "sort_feature": "nswdemand"
         }

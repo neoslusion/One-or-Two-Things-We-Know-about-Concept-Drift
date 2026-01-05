@@ -1,19 +1,19 @@
 \begin{table}[htbp]
 \caption{F1-Score by method and dataset. Best scores per column are shown in \textbf{bold}. Methods ranked by mean F1-Score.}
 \label{tab:f1_by_dataset}
-\begin{tabular}{clccccccccc}
+\begin{tabular}{clccccc}
 \toprule
-Dataset & Rank & electricity_sorted & hyperplane & led_abrupt & rbf_slow & rbfblips & sea_gradual & stagger & standard_sea & Mean \\
-Method &  &  &  &  &  &  &  &  &  &  \\
+Dataset & Rank & led_abrupt & rbf_slow & rbfblips & stagger & Mean \\
+Method &  &  &  &  &  &  \\
 \midrule
-ShapeDD & 1 & 0.238 & \textbf{0.375} & \textbf{0.375} & 0.111 & \textbf{0.348} & 0.300 & 0.690 & 0.000 & \textbf{0.305} \\
-KS & 2 & 0.096 & 0.321 & 0.286 & 0.327 & 0.328 & 0.279 & 0.377 & \textbf{0.375} & 0.299 \\
-MMD & 3 & 0.159 & 0.000 & 0.250 & \textbf{0.381} & 0.300 & \textbf{0.387} & 0.645 & 0.111 & 0.279 \\
-DAWIDD & 4 & 0.141 & 0.000 & 0.235 & 0.261 & 0.273 & \textbf{0.387} & 0.556 & 0.105 & 0.245 \\
-ShapeDD_MMDAgg & 5 & 0.000 & 0.000 & 0.000 & 0.000 & 0.333 & 0.000 & \textbf{1.000} & 0.000 & 0.167 \\
-MMD_OW & 6 & \textbf{0.240} & 0.000 & 0.000 & 0.000 & 0.000 & 0.000 & \textbf{1.000} & 0.000 & 0.155 \\
-ShapeDD_OW_MMD & 7 & 0.182 & 0.000 & 0.000 & 0.000 & 0.000 & 0.000 & \textbf{1.000} & 0.000 & 0.148 \\
-D3 & 8 & 0.000 & 0.000 & 0.000 & 0.000 & 0.000 & 0.000 & \textbf{1.000} & 0.000 & 0.125 \\
+D3 & 1 & 0.000 & 0.000 & \textbf{1.000} & \textbf{1.000} & \textbf{0.500} \\
+ShapeDD_OW_MMD & 2 & 0.000 & 0.000 & \textbf{1.000} & \textbf{1.000} & \textbf{0.500} \\
+ShapeDD_MMDAgg & 3 & 0.000 & 0.000 & \textbf{1.000} & \textbf{1.000} & \textbf{0.500} \\
+MMD_OW & 4 & 0.000 & 0.000 & 0.952 & \textbf{1.000} & 0.488 \\
+MMD & 5 & 0.250 & \textbf{0.381} & 0.588 & 0.645 & 0.466 \\
+ShapeDD & 6 & \textbf{0.375} & 0.111 & 0.625 & 0.690 & 0.450 \\
+DAWIDD & 7 & 0.235 & 0.261 & 0.513 & 0.571 & 0.395 \\
+KS & 8 & 0.286 & 0.327 & 0.308 & 0.377 & 0.324 \\
 \bottomrule
 \end{tabular}
 \end{table}

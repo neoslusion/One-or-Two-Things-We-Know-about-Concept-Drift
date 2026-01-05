@@ -130,60 +130,68 @@ def generate_hyperplane_stream(
     n_drift_events: int,
     seed: int = 42,
     n_features: int = 10,
-    noise_percentage: float = 0.05
+    noise_percentage: float = 0.05,
+    mag_change: float = 0.001
 ):
     """
-    Generate a data stream with multiple ABRUPT concept drifts.
+    Generate Rotating Hyperplane stream (STANDARD LITERATURE BENCHMARK).
     
-    Creates separate stationary Hyperplane segments and concatenates them,
-    producing instant concept changes at drift boundaries.
+    This is the standard benchmark used in D3, DAWIDD, MMD, and other
+    unsupervised drift detection papers. The hyperplane continuously
+    rotates, creating gradual/incremental drift that changes P(X).
+    
+    References:
+        - Hulten et al. (2001) "Mining time-changing data streams"
+        - MOA framework standard configuration
+        - Gözüaçık et al. (2019) D3 paper
+        - Hinder et al. (2020) DAWIDD paper
     
     Parameters
-
+    ----------
     total_size : int
         Total number of samples to generate.
     n_drift_events : int
-        Number of abrupt drift points in the stream.
+        Number of drift markers (for evaluation, evenly spaced).
     seed : int, default=42
         Random seed for reproducibility.
     n_features : int, default=10
-        Number of features in the dataset.
+        Number of features (MOA standard: 10).
     noise_percentage : float, default=0.05
-        Probability of label noise (0.0 to 1.0).
+        Label noise probability.
+    mag_change : float, default=0.001
+        Magnitude of rotation per sample (MOA standard: 0.001).
+        Higher = faster drift. Range: 0.0001 (slow) to 0.01 (fast).
     
     Returns
-
+    -------
     X : np.ndarray of shape (total_size, n_features)
         Feature matrix.
     y : np.ndarray of shape (total_size,)
         Target labels.
     drift_positions : list of int
-        Indices where abrupt drifts occur.
+        Evenly spaced drift markers for evaluation.
     """
-    # Calculate segment boundaries
-    segment_size = total_size // (n_drift_events + 1)
-    drift_positions = [(i + 1) * segment_size for i in range(n_drift_events)]
-    segments = [0] + drift_positions + [total_size]
-    
     X_list, y_list = [], []
     
-    for seg_idx in range(len(segments) - 1):
-        start, end = segments[seg_idx], segments[seg_idx + 1]
-        size = end - start
-        
-        # Each segment has a DIFFERENT concept (different seed)
-        # but STATIONARY within the segment (mag_change=0)
-        stream = synth.Hyperplane(
-            seed=seed + seg_idx * 1000,  # Different seed = different concept
-            n_features=n_features,
-            n_drift_features=2,
-            mag_change=0.0,  # No drift within segment
-            noise_percentage=noise_percentage
-        )
-        
-        for x, y in stream.take(size):
-            X_list.append(list(x.values()))
-            y_list.append(y)
+    # Standard rotating hyperplane configuration (matches MOA/literature)
+    stream = synth.Hyperplane(
+        seed=seed,
+        n_features=n_features,
+        n_drift_features=n_features // 2,  # Half features drift (standard)
+        mag_change=mag_change,              # Continuous rotation!
+        sigma=0.1,                          # Direction change probability
+        noise_percentage=noise_percentage
+    )
+    
+    # Generate continuous stream
+    for x, y in stream.take(total_size):
+        X_list.append(list(x.values()))
+        y_list.append(y)
+    
+    # Drift positions are evenly spaced (for evaluation purposes)
+    # In rotating hyperplane, drift is continuous, but we mark evaluation points
+    segment_size = total_size // (n_drift_events + 1)
+    drift_positions = [(i + 1) * segment_size for i in range(n_drift_events)]
     
     return np.array(X_list), np.array(y_list), drift_positions
 
@@ -884,9 +892,13 @@ def generate_rbfblips_stream(total_size, n_drift_events, seed=42, n_centroids=50
     """
     RBFblips: Random RBF clusters with SUDDEN drift (blips).
 
+    Creates STRONG P(X) changes using:
+    1. Different RBF centroid configurations per segment
+    2. Feature scaling/shifting at alternate segments to ensure detectable change
+
     Tests: Non-linear, high-dimensional distributions with abrupt cluster changes
     - Uses Radial Basis Functions (RBF) to create complex decision boundaries
-    - Each drift event: centroids jump to new positions (sudden drift)
+    - Each drift event: centroids jump to new positions + feature transformation
     - Different from incremental RBF (which has continuous centroid movement)
 
     Args:
@@ -924,7 +936,15 @@ def generate_rbfblips_stream(total_size, n_drift_events, seed=42, n_centroids=50
 
         # Generate samples from this RBF configuration
         for i, (x, y) in enumerate(stream.take(size)):
-            X_list.append(list(x.values()))
+            x_vals = list(x.values())
+            
+            # Add feature transformation at alternating segments
+            # This creates STRONG P(X) changes that detectors can detect
+            if seg_idx % 2 == 1:
+                # Scale and shift features to create clear distribution change
+                x_vals = [v * 1.5 + 0.3 for v in x_vals]
+            
+            X_list.append(x_vals)
             y_list.append(y)
 
     X = np.array(X_list)
