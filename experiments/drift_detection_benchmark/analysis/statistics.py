@@ -198,14 +198,14 @@ def run_statistical_analysis(all_results, n_runs):
             print(f"p-value: {p_value:.5f}")
 
             if p_value < 0.05:
-                print(f"\n✅ SIGNIFICANT difference detected among methods (p < 0.05)")
+                print(f"\nSIGNIFICANT difference detected among methods (p < 0.05)")
                 print(f"   Interpretation: At least one method performs significantly different from others.")
             else:
-                print(f"\n⚠️  No significant difference detected (p ≥ 0.05)")
+                print(f"\nNo significant difference detected (p ≥ 0.05)")
 
             friedman_result = {'statistic': stat, 'p_value': p_value}
         else:
-            print(f"⚠️  Cannot perform Friedman test: methods have different sample sizes")
+            print(f"Cannot perform Friedman test: methods have different sample sizes")
             print(f"   Sample sizes: {dict(zip(all_methods, lengths))}")
 
     # ========================================================================
