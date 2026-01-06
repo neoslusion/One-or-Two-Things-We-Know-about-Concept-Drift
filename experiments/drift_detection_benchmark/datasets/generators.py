@@ -1189,7 +1189,7 @@ def generate_drift_stream(dataset_config, total_size=10000, seed=42):
             'drift_type': 'sudden'
         }
 
-    if dataset_type == "gaussian_shift":
+    elif dataset_type == "gaussian_shift":
         n_features = params.get('n_features', 10)
         shift_magnitude = params.get('shift_magnitude', 2.0)
         X, y, drift_positions = generate_gaussian_shift_stream(
@@ -1197,7 +1197,11 @@ def generate_drift_stream(dataset_config, total_size=10000, seed=42):
         )
         info = {
             'name': f'Gaussian Shift (δ={shift_magnitude}, d={n_features})',
-            'drift_type': 'abrupt',
+            'features': n_features,
+            'dims': n_features,
+            'intens': f'shift={shift_magnitude}',
+            'dist': 'Gaussian',
+            'drift_type': 'sudden',
             'px_drift': True,
         }
 
