@@ -16,7 +16,7 @@ import seaborn as sns
 import pandas as pd
 import numpy as np
 from scipy import stats
-
+import warnings
 
 def setup_plot_style():
     """Set up publication-quality plot style for thesis."""
@@ -94,7 +94,6 @@ def annotate_heatmap_with_best(ax, data, fmt='.3f', higher_is_better=True):
                    fontsize=10, fontweight=weight,
                    color='black' if val > 0.5 or pd.isna(val) else 'white')
 
-
 def plot_critical_difference_diagram(results_df, metric='F1', output_dir=None, alpha=0.05):
     """
     Generate Critical Difference diagram using Nemenyi post-hoc test.
@@ -111,90 +110,167 @@ def plot_critical_difference_diagram(results_df, metric='F1', output_dir=None, a
     Returns:
         fig: matplotlib figure
     """
-    # Pivot to get method x dataset matrix
-    pivot = results_df.pivot_table(values=metric, index='Dataset', columns='Method', aggfunc='mean')
+    # ===== Validation =====
+    required_cols = ['Method', 'Dataset', metric]
+    missing_cols = [col for col in required_cols if col not in results_df.columns]
+    if missing_cols:
+        raise ValueError(f"Missing columns: {missing_cols}")
+    
+    if results_df[metric].isna().any():
+        warnings.warn("NaN values found, excluding affected rows")
+        results_df = results_df.dropna(subset=[metric])
+
+    # ===== Data Preparation =====
+    pivot = results_df.pivot_table(
+        values=metric, 
+        index='Dataset', 
+        columns='Method', 
+        aggfunc='mean'
+    )
+    
+    # Drop any columns/rows with NaN after pivot
+    pivot = pivot.dropna(axis=1, how='any')
 
     n_datasets = len(pivot)
     n_methods = len(pivot.columns)
 
-    # Compute ranks (higher is better for F1, so negate)
+    if n_methods < 2:
+        raise ValueError("Need at least 2 methods to compare")
+    if n_datasets < 2:
+        raise ValueError("Need at least 2 datasets for Friedman test")
+
+    # ===== Compute Ranks =====
+    # Higher metric value = better = lower rank (rank 1 is best)
     ranks = pivot.rank(axis=1, ascending=False)
     avg_ranks = ranks.mean()
 
-    # Friedman test
-    stat, p_value = stats.friedmanchisquare(*[pivot[col].values for col in pivot.columns])
+    # ===== Friedman Test =====
+    stat, p_value = stats.friedmanchisquare(
+        *[pivot[col].values for col in pivot.columns]
+    )
 
-    # Critical difference (Nemenyi)
-    # CD = q_alpha * sqrt(k(k+1) / (6*n))
-    # q_alpha values for alpha=0.05 (from Demsar 2006, Table 5)
+    # ===== Critical Difference (Nemenyi) =====
     q_alpha_table = {
         2: 1.960, 3: 2.343, 4: 2.569, 5: 2.728, 6: 2.850,
         7: 2.949, 8: 3.031, 9: 3.102, 10: 3.164, 11: 3.219,
         12: 3.268, 13: 3.313, 14: 3.354, 15: 3.391, 16: 3.426,
         17: 3.458, 18: 3.489, 19: 3.517, 20: 3.544
     }
-    q_alpha = q_alpha_table.get(n_methods, 2.8)  # Default approximation
+    
+    if n_methods > 20:
+        # Approximation for large k
+        q_alpha = 2.569 + 0.1 * (n_methods - 4)  # Rough approximation
+        warnings.warn(f"Using approximated q_alpha for {n_methods} methods")
+    else:
+        q_alpha = q_alpha_table.get(n_methods, 2.8)
+    
     cd = q_alpha * np.sqrt(n_methods * (n_methods + 1) / (6 * n_datasets))
 
-    # Sort methods by average rank
+    # ===== Sort Methods by Average Rank =====
     sorted_methods = avg_ranks.sort_values()
-
-    # Create figure
-    fig, ax = plt.subplots(figsize=(10, max(4, n_methods * 0.4)))
-
-    # Plot parameters
-    y_min, y_max = 1, n_methods
-    x_positions = np.linspace(0.1, 0.9, n_methods)
-
-    # Draw the axis
-    ax.hlines(0.5, 0, 1, colors='black', linewidth=1)
-
-    # Draw tick marks and labels
-    for i, (method, rank) in enumerate(sorted_methods.items()):
-        x_pos = (rank - 1) / (n_methods - 1) * 0.8 + 0.1
-
-        # Tick mark
-        ax.vlines(x_pos, 0.45, 0.55, colors='black', linewidth=1)
-
-        # Rank number above
-        ax.text(x_pos, 0.6, f'{rank:.2f}', ha='center', va='bottom', fontsize=10)
-
-        # Method name below (alternating sides for readability)
-        if i % 2 == 0:
-            ax.text(x_pos, 0.35, method, ha='center', va='top', fontsize=9, rotation=45)
-        else:
-            ax.text(x_pos, 0.2, method, ha='center', va='top', fontsize=9, rotation=45)
-
-    # Draw CD bar
-    cd_normalized = cd / (n_methods - 1) * 0.8
-    ax.hlines(0.75, 0.1, 0.1 + cd_normalized, colors='red', linewidth=2)
-    ax.text(0.1 + cd_normalized / 2, 0.8, f'CD = {cd:.2f}', ha='center', va='bottom',
-           fontsize=10, color='red', fontweight='bold')
-
-    # Draw cliques (groups that are not significantly different)
-    # Methods within CD of each other are connected
+    sorted_names = sorted_methods.index.tolist()
     sorted_ranks = sorted_methods.values
-    for i in range(len(sorted_ranks)):
-        for j in range(i + 1, len(sorted_ranks)):
-            if sorted_ranks[j] - sorted_ranks[i] < cd:
-                x1 = (sorted_ranks[i] - 1) / (n_methods - 1) * 0.8 + 0.1
-                x2 = (sorted_ranks[j] - 1) / (n_methods - 1) * 0.8 + 0.1
-                y = 0.9 + (j - i) * 0.03
-                ax.hlines(y, x1, x2, colors='gray', linewidth=2, alpha=0.5)
 
+    # ===== Find Cliques =====
+    def find_cliques(ranks, cd):
+        """Find groups of methods that are not significantly different."""
+        n = len(ranks)
+        cliques = []
+        
+        for i in range(n):
+            j = i + 1
+            while j < n and ranks[j] - ranks[i] < cd:
+                j += 1
+            if j - i > 1:
+                cliques.append((i, j - 1))
+        
+        # Remove cliques that are subsets of others
+        final_cliques = []
+        for c in cliques:
+            is_subset = False
+            for other in cliques:
+                if other != c and other[0] <= c[0] and c[1] <= other[1]:
+                    is_subset = True
+                    break
+            if not is_subset:
+                final_cliques.append(c)
+        
+        return final_cliques
+
+    cliques = find_cliques(sorted_ranks, cd)
+
+    # ===== Create Figure =====
+    fig, ax = plt.subplots(figsize=(12, max(5, n_methods * 0.5)))
+
+    # Axis line
+    ax.hlines(0.5, 0.05, 0.95, colors='black', linewidth=1.5)
+
+    # ===== Draw Tick Marks and Labels =====
+    rank_to_x = lambda r: (r - 1) / (n_methods - 1) * 0.85 + 0.075
+
+    for i, (method, rank) in enumerate(sorted_methods.items()):
+        x_pos = rank_to_x(rank)
+        
+        # Tick mark
+        ax.vlines(x_pos, 0.47, 0.53, colors='black', linewidth=1.5)
+        
+        # Rank number above axis
+        ax.text(x_pos, 0.56, f'{rank:.2f}', ha='center', va='bottom', 
+                fontsize=10, fontweight='bold')
+        
+        # Method name below axis (rotated)
+        ax.text(x_pos, 0.44, method, ha='right', va='top', fontsize=9, 
+                rotation=45, rotation_mode='anchor')
+
+    # ===== Draw CD Bar =====
+    cd_x_length = cd / (n_methods - 1) * 0.85
+    cd_start = 0.075
+    ax.hlines(0.72, cd_start, cd_start + cd_x_length, colors='red', linewidth=3)
+    ax.vlines(cd_start, 0.70, 0.74, colors='red', linewidth=2)
+    ax.vlines(cd_start + cd_x_length, 0.70, 0.74, colors='red', linewidth=2)
+    ax.text(cd_start + cd_x_length / 2, 0.76, f'CD = {cd:.2f}', 
+            ha='center', va='bottom', fontsize=11, color='red', fontweight='bold')
+
+    # ===== Draw Cliques =====
+    clique_y_start = 0.82
+    clique_y_step = 0.04
+    
+    for idx, (start, end) in enumerate(cliques):
+        x1 = rank_to_x(sorted_ranks[start])
+        x2 = rank_to_x(sorted_ranks[end])
+        y = clique_y_start + idx * clique_y_step
+        
+        ax.hlines(y, x1, x2, colors='dimgray', linewidth=3, alpha=0.7)
+
+    # ===== Final Adjustments =====
     ax.set_xlim(0, 1)
-    ax.set_ylim(0, 1.2)
+    ax.set_ylim(0, clique_y_start + len(cliques) * clique_y_step + 0.1)
     ax.axis('off')
-    ax.set_title(f'Critical Difference Diagram ({metric})\n'
-                f'Friedman p={p_value:.4f}, CD={cd:.2f} (α={alpha})',
-                fontsize=12, fontweight='bold')
+    
+    # Title with test results
+    significance = "Significant" if p_value < alpha else "Not Significant"
+    title = (f'Critical Difference Diagram ({metric})\n'
+             f'Friedman p={p_value:.4f} ({significance}), CD={cd:.2f} (α={alpha})')
+    ax.set_title(title, fontsize=12, fontweight='bold', pad=20)
 
     plt.tight_layout()
 
+    # ===== Save Figure =====
     if output_dir:
-        save_figure(fig, f"critical_difference_{metric.lower()}", Path(output_dir))
+        output_path = Path(output_dir)
+        output_path.mkdir(parents=True, exist_ok=True)
+        fig.savefig(output_path / f"critical_difference_{metric.lower()}.png", 
+                    dpi=150, bbox_inches='tight', facecolor='white')
+        fig.savefig(output_path / f"critical_difference_{metric.lower()}.pdf", 
+                    bbox_inches='tight')
 
-    return fig
+    return fig, {
+        'friedman_stat': stat,
+        'p_value': p_value,
+        'cd': cd,
+        'avg_ranks': avg_ranks.to_dict(),
+        'significant': p_value < alpha
+    }
 
 
 def generate_all_figures(all_results, output_dir="./publication_figures"):

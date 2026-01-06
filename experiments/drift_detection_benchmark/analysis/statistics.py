@@ -151,10 +151,12 @@ def run_statistical_analysis(all_results, n_runs):
             # Ensure paired comparison (same datasets)
             if len(baseline_shapedd) == len(method_scores):
                 statistic, p_value = wilcoxon(baseline_shapedd, method_scores)
-                mean_diff = np.mean(method_scores) - np.mean(baseline_shapedd)
+                # Convert to float to avoid type warnings
+                p_value = float(p_value)
+                mean_diff = float(np.mean(method_scores) - np.mean(baseline_shapedd))
 
                 # Cohen's d effect size
-                pooled_std = np.sqrt((np.std(baseline_shapedd)**2 + np.std(method_scores)**2) / 2)
+                pooled_std = float(np.sqrt((np.std(baseline_shapedd)**2 + np.std(method_scores)**2) / 2))
                 cohens_d = mean_diff / pooled_std if pooled_std > 0 else 0
 
                 significance = "***" if p_value < 0.001 else "**" if p_value < 0.01 else "*" if p_value < 0.05 else "ns"
@@ -402,10 +404,12 @@ def run_nemenyi_posthoc(df_results, metric='f1_score', output_dir=None):
     sig_pairs = []
     for i, m1 in enumerate(nemenyi_result.columns):
         for j, m2 in enumerate(nemenyi_result.columns):
-            if i < j and nemenyi_result.iloc[i, j] < 0.05:
-                rank_diff = abs(avg_ranks[m1] - avg_ranks[m2])
-                print(f"  {m1} vs {m2}: p={nemenyi_result.iloc[i,j]:.4f}, rank diff={rank_diff:.3f}")
-                sig_pairs.append((m1, m2, nemenyi_result.iloc[i, j]))
+            if i < j:
+                p_val = float(nemenyi_result.iloc[i, j])
+                if p_val < 0.05:
+                    rank_diff = abs(avg_ranks[m1] - avg_ranks[m2])
+                    print(f"  {m1} vs {m2}: p={p_val:.4f}, rank diff={rank_diff:.3f}")
+                    sig_pairs.append((m1, m2, p_val))
 
     if len(sig_pairs) == 0:
         print("  No significantly different pairs found")
@@ -540,7 +544,9 @@ def plot_critical_difference_diagram(df_results, metric='f1_score', output_path=
         group = [m1]
         for j, m2 in enumerate(methods):
             if i != j and m2 not in used:
-                if nemenyi_result.loc[m1, m2] >= 0.05:  # Not significantly different
+                # Get p-value as float
+                p_val = float(nemenyi_result.loc[m1, m2])
+                if p_val >= 0.05:  # Not significantly different
                     # Check if m2 is within CD of all group members
                     if all(abs(avg_ranks[m2] - avg_ranks[g]) <= cd for g in group):
                         group.append(m2)
