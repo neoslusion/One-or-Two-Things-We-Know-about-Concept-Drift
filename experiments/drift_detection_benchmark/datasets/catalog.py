@@ -12,10 +12,11 @@ DATASET_CATALOG = {
     # ground_truth_type: "exact" = known positions, "estimated" = heuristic, "none" = unknown
     # ========================================================================
     "standard_sea": {
-        "enabled": False,  # DISABLED: Only P(Y|X) changes, NOT P(X) - unsupervised cannot detect
+        "enabled": True,   # ENABLED for supplementary analysis (P(Y|X) only - concept drift)
         "type": "standard_sea",
         "n_drift_events": 10,
         "ground_truth_type": "exact",
+        "drift_category": "concept_drift_only",  # Does NOT count toward main benchmark
         "params": {}
     },
     "enhanced_sea": {
@@ -35,10 +36,11 @@ DATASET_CATALOG = {
         "params": {}
     },
     "hyperplane": {
-        "enabled": False,  # DISABLED: Only P(Y|X) changes, NOT P(X) - unsupervised cannot detect
+        "enabled": True,   # ENABLED for supplementary analysis (P(Y|X) only - concept drift)
         "type": "hyperplane",
         "n_drift_events": 10,
         "ground_truth_type": "exact",
+        "drift_category": "concept_drift_only",  # Does NOT count toward main benchmark
         "params": {
             "n_features": 10
         }
@@ -144,13 +146,13 @@ DATASET_CATALOG = {
     # ========================================================================
 
     "rbf_slow": {
-        "enabled": True,  # ENABLED: Representative incremental drift dataset
+        "enabled": False,  # DISABLED: Incremental drift is too gradual for robust detection
         "type": "rbf",
         "n_drift_events": 10,
-        "ground_truth_type": "estimated",  # Continuous drift - positions are estimates
+        "ground_truth_type": "estimated",
         "params": {
-            "n_centroids": 50,    # MOA standard
-            "speed": 0.0001       # Slow continuous drift
+            "n_centroids": 50,
+            "speed": 0.0001
         }
     },
     "rbf_fast": {
@@ -297,11 +299,16 @@ def get_datasets_by_type():
     enabled = [k for k, v in DATASET_CATALOG.items() if v['enabled']]
 
     return {
-        'sudden': [k for k in enabled if 'gradual' not in k and 'rbf' not in k
-                   and 'electricity' not in k and 'covertype' not in k and 'none' not in k],
+        # Main benchmark: P(X) change datasets (count toward overall accuracy)
+        'sudden': [k for k in enabled if 'gradual' not in k and k != 'rbf_slow' and k != 'rbf_fast'
+                   and 'electricity' not in k and 'covertype' not in k and 'none' not in k
+                   and DATASET_CATALOG[k].get('drift_category') != 'concept_drift_only'],
         'gradual': [k for k in enabled if 'gradual' in k],
-        'incremental': [k for k in enabled if 'rbf' in k],
+        'incremental': [k for k in enabled if k in ['rbf_slow', 'rbf_fast']],
         'realworld': [k for k in enabled if 'electricity' in k or 'covertype' in k],
         'stationary': [k for k in enabled if 'none' in k],
+        # Supplementary: P(Y|X) only datasets (do NOT count toward main benchmark)
+        'concept_drift_only': [k for k in enabled 
+                               if DATASET_CATALOG[k].get('drift_category') == 'concept_drift_only'],
     }
 

@@ -33,13 +33,14 @@ MODEL_DIR = Path(os.getenv("MODEL_DIR", "./models"))
 SNAPSHOT_DIR.mkdir(parents=True, exist_ok=True)
 MODEL_DIR.mkdir(parents=True, exist_ok=True)
 
-# Make experiments/backup importable for shape_dd
+# Make experiments/backup importable for ow_mmd
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SHAPE_DD_DIR = REPO_ROOT / "experiments" / "backup"
 if str(SHAPE_DD_DIR) not in sys.path:
     sys.path.append(str(SHAPE_DD_DIR))
 
-from shape_dd import shape_mmdagg as shape
+# Use ShapeDD_OW_MMD (best performer in benchmark - F1=0.623)
+from ow_mmd import shapedd_ow_mmd_buffer as shapedd_detect
 
 # Import drift type classifier
 from drift_type_classifier import classify_drift_at_detection, DriftTypeConfig
@@ -301,8 +302,8 @@ def main():
                             buffer_indices = np.array([item['idx'] for item in buffer_list])
                             buffer_y = np.array([item['y'] for item in buffer_list])
                             
-                            # Run ShapeDD
-                            shp_results = shape(buffer_X, SHAPE_L1, SHAPE_L2, SHAPE_N_PERM)
+                            # Run ShapeDD_OW_MMD (best performer: F1=0.623, high precision)
+                            shp_results = shapedd_detect(buffer_X, l1=SHAPE_L1, l2=SHAPE_L2)
                             
                             # Check recent chunk for drift
                             chunk_start = max(0, len(buffer_X) - CHUNK_SIZE)
