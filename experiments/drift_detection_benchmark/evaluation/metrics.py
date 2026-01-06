@@ -40,7 +40,7 @@ def calculate_beta_score(precision: float, recall: float, beta: float = 0.5) -> 
 
 
 def calculate_detection_metrics_enhanced(detections, true_drifts, stream_length,
-                                         acceptable_delta=150):
+                                         acceptable_delta=75):
     """
     Calculate detection performance metrics following standard drift detection practice.
 
@@ -56,7 +56,7 @@ def calculate_detection_metrics_enhanced(detections, true_drifts, stream_length,
         detections: List of detected drift positions
         true_drifts: List of true drift positions
         stream_length: Total length of data stream
-        acceptable_delta: Acceptable delay window (default: 150)
+        acceptable_delta: Acceptable delay window (default: 75)
 
     Returns:
         dict: Comprehensive metrics including:
@@ -199,7 +199,7 @@ def calculate_detection_metrics_enhanced(detections, true_drifts, stream_length,
     }
 
 
-def calculate_detection_metrics(detections, true_drifts, acceptable_delta=150):
+def calculate_detection_metrics(detections, true_drifts, acceptable_delta=75):
     """
     DEPRECATED: Use calculate_detection_metrics_enhanced instead.
     This wrapper maintains compatibility with old code.
