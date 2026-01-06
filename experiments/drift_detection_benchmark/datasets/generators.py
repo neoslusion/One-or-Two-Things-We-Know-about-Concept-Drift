@@ -125,6 +125,109 @@ def generate_stagger_stream(total_size, n_drift_events, seed=42):
 
     return X, y, drift_positions
 
+def generate_gaussian_shift_stream(
+    total_size: int,
+    n_drift_events: int,
+    seed: int = 42,
+    n_features: int = 10,
+    shift_magnitude: float = 2.0,
+    noise_percentage: float = 0.05
+):
+    """
+    Gaussian data with ABRUPT mean shift at drift points.
+    
+    This creates clean, controllable P(X) drift:
+    - Segment 0: X ~ N(0, I)
+    - Segment 1: X ~ N(μ, I) where μ = [shift, shift, ..., 0, 0, ...]
+    - Segment 2: X ~ N(0, I)  (back to original)
+    - Segment 3: X ~ N(μ, I)  (shifted again)
+    - ... (alternating pattern)
+    
+    The shift affects the first half of features, creating clear P(X) change
+    while maintaining some stable features for reference.
+    
+    Parameters
+
+    total_size : int
+        Total number of samples to generate.
+    n_drift_events : int
+        Number of abrupt drift points.
+    seed : int, default=42
+        Random seed for reproducibility.
+    n_features : int, default=10
+        Number of features.
+    shift_magnitude : float, default=2.0
+        How much to shift the mean at drift points.
+        - 0.5 = weak drift (hard to detect)
+        - 1.5 = moderate drift
+        - 2.0 = standard drift
+        - 3.0 = strong drift (easy to detect)
+    noise_percentage : float, default=0.05
+        Probability of flipping labels (label noise).
+    
+    Returns
+
+    X : np.ndarray of shape (total_size, n_features)
+        Feature matrix.
+    y : np.ndarray of shape (total_size,)
+        Binary labels.
+    drift_positions : list of int
+        Indices where drifts occur.
+    
+    Example
+
+    >>> X, y, drifts = generate_gaussian_shift_stream(10000, 3, shift_magnitude=2.0)
+    >>> print(f"Drifts at: {drifts}")
+    Drifts at: [2500, 5000, 7500]
+    >>> print(f"Segment 0 mean: {X[:2500, :5].mean(axis=0)}")  # ≈ [0, 0, 0, 0, 0]
+    >>> print(f"Segment 1 mean: {X[2500:5000, :5].mean(axis=0)}")  # ≈ [2, 2, 2, 2, 2]
+    """
+    np.random.seed(seed)
+    
+    # Calculate segment boundaries
+    segment_size = total_size // (n_drift_events + 1)
+    drift_positions = [(i + 1) * segment_size for i in range(n_drift_events)]
+    segments = [0] + drift_positions + [total_size]
+    
+    X_list, y_list = [], []
+    
+    # Number of features to shift (first half)
+    n_shift_features = n_features // 2
+    
+    for seg_idx in range(len(segments) - 1):
+        size = segments[seg_idx + 1] - segments[seg_idx]
+        
+        # Generate base Gaussian data: X ~ N(0, I)
+        X_seg = np.random.randn(size, n_features)
+        
+        # Apply shift to first half of features at ODD segments
+        # This creates alternating pattern: no shift → shift → no shift → shift
+        if seg_idx % 2 == 1:
+            X_seg[:, :n_shift_features] += shift_magnitude
+        
+        # Generate labels using a hyperplane decision boundary
+        # Different weights for each segment (P(Y|X) also changes)
+        rng_weights = np.random.RandomState(seed + seg_idx * 1000)
+        weights = rng_weights.randn(n_features)
+        weights = weights / np.linalg.norm(weights)  # Normalize
+        
+        # Decision boundary: w^T x >= 0
+        scores = X_seg @ weights
+        y_seg = (scores >= 0).astype(int)
+        
+        # Add label noise
+        if noise_percentage > 0:
+            noise_mask = np.random.random(size) < noise_percentage
+            y_seg[noise_mask] = 1 - y_seg[noise_mask]
+        
+        X_list.append(X_seg)
+        y_list.append(y_seg)
+    
+    X = np.vstack(X_list)
+    y = np.hstack(y_list)
+    
+    return X, y, drift_positions
+
 def generate_hyperplane_stream(
     total_size: int,
     n_drift_events: int,
@@ -1084,6 +1187,18 @@ def generate_drift_stream(dataset_config, total_size=10000, seed=42):
             'intens': 'N/A',
             'dist': 'N/A',
             'drift_type': 'sudden'
+        }
+
+    if dataset_type == "gaussian_shift":
+        n_features = params.get('n_features', 10)
+        shift_magnitude = params.get('shift_magnitude', 2.0)
+        X, y, drift_positions = generate_gaussian_shift_stream(
+            total_size, n_drift_events, seed, n_features, shift_magnitude
+        )
+        info = {
+            'name': f'Gaussian Shift (δ={shift_magnitude}, d={n_features})',
+            'drift_type': 'abrupt',
+            'px_drift': True,
         }
 
     elif dataset_type == "gen_random":

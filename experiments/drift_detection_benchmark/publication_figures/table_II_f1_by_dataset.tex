@@ -1,19 +1,19 @@
 \begin{table}[htbp]
 \caption{F1-Score by method and dataset. Best scores per column are shown in \textbf{bold}. Methods ranked by mean F1-Score.}
 \label{tab:f1_by_dataset}
-\begin{tabular}{clccccc}
+\begin{tabular}{clccccccccc}
 \toprule
-Dataset & Rank & led_abrupt & rbf_slow & rbfblips & stagger & Mean \\
-Method &  &  &  &  &  &  \\
+Dataset & Rank & gen_random_mild & gen_random_moderate & gen_random_severe & gen_random_ultra_severe & led_abrupt & rbf_slow & rbfblips & stagger & Mean \\
+Method &  &  &  &  &  &  &  &  &  &  \\
 \midrule
-D3 & 1 & 0.000 & 0.000 & \textbf{1.000} & \textbf{1.000} & \textbf{0.500} \\
-ShapeDD_OW_MMD & 2 & 0.000 & 0.000 & \textbf{1.000} & \textbf{1.000} & \textbf{0.500} \\
-ShapeDD_MMDAgg & 3 & 0.000 & 0.000 & \textbf{1.000} & \textbf{1.000} & \textbf{0.500} \\
-MMD_OW & 4 & 0.000 & 0.000 & 0.952 & \textbf{1.000} & 0.488 \\
-MMD & 5 & 0.250 & \textbf{0.381} & 0.588 & 0.645 & 0.466 \\
-ShapeDD & 6 & \textbf{0.375} & 0.111 & 0.625 & 0.690 & 0.450 \\
-DAWIDD & 7 & 0.235 & 0.261 & 0.513 & 0.571 & 0.395 \\
-KS & 8 & 0.286 & 0.327 & 0.308 & 0.377 & 0.324 \\
+MMD_OW & 1 & 0.126 & \textbf{0.830} & 0.880 & 0.910 & 0.094 & 0.000 & 0.956 & 0.998 & \textbf{0.599} \\
+ShapeDD_OW_MMD & 2 & 0.127 & 0.772 & 0.899 & 0.892 & 0.083 & 0.000 & 0.920 & 0.994 & 0.586 \\
+MMD & 3 & 0.614 & 0.677 & 0.601 & 0.588 & 0.251 & 0.280 & 0.602 & 0.639 & 0.532 \\
+D3 & 4 & 0.012 & 0.249 & 0.959 & 0.959 & 0.000 & 0.000 & \textbf{1.000} & 0.998 & 0.522 \\
+DAWIDD & 5 & \textbf{0.624} & 0.665 & 0.598 & 0.591 & 0.253 & 0.262 & 0.570 & 0.583 & 0.518 \\
+ShapeDD_MMDAgg & 6 & 0.000 & 0.154 & \textbf{0.973} & \textbf{0.971} & 0.000 & 0.000 & \textbf{1.000} & \textbf{1.000} & 0.512 \\
+ShapeDD & 7 & 0.554 & 0.597 & 0.539 & 0.532 & \textbf{0.300} & \textbf{0.318} & 0.553 & 0.582 & 0.497 \\
+KS & 8 & 0.384 & 0.408 & 0.392 & 0.392 & 0.124 & 0.307 & 0.301 & 0.389 & 0.337 \\
 \bottomrule
 \end{tabular}
 \end{table}

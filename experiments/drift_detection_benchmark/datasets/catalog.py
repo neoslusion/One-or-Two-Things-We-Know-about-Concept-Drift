@@ -44,7 +44,7 @@ DATASET_CATALOG = {
         }
     },
     "gen_random_mild": {
-        "enabled": False,
+        "enabled": True,
         "type": "gen_random",
         "n_drift_events": 10,
         "params": {
@@ -55,7 +55,7 @@ DATASET_CATALOG = {
         }
     },
     "gen_random_moderate": {
-        "enabled": False,
+        "enabled": True,
         "type": "gen_random",
         "n_drift_events": 10,
         "params": {
@@ -66,7 +66,7 @@ DATASET_CATALOG = {
         }
     },
     "gen_random_severe": {
-        "enabled": False,
+        "enabled": True,
         "type": "gen_random",
         "n_drift_events": 10,
         "params": {
@@ -77,7 +77,7 @@ DATASET_CATALOG = {
         }
     },
     "gen_random_ultra_severe": {
-        "enabled": False,
+        "enabled": True,
         "type": "gen_random",
         "n_drift_events": 10,
         "params": {
@@ -85,6 +85,17 @@ DATASET_CATALOG = {
             "intens": 2,
             "dist": "unif",
             "alt": True
+        }
+    },
+    "gaussian_shift_moderate": {
+        "enabled": True,
+        "type": "gaussian_shift",
+        "n_drift_events": 10,
+        "ground_truth_type": "exact",
+        "params": {
+            "n_features": 10,
+            "shift_magnitude": 1.5,      # Moderate drift
+            "noise_percentage": 0.05
         }
     },
 
