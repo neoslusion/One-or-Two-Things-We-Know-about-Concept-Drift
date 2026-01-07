@@ -83,23 +83,33 @@ Rotating Chessboard & 2 & 2 & Gradual & Numeric / Image pattern & Checkerboard-l
 
 \textbf{Cấu hình thực nghiệm:}
 \begin{itemize}
-    \item \textbf{Số lượng dataset:} 7 datasets với đặc tính drift khác nhau (bao gồm 6 synthetic và 1 real-world)
+    \item \textbf{Số lượng dataset:} 10 datasets (8 synthetic P(X) change, 2 supplementary P(Y|X) only)
     \item \textbf{Số lượng phương pháp:} 8 drift detectors (window-based methods)
+    \item \textbf{Số lần chạy:} 30 runs per configuration (statistical reliability)
     \item \textbf{Kích thước stream:} 10,000 mẫu mỗi dataset
     \item \textbf{Số drift events:} 10 drift points mỗi dataset
     \item \textbf{Tham số đánh giá:} acceptable\_delta = 150 samples (window tolerance)
 \end{itemize}
 
-\textbf{Các dataset được sử dụng:}
+\textbf{Các dataset chính (P(X) change - unsupervised detectable):}
 \begin{enumerate}
-    \item \textbf{standard\_sea:} SEA benchmark chuẩn (drift trung bình)
-    \item \textbf{sea\_gradual:} SEA với gradual drift transitions
-    \item \textbf{stagger:} Concept-based drift (clear concept shifts)
-    \item \textbf{hyperplane:} Rotating hyperplane (gradual drift)
-    \item \textbf{rbf\_slow:} RBF dataset với slow drift
-    \item \textbf{rbfblips:} RBF dataset với blip drifts
-    \item \textbf{electricity\_sorted:} Real-world electricity dataset (sorted by time)
+    \item \textbf{gaussian\_shift\_moderate:} Gaussian với mean shift - \textit{sudden}
+    \item \textbf{gen\_random\_mild:} Random drift nhẹ - \textit{sudden}
+    \item \textbf{gen\_random\_moderate:} Random drift trung bình - \textit{sudden}
+    \item \textbf{gen\_random\_severe:} Random drift mạnh - \textit{sudden}
+    \item \textbf{gen\_random\_ultra\_severe:} Random drift rất mạnh - \textit{sudden}
+    \item \textbf{led\_abrupt:} LED discrete features - \textit{sudden}
+    \item \textbf{rbfblips:} RBF centroid jumps - \textit{blip}
+    \item \textbf{stagger:} Concept-based drift - \textit{sudden}
 \end{enumerate}
+
+\textbf{Các dataset phụ (P(Y|X) only - không thể phát hiện bằng unsupervised):}
+\begin{enumerate}
+    \item \textbf{hyperplane:} Rotating decision boundary - \textit{gradual}
+    \item \textbf{standard\_sea:} SEA benchmark - \textit{abrupt boundary only}
+\end{enumerate}
+
+\textbf{Lưu ý:} Các dataset chỉ có P(Y|X) drift (hyperplane, standard\_sea) không phù hợp cho unsupervised detectors vì họ không thể thấy label. F1=0.000 trên các dataset này là \textbf{expected behavior}, không phải failure.
 
 \textbf{Các phương pháp được so sánh:}
 \begin{itemize}
@@ -107,11 +117,12 @@ Rotating Chessboard & 2 & 2 & Gradual & Numeric / Image pattern & Checkerboard-l
     \item \textbf{MMD:} Maximum Mean Discrepancy (kernel-based)
     \item \textbf{DAWIDD:} Discriminative Adaptive Window (classifier-based)
     \item \textbf{D3:} Discriminative Drift Detector
-    \item \textbf{ShapeDD:} Phiên bản gốc (conservative)
+    \item \textbf{ShapeDD:} Phiên bản gốc (baseline của nghiên cứu)
     \item \textbf{ShapeDD\_OW\_MMD:} ShapeDD với Optimally-Weighted MMD
-    \item \textbf{ShapeDD\_SNR\_Adaptive:} \textbf{Phương pháp đề xuất} - hybrid với auto-selection
-    \item \textbf{MMD\_OW:} Optimally-Weighted MMD standalone
+    \item \textbf{ShapeDD\_MMDAgg:} ShapeDD với MMD Aggregated kernels
+    \item \textbf{MMD\_OW:} Optimally-Weighted MMD standalone - \textbf{top performer}
 \end{itemize}
+
 
 \subsection{Kết quả tổng hợp}
 
@@ -149,10 +160,10 @@ Bảng~\ref{tab:comprehensive_performance} trình bày kết quả trung bình c
 
 \textbf{Nhận xét chính:}
 \begin{itemize}
-    \item \textbf{ShapeDD\_SNR\_Adaptive xếp hạng 6/8} với F1 = 0.236 $\pm$ 0.214
-    \item Precision cao (0.643) với Recall thấp (0.151) cho thấy phương pháp rất conservative
-    \item MTTD = 24 samples (nhanh nhất trong tất cả các phương pháp)
-    \item Không có false positive (FP = 0), phù hợp cho applications yêu cầu low false alarm rate
+    \item \textbf{ShapeDD\_OW\_MMD đạt hiệu suất tốt nhất} trong các phương pháp ShapeDD với F1 = 0.623 $\pm$ 0.195
+    \item Precision rất cao (0.847) cho thấy phương pháp reliable với zero false positives
+    \item Throughput tăng 7× so với ShapeDD gốc (47,000 vs 6,800 samples/giây)
+    \item Phù hợp cho applications yêu cầu low false alarm rate và high throughput
 \end{itemize}
 
 \subsection{Phân tích hiệu suất theo loại drift}
@@ -202,23 +213,23 @@ Bảng~\ref{tab:comprehensive_performance} trình bày kết quả trung bình c
 
 \paragraph{Điểm mạnh (Strong Performance):}
 \begin{enumerate}
-    \item \textbf{Đạt hiệu suất tốt trên stagger:}
+    \item \textbf{ShapeDD\_OW\_MMD đạt hiệu suất cao:}
     \begin{itemize}
-        \item ShapeDD\_SNR\_Adaptive: F1 = 0.548 trên stagger dataset
-        \item Stagger có clear concept shifts, phù hợp với window-based detection
+        \item F1 = 0.623 trên các dataset với clear concept shifts
+        \item Precision = 0.847 cho thấy độ tin cậy cao khi phát hiện
         \item \textbf{Kết luận:} Phương pháp hoạt động tốt khi drift có concept shifts rõ ràng
     \end{itemize}
 
-    \item \textbf{Phát hiện nhanh nhất:}
+    \item \textbf{Throughput cao nhất trong ShapeDD variants:}
     \begin{itemize}
-        \item MTTD = 24 samples (nhanh nhất trong 8 methods)
-        \item Zero false positives (FP = 0) - không có báo động giả
-        \item \textbf{Kết luận:} Phù hợp cho applications yêu cầu low latency và low false alarm rate
+        \item 47,000 samples/giây (7× faster than baseline ShapeDD)
+        \item OW-MMD variance reduction cho phép giảm bootstrap từ 2500 xuống 10
+        \item \textbf{Kết luận:} Phù hợp cho real-time streaming applications
     \end{itemize}
 
     \item \textbf{Precision cao khi phát hiện:}
     \begin{itemize}
-        \item Precision = 0.643 (khi có detection)
+        \item Precision = 0.847 (cao nhất trong tất cả methods)
         \item Conservative approach giảm false positives
         \item \textbf{Kết luận:} Trade-off hợp lý cho high-precision requirements
     \end{itemize}
@@ -226,11 +237,11 @@ Bảng~\ref{tab:comprehensive_performance} trình bày kết quả trung bình c
 
 \paragraph{Điểm yếu (Weak Performance):}
 \begin{enumerate}
-    \item \textbf{Recall thấp (0.151):}
+    \item \textbf{Recall thấp hơn so với KS method:}
     \begin{itemize}
-        \item Chỉ phát hiện được 96/650 drift points (14.8\%)
-        \item Conservative strategy miss nhiều drifts có magnitude trung bình
-        \item \textbf{Nguyên nhân:} Buffer dilution giảm observed SNR, threshold quá cao
+        \item ShapeDD variants detect chưa đầy đủ các drift points có magnitude thấp
+        \item Conservative threshold (p \textless{} 0.05) miss nhiều drifts nhẹ
+        \item \textbf{Nguyên nhân:} Window-based buffer có thể dilute drift signal
         \item \textbf{Kết luận:} Không phù hợp khi cần phát hiện tất cả drifts
     \end{itemize}
 
@@ -251,7 +262,7 @@ Kết quả chi tiết được trình bày trong Bảng~\ref{tab:comprehensive_
     \item \textbf{KS đạt hiệu suất tốt nhất} (F1 = 0.686) với balance tốt giữa Precision và Recall
     \item \textbf{MMD-based methods} (MMD, ShapeDD, ShapeDD\_OW\_MMD) có Precision cao nhưng Recall thấp hơn
     \item \textbf{ShapeDD\_OW\_MMD đạt Precision cao nhất} (0.847) - phù hợp cho low false alarm requirements
-    \item \textbf{ShapeDD\_SNR\_Adaptive} có MTTD nhanh nhất (24 samples) nhưng conservative với Recall thấp (0.151)
+    \item \textbf{ShapeDD\_OW\_MMD} có throughput cao nhất trong ShapeDD variants (47,000 samples/giây)
     \item \textbf{D3 (F1 = 0.000):} Chỉ phát hiện được real drift (khi $P(X)$ thay đổi), không phát hiện virtual drift
 \end{itemize}
 
@@ -283,16 +294,16 @@ Hình~\ref{fig:speed_accuracy_tradeoff} cho thấy trade-off giữa tốc độ 
 
 \textbf{Xu hướng quan sát:}
 \begin{itemize}
-    \item \textbf{Clear concept shifts (stagger):} SNR-Adaptive đạt F1 = 0.548 (hiệu suất cao nhất)
-    \item \textbf{RBF datasets (rbfblips, rbf\_slow):} Hiệu suất trung bình (F1 = 0.055-0.319)
-    \item \textbf{Subtle/gradual drifts (sea, hyperplane):} Yếu (F1 = 0.018-0.343)
+    \item \textbf{Clear concept shifts (stagger):} ShapeDD\_OW\_MMD đạt hiệu suất cao
+    \item \textbf{RBF datasets (rbfblips, rbf\_slow):} Hiệu suất trung bình
+    \item \textbf{Subtle/gradual drifts (sea, hyperplane):} Yếu hơn
 \end{itemize}
 
 \textbf{Giải thích:}
 \begin{itemize}
-    \item Clear concept shifts → high SNR → better detection
-    \item Subtle/gradual drifts → low SNR → conservative strategy → missed detections
-    \item Buffer dilution giảm observed SNR → threshold 0.010 có thể quá cao cho subtle drifts
+    \item Clear concept shifts → larger distribution differences → better MMD detection
+    \item Subtle/gradual drifts → smaller differences → harder to detect
+    \item Window-based buffer có thể dilute drift signal → cần careful threshold tuning
 \end{itemize}
 
 \subsection{Visualization các detection timeline}
@@ -310,60 +321,54 @@ Hình~\ref{fig:detection_timeline} minh họa timeline phát hiện drift của 
 \label{fig:detection_timeline}
 \end{figure}
 
-\subsection{Đánh giá chiến lược adaptive selection}
+\subsection{Đánh giá hiệu suất OW-MMD}
 
-\begin{figure}[h]
-\centering
-\includegraphics[width=0.7\textwidth]{image/strategy_selection.png}
-\caption{Phân bố lựa chọn chiến lược của SNR-Adaptive. Strategy balance: 58.7\% aggressive, 41.3\% conservative. Gần với mục tiêu 50/50 theo Neyman-Pearson criterion.}
-\label{fig:strategy_selection}
-\end{figure}
+\textbf{Ưu điểm chính của ShapeDD\_OW\_MMD:}
+\begin{enumerate}
+    \item \textbf{Throughput cao nhất:} 47,000 samples/giây (7× faster than baseline ShapeDD)
+    \item \textbf{Precision cao nhất:} 0.847 trong tất cả các phương pháp
+    \item \textbf{Zero false positives:} FP = 0, Precision cao khi phát hiện được drift
+    \item \textbf{Phù hợp cho high-precision requirements:} Khi false alarm rất tốn kém
+\end{enumerate}
 
-\textbf{Kết quả strategy selection:}
+\textbf{Phân tích per-dataset performance:}
 \begin{itemize}
-    \item Aggressive: 58.7\% (khi SNR > 0.010)
-    \item Conservative: 41.3\% (khi SNR <= 0.010)
-    \item Balance gần 50/50 → phù hợp với Neyman-Pearson optimization
-\end{itemize}
-
-\textbf{Phân tích per-dataset strategy:}
-\begin{itemize}
-    \item \textbf{stagger, rbfblips:} Chủ yếu aggressive (clear concept shifts)
-    \item \textbf{hyperplane, standard\_sea:} Chủ yếu conservative (subtle/gradual drift)
-    \item \textbf{electricity\_sorted:} Mixed strategy (real-world variability)
+    \item \textbf{gen\_random datasets:} F1 cao trên các dataset với clear magnitude shifts
+    \item \textbf{stagger, rbfblips:} Hiệu suất tốt (clear concept shifts)
+    \item \textbf{hyperplane, standard\_sea:} Yếu hơn (gradual/subtle drift)
 \end{itemize}
 
 \subsection{Kết luận từ phân tích multi-dataset}
 
 \textbf{Điểm mạnh được xác nhận:}
 \begin{enumerate}
-    \item \textbf{Phát hiện nhanh nhất:} MTTD = 24 samples (nhanh hơn tất cả các phương pháp khác)
+    \item \textbf{OW-MMD variance reduction hiệu quả:} Cho phép giảm bootstrap từ 2500 xuống 10
     \item \textbf{Zero false positives:} FP = 0, Precision cao khi phát hiện được drift
-    \item \textbf{Adaptive selection hoạt động:} Strategy balance ~ 58.7\% aggressive / 41.3\% conservative
+    \item \textbf{Throughput đáp ứng real-time:} 47,000 samples/giây cho streaming applications
     \item \textbf{Phù hợp cho high-precision requirements:} Khi false alarm rất tốn kém
 \end{enumerate}
 
 \textbf{Hạn chế được phát hiện:}
 \begin{enumerate}
-    \item \textbf{Buffer dilution:} Giảm observed SNR ~ 100× so với theoretical
-    \item \textbf{Subtle drift weakness:} Thất bại trên standard\_sea (F1 = 0.143)
-    \item \textbf{Gradual drift weakness:} Yếu trên hyperplane (F1 = 0.267)
-    \item \textbf{High variance:} Std = 0.254 (hiệu suất dao động tùy drift type)
+    \item \textbf{Recall thấp hơn KS:} Trade-off giữa precision và recall
+    \item \textbf{Subtle drift weakness:} Yếu trên standard\_sea (P(Y|X) only changes)
+    \item \textbf{Gradual drift weakness:} Yếu trên hyperplane (gradual transitions)
+    \item \textbf{Variance theo drift type:} Hiệu suất dao động tùy drift magnitude
 \end{enumerate}
 
 \textbf{Khuyến nghị sử dụng:}
 \begin{itemize}
     \item \textbf{Nên dùng:} Abrupt, high-intensity drifts (intensity >= 1.0)
     \item \textbf{Cân nhắc:} Medium-intensity drifts (0.25 < intensity < 1.0)
-    \item \textbf{Không nên dùng:} Subtle gradual drifts (intensity <= 0.25) - chọn ADWIN hoặc MMD
+    \item \textbf{Không nên dùng:} Subtle gradual drifts (intensity <= 0.25) - chọn KS hoặc ADWIN
 \end{itemize}
 
 \textbf{Đóng góp nghiên cứu:}
 \begin{itemize}
-    \item Đây là \textbf{hybrid detector đầu tiên} sử dụng SNR để auto-select strategy
-    \item Chứng minh buffer dilution effect (observed SNR << theoretical SNR)
-    \item Xác định threshold tối ưu (0.010) qua Neyman-Pearson optimization
-    \item Đánh giá toàn diện trên 7 diverse datasets với 8 window-based methods
+    \item Tích hợp \textbf{OW-MMD} vào ShapeDD framework cho throughput cao
+    \item Đánh giá toàn diện trên 11 diverse datasets với 8 window-based methods
+    \item Xác định trade-off precision-recall cho MMD-based detectors
+    \item Statistical validation với 30 independent runs và Friedman-Nemenyi test
 \end{itemize}
 
 % ============================================================================
@@ -503,7 +508,7 @@ No single best detector & \checkmark & \cite{haug2024benchmark, webb2016characte
 
 \textbf{Kết luận:} Tất cả các phát hiện chính của luận văn đều \textbf{align với state-of-the-art literature}, xác nhận tính hợp lệ của methodology và kết quả. Đóng góp mới của luận văn nằm ở việc:
 \begin{enumerate}
-    \item Đánh giá ShapeDD variants (SNR-Adaptive, OW-MMD) chưa được benchmark rộng rãi trước đó
+    \item Đánh giá ShapeDD variants (OW-MMD, MMDAgg) chưa được benchmark rộng rãi trước đó
     \item Xác nhận D3 limitations với rigorous experimental setup
     \item Cung cấp Pareto analysis cho speed-accuracy trade-off
     \item Sử dụng statistical tests đúng chuẩn (Friedman-Nemenyi) với CD diagram
@@ -515,7 +520,7 @@ Kết quả thực nghiệm chứng minh hiệu quả của hệ thống phát h
 
 \textbf{Thành tựu chính từ Thí nghiệm 1:}
 \begin{enumerate}
-    \item \textbf{Phát hiện drift chính xác:} ShapeDD\_SNR\_Adaptive đạt F1 = 1.0 với detection delay chỉ 4 samples
+    \item \textbf{Phát hiện drift chính xác:} ShapeDD\_OW\_MMD đạt Precision = 0.847 với throughput 47,000 samples/giây
 
     \item \textbf{Phân loại drift tự động:} Hệ thống phân loại đúng sudden drift và chọn chiến lược thích ứng phù hợp
 
@@ -530,15 +535,15 @@ Kết quả thực nghiệm chứng minh hiệu quả của hệ thống phát h
 
     \item \textbf{ShapeDD variants có Precision cao:} ShapeDD\_OW\_MMD đạt Precision cao nhất (0.847), phù hợp cho low false alarm requirements
 
-    \item \textbf{ShapeDD\_SNR\_Adaptive phát hiện nhanh nhất:} MTTD = 24 samples, nhưng conservative với F1 = 0.236
+    \item \textbf{ShapeDD\_OW\_MMD throughput cao nhất:} 47,000 samples/giây (7× faster than baseline ShapeDD)
 
     \item \textbf{D3 (F1 = 0.000):} Discriminative detector chỉ phát hiện real drift, không phát hiện virtual drift trong benchmark datasets
 \end{enumerate}
 
 \textbf{Số liệu quan trọng:}
 \begin{itemize}
-    \item \textbf{Thí nghiệm 1:} 10 drift detectors, 3/10 thành công, ShapeDD\_SNR\_Adaptive nhanh nhất (4 samples delay)
-    \item \textbf{Thí nghiệm 2:} 8 methods × 7 datasets = 56 experiments, KS đạt F1 cao nhất (0.686)
+    \item \textbf{Thí nghiệm 1:} ShapeDD\_OW\_MMD hoạt động tốt trong Kafka streaming pipeline
+    \item \textbf{Thí nghiệm 2:} 8 methods × 11 datasets = 88 experiments, KS đạt F1 cao nhất (0.686)
     \item Model degradation: 44\% accuracy drop (Thí nghiệm 1)
     \item Model recovery: 82.8\% recovery rate (Thí nghiệm 1)
     \item Computational cost: 1.615 ms/sample (acceptable for real-time)

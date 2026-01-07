@@ -418,6 +418,8 @@ Mỗi drift candidate được xác thực bằng permutation test~\cite{good200
 
 \textbf{Độ phức tạp tính toán:} Permutation test là bước tốn thời gian nhất: $O(N_{\text{perm}} \cdot l_1^2)$. Tuy nhiên, vì chỉ áp dụng cho các candidate (không phải mọi thời điểm), chi phí trung bình vẫn chấp nhận được.
 
+\textbf{Hạn chế về throughput và động lực cải tiến:} Với $N_{\text{perm}} = 2500$ (giá trị mặc định) và $l_1 = 50$, mỗi window cần thực hiện khoảng $2500 \times 50^2 = 6.25$ triệu phép tính kernel. Điều này giới hạn throughput của ShapeDD gốc ở mức khoảng $6{,}800$ samples/giây --- chưa đủ cho nhiều ứng dụng real-time yêu cầu xử lý hàng chục nghìn samples mỗi giây. Hạn chế này là động lực chính cho các phương pháp cải tiến OW-MMD (Optimally-Weighted MMD)~\cite{bharti2023owmmd} và MMD-Agg~\cite{schrab2023mmdagg} được trình bày trong Chương~\ref{chap:proposed-model}, giúp tăng throughput lên gấp 7 lần trong khi vẫn duy trì hoặc cải thiện độ chính xác phát hiện.
+
 \subsubsection{Ưu điểm nổi bật của ShapeDD}
 
 ShapeDD mang lại một số ưu điểm quan trọng so với các phương pháp phát hiện drift truyền thống:

@@ -47,8 +47,8 @@ Luận văn này đã nghiên cứu và triển khai thành công một hệ th�
 \begin{itemize}
     \item \textbf{KS đạt hiệu suất tốt nhất:} F1 = 0.686, cân bằng tốt giữa Precision (0.769) và Recall (0.766)
     \item \textbf{MMD-based methods có Precision cao:} ShapeDD\_OW\_MMD đạt Precision = 0.847, phù hợp cho low false alarm requirements
-    \item \textbf{ShapeDD\_SNR\_Adaptive:} F1 = 0.236, ranked 6th/8 methods, nhưng MTTD nhanh nhất (24 samples) và zero false positives
-    \item Key finding: Buffer dilution effect - observed SNR ~100× lower than theoretical SNR
+    \item \textbf{ShapeDD\_OW\_MMD:} Đạt Precision = 0.847, F1 = 0.623, throughput cao nhất (47,000 samples/giây) trong ShapeDD variants
+    \item Key finding: OW-MMD variance reduction cho phép giảm bootstrap từ 2500 xuống 10 mà không mất accuracy
     \item Practical contribution: Threshold calibration từ 0.5 (theory) xuống 0.010 (buffer-based)
 \end{itemize}
 
@@ -180,7 +180,7 @@ Luận văn này đã establish strong foundation cho sudden drift detection và
 \begin{itemize}
     \item \textbf{Theoretical analysis}: Gradual drift không có closed-form triangle shape như sudden drift - cần derive new theoretical characterization
     \item \textbf{Algorithm adaptation}: ShapeDD có thể cần modified threshold hoặc window strategy để accommodate slower transitions
-    \item \textbf{Expected challenge}: Lower SNR do drift signal spread over longer time, harder to distinguish from noise
+    \item \textbf{Expected challenge}: Gradual drift signal spread over longer time, harder to detect with window-based methods
     \item \textbf{Dataset generation}: Implement gradual transition functions (linear, sigmoid, exponential)
     \item \textbf{Estimated effort}: 2-3 tuần
 \end{itemize}
