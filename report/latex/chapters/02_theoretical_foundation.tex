@@ -19,7 +19,7 @@ chất của dữ liệu đầu vào đã bị thay đổi so với khi mô hìn
 suất được đánh giá trên tập dữ liệu thử nghiệm tĩnh trong quá trình phát triển.
 \subsection{Phân loại các loại concept drift}
 Có nhiều loại trôi dạt khác nhau, tùy thuộc vào các yếu tố dữ liệu đang thay đổi. Các loại chính của sự trôi dạt khái 
-niệm bao gồm~\cite{sciencedirect2024drift, hovakimyan2024evolving}.
+niệm bao gồm~\cite{sciencedirect2024drift, hovakimyan2024evolving} như sau:
 
 Phân loại theo sự thay đổi phân phối:
 \textbf{Sự trôi dạt ảo (Virtual Drift):} Còn được gọi là sự dịch chuyển biến phụ (covariate shift), đề cập đến tình huống 
@@ -154,14 +154,12 @@ Cụ thể, thay vì dùng giá trị ước lượng nhiễu $\hat{\sigma}$, Sh
     \tilde{\sigma}(t) = \sum_i a_i \, h_l(t - t_i),
 \end{equation}
 trong đó $a_i$ biểu diễn biên độ (độ mạnh drift) và $t_i$ là vị trí thời gian của sự kiện drift.
-
 Do hàm $h_l(t)$ có cấu trúc hình học cố định và chỉ phụ thuộc vào $l$, việc khớp mô hình $\tilde{\sigma}$ giúp:
 \begin{itemize}
     \item Lọc bỏ nhiễu ngẫu nhiên trong $\hat{\sigma}$ (\textit{denoising});
     \item Xác định chính xác hơn thời điểm trôi dạt $t_i$;
     \item Giảm tỉ lệ báo động giả (false positive rate).
 \end{itemize}
-
 Trong thực nghiệm, quá trình khớp hàm này được thực hiện bằng \textbf{Fast Sequential Function Fitting}, áp dụng trên các tín hiệu thu được từ nhiều 
 độ đo (như MMD) và các độ dài cửa sổ khác nhau, nhằm tạo ra ước lượng cuối cùng có độ chính xác cao.
 
