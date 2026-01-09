@@ -174,11 +174,10 @@ Nhờ đó, ShapeDD có thể:
 
 \subsection{Maximum Mean Discrepancy (MMD)}
 
-Như đã nhắc đến ở trên, ShapeDD dựa trên Maximum Mean Discrepancy (MMD)~\cite{gretton2012kernel}, 
-một thước đo thống kê được sử dụng để so sánh hai phân phối xác suất $P$ và $Q$. Ý tưởng cốt lõi là ánh xạ dữ liệu từ không gian 
+Như đã nhắc đến ở trên, ShapeDD dựa trên Maximum Mean Discrepancy (MMD)~\cite{gretton2012kernel}, một thước đo thống kê được sử dụng để 
+so sánh hai phân phối xác suất $P$ và $Q$. Ý tưởng cốt lõi là ánh xạ dữ liệu từ không gian 
 gốc vào không gian feature cao chiều nơi việc so sánh trở nên nhạy cảm hơn với sự khác biệt phân phối.
-
-\subsubsection{Định nghĩa:} MMD đo lường khoảng cách giữa hai phân phối bằng cách tìm hàm $f$ có thể phân biệt tốt nhất giữa chúng. 
+MMD đo lường khoảng cách giữa hai phân phối bằng cách tìm hàm $f$ có thể phân biệt tốt nhất giữa chúng. 
 Nếu hai phân phối giống nhau, giá trị kỳ vọng của bất kỳ hàm nào áp dụng lên chúng sẽ giống nhau. 
 Ngược lại, nếu khác nhau, sẽ tồn tại một hàm cho phép phân biệt rõ ràng.
 
@@ -197,8 +196,6 @@ trong đó:
 \end{itemize}
 Trong không gian ban đầu, hai phân phối có thể khó phân biệt. Bằng cách ánh xạ vào RKHS thông qua hàm kernel~\cite{scholkopf2002learning}, 
 các cấu trúc phức tạp của phân phối trở nên rõ ràng hơn. MMD đo lường khoảng cách giữa "trung bình" (mean embedding) của hai phân phối trong không gian này.
-
-\subsubsection{Kernel trick và RKHS}
 
 Trong thực tế, việc tìm supremum trên $\mathcal{F}$ là không khả thi về mặt tính toán. Do đó, MMD thường được triển khai trong 
 RKHS~\cite{scholkopf2002learning} sử dụng kernel trick với hàm kernel $k(x, y)$:
@@ -229,57 +226,9 @@ Trong đó:
 
 Nếu $P = Q$, ba thành phần này cân bằng nhau và $\text{MMD}^2 = 0$. Nếu $P \neq Q$, sự khác biệt trong cấu trúc nội bộ và tương tác chéo dẫn đến $\text{MMD}^2 > 0$.
 
-% \subsubsection{Ước lượng thực nghiệm}
-
-% Để ước tính thực nghiệm với mẫu $\{x_i\}_{i=1}^n$ từ $P$ và $\{y_j\}_{j=1}^m$ từ $Q$, có hai ước lượng chính:
-
-% \textbf{1. Unbiased estimator ($\widehat{\text{MMD}}^2_u$):}
-% \begin{equation}
-% \widehat{\text{MMD}}^2_u = \frac{1}{n(n-1)} \sum_{i \neq j} k(x_i, x_j) + \frac{1}{m(m-1)} \sum_{i \neq j} k(y_i, y_j) - \frac{2}{nm} \sum_{i,j} k(x_i, y_j)
-% \end{equation}
-
-% Ước lượng này là unbiased ($\mathbb{E}[\widehat{\text{MMD}}^2_u] = \text{MMD}^2$) bằng cách loại trừ các cặp $(i,i)$ trong hai tổng đầu (tránh bias do tự tương quan).
-
-% \textbf{2. Biased but consistent estimator ($\widehat{\text{MMD}}^2_b$):}
-% \begin{equation}
-% \widehat{\text{MMD}}^2_b = \mathbf{w}^\top K_{XY} \mathbf{w}
-% \end{equation}
-
-% trong đó:
-% \begin{itemize}
-%     \item $K_{XY}$ là kernel matrix kích thước $(n+m) \times (n+m)$ trên tất cả samples $\{x_1, ..., x_n, y_1, ..., y_m\}$
-%     \item $\mathbf{w} = (n^{-1}, ..., n^{-1}, -m^{-1}, ..., -m^{-1})^\top$ với $n$ phần tử dương và $m$ phần tử âm
-% \end{itemize}
-
-% Ước lượng này biased nhưng consistent (hội tụ về $\text{MMD}^2$ khi $n, m \to \infty$).
-
-% \textbf{Tính chất thống kê:} Cả hai ước lượng đều hội tụ với tốc độ $O(\sqrt{\min(n,m)^{-1}})$ và bound này chỉ phụ thuộc vào tính chất của kernel, độc lập với số chiều dữ liệu~\cite{gretton2012kernel}.
-
-% \textbf{Ví dụ minh họa với tính toán cụ thể:} Xét hai tập mẫu nhỏ từ hai phân phối 1D:
-% \begin{itemize}
-%     \item $X = \{0.1, -0.3, 0.5\}$ từ $P = \mathcal{N}(0, 1)$
-%     \item $Y = \{1.8, 2.3, 2.0\}$ từ $Q = \mathcal{N}(2, 1)$
-% \end{itemize}
-
-% Sử dụng Gaussian kernel với $\sigma = 1$: $k(x, y) = \exp(-\frac{(x-y)^2}{2})$
-
-% \textit{Bước 1:} Tính các thành phần kernel:
-% \begin{align*}
-% \frac{1}{n^2}\sum_{i,j} k(x_i, x_j) &= \frac{1}{9}[k(0.1,0.1) + k(0.1,-0.3) + \ldots] \approx 0.92 \\
-% \frac{1}{m^2}\sum_{i,j} k(y_i, y_j) &= \frac{1}{9}[k(1.8,1.8) + k(1.8,2.3) + \ldots] \approx 0.94 \\
-% \frac{2}{nm}\sum_{i,j} k(x_i, y_j) &= \frac{2}{9}[k(0.1,1.8) + k(0.1,2.3) + \ldots] \approx 0.21
-% \end{align*}
-
-% \textit{Bước 2:} Tính $\widehat{\text{MMD}}^2$:
-% \[
-% \widehat{\text{MMD}}^2 = 0.92 + 0.94 - 0.21 = 1.65 > 0
-% \]
-
-% Kết quả dương ($\widehat{\text{MMD}}^2 = 1.65$) cho thấy hai mẫu có phân phối khác nhau. Giá trị này có thể dùng để kiểm định với permutation test: nếu hai phân phối giống nhau, $\widehat{\text{MMD}}^2$ sẽ gần 0.
-
 \subsection{Cách thức hoạt động của ShapeDD}
 
-Các phương pháp phát hiện drift cơ bản đã được trình bày chi tiết trong Chương 2. Để cung cấp ngữ cảnh cho ShapeDD, chúng ta tóm tắt ngắn gọn các đặc điểm chính:
+Các phương pháp phát hiện drift cơ bản đã được trình bày chi tiết trong Chương~\ref{chap:related-work}. Để cung cấp ngữ cảnh cho ShapeDD, chúng ta tóm tắt ngắn gọn các đặc điểm chính:
 
 \textbf{Phương pháp dựa trên hiệu suất mô hình:} DDM, EDDM, MDDM, FHDDMS theo dõi các thống kê lỗi của mô hình và phát hiện drift khi hiệu suất giảm đáng kể. Các phương pháp này phụ thuộc vào nhãn ground truth và có thể bị trễ trong việc phát hiện do cần thu thập đủ lỗi.
 
@@ -373,9 +322,7 @@ Thống kê MMD có trọng số sau đó được tính như:
 
 Giai đoạn cuối cùng bao gồm hai bước: phát hiện hình dạng (shape detection) và xác thực thống kê.
 
-\textbf{Bước 4.1: Shape Detection qua Convolution}
-
-Để phát hiện hình dạng tam giác, ShapeDD sử dụng bộ lọc convolution $h'_l$ được thiết kế để nhạy với biên tăng-giảm:
+\textbf{Bước 4.1: Shape Detection qua Convolution:} Để phát hiện hình dạng tam giác, ShapeDD sử dụng bộ lọc convolution $h'_l$ được thiết kế để nhạy với biên tăng-giảm:
 
 \begin{equation}
 h'_l(t) = \begin{cases}
@@ -394,9 +341,7 @@ Tín hiệu shape được tính bằng convolution:
 \text{Candidate}(t) = \text{sign}(\text{shape}_t) \neq \text{sign}(\text{shape}_{t-1})
 \end{equation}
 
-\textbf{Bước 4.2: Permutation Test}
-
-Mỗi drift candidate được xác thực bằng permutation test~\cite{good2005permutation} để loại bỏ false positive:
+\textbf{Bước 4.2: Permutation Test:} Mỗi drift candidate được xác thực bằng permutation test~\cite{good2005permutation} để loại bỏ false positive:
 
 \begin{enumerate}
     \item Tính $\text{MMD}^2_{\text{obs}}$ từ dữ liệu gốc tại vị trí candidate
@@ -407,16 +352,14 @@ Mỗi drift candidate được xác thực bằng permutation test~\cite{good200
     \end{enumerate}
     \item Tính p-value:
     \begin{equation}
-    p\text{-value} = \frac{\#\{\text{MMD}^2_{\text{perm}} \geq \text{MMD}^2_{\text{obs}}\}}{N_{\text{perm}}}
+    p\text{-value} = \frac{\{\text{MMD}^2_{\text{perm}} \geq \text{MMD}^2_{\text{obs}}\}}{N_{\text{perm}}}
     \end{equation}
     \item Nếu $p\text{-value} < \alpha$ (thường $\alpha = 0.05$), chấp nhận drift
 \end{enumerate}
 
 \textbf{Tại sao permutation test hiệu quả?} Nếu không có drift thực sự, việc hoán vị nhãn không nên thay đổi nhiều $\text{MMD}^2$. Nếu có drift, $\text{MMD}^2_{\text{obs}}$ sẽ lớn hơn đáng kể so với các giá trị permutation.
-
 \textbf{Độ phức tạp tính toán:} Permutation test là bước tốn thời gian nhất: $O(N_{\text{perm}} \cdot l_1^2)$. Tuy nhiên, vì chỉ áp dụng cho các candidate (không phải mọi thời điểm), chi phí trung bình vẫn chấp nhận được.
-
-\textbf{Hạn chế về throughput và động lực cải tiến:} Với $N_{\text{perm}} = 2500$ (giá trị mặc định) và $l_1 = 50$, mỗi window cần thực hiện khoảng $2500 \times 50^2 = 6.25$ triệu phép tính kernel. Điều này giới hạn throughput của ShapeDD gốc ở mức khoảng $6{,}800$ samples/giây --- chưa đủ cho nhiều ứng dụng real-time yêu cầu xử lý hàng chục nghìn samples mỗi giây. Hạn chế này là động lực chính cho các phương pháp cải tiến OW-MMD (Optimally-Weighted MMD)~\cite{bharti2023owmmd} và MMD-Agg~\cite{schrab2023mmdagg} được trình bày trong Chương~\ref{chap:proposed-model}, giúp tăng throughput lên gấp 7 lần trong khi vẫn duy trì hoặc cải thiện độ chính xác phát hiện.
+\textbf{Hạn chế về throughput và động lực cải tiến:} Với $N_{\text{perm}} = 2500$ (giá trị mặc định) và $l_1 = 50$, mỗi window cần thực hiện khoảng $2500 \times 50^2 = 6.25$ triệu phép tính kernel. Điều này giới hạn throughput của ShapeDD gốc ở mức khoảng $6{,}800$ samples/giây --- chưa đủ cho nhiều ứng dụng real-time yêu cầu xử lý hàng chục nghìn samples mỗi giây. Hạn chế này là động lực chính cho các phương pháp cải tiến OW-MMD (Optimally-Weighted MMD)~\cite{bharti2023owmmd} và MMD-Agg~\cite{schrab2023mmdagg} được trình bày trong Chương~\ref{chap:proposed-model}, giúp tăng tốc độ xử lý của phương pháp khi vẫn duy trì hoặc cải thiện độ chính xác phát hiện.
 
 \subsubsection{Ưu điểm nổi bật của ShapeDD}
 
@@ -435,7 +378,6 @@ ShapeDD mang lại một số ưu điểm quan trọng so với các phương ph
 \end{enumerate}
 
 \subsubsection{Hạn chế và điều kiện áp dụng hiệu quả}
-
 Bên cạnh ưu điểm, ShapeDD cũng có một số hạn chế và điều kiện cần lưu ý:
 
 \begin{itemize}

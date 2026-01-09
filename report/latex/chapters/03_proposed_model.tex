@@ -5,18 +5,23 @@
 và xây dựng hệ thống phát hiện drift hoàn chỉnh. Đóng góp chính bao gồm: (1) Tích hợp Optimally-Weighted MMD (OW-MMD)~\cite{bharti2023owmmd} để tăng tốc độ xử lý lên 7 lần, (2) Tích hợp MMD-Agg~\cite{schrab2023mmdagg} để cải thiện độ chính xác, và (3) Xây dựng hệ thống streaming real-time với Kafka.}
 
 \section{Vấn đề với ShapeDD gốc và hướng cải tiến}
-
-Như đã phân tích trong Chương~2, ShapeDD gốc có hiệu suất phát hiện tốt nhưng gặp hạn chế về chi phí tính toán do permutation test. Cụ thể:
+Bên cạnh ưu điểm đã nhắc đến ở chương trước, ShapeDD cũng có một số hạn chế và điều kiện cần lưu ý:
 \begin{itemize}
-    \item \textbf{Chi phí tính toán cao:} $O(N_{perm} \times n^2)$ với $N_{perm} = 2500$
-    \item \textbf{Throughput thấp:} Chỉ đạt $\sim$6,800 samples/giây
-    \item \textbf{Precision thấp:} 0.322 do nhiều false positives
+    \item \textbf{Giả định drift rời rạc và đột ngột:} Lý thuyết hình dạng của ShapeDD giả định mỗi khoảng thời gian chỉ có tối đa một sự kiện drift rõ ràng. Nếu các drift xảy ra liên tục hoặc quá gần nhau (khoảng cách giữa hai lần thay đổi nhỏ hơn độ dài $2l$ của cửa sổ), các mẫu hình tam giác có thể chồng lấn khiến bộ lọc shape không còn nhận dạng đúng được. ShapeDD phù hợp nhất khi các thay đổi lớn diễn ra cách nhau một khoảng đủ dài so với $l$.
+
+    \item \textbf{Hạn chế với drift liên tục (gradual drift):} Trong trường hợp concept drift xảy ra một cách từ từ liên tục (ví dụ mô hình trôi nhẹ dần theo thời gian không có điểm cắt rạch ròi), hình dạng tam giác đặc trưng sẽ không còn rõ nét. Nếu phân phối thay đổi dần, tín hiệu $\sigma(t)$ sẽ không tạo thành mũi nhọn mà chỉ nhô lên rất thoải, khiến cách tiếp cận shape có thể kém nhạy hoặc phải đợi đến khi đủ lớn mới báo (dẫn tới trễ). ShapeDD phát huy tốt nhất với các drift kiểu đột ngột hoặc giai đoạn (sudden/step drift).
+
+    \item \textbf{Lựa chọn độ dài cửa sổ $l$:} Hiệu quả của ShapeDD phụ thuộc vào tham số $l$. Nếu $l$ quá nhỏ, ước lượng $\hat{\sigma}(t)$ rất nhiễu, khiến khớp shape khó phân biệt tín hiệu; ngược lại nếu $l$ quá lớn, hiệu ứng drift bị làm mờ và còn gây tăng độ trễ phát hiện. Một giải pháp an toàn là kết hợp nhiều $l$ như ShapeDD đề xuất sẵn, nhằm đảm bảo không bỏ sót. Tuy nhiên, việc dùng nhiều cửa sổ cũng làm tăng chi phí tính toán và độ phức tạp triển khai.
+
+    \item \textbf{Tham số kiểm định và ngưỡng:} ShapeDD yêu cầu đặt ngưỡng cho kiểm định (mức ý nghĩa $\alpha$) và ngưỡng cho biên độ $s$. Nếu đặt ngưỡng quá cao (nghiêm ngặt), phương pháp có thể bỏ lỡ những drift nhẹ; nếu đặt quá thấp, sẽ tăng nguy cơ báo động giả. Việc chọn các ngưỡng này cần hiệu chỉnh cẩn thận, thường thông qua cross-validation hoặc dựa vào chỉ số đánh giá tổng hợp như $\beta$-score.
+
+    \item \textbf{Trường hợp dữ liệu nhiều chiều phức tạp:} Mặc dù MMD với kernel Gaussian có ưu điểm không phụ thuộc số chiều, nhưng trong thực tế khi phân phối thay đổi chỉ trên một phần không gian đặc trưng, hoặc drift chỉ ảnh hưởng một vài thuộc tính, thì việc phát hiện có thể khó khăn hơn (tín hiệu drift yếu vì khoảng cách toàn cục nhỏ). Khi đó, có thể cần kết hợp ShapeDD với phương pháp lựa chọn đặc trưng hoặc kiểm định theo từng chiều.
 \end{itemize}
 
 Để giải quyết các vấn đề này, luận văn đề xuất hai cải tiến chính:
 \begin{enumerate}
-    \item \textbf{OW-MMD (Section~\ref{sec:ow-mmd}):} Sử dụng variance-reduction weighting để giảm số lượng bootstrap samples từ 2500 xuống 10, tăng throughput lên 47,000 samples/giây (gấp 7 lần)
-    \item \textbf{MMD-Agg (Section~\ref{sec:mmdagg}):} Sử dụng aggregated kernel testing để cải thiện F1-score từ 0.440 lên 0.509 trên các dataset có drift mạnh
+    \item \textbf{OW-MMD (Section~\ref{sec:ow-mmd}):} Sử dụng variance-reduction weighting để giảm số lượng bootstrap samples, nhằm tối ưu hiệu suất tính toán của MMD gốc, nhưng vẫn giữ được độ chính xác cao.
+    \item \textbf{MMD-Agg (Section~\ref{sec:mmdagg}):} Sử dụng aggregated kernel testing để cải thiện (TODO:)
 \end{enumerate}
 
 \section{Phương pháp cải tiến đề xuất cho ShapeDD}
@@ -30,11 +35,7 @@ Phần này trình bày phương pháp OW-MMD (Optimally-Weighted MMD) -- một 
 
 MMD (Maximum Mean Discrepancy) gốc trong ShapeDD sử dụng permutation test với số lần hoán vị lớn (n\_perm = 2500) để ước lượng p-value. Điều này dẫn đến:
 
-\begin{itemize}
-    \item \textbf{Chi phí tính toán:} $O(n^2 \times \text{n\_perm})$ với $n$ là kích thước cửa sổ
-    \item \textbf{Thời gian chạy:} ~30-60 giây mỗi cửa sổ với buffer 750 samples
-    \item \textbf{Không phù hợp real-time:} Độ trễ quá cao cho hệ thống streaming
-\end{itemize}
+TODO: ADD justification why MMD is computationally expensive here
 
 \subsubsection{Giải pháp: OW-MMD với variance-reduction weighting}
 
@@ -93,28 +94,6 @@ Nghiên cứu này kết hợp OW-MMD vào framework ShapeDD thông qua hybrid a
 \end{algorithmic}
 \end{algorithm}
 
-\subsubsection{Cải tiến hiệu suất đạt được}
-
-So sánh hiệu suất ShapeDD gốc và ShapeDD\_OW\_MMD:
-
-\begin{table}[H]
-\centering
-\caption{So sánh hiệu suất ShapeDD và ShapeDD\_OW\_MMD (Kết quả benchmark)}
-\label{tab:owmmd-performance}
-\begin{tabular}{lccc}
-\toprule
-\textbf{Metric} & \textbf{ShapeDD (baseline)} & \textbf{ShapeDD\_OW\_MMD} & \textbf{Improvement} \\
-\midrule
-F1-score & 0.440 & \textbf{0.562} & +27.7\% \\
-Precision & 0.322 & \textbf{0.573} & +78.0\% \\
-Recall & 0.744 & 0.584 & -21.5\% \\
-Throughput (samples/s) & 6,824 & \textbf{46,773} & 6.9× faster \\
-Rank (out of 8) & 7 & \textbf{2} & +5 ranks \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-
 \subsubsection{Khi nào sử dụng OW-MMD}
 
 \begin{itemize}
@@ -141,12 +120,6 @@ MMD-Agg & Sensitivity với kernel bandwidth & Aggregated multi-bandwidth testin
 \hline
 \end{tabular}
 \end{table}
-
-
-% ============================================================================
-% APPLICATION LAYER: USING DRIFT DETECTION RESULTS
-% These sections moved here after all detection methods are explained
-% ============================================================================
 
 \subsection{Ứng dụng kết quả phát hiện drift: Các chiến lược thích ứng}
 \label{sec:drift-adaptation-strategies}
@@ -280,10 +253,6 @@ trong đó $w_{\text{base}}$ là kích thước cửa sổ cơ sở, $\lambda$ l
     \item Low drift magnitude ($\Delta < \tau_{\text{low}}$): Tăng window size → maintain stability
     \item Medium drift: Giữ nguyên window size cơ sở
 \end{itemize}
-
-% ============================================================================
-% END OF APPLICATION LAYER
-% ============================================================================
 
 \section{Nền tảng xử lý luồng dữ liệu phân tán với Apache Kafka}
 
@@ -442,30 +411,6 @@ Quy trình xử lý dữ liệu trong hệ thống tuân theo các bước sau:
     \item Adaptor nhận sự kiện drift, chọn chiến lược thích ứng dựa trên loại drift
     \item Mô hình được cập nhật và lưu lại cho inference tiếp theo
 \end{enumerate}
-
-\subsection{Cấu hình hệ thống}
-
-Các tham số quan trọng của hệ thống:
-
-\begin{table}[H]
-\centering
-\caption{Tham số cấu hình hệ thống}
-\label{tab:system-config}
-\begin{tabular}{lll}
-\toprule
-\textbf{Tham số} & \textbf{Giá trị} & \textbf{Ý nghĩa} \\
-\midrule
-BUFFER\_SIZE & 750 & Số mẫu trong detection window \\
-CHUNK\_SIZE & 150 & Tần suất kiểm tra drift (mỗi 150 mẫu) \\
-SHAPE\_L1 & 50 & Cửa sổ nhỏ cho ShapeDD \\
-SHAPE\_L2 & 150 & Cửa sổ lớn cho MMD comparison \\
-SHAPE\_N\_PERM & 2500 & Số lần hoán vị cho permutation test \\
-DRIFT\_PVALUE & 0.05 & Ngưỡng p-value phát hiện drift \\
-ADAPTATION\_DELAY & 50 & Số mẫu chờ sau detection trước khi adapt \\
-ADAPTATION\_WINDOW & 800 & Số mẫu sử dụng để retrain model \\
-\bottomrule
-\end{tabular}
-\end{table}
 
 \section{Triển khai hệ thống Kafka cho phát hiện drift}
 
