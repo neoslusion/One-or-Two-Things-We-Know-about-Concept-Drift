@@ -29,11 +29,11 @@ Mặc dù ShapeDD gốc thể hiện nhiều ưu điểm về độ chính xác 
 Trong ShapeDD gốc, thống kê MMD được tính toán dựa trên trọng số đều (uniform weights), coi vai trò của mọi điểm dữ liệu trong cửa sổ là như nhau. Để đạt được độ tin cậy thống kê (statistical power) mong muốn, phương pháp này yêu cầu kích thước mẫu lớn hoặc quy trình kiểm định hoán vị tốn kém ($O(N_{perm} \cdot n^2)$). Điều này không phù hợp với các ứng dụng yêu cầu phản hồi tức thì.
 
 \subsubsection{Giải pháp: Trọng số tối ưu giảm phương sai}
-Nghiên cứu tích hợp phương pháp \textbf{OW-MMD} (Optimally-Weighted MMD) được đề xuất bởi Bharti et al.\~\cite{bharti2023owmmd}. Thay vì sử dụng trọng số đều, OW-MMD gán trọng số cho các mẫu dữ liệu nhằm tối thiểu hóa phương sai của bộ ước lượng.
+Nghiên cứu tích hợp phương pháp \textbf{OW-MMD} (Optimally-Weighted MMD) được đề xuất bởi Bharti et al.~\cite{bharti2023owmmd}. Thay vì sử dụng trọng số đều, OW-MMD gán trọng số cho các mẫu dữ liệu nhằm tối thiểu hóa phương sai của bộ ước lượng.
 
 Công thức MMD bình phương có trọng số được định nghĩa lại như sau:
 \begin{equation}
-\text{MMD}^2_{\text{OW}} = \sum_{i,j} w^{XX}_{ij} k(x_i, x_j) + \sum_{i,j} w^{YY}_{ij} k(y_i, y_j) - \text{MMD}^2_{\text{OW}} = \sum_{i,j} w^{XX}_{ij} k(x_i, x_j) + \sum_{i,j} w^{YY}_{ij} k(y_i, y_j) - 2\sum_{i,j} w^{XY}_{ij} k(x_i, y_j)
+\text{MMD}^2_{\text{OW}} = \sum_{i,j} w^{XX}_{ij} k(x_i, x_j) + \sum_{i,j} w^{YY}_{ij} k(y_i, y_j) - 2\sum_{i,j} w^{XY}_{ij} k(x_i, y_j)
 \end{equation}
 
 Trong đó, trọng số $w_{ij}$ được tính toán dựa trên nguyên lý giảm phương sai: các điểm dữ liệu nằm trong vùng mật độ cao (có tổng độ tương đồng kernel lớn) sẽ được gán trọng số thấp hơn để giảm sự dư thừa thông tin, trong khi các điểm ở vùng biên hoặc vùng thưa thớt được gán trọng số cao hơn.
@@ -74,7 +74,7 @@ Cải tiến này giúp giảm số lượng mẫu bootstrap cần thiết từ 
 
 Một hạn chế khác của MMD là độ nhạy đối với việc lựa chọn tham số độ rộng kernel ($\sigma$). Nếu $\sigma$ quá nhỏ, MMD chỉ bắt được các thay đổi cục bộ; nếu quá lớn, nó có thể bỏ qua các chi tiết quan trọng.
 
-Để khắc phục, chúng tôi tích hợp kỹ thuật \textbf{MMD-Agg} (MMD Aggregated)~	hione{schrab2023mmdagg}. Thay vì chọn một $\sigma$ cố định (thường dùng median heuristic), MMD-Agg tính toán MMD trên một tập hợp các bandwidths khác nhau $\{\sigma_1, \sigma_2, \dots, \sigma_k\}$ và tổng hợp kết quả.
+Để khắc phục, chúng tôi tích hợp kỹ thuật \textbf{MMD-Agg} (MMD Aggregated)~\cite{schrab2023mmdagg}. Thay vì chọn một $\sigma$ cố định (thường dùng median heuristic), MMD-Agg tính toán MMD trên một tập hợp các bandwidths khác nhau {$\sigma_1, \sigma_2, \dots, \sigma_k$} và tổng hợp kết quả.
 
 Quy trình này cho phép bộ phát hiện "nhìn" dữ liệu ở nhiều độ phân giải khác nhau, giúp phát hiện được cả các thay đổi nhỏ (cục bộ) và các thay đổi lớn (toàn cục) trong phân phối dữ liệu, làm tăng đáng kể độ chính xác (F1-score) trên các tập dữ liệu phức tạp.
 
