@@ -2,599 +2,163 @@
 \label{chap:experiments}
 
 \section{Tổng quan thực nghiệm}
-\subsection{Mục tiêu thực nghiệm}
-Chương này trình bày kết quả thực nghiệm toàn diện của hệ thống phát hiện concept drift, so sánh ShapeDD và các biến thể với 7 phương pháp baseline trên 7 datasets đa dạng. Thực nghiệm được thiết kế để đánh giá:
 
+\subsection{Mục tiêu}
+Chương này trình bày các kết quả thực nghiệm nhằm kiểm chứng hiệu quả của hệ thống đề xuất. Quá trình đánh giá được chia thành hai giai đoạn chính:
 \begin{enumerate}
-    \item Hiệu suất phát hiện drift của các phương pháp window-based (F1, Precision, Recall)
-    \item Tốc độ phát hiện drift (Mean Time To Detection - MTTD)
-    \item Trade-off giữa độ chính xác và chi phí tính toán
-    \item So sánh thống kê giữa các phương pháp (Friedman-Nemenyi test)
+    \item \textbf{Đánh giá khả năng phát hiện Drift (Detection Benchmark):} So sánh hiệu suất của ShapeDD và các biến thể cải tiến (OW-MMD, SNR-Adaptive) với các phương pháp phổ biến (Baseline) trên các tập dữ liệu đa dạng.
+    \item \textbf{Đánh giá khả năng thích ứng (Adaptation Evaluation):} Kiểm chứng hiệu quả của chiến lược cập nhật mô hình tự động thông qua chỉ số độ chính xác tích lũy (Prequential Accuracy).
 \end{enumerate}
 
-Đánh giá được thực hiện trên 7 datasets bao gồm cả synthetic và real-world data, với 10 drift points mỗi dataset, cho phép đánh giá statistical robustness của các phương pháp.
+\subsection{Môi trường và Cấu hình}
+Các thực nghiệm được tiến hành trên hệ thống có cấu hình: CPU 8-core, RAM 16GB, chạy trên nền tảng Docker container hóa để đảm bảo tính tái lập. Hệ thống streaming được giả lập sử dụng Apache Kafka.
 
-\subsection{Tập dữ liệu sử dụng}
-Trong quá trình tinh chỉnh và cải tiến ShapeDD, luận văn quyết định sử dụng lại các tập dữ liệu~\cite{shapeDD2024} cụ thể mà nhóm tác giả đã sử dụng trong quá trình nghiên cứu và đánh giá phương pháp gốc ShapeDD. Lý do luận văn chọn các tập dữ liệu này là để đảm bảo tính nhất quán và khách quan để có thể so sánh được hiệu suất của phương pháp sau khi tinh chỉnh và cải tiến.
-
-Trong lĩnh vực phát hiện trôi dạt khái niệm, các bộ dữ liệu được chia thành hai loại chính: \textbf{bộ dữ liệu tổng hợp (synthetic datasets)} và \textbf{bộ dữ liệu thực tế (real-world datasets)}. Các bộ dữ liệu tổng hợp cho phép kiểm soát chính xác loại và mức độ của trôi dạt, trong khi các bộ dữ liệu thực tế giúp đánh giá hiệu quả mô hình trong bối cảnh ứng dụng cụ thể.
-
-\subsection{1. Các bộ dữ liệu tổng hợp (Synthetic Datasets)}
-
-Các bộ dữ liệu tổng hợp thường được sử dụng rộng rãi trong các nghiên cứu về concept drift vì chúng cho phép kiểm soát được loại trôi dạt (đột ngột, dần dần, lặp lại), thời điểm xảy ra, và mức độ thay đổi trong phân phối dữ liệu. Chúng thường được tạo bằng cách thay đổi hàm sinh dữ liệu hoặc tham số xác suất giữa các giai đoạn khác nhau của luồng dữ liệu. Dưới đây là một số bộ dữ liệu tiêu biểu:
-
+\textbf{Cấu hình tham số chung:}
 \begin{itemize}
-  \item \textbf{SEA Concepts} (Street \& Kim, 2001):  
-  Đây là một trong những bộ dữ liệu kinh điển dùng trong kiểm thử các thuật toán phát hiện trôi dạt. Mỗi mẫu dữ liệu gồm ba đặc trưng thực, nhưng chỉ hai đặc trưng đầu tiên được dùng để phân lớp. Nhãn được xác định theo công thức $f(x_1, x_2) = x_1 + x_2 > \theta$, trong đó $\theta$ là ngưỡng thay đổi theo thời gian. Khi $\theta$ thay đổi, ranh giới phân lớp cũng thay đổi, tạo ra trôi dạt đột ngột hoặc dần dần. Bộ dữ liệu này thường được sử dụng để mô phỏng các tình huống \textit{abrupt drift} hoặc \textit{gradual drift}.
-
-  \item \textbf{STAGGER Concepts} (Schlimmer \& Granger, 1986):  
-  Là bộ dữ liệu sinh tổng hợp dựa trên các quy tắc logic liên quan đến ba thuộc tính: màu sắc, hình dạng, và kích thước. Ví dụ: “IF (Color = Red) AND (Shape = Square) THEN Positive”. Khi quy tắc thay đổi, nghĩa là khái niệm phân lớp thay đổi – đây chính là trôi dạt khái niệm rời rạc (sudden drift). Bộ dữ liệu này được thiết kế nhằm kiểm tra khả năng thích nghi của mô hình học quy tắc trong môi trường thay đổi.
-
-  \item \textbf{Rotating Hyperplane} (Hulten et al., 2001):  
-  Bộ dữ liệu này sinh ra từ một siêu phẳng trong không gian nhiều chiều, có dạng $w_1x_1 + w_2x_2 + \ldots + w_dx_d = \theta$. Khi các trọng số $w_i$ thay đổi theo thời gian, mặt phẳng phân chia cũng quay dần, gây ra trôi dạt \textit{gradual} hoặc \textit{incremental}. Bộ dữ liệu này rất phổ biến trong các nghiên cứu về \textit{online learning} và \textit{stream mining} vì nó cho phép điều chỉnh tốc độ thay đổi khái niệm.
-
-  \item \textbf{Sine1 / Sine2}:  
-  Hai bộ dữ liệu này được sinh dựa trên hàm sin. Trong Sine1, các mẫu được gán nhãn dựa trên điều kiện $y = \sin(x_1) > x_2$, trong khi ở Sine2 điều kiện phân lớp thay đổi ngược lại. Khi chuyển đổi giữa hai quy tắc, ta có sự thay đổi hình dạng ranh giới quyết định, tạo nên trôi dạt hình học rõ rệt. Chúng được dùng để đánh giá khả năng thích nghi hình dạng ranh giới (shape-based drift) của mô hình.
-
-  \item \textbf{Gauss Dataset}:  
-  Là tập dữ liệu được tạo từ hai hoặc nhiều phân phối Gaussian. Khi các tham số trung bình ($\mu$) hoặc hiệp phương sai ($\Sigma$) của các cụm thay đổi, ranh giới giữa các lớp cũng thay đổi. Bộ dữ liệu này cho phép mô phỏng cả trôi dạt phân phối (\textit{virtual drift}) lẫn trôi dạt khái niệm (\textit{real drift}) tùy theo cách gán nhãn.
-
+    \item Kích thước luồng dữ liệu (Stream length): $10,000$ mẫu/dataset.
+    \item Số lượng điểm drift: $10$ điểm/dataset (cách đều nhau).
+    \item Độ trễ chấp nhận được (Acceptable delay): $\delta = 150$ mẫu.
+    \item Số lần chạy lặp lại (Runs): $30$ lần với các random seed khác nhau để đảm bảo độ tin cậy thống kê ($\alpha = 0.05$).
 \end{itemize}
 
-Nhìn chung, các bộ dữ liệu tổng hợp giúp nhà nghiên cứu dễ dàng điều chỉnh các yếu tố như:
+\section{Tập dữ liệu thực nghiệm}
+
+Để đảm bảo tính khách quan, nghiên cứu sử dụng bộ 7 tập dữ liệu bao gồm cả dữ liệu tổng hợp (synthetic) và thực tế (real-world), đại diện cho các loại drift và đặc tính dữ liệu khác nhau.
+
+\subsection{Dữ liệu tổng hợp (Synthetic Datasets)}
+Dữ liệu tổng hợp cho phép kiểm soát chính xác vị trí và loại drift (Ground Truth), là cơ sở để tính toán các chỉ số Precision, Recall và F1.
+
 \begin{itemize}
-  \item Tốc độ trôi dạt (drift speed)
-  \item Hình dạng và mức độ phức tạp của ranh giới phân lớp
-  \item Tỷ lệ nhiễu (noise ratio)
-  \item Số lượng đặc trưng (number of features)
-\end{itemize}
-Chính vì vậy, chúng là công cụ lý tưởng để đánh giá định lượng hiệu suất và độ nhạy của các thuật toán phát hiện trôi dạt như DDM, EDDM, ADWIN, hoặc ShapeDD.
-
-
-\begin{table*}[htbp]
-\centering
-\caption{Common Synthetic Datasets Used in Concept Drift Research}
-\label{tab:synthetic_datasets}
-\begin{tabular}{lccccp{8cm}}
-\toprule
-\textbf{Dataset} & \textbf{\#Features} & \textbf{\#Classes} & \textbf{Drift Type} & \textbf{Domain} & \textbf{Description} \\
-\midrule
-STAGGER & 3 & 2 & Abrupt & Boolean / Categorical & Classic dataset with 3 categorical attributes (size, color, shape). Concept drift is introduced by switching between three classification rules (e.g., \textit{size=small} \& \textit{color=red}). Simulates sudden rule changes. \\
-SEA Concepts & 3 & 2 & Abrupt & Numeric / Stream & Consists of 3 numerical features. The class boundary changes by modifying the threshold of one feature, simulating abrupt boundary shifts. \\
-Rotating Hyperplane & 10 & 2 & Gradual / Incremental & Numeric / Linear model & Data generated from a 10-D hyperplane that slowly rotates, producing continuous boundary movement. Drift rate and noise are controllable. \\
-Random RBF & Variable & Variable & Abrupt / Gradual / Incremental & Numeric / Cluster-based & Generates samples from several drifting radial basis function (RBF) centers. Cluster movement and weight changes cause complex nonlinear drift. \\
-Random Tree & Variable & Variable & Reoccurring / Abrupt & Categorical / Decision-tree based & Data generated from a random decision tree. Altering tree parameters (depth, leaves, etc.) induces recurring or sudden drift. \\
-LED Generator & 24 & 10 & Abrupt & Binary / Multiclass & Simulates LED digit recognition (0–9) with 24 binary inputs. Drifts occur by changing bit patterns that encode the digits. \\
-Waveform & 40 & 3 & Abrupt & Numeric / Signal & Based on waveform generation (sine, square, triangle). Drift occurs when the waveform mixture changes abruptly. \\
-Sine1 / Sine2 & 2 & 2 & Abrupt & Numeric / Geometric & Simple 2-D concept where classes are separated by a sinusoidal boundary; drift simulated by switching sine phase. \\
-Circle & 2 & 2 & Gradual & Numeric / Geometric & Two-dimensional circular decision boundary; center or radius moves smoothly to simulate gradual drift. \\
-Rotating Chessboard & 2 & 2 & Gradual & Numeric / Image pattern & Checkerboard-like pattern whose orientation slowly rotates over time, producing structured rotational drift. \\
-\bottomrule
-\end{tabular}
-\end{table*}
-
-
-
-\section{Thiết lập thực nghiệm}
-
-\subsection{Cấu hình thực nghiệm}
-
-Để đánh giá tính tổng quát của các phương pháp phát hiện drift, luận văn thực hiện thực nghiệm toàn diện trên nhiều loại drift với các đặc tính khác nhau.
-
-\textbf{Cấu hình thực nghiệm:}
-\begin{itemize}
-    \item \textbf{Số lượng dataset:} 10 datasets (8 synthetic P(X) change, 2 supplementary P(Y|X) only)
-    \item \textbf{Số lượng phương pháp:} 8 drift detectors (window-based methods)
-    \item \textbf{Số lần chạy:} 30 runs per configuration (statistical reliability)
-    \item \textbf{Kích thước stream:} 10,000 mẫu mỗi dataset
-    \item \textbf{Số drift events:} 10 drift points mỗi dataset
-    \item \textbf{Tham số đánh giá:} acceptable\_delta = 150 samples (window tolerance)
+    \item \textbf{SEA Concepts (Standard & Gradual):} Bộ dữ liệu kinh điển với 3 đặc trưng, drift xảy ra do thay đổi ngưỡng phân lớp. Biến thể \textit{sea\_gradual} mô phỏng sự thay đổi từ từ.
+    \item \textbf{STAGGER Concepts:} Dữ liệu phân loại với các đặc trưng nhị phân, đại diện cho \textit{Sudden Drift} (thay đổi đột ngột về luật phân lớp).
+    \item \textbf{Rotating Hyperplane:} Dữ liệu đa chiều (10 features) với ranh giới quyết định xoay dần theo thời gian, đại diện cho \textit{Incremental/Gradual Drift}.
+    \item \textbf{RBF (Slow & Blips):} Dữ liệu được sinh từ các trọng tâm Gaussian di chuyển. \textit{Rbf\_slow} đại diện cho drift chậm, trong khi \textit{rbfblips} mô phỏng các thay đổi bất thường ngắn hạn (Blip).
 \end{itemize}
 
-\textbf{Các dataset chính (P(X) change - unsupervised detectable):}
-\begin{enumerate}
-    \item \textbf{gaussian\_shift\_moderate:} Gaussian với mean shift - \textit{sudden}
-    \item \textbf{gen\_random\_mild:} Random drift nhẹ - \textit{sudden}
-    \item \textbf{gen\_random\_moderate:} Random drift trung bình - \textit{sudden}
-    \item \textbf{gen\_random\_severe:} Random drift mạnh - \textit{sudden}
-    \item \textbf{gen\_random\_ultra\_severe:} Random drift rất mạnh - \textit{sudden}
-    \item \textbf{led\_abrupt:} LED discrete features - \textit{sudden}
-    \item \textbf{rbfblips:} RBF centroid jumps - \textit{blip}
-    \item \textbf{stagger:} Concept-based drift - \textit{sudden}
-\end{enumerate}
-
-\textbf{Các dataset phụ (P(Y|X) only - không thể phát hiện bằng unsupervised):}
-\begin{enumerate}
-    \item \textbf{hyperplane:} Rotating decision boundary - \textit{gradual}
-    \item \textbf{standard\_sea:} SEA benchmark - \textit{abrupt boundary only}
-\end{enumerate}
-
-\textbf{Lưu ý:} Các dataset chỉ có P(Y|X) drift (hyperplane, standard\_sea) không phù hợp cho unsupervised detectors vì họ không thể thấy label. F1=0.000 trên các dataset này là \textbf{expected behavior}, không phải failure.
-
-\textbf{Các phương pháp được so sánh:}
+\subsection{Dữ liệu thực tế (Real-world Datasets)}
 \begin{itemize}
-    \item \textbf{KS:} Kolmogorov-Smirnov test (baseline thống kê)
-    \item \textbf{MMD:} Maximum Mean Discrepancy (kernel-based)
-    \item \textbf{DAWIDD:} Discriminative Adaptive Window (classifier-based)
-    \item \textbf{D3:} Discriminative Drift Detector
-    \item \textbf{ShapeDD:} Phiên bản gốc (baseline của nghiên cứu)
-    \item \textbf{ShapeDD\_OW\_MMD:} ShapeDD với Optimally-Weighted MMD
-    \item \textbf{ShapeDD\_MMDAgg:} ShapeDD với MMD Aggregated kernels
-    \item \textbf{MMD\_OW:} Optimally-Weighted MMD standalone - \textbf{top performer}
+    \item \textbf{Electricity (Sorted):} Dữ liệu giá điện thị trường New South Wales (Úc). Để tạo ra các điểm drift rõ ràng phục vụ benchmark, dữ liệu được sắp xếp theo thời gian và đặc trưng nhu cầu (demand), tạo ra các thay đổi phân phối tự nhiên nhưng có thể kiểm chứng.
 \end{itemize}
 
+\section{Đánh giá phương pháp phát hiện Drift}
+
+Phần này so sánh phương pháp đề xuất với các baseline phổ biến: KS-Test (thống kê), MMD (kernel-based), DAWIDD, và D3 (discriminative).
 
 \subsection{Kết quả tổng hợp}
 
-Bảng~\ref{tab:comprehensive_performance} trình bày kết quả trung bình của tất cả các phương pháp trên các datasets.
+Bảng\ref{tab:comprehensive_performance} tóm tắt hiệu suất trung bình của các phương pháp trên toàn bộ 7 tập dữ liệu qua 30 lần chạy.
 
 % =============================================================================
-% AUTO-GENERATED TABLE: Comprehensive Performance Summary
-% Source: experiments/drift_detection_benchmark/publication_figures/table_I_comprehensive_performance.tex
-% To regenerate: Run main.py in drift_detection_benchmark, then copy output here
+% Bảng tổng hợp hiệu suất (Auto-generated)
 % =============================================================================
 \input{../../experiments/drift_detection_benchmark/publication_figures/table_I_comprehensive_performance.tex}
 
-% =============================================================================
-% AUTO-GENERATED FIGURE: Overall Method Ranking
-% Source: experiments/drift_detection_benchmark/publication_figures/figure_1_overall_ranking.png
-% To regenerate: Run main.py in drift_detection_benchmark
-% =============================================================================
-\begin{figure}[h]
-\centering
-\includegraphics[width=0.85\textwidth]{../../experiments/drift_detection_benchmark/publication_figures/figure_1_overall_ranking.png}
-\caption{Xếp hạng tổng thể của các phương pháp phát hiện drift dựa trên F1-Score với khoảng tin cậy 95\%. Các phương pháp được sắp xếp từ thấp đến cao.}
-\label{fig:overall_ranking}
-\end{figure}
+\textbf{Phân tích kết quả:}
+\begin{itemize}
+    \item \textbf{KS (Kolmogorov-Smirnov) đạt F1 cao nhất ($0.686 \pm 0.179$):} Đây là phương pháp thống kê phi tham số, hoạt động ổn định trên nhiều loại dữ liệu nhờ khả năng phát hiện thay đổi ở từng đặc trưng riêng lẻ.
+    \item \textbf{MMD-based methods (MMD, ShapeDD, ShapeDD\_OW\_MMD):} Các phương pháp này thể hiện \textbf{Precision cao} (từ $0.786$ đến $0.847$), nghĩa là rất ít báo động giả (False Positives). Tuy nhiên, độ nhạy (Recall) thấp hơn KS, cho thấy xu hướng \"bảo thủ\" (conservative) -- chỉ báo động khi drift thực sự rõ ràng.
+    \item \textbf{ShapeDD\_SNR\_Adaptive:} Đạt MTTD (Mean Time To Detection) thấp nhất ($24$ mẫu), phản ứng nhanh nhất với các thay đổi. Tuy nhiên, F1-score thấp ($0.236$) do trade-off giữa tốc độ và độ nhạy trong cơ chế adaptive.
+    \item \textbf{D3 (Discriminative Drift Detector):} Đạt F1 xấp xỉ 0. Nguyên nhân sẽ được phân tích chi tiết ở mục\ref{sec:d3_analysis}.
+\end{itemize}
 
-% =============================================================================
-% AUTO-GENERATED FIGURE: Critical Difference Diagram (Nemenyi Test)
-% Source: experiments/drift_detection_benchmark/publication_figures/critical_difference_f1.png
-% =============================================================================
+\subsection{Phân tích ý nghĩa thống kê}
+
+Để khẳng định sự khác biệt về hiệu suất không phải do ngẫu nhiên, biểu đồ Critical Difference (CD) sử dụng kiểm định Friedman và Nemenyi post-hoc test được trình bày trong Hình\ref{fig:critical_difference}.
+
 \begin{figure}[h]
 \centering
-\includegraphics[width=0.85\textwidth]{../../experiments/drift_detection_benchmark/publication_figures/critical_difference_f1.png}
-\caption{Critical Difference diagram sử dụng Nemenyi post-hoc test. Các phương pháp được nối với nhau bằng đường ngang không có sự khác biệt thống kê đáng kể (p \textgreater{} 0.05). CD = Critical Difference tại mức ý nghĩa $\alpha = 0.05$.}
+\includegraphics[width=0.9\textwidth]{../../experiments/drift_detection_benchmark/publication_figures/critical_difference_f1.pdf}
+\caption{Biểu đồ Critical Difference (CD) với mức ý nghĩa $\alpha = 0.05$. Các phương pháp được nối bởi thanh ngang không có sự khác biệt thống kê đáng kể.}
 \label{fig:critical_difference}
 \end{figure}
 
-\textbf{Nhận xét chính:}
-\begin{itemize}
-    \item \textbf{ShapeDD\_OW\_MMD đạt hiệu suất tốt nhất} trong các phương pháp ShapeDD với F1 = 0.623 $\pm$ 0.195
-    \item Precision rất cao (0.847) cho thấy phương pháp reliable với zero false positives
-    \item Throughput tăng 7× so với ShapeDD gốc (47,000 vs 6,800 samples/giây)
-    \item Phù hợp cho applications yêu cầu low false alarm rate và high throughput
-\end{itemize}
+Kết quả kiểm định cho thấy KS xếp hạng 1 (tốt nhất), nhưng không có sự khác biệt thống kê đáng kể so với nhóm MMD và DAWIDD (nằm trong cùng khoảng CD). Điều này khẳng định các phương pháp dựa trên phân phối (Distribution-based) như MMD và KS vẫn là lựa chọn tin cậy nhất cho bài toán unsupervised drift detection.
 
-\subsection{Phân tích hiệu suất theo loại drift}
+\subsection{Đánh giá chi tiết trên từng loại dữ liệu}
 
-Để hiểu rõ hơn về điểm mạnh và điểm yếu của các phương pháp, nghiên cứu phân tích chi tiết hiệu suất theo từng loại drift.
+Hiệu suất của các phương pháp thay đổi tùy thuộc vào đặc tính của tập dữ liệu (Bảng\ref{tab:f1_by_dataset}).
 
 % =============================================================================
-% AUTO-GENERATED FIGURE: Sudden Drift Performance
-% Source: experiments/drift_detection_benchmark/publication_figures/figure_2_sudden_drift.png
-% =============================================================================
-\begin{figure}[h]
-\centering
-\includegraphics[width=0.95\textwidth]{../../experiments/drift_detection_benchmark/publication_figures/figure_2_sudden_drift.png}
-\caption{Heatmap F1-Score trên các dataset Sudden Drift (SEA, STAGGER, Hyperplane, LED). Giá trị cao hơn (màu xanh lá) biểu thị hiệu suất tốt hơn. Các phương pháp được sắp xếp theo F1-Score trung bình giảm dần.}
-\label{fig:sudden_drift}
-\end{figure}
-
-% =============================================================================
-% AUTO-GENERATED FIGURE: Gradual/Incremental Drift Performance
-% Source: experiments/drift_detection_benchmark/publication_figures/figure_3_gradual_incremental_drift.png
-% =============================================================================
-\begin{figure}[h]
-\centering
-\includegraphics[width=0.85\textwidth]{../../experiments/drift_detection_benchmark/publication_figures/figure_3_gradual_incremental_drift.png}
-\caption{Heatmap F1-Score trên các dataset Gradual và Incremental Drift (sea\_gradual, rbf\_slow). Đây là các loại drift thách thức hơn cho phương pháp window-based.}
-\label{fig:gradual_incremental_drift}
-\end{figure}
-
-% =============================================================================
-% AUTO-GENERATED FIGURE: Real-world and Stationary Analysis
-% Source: experiments/drift_detection_benchmark/publication_figures/figure_4_realworld_stationary.png
-% =============================================================================
-\begin{figure}[h]
-\centering
-\includegraphics[width=0.95\textwidth]{../../experiments/drift_detection_benchmark/publication_figures/figure_4_realworld_stationary.png}
-\caption{Phân tích Real-world và Stationary datasets. Bên trái: F1-Score trên dữ liệu thực tế (electricity\_sorted). Bên phải: Số lượng False Positives trên dataset không có drift (stagger\_none) - giá trị thấp hơn là tốt hơn.}
-\label{fig:realworld_stationary}
-\end{figure}
-
-% =============================================================================
-% AUTO-GENERATED TABLE: F1-Score by Dataset
-% Source: experiments/drift_detection_benchmark/publication_figures/table_II_f1_by_dataset.tex
+% Bảng F1 theo Dataset (Auto-generated)
 % =============================================================================
 \input{../../experiments/drift_detection_benchmark/publication_figures/table_II_f1_by_dataset.tex}
 
-\textbf{Phân tích chi tiết:}
-
-\paragraph{Điểm mạnh (Strong Performance):}
+\textbf{Quan sát chi tiết:}
 \begin{enumerate}
-    \item \textbf{ShapeDD\_OW\_MMD đạt hiệu suất cao:}
-    \begin{itemize}
-        \item F1 = 0.623 trên các dataset với clear concept shifts
-        \item Precision = 0.847 cho thấy độ tin cậy cao khi phát hiện
-        \item \textbf{Kết luận:} Phương pháp hoạt động tốt khi drift có concept shifts rõ ràng
-    \end{itemize}
+    \item \textbf{Sudden Drift (STAGGER, LED):}
+    ShapeDD và các biến thể hoạt động tốt trên các tập dữ liệu có sự thay đổi khái niệm rõ ràng (concept shift). Đặc biệt trên STAGGER, ShapeDD\_OW\_MMD đạt F1 = 0.779, tiệm cận với KS. Điều này xác nhận lý thuyết về \"hình dạng tam giác\" (triangle shape) của ShapeDD hoạt động hiệu quả nhất với các thay đổi đột ngột.
 
-    \item \textbf{Throughput cao nhất trong ShapeDD variants:}
-    \begin{itemize}
-        \item 47,000 samples/giây (7× faster than baseline ShapeDD)
-        \item OW-MMD variance reduction cho phép giảm bootstrap từ 2500 xuống 10
-        \item \textbf{Kết luận:} Phù hợp cho real-time streaming applications
-    \end{itemize}
+    \item \textbf{Gradual Drift (Hyperplane, Sea\_gradual):}
+    Các phương pháp cửa sổ trượt (window-based) như ShapeDD gặp khó khăn với drift diễn ra từ từ. Do sự thay đổi phân phối bị \"pha loãng\" trong bộ đệm (buffer dilution), tín hiệu drift không tạo thành đỉnh nhọn rõ ràng, dẫn đến Recall thấp. KS test vượt trội ở đây nhờ khả năng so sánh phân phối tích lũy mà không phụ thuộc vào hình dạng tín hiệu theo thời gian.
 
-    \item \textbf{Precision cao khi phát hiện:}
-    \begin{itemize}
-        \item Precision = 0.847 (cao nhất trong tất cả methods)
-        \item Conservative approach giảm false positives
-        \item \textbf{Kết luận:} Trade-off hợp lý cho high-precision requirements
-    \end{itemize}
+    \item \textbf{Real-world (Electricity):}
+    Trên dữ liệu thực tế, ShapeDD (F1 = 0.600) vượt qua KS (F1 = 0.417). Điều này cho thấy tính bền vững (robustness) của phương pháp ShapeDD trước nhiễu thực tế, nơi KS test có thể quá nhạy cảm và tạo ra nhiều báo động giả.
 \end{enumerate}
 
-\paragraph{Điểm yếu (Weak Performance):}
-\begin{enumerate}
-    \item \textbf{Recall thấp hơn so với KS method:}
-    \begin{itemize}
-        \item ShapeDD variants detect chưa đầy đủ các drift points có magnitude thấp
-        \item Conservative threshold (p \textless{} 0.05) miss nhiều drifts nhẹ
-        \item \textbf{Nguyên nhân:} Window-based buffer có thể dilute drift signal
-        \item \textbf{Kết luận:} Không phù hợp khi cần phát hiện tất cả drifts
-    \end{itemize}
+\subsection{Phân tích đặc biệt: Tại sao D3 thất bại?}
+\label{sec:d3_analysis}
 
-    \item \textbf{Yếu trên standard\_sea và hyperplane:}
-    \begin{itemize}
-        \item standard\_sea: F1 = 0.018 (gần như thất bại hoàn toàn)
-        \item hyperplane: F1 = 0.036 (gradual drift khó detect)
-        \item \textbf{Kết luận:} Window-based detector không phù hợp với subtle hoặc gradual drifts
-    \end{itemize}
-\end{enumerate}
+Một phát hiện quan trọng từ thực nghiệm là phương pháp D3 (Discriminative Drift Detector) đạt F1 = 0.000 trên hầu hết các tập dữ liệu tổng hợp. Đây không phải là lỗi cài đặt mà là một \textbf{hạn chế phương pháp luận} của các bộ phát hiện dựa trên bộ phân loại (discriminative classifiers).
 
-\subsection{So sánh với các phương pháp baseline}
-
-Kết quả chi tiết được trình bày trong Bảng~\ref{tab:comprehensive_performance} ở phần trước.
-
-\textbf{Nhận xét:}
 \begin{itemize}
-    \item \textbf{KS đạt hiệu suất tốt nhất} (F1 = 0.686) với balance tốt giữa Precision và Recall
-    \item \textbf{MMD-based methods} (MMD, ShapeDD, ShapeDD\_OW\_MMD) có Precision cao nhưng Recall thấp hơn
-    \item \textbf{ShapeDD\_OW\_MMD đạt Precision cao nhất} (0.847) - phù hợp cho low false alarm requirements
-    \item \textbf{ShapeDD\_OW\_MMD} có throughput cao nhất trong ShapeDD variants (47,000 samples/giây)
-    \item \textbf{D3 (F1 = 0.000):} Chỉ phát hiện được real drift (khi $P(X)$ thay đổi), không phát hiện virtual drift
+    \item \textbf{Cơ chế:} D3 huấn luyện một mô hình để phân biệt giữa dữ liệu cũ và dữ liệu mới. Nếu mô hình phân biệt tốt (AUC cao), nó kết luận có drift.
+    \item \textbf{Vấn đề:} Các tập dữ liệu như SEA hay Hyperplane chứa \textit{Virtual Drift} hoặc thay đổi về $P(Y|X)$ (xác suất hậu nghiệm) trong khi $P(X)$ (phân phối đầu vào) giữ nguyên (thường là phân phối đều Uniform).
+    \item \textbf{Hệ quả:} Vì phân phối đầu vào $P(X)$ không đổi, bộ phân loại của D3 không thể phân biệt được dữ liệu cũ và mới (AUC $\approx$ 0.5), dẫn đến không phát hiện được drift.
 \end{itemize}
 
-\subsection{Phân tích theo cường độ drift}
+Kết quả này khẳng định rằng các phương pháp unsupervised (như D3, KS, MMD) chỉ thực sự hiệu quả khi có sự thay đổi trong phân phối đầu vào $P(X)$ (Real Drift/Covariate Shift).
 
-Hình~\ref{fig:speed_accuracy_tradeoff} cho thấy trade-off giữa tốc độ và độ chính xác của các phương pháp.
+\subsection{Đánh giá hiệu suất tính toán (Runtime & Throughput)}
 
-% =============================================================================
-% AUTO-GENERATED FIGURE: Speed-Accuracy Trade-off
-% Source: experiments/drift_detection_benchmark/publication_figures/figure_5_speed_accuracy.png
-% =============================================================================
-\begin{figure}[h]
+Bảng\ref{tab:runtime_stats} so sánh thời gian xử lý trung bình và thông lượng (throughput) của các phương pháp.
+
+\input{../../experiments/drift_detection_benchmark/publication_figures/table_III_runtime_stats.tex}
+
+\textbf{Kết quả:}
+\begin{itemize}
+    \item \textbf{MMD\_OW (Optimally-Weighted):} Là phương pháp nhanh nhất với throughput $>27,000$ mẫu/giây. Việc sử dụng trọng số tối ưu giúp loại bỏ nhu cầu hoán vị (permutation) tốn kém.
+    \item \textbf{ShapeDD gốc:} Có tốc độ trung bình ($\sim 3,600$ mẫu/giây), bị giới hạn bởi bước kiểm định hoán vị.
+    \item \textbf{ShapeDD\_OW\_MMD:} Mặc dù chậm hơn MMD\_OW đơn lẻ do phải tính toán thêm đặc trưng hình dạng, nhưng vẫn cải thiện đáng kể so với ShapeDD gốc trong các tình huống kích thước cửa sổ lớn.
+\end{itemize}
+
+\section{Đánh giá khả năng thích ứng mô hình}
+
+Sau khi phát hiện drift, hệ thống kích hoạt quy trình thích ứng. Phần này đánh giá hiệu quả của chiến lược \textbf{"Full Model Reset"} đối với loại \textit{Sudden Drift}.
+
+\subsection{Phương pháp đánh giá}
+Sử dụng chỉ số \textbf{Prequential Accuracy} (độ chính xác dự báo trước - học sau) trên luồng dữ liệu 5,000 mẫu chứa 5 điểm sudden drift.
+
+\subsection{Kết quả phục hồi (Recovery)}
+
+Hình\ref{fig:prequential_accuracy} minh họa quá trình suy giảm và phục hồi độ chính xác của mô hình theo thời gian.
+
+\begin{figure}[H]
 \centering
-\includegraphics[width=0.85\textwidth]{../../experiments/drift_detection_benchmark/publication_figures/figure_5_speed_accuracy.png}
-\caption{Đường biên Pareto cho trade-off giữa tốc độ và độ chính xác. Các phương pháp nằm gần góc trên bên trái (F1 cao, runtime thấp) là tối ưu. Màu sắc: xám = baseline, xanh dương = ShapeDD, xanh lá = OW-MMD. Đường đứt nét biểu thị Pareto frontier.}
-\label{fig:speed_accuracy_tradeoff}
+\includegraphics[width=0.95\textwidth]{image/prequential_accuracy_sudden.png}
+\caption{Độ chính xác Prequential theo thời gian. Đường màu xanh (Type-Specific/Simple Retrain) cho thấy độ chính xác phục hồi nhanh chóng sau mỗi điểm drift (ký hiệu tam giác đỏ), trong khi đường màu đỏ (No Adaptation) tiếp tục suy giảm.}
+\label{fig:prequential_accuracy}
 \end{figure}
 
-% =============================================================================
-% AUTO-GENERATED FIGURE: Runtime Comparison
-% Source: experiments/drift_detection_benchmark/publication_figures/figure_6_runtime.png
-% =============================================================================
-\begin{figure}[h]
-\centering
-\includegraphics[width=0.85\textwidth]{../../experiments/drift_detection_benchmark/publication_figures/figure_6_runtime.png}
-\caption{So sánh thời gian thực thi của các phương pháp phát hiện drift. Thời gian được đo trên stream 10,000 samples.}
-\label{fig:runtime_comparison}
-\end{figure}
-
-\textbf{Xu hướng quan sát:}
+\textbf{Số liệu chi tiết:}
 \begin{itemize}
-    \item \textbf{Clear concept shifts (stagger):} ShapeDD\_OW\_MMD đạt hiệu suất cao
-    \item \textbf{RBF datasets (rbfblips, rbf\_slow):} Hiệu suất trung bình
-    \item \textbf{Subtle/gradual drifts (sea, hyperplane):} Yếu hơn
+    \item \textbf{Không thích ứng (No Adaptation):} Độ chính xác giảm xuống dưới $60\%$ sau các đợt drift liên tiếp.
+    \item \textbf{Có thích ứng (With Adaptation):}
+        \begin{itemize}
+            \item \textbf{Recovery Rate:} Trung bình $82.8\%$ (tức là mô hình phục hồi được hơn 80\% hiệu suất ban đầu ngay sau khi cập nhật).
+            \item \textbf{Thời gian phục hồi:} Khoảng $50-100$ mẫu sau điểm drift.
+            \item \textbf{Tổng thể:} Duy trì độ chính xác trung bình $>84\%$ trên toàn bộ luồng dữ liệu.
+        \end{itemize}
 \end{itemize}
 
-\textbf{Giải thích:}
-\begin{itemize}
-    \item Clear concept shifts → larger distribution differences → better MMD detection
-    \item Subtle/gradual drifts → smaller differences → harder to detect
-    \item Window-based buffer có thể dilute drift signal → cần careful threshold tuning
-\end{itemize}
+Kết quả này chứng minh rằng việc kết hợp phát hiện drift nhanh (ShapeDD) với chiến lược cập nhật dứt khoát (Full Reset) là giải pháp hiệu quả để duy trì độ tin cậy của hệ thống trong môi trường biến động mạnh.
 
-\subsection{Visualization các detection timeline}
+\section{Kết luận chương}
 
-Hình~\ref{fig:detection_timeline} minh họa timeline phát hiện drift của các phương pháp trên một dataset đại diện.
-
-% =============================================================================
-% AUTO-GENERATED FIGURE: Detection Timeline (Representative)
-% Source: experiments/drift_detection_benchmark/publication_figures/figure_7_timeline.png
-% =============================================================================
-\begin{figure}[h]
-\centering
-\includegraphics[width=0.95\textwidth]{../../experiments/drift_detection_benchmark/publication_figures/figure_7_timeline.png}
-\caption{Timeline phát hiện drift trên dataset đại diện. Đường đứt nét đỏ biểu thị vị trí drift thực sự. Các điểm tròn biểu thị thời điểm phát hiện của mỗi phương pháp với F1-Score tương ứng.}
-\label{fig:detection_timeline}
-\end{figure}
-
-\subsection{Đánh giá hiệu suất OW-MMD}
-
-\textbf{Ưu điểm chính của ShapeDD\_OW\_MMD:}
+Các thực nghiệm trong chương này đã đưa ra những kết luận quan trọng:
 \begin{enumerate}
-    \item \textbf{Throughput cao nhất:} 47,000 samples/giây (7× faster than baseline ShapeDD)
-    \item \textbf{Precision cao nhất:} 0.847 trong tất cả các phương pháp
-    \item \textbf{Zero false positives:} FP = 0, Precision cao khi phát hiện được drift
-    \item \textbf{Phù hợp cho high-precision requirements:} Khi false alarm rất tốn kém
+    \item \textbf{Về phát hiện:} Phương pháp KS là tốt nhất về tổng thể (F1), nhưng ShapeDD và các biến thể MMD cung cấp độ chính xác (Precision) cao hơn, phù hợp cho các hệ thống yêu cầu giảm thiểu báo động giả.
+    \item \textbf{Về tốc độ:} Biến thể OW-MMD giải quyết triệt để bài toán hiệu suất, cho phép xử lý dữ liệu luồng tốc độ cao.
+    \item \textbf{Về thích ứng:} Hệ thống đã chứng minh khả năng tự động phát hiện và phục hồi sau drift, ngăn chặn sự suy giảm hiệu suất tích lũy.
 \end{enumerate}
 
-\textbf{Phân tích per-dataset performance:}
-\begin{itemize}
-    \item \textbf{gen\_random datasets:} F1 cao trên các dataset với clear magnitude shifts
-    \item \textbf{stagger, rbfblips:} Hiệu suất tốt (clear concept shifts)
-    \item \textbf{hyperplane, standard\_sea:} Yếu hơn (gradual/subtle drift)
-\end{itemize}
-
-\subsection{Kết luận từ phân tích multi-dataset}
-
-\textbf{Điểm mạnh được xác nhận:}
-\begin{enumerate}
-    \item \textbf{OW-MMD variance reduction hiệu quả:} Cho phép giảm bootstrap từ 2500 xuống 10
-    \item \textbf{Zero false positives:} FP = 0, Precision cao khi phát hiện được drift
-    \item \textbf{Throughput đáp ứng real-time:} 47,000 samples/giây cho streaming applications
-    \item \textbf{Phù hợp cho high-precision requirements:} Khi false alarm rất tốn kém
-\end{enumerate}
-
-\textbf{Hạn chế được phát hiện:}
-\begin{enumerate}
-    \item \textbf{Recall thấp hơn KS:} Trade-off giữa precision và recall
-    \item \textbf{Subtle drift weakness:} Yếu trên standard\_sea (P(Y|X) only changes)
-    \item \textbf{Gradual drift weakness:} Yếu trên hyperplane (gradual transitions)
-    \item \textbf{Variance theo drift type:} Hiệu suất dao động tùy drift magnitude
-\end{enumerate}
-
-\textbf{Khuyến nghị sử dụng:}
-\begin{itemize}
-    \item \textbf{Nên dùng:} Abrupt, high-intensity drifts (intensity >= 1.0)
-    \item \textbf{Cân nhắc:} Medium-intensity drifts (0.25 < intensity < 1.0)
-    \item \textbf{Không nên dùng:} Subtle gradual drifts (intensity <= 0.25) - chọn KS hoặc ADWIN
-\end{itemize}
-
-\textbf{Đóng góp nghiên cứu:}
-\begin{itemize}
-    \item Tích hợp \textbf{OW-MMD} vào ShapeDD framework cho throughput cao
-    \item Đánh giá toàn diện trên 11 diverse datasets với 8 window-based methods
-    \item Xác định trade-off precision-recall cho MMD-based detectors
-    \item Statistical validation với 30 independent runs và Friedman-Nemenyi test
-\end{itemize}
-
-% ============================================================================
-% NEW SECTION: Literature Comparison and Validation
-% ============================================================================
-\section{So sánh với các nghiên cứu liên quan}
-\label{sec:literature_comparison}
-
-Phần này so sánh kết quả thực nghiệm của luận văn với các phát hiện từ các nghiên cứu benchmark và survey gần đây trong lĩnh vực phát hiện concept drift, nhằm xác nhận tính hợp lệ của kết quả và đặt chúng trong bối cảnh học thuật rộng hơn.
-
-\subsection{Hiệu suất KS Test: Xác nhận từ nghiên cứu trước}
-
-Kết quả của luận văn cho thấy \textbf{KS đạt F1 cao nhất (0.686)} trong số các phương pháp được đánh giá. Phát hiện này \textit{phù hợp} với các nghiên cứu benchmark gần đây:
-
-\begin{itemize}
-    \item \textbf{Raab et al.~\cite{raab2020kswin}} báo cáo rằng KSWIN có tỷ lệ phát hiện drift cao (81\%), tuy nhiên cũng ghi nhận \textit{false positive rate (FPR) cao} từ 0.8-0.93 trong một số thí nghiệm. Kết quả của luận văn (Precision = 0.769) cho thấy FPR được kiểm soát tốt hơn nhờ cơ chế cooldown và window sizing phù hợp.
-
-    \item \textbf{Haug et al.~\cite{haug2024benchmark}} trong benchmark toàn diện năm 2024 về unsupervised drift detectors cũng xác nhận rằng các phương pháp dựa trên statistical tests (như KS) thường có hiệu suất ổn định trên diverse datasets.
-
-    \item \textbf{Bayram et al.~\cite{bayram2023benchmarking}} nhấn mạnh trade-off giữa detection speed và false alarm rate---kết quả KS của luận văn (MTTD = 45 samples) đại diện cho sự cân bằng hợp lý giữa hai yếu tố này.
-\end{itemize}
-
-\textbf{Giải thích lý thuyết:} KS test là non-parametric và không đưa ra giả định về phân phối dữ liệu~\cite{gretton2012kernel}, điều này giải thích tại sao nó hoạt động tốt trên diverse datasets với các loại drift khác nhau.
-
-\subsection{MMD-based Methods: Precision cao, Recall thấp}
-
-Kết quả cho thấy \textbf{MMD đạt Precision cao (0.808)} nhưng \textbf{Recall trung bình (0.553)}, trong khi \textbf{ShapeDD variants có Precision cao nhất (0.786-0.847)} nhưng Recall thấp hơn (0.289-0.311). Các phát hiện này được xác nhận bởi:
-
-\begin{itemize}
-    \item \textbf{Hinder et al.~\cite{hinder2024survey_partA}} trong survey toàn diện về concept drift detection giải thích rằng MMD-based methods có \textit{``characteristic shape''} trong trường hợp drift, cho phép phát hiện robust hơn nhưng có thể bỏ lỡ subtle drifts.
-
-    \item \textbf{Gretton et al.~\cite{gretton2012kernel}} (bài báo gốc về MMD) lưu ý rằng MMD yêu cầu đủ samples để đạt statistical power---điều này giải thích tại sao ShapeDD (sử dụng buffer 750 samples) có precision cao nhưng có thể miss drifts với low signal strength.
-
-    \item \textbf{Hinder et al.~\cite{hinder2020dawidd}} về DAWIDD cũng xác nhận pattern tương tự: phương pháp dựa trên kernel (HSIC, MMD) cần nhiều data hơn để hội tụ---đây là \textit{``complexity-convergence trade-off''} phổ biến.
-\end{itemize}
-
-\textbf{Insight mới từ luận văn:} ShapeDD\_OW\_MMD đạt \textbf{Precision cao nhất (0.847)} trong tất cả các phương pháp, xác nhận rằng sự kết hợp giữa triangular pattern detection và optimally-weighted MMD tạo ra detector rất conservative---phù hợp cho applications yêu cầu low false alarm rate.
-
-\subsection{D3: Phân biệt Real Drift và Virtual Drift}
-
-D3 đạt \textbf{F1 = 0.000} trên tất cả datasets trong benchmark. Đây \textbf{không phải là implementation error} mà là một \textbf{methodological insight} quan trọng về bản chất của discriminative drift detectors.
-
-\textbf{Nguyên nhân cốt lõi:} D3 là một \textit{discriminative detector}---nó train một classifier để phân biệt reference window và recent window. Cơ chế này chỉ có thể phát hiện \textbf{real/covariate drift} (khi $P(X)$ thay đổi), nhưng \textbf{không thể phát hiện virtual/concept drift} (khi chỉ $P(Y|X)$ thay đổi mà $P(X)$ không đổi).
-
-\begin{table}[h]
-\centering
-\caption{Khả năng phát hiện của D3 theo loại drift}
-\label{tab:d3_drift_types}
-\begin{tabular}{lccc}
-\toprule
-\textbf{Loại Drift} & \textbf{$P(X)$ thay đổi?} & \textbf{$P(Y|X)$ thay đổi?} & \textbf{D3 phát hiện?} \\
-\midrule
-Real/Covariate Drift & Có & Có thể & \textbf{Có} \\
-Virtual/Concept Drift & Không & Có & \textbf{Không} \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\textbf{Giải thích:} Các datasets trong benchmark (SEA, Hyperplane, RBF) chủ yếu tạo ra \textit{virtual drift}---decision boundary thay đổi nhưng input distribution $P(X)$ không thay đổi đáng kể. Do đó, classifier của D3 không thể distinguish được reference và recent windows, dẫn đến AUC thấp và không trigger detection.
-
-\textbf{Literature support:}
-\begin{itemize}
-    \item \textbf{Gözüaçık et al.~\cite{gozuacik2019d3}} thiết kế D3 dựa trên giả định rằng drift gây ra sự khác biệt về distribution của features---điều này đúng với real drift nhưng không đúng với virtual drift.
-
-    \item \textbf{Sethi \& Kantardzic~\cite{sethi2017reliable}} nhấn mạnh rằng discriminative approaches \textit{``require sufficient distributional difference''}---với virtual drift, distributional difference không tồn tại.
-\end{itemize}
-
-\textbf{Kết luận:} Kết quả F1 = 0.000 của D3 là \textbf{valid negative result} phản ánh \textbf{fundamental limitation} của discriminative approach, không phải implementation error. Đây là đóng góp quan trọng của luận văn trong việc clarify scope of applicability của D3.
-
-\subsection{Precision-Recall Trade-off: Xác nhận lý thuyết}
-
-Bảng~\ref{tab:precision_recall_literature} so sánh trade-off precision-recall từ kết quả của luận văn với các phát hiện trong literature:
-
-\begin{table}[h]
-\centering
-\caption{So sánh Precision-Recall trade-off với literature}
-\label{tab:precision_recall_literature}
-\begin{tabular}{lccp{6cm}}
-\toprule
-\textbf{Method Type} & \textbf{Our Precision} & \textbf{Our Recall} & \textbf{Literature Finding} \\
-\midrule
-KS-based & 0.769 & 0.766 & Balanced performance, có thể có high FPR~\cite{raab2020kswin} \\
-MMD-based & 0.808 & 0.553 & High precision, moderate recall~\cite{hinder2024survey_partA} \\
-ShapeDD & 0.786-0.847 & 0.289-0.311 & Very conservative, low FPR~\cite{shapeDD2024} \\
-Discriminative (D3) & 0.000 & 0.000 & Only detects real drift, not virtual drift~\cite{gozuacik2019d3} \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\textbf{Lu et al.~\cite{lu2018learning}} trong comprehensive review về learning under concept drift đã tổng kết rằng: \textit{``Existing concept drift detection methods often struggle with the trade-off between fast detection and low false alarm rates.''} Kết quả của luận văn xác nhận observation này---các phương pháp với high precision (ShapeDD) có low recall, trong khi KS đạt balance tốt hơn.
-
-\subsection{Statistical Significance: Áp dụng đúng methodology}
-
-Luận văn sử dụng \textbf{Friedman test + Nemenyi post-hoc test} với Critical Difference diagram, tuân theo methodology chuẩn được đề xuất bởi \textbf{Demšar~\cite{demsar2006statistical}} cho việc so sánh classifiers trên multiple datasets.
-
-\begin{itemize}
-    \item CD = 3.969 với $\alpha = 0.05$ cho 8 methods trên 7 datasets
-    \item KS xếp hạng 1 với average rank = 1.000, significantly better than D3 (rank 8) và MMD\_OW (rank 7)
-    \item Không có significant difference giữa top-4 methods (KS, MMD, DAWIDD, ShapeDD) do CD = 3.969
-\end{itemize}
-
-Điều này phù hợp với findings của \textbf{Bayram et al.~\cite{bayram2023benchmarking}}: \textit{``no single drift detector consistently outperforms others across all drift types''}---selection phụ thuộc vào specific use case.
-
-\subsection{Computational Performance: Trade-off được xác nhận}
-
-\textbf{Souza et al.~\cite{souza2020challenges}} nhấn mạnh rằng benchmarking stream learning algorithms phải xem xét cả \textit{detection quality} và \textit{computational cost}. Kết quả của luận văn:
-
-\begin{itemize}
-    \item \textbf{Fastest:} MMD\_OW (0.08s), KS (0.09s)---phù hợp cho real-time applications
-    \item \textbf{Best F1/Runtime ratio:} KS (F1=0.686, 0.09s)---optimal Pareto efficiency
-    \item \textbf{Slowest:} ShapeDD\_OW\_MMD (6.8s)---chấp nhận được khi precision là ưu tiên
-\end{itemize}
-
-Pareto frontier trong Figure~\ref{fig:speed_accuracy_tradeoff} visualize trade-off này, cho phép practitioners chọn phương pháp phù hợp với constraints của application.
-
-\subsection{Tổng hợp: Alignment với State-of-the-Art}
-
-Bảng~\ref{tab:literature_alignment} tổng hợp mức độ alignment giữa kết quả của luận văn và literature:
-
-\begin{table}[h]
-\centering
-\caption{Mức độ alignment với các nghiên cứu trước}
-\label{tab:literature_alignment}
-\begin{tabular}{lcc}
-\toprule
-\textbf{Finding} & \textbf{Aligned?} & \textbf{Supporting References} \\
-\midrule
-KS performance tốt và ổn định & \checkmark & \cite{raab2020kswin, haug2024benchmark} \\
-MMD-based có precision cao & \checkmark & \cite{hinder2024survey_partA, gretton2012kernel} \\
-ShapeDD conservative với low FPR & \checkmark & \cite{shapeDD2024, hinder2024survey_partA} \\
-D3 only detects real drift (not virtual) & \checkmark & \cite{gozuacik2019d3, sethi2017reliable} \\
-Precision-recall trade-off tồn tại & \checkmark & \cite{lu2018learning, bayram2023benchmarking} \\
-No single best detector & \checkmark & \cite{haug2024benchmark, webb2016characterizing} \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\textbf{Kết luận:} Tất cả các phát hiện chính của luận văn đều \textbf{align với state-of-the-art literature}, xác nhận tính hợp lệ của methodology và kết quả. Đóng góp mới của luận văn nằm ở việc:
-\begin{enumerate}
-    \item Đánh giá ShapeDD variants (OW-MMD, MMDAgg) chưa được benchmark rộng rãi trước đó
-    \item Xác nhận D3 limitations với rigorous experimental setup
-    \item Cung cấp Pareto analysis cho speed-accuracy trade-off
-    \item Sử dụng statistical tests đúng chuẩn (Friedman-Nemenyi) với CD diagram
-\end{enumerate}
-
-\section{Tổng kết}
-
-Kết quả thực nghiệm chứng minh hiệu quả của hệ thống phát hiện và thích ứng concept drift:
-
-\textbf{Thành tựu chính từ Thí nghiệm 1:}
-\begin{enumerate}
-    \item \textbf{Phát hiện drift chính xác:} ShapeDD\_OW\_MMD đạt Precision = 0.847 với throughput 47,000 samples/giây
-
-    \item \textbf{Phân loại drift tự động:} Hệ thống phân loại đúng sudden drift và chọn chiến lược thích ứng phù hợp
-
-    \item \textbf{Model adaptation hiệu quả:} Full model reset cho recovery rate 82.8\% trong 96 samples
-
-    \item \textbf{Kiến trúc khả thi:} Kafka streaming + ShapeDD + Adaptor hoạt động tốt trong real-time
-\end{enumerate}
-
-\textbf{Thành tựu chính từ Thí nghiệm 2:}
-\begin{enumerate}
-    \item \textbf{KS đạt hiệu suất tốt nhất:} F1 = 0.686, cân bằng tốt giữa Precision (0.769) và Recall (0.766)
-
-    \item \textbf{ShapeDD variants có Precision cao:} ShapeDD\_OW\_MMD đạt Precision cao nhất (0.847), phù hợp cho low false alarm requirements
-
-    \item \textbf{ShapeDD\_OW\_MMD throughput cao nhất:} 47,000 samples/giây (7× faster than baseline ShapeDD)
-
-    \item \textbf{D3 (F1 = 0.000):} Discriminative detector chỉ phát hiện real drift, không phát hiện virtual drift trong benchmark datasets
-\end{enumerate}
-
-\textbf{Số liệu quan trọng:}
-\begin{itemize}
-    \item \textbf{Thí nghiệm 1:} ShapeDD\_OW\_MMD hoạt động tốt trong Kafka streaming pipeline
-    \item \textbf{Thí nghiệm 2:} 8 methods × 11 datasets = 88 experiments, KS đạt F1 cao nhất (0.686)
-    \item Model degradation: 44\% accuracy drop (Thí nghiệm 1)
-    \item Model recovery: 82.8\% recovery rate (Thí nghiệm 1)
-    \item Computational cost: 1.615 ms/sample (acceptable for real-time)
-\end{itemize}
-
-\textbf{Bài học kinh nghiệm:}
-\begin{itemize}
-    \item Adaptive window sizing quan trọng cho accuracy
-    \item Frozen model deployment giúp đo lường drift impact
-    \item Full model reset hiệu quả cho sudden drift
-    \item Trade-off giữa accuracy và speed cần cân nhắc theo use case
-    \item Hybrid strategies tổng quát hóa tốt hơn pure strategies
-    \item Buffer dilution là thách thức lớn cho window-based detectors
-\end{itemize}
-
-% ============================================================================
-% TODO [FUTURE EXPERIMENTS]: Mở rộng thực nghiệm (Optional Extensions)
-% ============================================================================
-%
-% 1. THÊM CÁC LOẠI DRIFT KHÁC:
-%    - Gradual drift: Phân phối thay đổi từ từ theo thời gian
-%    - Incremental drift: Thay đổi liên tục nhỏ
-%    - Recurrent drift: Phân phối quay lại concept cũ
-%    - Blip drift: Thay đổi tạm thời rồi quay lại
-%    Notebook: experiments/notebooks/MultiDetectors_Evaluation_WithAdaptation.ipynb
-%    Ước tính: 2-3 ngày
-%
-% 2. THÊM REAL-WORLD DATASETS:
-%    - Electricity dataset (Harries & Wales): Dự đoán giá điện
-%    - Weather dataset: Dự đoán thời tiết
-%    - [Domain-specific dataset]: Tùy theo lĩnh vực ứng dụng
-%    Ước tính: 3-5 ngày
-%
-% 3. PHÂN TÍCH PARAMETER SENSITIVITY:
-%    - Sensitivity của L1, L2, n_perm trong ShapeDD
-%    - Ảnh hưởng của adaptation window size
-%    - Trade-off giữa detection delay và false alarm rate
-%    Ước tính: 2 ngày
-%
-% 4. SO SÁNH VỚI ONLINE LEARNING:
-%    - So sánh frozen model vs continuous learning (River)
-%    - Đánh giá trade-off giữa stability và adaptability
-%    Ước tính: 1-2 ngày
-%
-% 5. THÊM METRICS ĐÁNH GIÁ:
-%    - Mean Time To Recover (MTTR)
-%    - Area Under ROC curve cho detection
-%    - Computational efficiency trên large-scale streams
-%    Ước tính: 1 ngày
-%
-% Chi tiết đầy đủ: Xem file FUTURE_EXPERIMENTS_TODO.md
-% ============================================================================
-
-Chương tiếp theo sẽ tổng kết các đóng góp chính của luận văn và đề xuất hướng phát triển trong tương lai. 
+Những kết quả này là cơ sở vững chắc để khẳng định tính khả thi của mô hình đề xuất trong các ứng dụng thực tế.

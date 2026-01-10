@@ -1,911 +1,370 @@
-% References from the thesis proposal
-@article{hinder2024survey_partA,
-  title={One or two things we know about concept drift—a survey on monitoring in evolving environments. Part A: detecting concept drift},
-  author={Hinder, Fabian and Vaquet, Valerie and Hammer, Barbara},
-  journal={Frontiers in Artificial Intelligence},
-  volume={7},
-  pages={1330257},
-  year={2024},
-  doi={10.3389/frai.2024.1330257}
-}
+% ============================================================================ 
+% 1. SURVEYS AND FOUNDATIONAL CONCEPTS 
+% ============================================================================ 
 
-@inproceedings{bach2008paired,
-  author = {Bach, Stephen and Maloof, Marcus},
-  year = {2008},
-  month = {12},
-  pages = {23-32},
-  title = {Paired Learners for Concept Drift},
-  booktitle = {Proceedings - IEEE International Conference on Data Mining, ICDM},
-  doi = {10.1109/ICDM.2008.119}
-}
-
-@article{hinder2024survey_partB,
-  title={One or two things we know about concept drift—a survey on monitoring in evolving environments. Part B: locating and explaining concept drift},
-  author={Hinder, Fabian and Vaquet, Valerie and Hammer, Barbara},
-  journal={Frontiers in Artificial Intelligence},
-  volume={7},
-  pages={1330258},
-  year={2024},
-  doi={10.3389/frai.2024.1330258}
-}
-
-@misc{tunali2019mmd,
-  title={Maximum Mean Discrepancy (MMD) in Machine Learning},
-  author={Tunali, Onur},
-  year={2019},
-  howpublished={\url{https://www.onurtunali.com/ml/2019/03/08/maximum-mean-discrepancy-in-machine-learning.html}},
-  note={Accessed: March 8, 2019}
-}
-
-@inproceedings{jourdan2021machine,
-  author = {Jourdan, Nico and Longard, Lukas and Biegel, Tobias and Metternich, Joachim},
-  title = {Machine learning for intelligent maintenance and quality control: A review of existing datasets and corresponding use cases},
-  booktitle = {Proceedings of the Conference on Production Systems and Logistics (CPSL 2021)},
-  pages = {473--483},
-  year = {2021},
-  publisher = {publish-Ing.},
-  doi = {10.15488/11280}
-}
-
-@article{wuest2016machine,
-  title={Machine learning in manufacturing: advantages, challenges, and applications},
-  author={Wuest, Thorsten and Weimer, Daniel and Irgens, Christopher and Thoben, Klaus-Dieter},
-  journal={Production \& Manufacturing Research},
-  volume={4},
-  number={1},
-  pages={23--45},
-  year={2016},
-  publisher={Taylor \& Francis}
-}
-
-@techreport{chui2021state,
-  title={The state of AI in 2021},
-  author={Chui, Michael and Hall, Bryce and Singla, Alex and Sukharevsky, Alex},
-  institution={McKinsey \& Company},
-  year={2021}
-}
-
-@techreport{chui2022state,
-  title={The state of AI in 2022 - and half decade in review},
-  author={Chui, Michael and Hall, Bryce and Mayhew, Helen and Singla, Alex},
-  institution={QuantumBlack by McKinsey},
-  year={2022}
-}
-
-@techreport{wu2021dependable,
-  title={Dependable AI: Using AI in safety-critical industrial applications},
-  author={Wu, Xiaoxiao and El-Shamouty, Marwa and Wagner, Peter},
-  institution={Fraunhofer Institute for Manufacturing Engineering and Automation (IPA)},
-  year={2021}
-}
-
-@article{tripathi2021ensuring,
-  title={Ensuring the robustness and reliability of data-driven knowledge discovery models in production and manufacturing},
-  author={Tripathi, Shailesh and Muhr, David and Brunner, Matthias and Jodlbauer, Herbert and Dehmer, Matthias and Emmert-Streib, Frank},
-  journal={Frontiers in Artificial Intelligence},
-  volume={4},
-  pages={22},
-  year={2021},
-  publisher={Frontiers}
-}
-
-@article{biegel2022combining,
-  title={Combining process monitoring with text mining for anomaly detection in discrete manufacturing},
-  author={Biegel, Tobias and others},
-  journal={SSRN},
-  year={2022}
-}
-
-@article{ramakrishnan2014enabling,
-  title={Enabling self-learning in dynamic and open IoT environments},
-  author={Ramakrishnan, Karthik and Preuveneers, Davy and Berbers, Yolande},
-  journal={Procedia Computer Science},
-  volume={32},
-  pages={207--214},
-  year={2014},
-  publisher={Elsevier}
-}
-
-@article{hovakimyan2024evolving,
-  title={Evolving Strategies in Machine Learning: A Systematic Review of Concept Drift Detection},
-  author={Hovakimyan, Gurgen and Bravo, Jorge},
-  journal={Information},
-  volume={15},
-  pages={1--24},
-  year={2024},
-  doi={10.3390/info15120786}
-}
-
-@article{gama2014survey,
-  title={A survey on concept drift adaptation},
-  author={Gama, Joao and Žliobaitė, Indrė and Bifet, Albert and Pechenizkiy, Mykola and Bouchachia, Abdelhamid},
-  journal={ACM computing surveys},
-  volume={46},
-  number={4},
-  pages={1--37},
-  year={2014},
-  publisher={ACM}
-}
-
-@article{schlimmer1986incremental,
-  title={Incremental learning from noisy data},
-  author={Schlimmer, Jeffrey C and Granger, Richard H},
-  journal={Machine learning},
-  volume={1},
-  number={3},
-  pages={317--354},
-  year={1986},
-  publisher={Springer}
-}
-
-@article{moreno2012unifying,
-  title={A unifying view on dataset shift in classification},
-  author={Moreno-Torres, Jose G and Raeder, Troy and Alaiz-Rodríguez, Rocío and Chawla, Nitesh V and Herrera, Francisco},
-  journal={Pattern recognition},
-  volume={45},
-  number={1},
-  pages={521--530},
-  year={2012},
-  publisher={Elsevier}
-}
-
-@book{basseville1993detection,
-  title={Detection of abrupt changes: theory and application},
-  author={Basseville, Michèle and Nikiforov, Igor V},
-  volume={104},
-  year={1993},
-  publisher={Prentice Hall Englewood Cliffs}
-}
-
-@inproceedings{reis2016detecting,
-  title={Detecting and adapting to concept drift in online learning},
-  author={Reis, Denis Moreira dos and Flach, Peter and Matwin, Stan and Batista, Gustavo},
-  booktitle={Proceedings of the 25th International Joint Conference on Artificial Intelligence},
-  pages={2718--2724},
-  year={2016}
-}
-
-@inproceedings{gama2004learning,
-  author = {Gama, Jo{\~a}o and Medas, Pedro and Castillo, Gladys and Rodrigues, Pedro},
-  title = {Learning with Drift Detection},
-  booktitle = {Advances in Artificial Intelligence -- SBIA 2004},
-  series = {Lecture Notes in Computer Science},
-  volume = {3171},
-  pages = {286--295},
-  year = {2004},
-  publisher = {Springer Berlin Heidelberg},
-  isbn = {978-3-540-28645-5},
-  doi = {10.1007/978-3-540-28645-5_29}
-}
-
-@inproceedings{bifet2007learning,
-  author = {Bifet, Albert and Gavald{\`a}, Ricard},
-  title = {Learning from Time-Changing Data with Adaptive Windowing},
-  booktitle = {Proceedings of the 2007 SIAM International Conference on Data Mining (SDM)},
-  pages = {443--448},
-  year = {2007},
-  publisher = {SIAM},
-  doi = {10.1137/1.9781611972771.42}
-}
-
-@incollection{wang2020kswin,
-  author = {Wang, Zhixiong and Wang, Wei},
-  title = {Concept Drift Detection Based on Kolmogorov--Smirnov Test},
-  booktitle = {Artificial Intelligence in China},
-  publisher = {Springer Singapore},
-  year = {2020},
-  pages = {273--280},
-  isbn = {978-981-15-0187-6},
-  doi = {10.1007/978-981-15-0187-6_31}
-}
-
-@article{klinkenberg2004learning,
-  title={Learning drifting concepts: Example selection vs. example weighting},
-  author={Klinkenberg, Ralf},
-  journal={Intelligent Data Analysis},
-  volume={8},
-  number={3},
-  pages={281--300},
-  year={2004},
-  publisher={IOS Press}
-}
-
-@article{kolter2007dynamic,
-  author = {Kolter, J. Zico and Maloof, Marcus A.},
-  title = {Dynamic Weighted Majority: An Ensemble Method for Drifting Concepts},
-  journal = {Journal of Machine Learning Research},
-  volume = {8},
-  number = {91},
-  pages = {2755--2790},
-  year = {2007},
-  url = {http://jmlr.org/papers/v8/kolter07a.html}
-}
-
-@inproceedings{dries2009adaptive,
-  title={Adaptive concept drift detection},
-  author={Dries, Anton and Rückert, Ulrich},
-  booktitle={Proceedings of the 2009 SIAM international conference on data mining},
-  pages={233--244},
-  year={2009},
-  organization={SIAM}
-}
-
-@article{ross2012exponentially,
-  title={Exponentially weighted moving average charts for detecting concept drift},
-  author={Ross, Gordon J and Adams, Niall M and Tasoulis, Dimitris K and Hand, David J},
-  journal={Pattern recognition letters},
-  volume={33},
-  number={2},
-  pages={191--198},
-  year={2012},
-  publisher={Elsevier}
-}
-
-@inproceedings{wang2003mining,
-  title={Mining concept-drifting data streams using ensemble classifiers},
-  author={Wang, Haixun and Fan, Wei and Yu, Philip S and Han, Jiawei},
-  booktitle={Proceedings of the ninth ACM SIGKDD international conference on Knowledge discovery and data mining},
-  pages={226--235},
-  year={2003}
-}
-
-@inproceedings{street2001streaming,
-  title={A streaming ensemble algorithm (SEA) for large-scale classification},
-  author={Street, W Nick and Kim, YongSeog},
-  booktitle={Proceedings of the seventh ACM SIGKDD international conference on Knowledge discovery and data mining},
-  pages={377--382},
-  year={2001}
-}
-
-@misc{harries1999splice,
-  title={Splice-2 comparative evaluation: Electricity pricing},
-  author={Harries, Michael},
-  year={1999},
-  publisher={The University of New South Wales}
-}
-
-@inproceedings{hulten2001mining,
-  title={Mining time-changing data streams},
-  author={Hulten, Geoff and Spencer, Laurie and Domingos, Pedro},
-  booktitle={Proceedings of the seventh ACM SIGKDD international conference on Knowledge discovery and data mining},
-  pages={97--106},
-  year={2001}
+@article{hinder2024survey_partA, 
+  title={One or Two Things We Know About Concept Drift—A Survey on Monitoring in Evolving Environments. Part A: Detecting Concept Drift}, 
+  author={Hinder, Fabian and Vaquet, Valerie and Hammer, Barbara}, 
+  journal={Frontiers in Artificial Intelligence}, 
+  volume={7}, 
+  pages={1330257}, 
+  year={2024}, 
+  doi={10.3389/frai.2024.1330257} 
 } 
 
+@article{hinder2024survey_partB, 
+  title={One or Two Things We Know About Concept Drift—A Survey on Monitoring in Evolving Environments. Part B: Locating and Explaining Concept Drift}, 
+  author={Hinder, Fabian and Vaquet, Valerie and Hammer, Barbara}, 
+  journal={Frontiers in Artificial Intelligence}, 
+  volume={7}, 
+  pages={1330258}, 
+  year={2024}, 
+  doi={10.3389/frai.2024.1330258} 
+} 
 
+@article{gama2014survey, 
+  title={A Survey on Concept Drift Adaptation}, 
+  author={Gama, Joao and Zliobaite, Indre and Bifet, Albert and Pechenizkiy, Mykola and Bouchachia, Abdelhamid}, 
+  journal={ACM Computing Surveys}, 
+  volume={46}, 
+  number={4}, 
+  pages={1--37}, 
+  year={2014}, 
+  publisher={ACM} 
+} 
 
-@article{guo2022cdtmsw,
-  author = {Guo, Husheng and Li, Hai and Ren, Qiaoyan and Wang, Wenjian},
-  title = {Concept drift type identification based on multi-sliding windows},
-  journal = {Information Sciences},
-  volume = {585},
-  pages = {1--23},
-  year = {2022},
-  publisher = {Elsevier},
-  doi = {10.1016/j.ins.2021.11.023}
+@article{lu2018learning, 
+  title={Learning Under Concept Drift: A Review}, 
+  author={Lu, Jie and Liu, Anjin and Dong, Fan and Gu, Feng and Gama, Joao and Zhang, Guangquan}, 
+  journal={IEEE Transactions on Knowledge and Data Engineering}, 
+  volume={31}, 
+  number={12}, 
+  pages={2346--2363}, 
+  year={2018}, 
+  publisher={IEEE} 
+} 
+
+@article{santos2024evolving, 
+  title={Evolving Strategies in Machine Learning: A Systematic Review of Concept Drift Detection}, 
+  author={Santos, Marília Barandas and others}, 
+  journal={Information}, 
+  volume={15}, 
+  number={12}, 
+  pages={786}, 
+  year={2024}, 
+  publisher={MDPI}, 
+  doi={10.3390/info15120786} 
+} 
+
+% ============================================================================ 
+% 2. SPECIFIC DRIFT DETECTION METHODS 
+% ============================================================================ 
+
+@article{shapeDD2024, 
+  title={Shape-Based Method for Concept Drift Detection and Signal Denoising}, 
+  author={Hinder, Fabian and Vaquet, Valerie and Hammer, Barbara}, 
+  journal={Frontiers in Artificial Intelligence}, 
+  volume={7}, 
+  year={2024}, 
+  doi={10.3389/frai.2024.1330257} 
+} 
+
+@inproceedings{bharti2023owmmd, 
+  title={Optimally-Weighted Estimators of the Maximum Mean Discrepancy for Likelihood-Free Inference}, 
+  author={Bharti, Ayush and Naslidnyk, Masha and Key, Oscar and Kaski, Samuel and Briol, François-Xavier}, 
+  booktitle={Proceedings of the 40th International Conference on Machine Learning (ICML)}, 
+  volume={202}, 
+  pages={2289--2312}, 
+  year={2023}, 
+  publisher={PMLR} 
+} 
+
+@article{schrab2023mmdagg, 
+  title={MMD Aggregated Two-Sample Test}, 
+  author={Schrab, Antonin and Kim, Ilmun and Albert, Mika and Laurent, Beatrice and Chwialkowski, Kacper and Gretton, Arthur}, 
+  journal={Journal of Machine Learning Research}, 
+  volume={24}, 
+  number={194}, 
+  pages={1--72}, 
+  year={2023} 
+} 
+
+@article{guo2022cdtmsw, 
+  title={Concept Drift Type Identification Based on Multi-Sliding Windows}, 
+  author={Guo, Husheng and Li, Hai and Ren, Qiaoyan and Wang, Wenjian}, 
+  journal={Information Sciences}, 
+  volume={585}, 
+  pages={1--23}, 
+  year={2022}, 
+  publisher={Elsevier}, 
+  doi={10.1016/j.ins.2021.11.023} 
+} 
+
+@inproceedings{gama2004learning, 
+  title={Learning with Drift Detection}, 
+  author={Gama, Jo{	ilde{a}}o and Medas, Pedro and Castillo, Gladys and Rodrigues, Pedro}, 
+  booktitle={Advances in Artificial Intelligence -- SBIA 2004}, 
+  pages={286--295}, 
+  year={2004}, 
+  publisher={Springer} 
+} 
+
+@inproceedings{baena2006early, 
+  title={Early Drift Detection Method}, 
+  author={Baena-Garc{\'i}a, Manuel and del Campo-{\'A}vila, Jos{\'e} and others}, 
+  booktitle={Proceedings of the 4th ECML PKDD International Workshop on Knowledge Discovery from Data Streams}, 
+  pages={77--86}, 
+  year={2006} 
+} 
+
+@inproceedings{bifet2007learning, 
+  title={Learning from Time-Changing Data with Adaptive Windowing}, 
+  author={Bifet, Albert and Gavald{\`a}, Ricard}, 
+  booktitle={Proceedings of the 2007 SIAM International Conference on Data Mining (SDM)}, 
+  pages={443--448}, 
+  year={2007}, 
+  publisher={SIAM} 
+} 
+
+@inproceedings{hinder2020dawidd, 
+  title={Towards Non-Parametric Drift Detection via Dynamic Adapting Window Independence Drift Detection (DAWIDD)}, 
+  author={Hinder, Fabian and Vaquet, Valerie and Brinkrolf, Johannes and Hammer, Barbara}, 
+  booktitle={Proceedings of the 37th International Conference on Machine Learning (ICML)}, 
+  pages={4249--4259}, 
+  year={2020} 
+} 
+
+@inproceedings{HDDM, 
+  title={Fast Hoeffding Drift Detection Method for Evolving Data Streams}, 
+  author={Pesaranghader, Ali and Viktor, Herna L.}, 
+  booktitle={Machine Learning and Knowledge Discovery in Databases -- ECML PKDD 2016}, 
+  pages={96--111}, 
+  year={2016}, 
+  publisher={Springer} 
+} 
+
+@inproceedings{gozuacik2019d3, 
+  title={Unsupervised Concept Drift Detection with a Discriminative Classifier}, 
+  author={G{"o}z{"u}a{\c{c}}{\i}k, {"O}mer and B{"u}y{"u}k{\c{c}}akir, Alican and Bonab, Hamed and Can, Fazli}, 
+  booktitle={Proceedings of the 28th ACM International Conference on Information and Knowledge Management (CIKM)}, 
+  pages={1179--1188}, 
+  year={2019}, 
+  organization={ACM} 
+} 
+
+@incollection{wang2020kswin, 
+  title={Concept Drift Detection Based on Kolmogorov--Smirnov Test}, 
+  author={Wang, Zhixiong and Wang, Wei}, 
+  booktitle={Artificial Intelligence in China}, 
+  pages={273--280}, 
+  year={2020}, 
+  publisher={Springer} 
+} 
+
+@inproceedings{mouss2004pagehinkley, 
+  title={Test of Page-Hinckley, an Approach for Fault Detection in an Agro-Alimentary Production System}, 
+  author={Mouss, Hayet and Mouss, M. Djamel and Mouss, Kinza and Sefouhi, Linda}, 
+  booktitle={Proceedings of the 5th Asian Control Conference}, 
+  year={2004}, 
+  organization={IEEE} 
+} 
+
+% ============================================================================ 
+% 3. THEORETICAL FOUNDATIONS (Kernels, Statistics) 
+% ============================================================================ 
+
+@article{gretton2012kernel, 
+  title={A Kernel Two-Sample Test}, 
+  author={Gretton, Arthur and Borgwardt, Karsten M and Rasch, Malte J and Sch{"o}lkopf, Bernhard and Smola, Alexander}, 
+  journal={Journal of Machine Learning Research}, 
+  volume={13}, 
+  pages={723--773}, 
+  year={2012} 
+} 
+
+@book{scholkopf2002learning, 
+  title={Learning with Kernels: Support Vector Machines, Regularization, Optimization, and Beyond}, 
+  author={Sch{"o}lkopf, Bernhard and Smola, Alexander J}, 
+  year={2002}, 
+  publisher={MIT Press} 
+} 
+
+@book{good2005permutation, 
+  title={Permutation Tests: A Practical Guide to Resampling Methods for Testing Hypotheses}, 
+  author={Good, Phillip}, 
+  edition={2nd}, 
+  year={2005}, 
+  publisher={Springer} 
+} 
+
+@article{neyman1933problem, 
+  title={On the Problem of the Most Efficient Tests of Statistical Hypotheses}, 
+  author={Neyman, Jerzy and Pearson, Egon S}, 
+  journal={Philosophical Transactions of the Royal Society of London. Series A}, 
+  volume={231}, 
+  pages={289--337}, 
+  year={1933} 
+} 
+
+% ============================================================================ 
+% 4. APACHE KAFKA AND STREAMING 
+% ============================================================================ 
+
+@inproceedings{kreps2011kafka, 
+  title={Kafka: A Distributed Messaging System for Log Processing}, 
+  author={Kreps, Jay and Narkhede, Neha and Rao, Jun}, 
+  booktitle={Proceedings of the NetDB Workshop}, 
+  year={2011} 
+} 
+
+@article{wang2015building, 
+  title={Building a Replicated Logging System with Apache Kafka}, 
+  author={Wang, Guozhang and others}, 
+  journal={Proceedings of the VLDB Endowment}, 
+  volume={8}, 
+  number={12}, 
+  pages={1654--1655}, 
+  year={2015} 
+} 
+
+@inproceedings{hiraman2018apache, 
+  title={A Study of Apache Kafka in Big Data Stream Processing}, 
+  author={Hiraman, Bhavesh R and others}, 
+  booktitle={2018 International Conference on Information, Communication, Engineering and Technology (ICICET)}, 
+  pages={1--3}, 
+  year={2018}, 
+  organization={IEEE} 
+} 
+
+% ============================================================================ 
+% 5. SOFTWARE AND TOOLS 
+% ============================================================================ 
+
+@misc{river2021, 
+  title={River: Online Machine Learning in Python}, 
+  author={Montiel, Jacob and Halford, Max and others}, 
+  year={2021}, 
+  howpublished={\url{https://riverml.xyz/}}, 
+  note={Accessed: 2024} 
+} 
+
+@article{pedregosa2011scikit, 
+  title={Scikit-learn: Machine Learning in Python}, 
+  author={Pedregosa, Fabian and others}, 
+  journal={Journal of Machine Learning Research}, 
+  volume={12}, 
+  pages={2825--2830}, 
+  year={2011} 
+} 
+
+% ============================================================================ 
+% 6. DATASETS AND APPLICATIONS 
+% ============================================================================ 
+
+@inproceedings{street2001streaming, 
+  title={A Streaming Ensemble Algorithm (SEA) for Large-Scale Classification}, 
+  author={Street, W Nick and Kim, YongSeog}, 
+  booktitle={Proceedings of the 7th ACM SIGKDD International Conference on Knowledge Discovery and Data Mining}, 
+  pages={377--382}, 
+  year={2001} 
+} 
+
+@inproceedings{hulten2001mining, 
+  title={Mining Time-Changing Data Streams}, 
+  author={Hulten, Geoff and Spencer, Laurie and Domingos, Pedro}, 
+  booktitle={Proceedings of the 7th ACM SIGKDD International Conference on Knowledge Discovery and Data Mining}, 
+  pages={97--106}, 
+  year={2001} 
+} 
+
+@misc{harries1999splice, 
+  title={Splice-2 Comparative Evaluation: Electricity Pricing}, 
+  author={Harries, Michael}, 
+  year={1999}, 
+  publisher={The University of New South Wales} 
+} 
+
+@article{jourdan2023process, 
+  title={Handling Concept Drift in Deep Learning Applications for Process Monitoring}, 
+  author={Jourdan, Nico and Bayer, Tobias and Biegel, Tobias and Metternich, Joachim}, 
+  journal={Procedia CIRP}, 
+  volume={120}, 
+  pages={33--38}, 
+  year={2023}, 
+  publisher={Elsevier} 
+} 
+
+@article{ramakrishnan2014enabling, 
+  title={Enabling Self-Learning in Dynamic and Open IoT Environments}, 
+  author={Ramakrishnan, Karthik and Preuveneers, Davy and Berbers, Yolande}, 
+  journal={Procedia Computer Science}, 
+  volume={32}, 
+  pages={207--214}, 
+  year={2014} 
+} 
+
+@article{tripathi2021ensuring, 
+  title={Ensuring the Robustness and Reliability of Data-Driven Knowledge Discovery Models in Production and Manufacturing}, 
+  author={Tripathi, Shailesh and others}, 
+  journal={Frontiers in Artificial Intelligence}, 
+  volume={4}, 
+  pages={22}, 
+  year={2021} 
+} 
+
+@article{sethi2017reliable, 
+  title={On the reliable detection of concept drift from streaming unlabeled data}, 
+  author={Sethi, Tegjyot Singh and Kantardzic, Mehmed}, 
+  journal={Expert Systems with Applications}, 
+  volume={82}, 
+  pages={77--99}, 
+  year={2017}, 
+  publisher={Elsevier} 
+} 
+
+@article{souza2020challenges, 
+  title={Challenges in Benchmarking Stream Learning Algorithms with Real-world Data}, 
+  author={Souza, Vinicius MA and others}, 
+  journal={Data Mining and Knowledge Discovery}, 
+  volume={34}, 
+  pages={1805--1858}, 
+  year={2020}, 
+  publisher={Springer} 
+} 
+
+@article{bayram2023benchmarking, 
+  title={Benchmarking Change Detector Algorithms from Different Concept Drift Perspectives}, 
+  author={Bayram, Firas and Ahmed, Bestoun S and Kassler, Andreas}, 
+  journal={Future Internet}, 
+  volume={15}, 
+  number={5}, 
+  pages={169}, 
+  year={2023} 
+} 
+
+@article{haug2024benchmark, 
+  title={A benchmark and survey of fully unsupervised concept drift detectors on real-world data streams}, 
+  author={Haug, Johannes and others}, 
+  journal={International Journal of Data Science and Analytics}, 
+  year={2024}, 
+  publisher={Springer} 
+} 
+
+@article{demsar2006statistical, 
+  title={Statistical Comparisons of Classifiers over Multiple Data Sets}, 
+  author={Dem{\v{s}}ar, Janez}, 
+  journal={Journal of Machine Learning Research}, 
+  volume={7}, 
+  pages={1--30}, 
+  year={2006} 
+} 
+
+@article{webb2016characterizing, 
+  title={Characterizing Concept Drift}, 
+  author={Webb, Geoffrey I and others}, 
+  journal={Data Mining and Knowledge Discovery}, 
+  volume={30}, 
+  number={4}, 
+  pages={964--994}, 
+  year={2016} 
 }
-
-@article{jourdan2023process,
-  title={Handling concept drift in deep learning applications for process monitoring},
-  author={Jourdan, Nico and Bayer, Tobias and Biegel, Tobias and Metternich, Joachim},
-  journal={Procedia CIRP},
-  volume={120},
-  pages={33--38},
-  year={2023},
-  publisher={Elsevier}
-}
-
-@article{xiang2023review,
-  title={A comprehensive review of concept drift adaptation strategies},
-  author={Xiang, Wei and others},
-  journal={Machine Learning},
-  volume={112},
-  pages={1--45},
-  year={2023},
-  publisher={Springer}
-}
-
-@article{yuan2022advances,
-  title={Recent advances in adaptive machine learning systems},
-  author={Yuan, Ming and others},
-  journal={IEEE Transactions on Neural Networks},
-  volume={33},
-  number={8},
-  pages={1234--1245},
-  year={2022},
-  publisher={IEEE}
-}
-
-@article{shapeDD2024,
-  title={Shape-Based Method for Concept Drift Detection and Signal Denoising},
-  author={Hinder, Fabian and Vaquet, Valerie and Hammer, Barbara},
-  journal={Frontiers in Artificial Intelligence},
-  volume={7},
-  year={2024},
-  note={Referenced as ShapeDD paper in thesis - Part of the concept drift survey series},
-  doi={10.3389/frai.2024.1330257}
-}
-
-@misc{aws2024neural,
-  title={What is a neural network?},
-  author={{Amazon Web Services}},
-  year={2024},
-  howpublished={\url{https://aws.amazon.com/vi/what-is/neural-network/}},
-  note={Accessed: 2024}
-}
-
-@misc{ibm2024neural,
-  title={Neural networks},
-  author={{IBM}},
-  year={2024},
-  howpublished={\url{https://www.ibm.com/think/topics/neural-networks}},
-  note={Accessed: 2024}
-}
-
-@misc{sciencedirect2024drift,
-  title={Concept drift: A comparative study on online machine learning techniques for network traffic streams analysis},
-  author={{ScienceDirect}},
-  year={2024},
-  howpublished={\url{https://www.sciencedirect.com/topics/computer-science/concept-drift}},
-  note={Accessed: 2024}
-}
-
-@inproceedings{baena2006early,
-  author = {Baena-Garc{\'i}a, Manuel and del Campo-{\'A}vila, Jos{\'e} and Fidalgo-Merino, Ra{\'u}l and Bifet, Albert and Gavald{\`a}, Ricard and Morales-Bueno, Rafael},
-  title = {Early Drift Detection Method},
-  booktitle = {Proceedings of the 4th ECML PKDD International Workshop on Knowledge Discovery from Data Streams (IWKDDS 2006)},
-  year = {2006},
-  pages = {77--86},
-  address = {Berlin, Germany}
-}
-
-@inproceedings{HDDM,
-  author = {Pesaranghader, Ali and Viktor, Herna L.},
-  title = {Fast Hoeffding Drift Detection Method for Evolving Data Streams},
-  booktitle = {Machine Learning and Knowledge Discovery in Databases -- ECML PKDD 2016},
-  series = {Lecture Notes in Computer Science},
-  volume = {9852},
-  pages = {96--111},
-  year = {2016},
-  publisher = {Springer International Publishing},
-  isbn = {978-3-319-46227-1},
-  doi = {10.1007/978-3-319-46227-1_7}
-}
-
-@inproceedings{li2010contextual,
-  title={Contextual multi-armed bandit algorithms for large-scale recommender systems},
-  author={Li, Lihong and Chu, Wei and Langford, John and Schapire, Robert E},
-  booktitle={Proceedings of the 19th international conference on World wide web},
-  pages={485--494},
-  year={2010},
-  organization={ACM}
-}
-
-% ============================================================================
-% CITATIONS FOR THEORETICAL FOUNDATIONS
-% ============================================================================
-
-@article{gretton2012kernel,
-  title={A kernel two-sample test},
-  author={Gretton, Arthur and Borgwardt, Karsten M and Rasch, Malte J and Sch{\"o}lkopf, Bernhard and Smola, Alexander},
-  journal={Journal of Machine Learning Research},
-  volume={13},
-  number={25},
-  pages={723--773},
-  year={2012},
-  note={Original MMD paper - foundation for kernel-based drift detection}
-}
-
-@book{scholkopf2002learning,
-  title={Learning with kernels: support vector machines, regularization, optimization, and beyond},
-  author={Sch{\"o}lkopf, Bernhard and Smola, Alexander J},
-  year={2002},
-  publisher={MIT Press},
-  address={Cambridge, MA},
-  isbn={0-262-19475-9},
-  note={Comprehensive foundation for RKHS and kernel methods}
-}
-
-@article{neyman1933problem,
-  title={On the problem of the most efficient tests of statistical hypotheses},
-  author={Neyman, Jerzy and Pearson, Egon S},
-  journal={Philosophical Transactions of the Royal Society of London. Series A, Containing Papers of a Mathematical or Physical Character},
-  volume={231},
-  number={694-706},
-  pages={289--337},
-  year={1933},
-  publisher={The Royal Society London},
-  note={Neyman-Pearson lemma - foundation for optimal hypothesis testing}
-}
-
-@book{good2005permutation,
-  title={Permutation tests: a practical guide to resampling methods for testing hypotheses},
-  author={Good, Phillip},
-  year={2005},
-  edition={2nd},
-  publisher={Springer Science \& Business Media},
-  address={New York},
-  note={Comprehensive guide to permutation testing methods}
-}
-
-@article{ramdas2023permutation,
-  title={Permutation tests using arbitrary permutation distributions},
-  author={Ramdas, Aaditya and Garc{\'i}a Trillos, Nicol{\'a}s and Cuturi, Marco},
-  journal={Sankhya A},
-  volume={85},
-  number={1},
-  pages={924--956},
-  year={2023},
-  publisher={Springer},
-  note={Modern advances in permutation testing theory}
-}
-% Additional references from Related Works chapter comments
-
-@inproceedings{hinder2020dawidd,
-  title={Towards non-parametric drift detection via dynamic adapting window independence drift detection (DAWIDD)},
-  author={Hinder, Fabian and Vaquet, Valerie and Brinkrolf, Johannes and Hammer, Barbara},
-  booktitle={Proceedings of the 37th International Conference on Machine Learning},
-  pages={4249--4259},
-  year={2020},
-  volume={119},
-  series={Proceedings of Machine Learning Research},
-  publisher={PMLR},
-  url={https://proceedings.mlr.press/v119/hinder20a.html},
-  note={Non-parametric drift detection using independence tests}
-}
-
-@article{santos2024evolving,
-  title={Evolving strategies in machine learning: A systematic review of concept drift detection},
-  author={Santos, Marília Barandas and others},
-  journal={Information},
-  volume={15},
-  number={12},
-  pages={786},
-  year={2024},
-  publisher={MDPI},
-  doi={10.3390/info15120786},
-  url={https://www.mdpi.com/2078-2489/15/12/786},
-  note={Comprehensive systematic review of DDM-family and other drift detection methods}
-}
-
-@misc{river_adwin,
-  title={ADWIN - Adaptive Windowing method for concept drift detection},
-  author={{River Development Team}},
-  year={2024},
-  howpublished={\url{https://riverml.xyz/dev/api/drift/ADWIN/}},
-  note={River online machine learning library documentation}
-}
-
-@misc{river_pagehinkley,
-  title={Page-Hinkley test for abrupt change detection},
-  author={{River Development Team}},
-  year={2024},
-  howpublished={\url{https://riverml.xyz/dev/api/drift/PageHinkley/}},
-  note={River online machine learning library documentation}
-}
-
-@inproceedings{mouss2004pagehinkley,
-  author = {Mouss, Hayet and Mouss, M. Djamel and Mouss, Kinza and Sefouhi, Linda},
-  title = {Test of Page-Hinckley, an approach for fault detection in an agro-alimentary production system},
-  booktitle = {Proceedings of the 5th Asian Control Conference (ASCC 2004)},
-  year = {2004},
-  volume = {2},
-  pages = {815--818},
-  organization = {IEEE},
-  isbn = {0-7803-8873-9},
-  doi = {10.1109/ASCC.2004.184970}
-}
-
-% ============================================================================
-% KAFKA AND STREAM PROCESSING CITATIONS
-% ============================================================================
-
-@inproceedings{kreps2011kafka,
-  title={Kafka: a distributed messaging system for log processing},
-  author={Kreps, Jay and Narkhede, Neha and Rao, Jun},
-  booktitle={Proceedings of the NetDB workshop},
-  year={2011},
-  note={Original Kafka paper - foundational work on distributed messaging for log processing}
-}
-
-@article{wang2015building,
-  title={Building a replicated logging system with Apache Kafka},
-  author={Wang, Guozhang and Koshy, Joel and Subramanian, Sriram and Paramasivam, Kartik and Zadeh, Mammad and Narkhede, Neha and Rao, Jun and Kreps, Jay and Stein, Joe},
-  journal={Proceedings of the VLDB Endowment},
-  volume={8},
-  number={12},
-  pages={1654--1655},
-  year={2015},
-  publisher={VLDB Endowment},
-  note={Apache Kafka's replicated logging system architecture and design principles}
-}
-
-@article{kleppmann2015kafka,
-  title={Kafka, Samza and the Unix philosophy of distributed data},
-  author={Kleppmann, Martin and Kreps, Jay},
-  journal={Bulletin of the IEEE Computer Society Technical Committee on Data Engineering},
-  volume={38},
-  number={4},
-  pages={4--14},
-  year={2015},
-  note={Unix philosophy applied to distributed stream processing with Kafka}
-}
-
-@inproceedings{goodhope2012building,
-  title={Building LinkedIn's real-time activity data pipeline},
-  author={Goodhope, Ken and Koshy, Joel and Kreps, Jay and Narkhede, Neha and Park, Richard and Rao, Jun and Ye, Victor Yang},
-  booktitle={Bulletin of the IEEE Computer Society Technical Committee on Data Engineering},
-  volume={35},
-  number={2},
-  pages={33--45},
-  year={2012},
-  note={Real-world deployment of Kafka at LinkedIn for activity stream processing}
-}
-
-@inproceedings{hiraman2018apache,
-  title={A study of Apache Kafka in big data stream processing},
-  author={Hiraman, Bhavesh R and Viresh, Abhijeet M and Patil, Shashank A and Kolekar, Avinash B},
-  booktitle={2018 International Conference on Information, Communication, Engineering and Technology (ICICET)},
-  pages={1--3},
-  year={2018},
-  organization={IEEE},
-  doi={10.1109/ICICET.2018.8533771},
-  note={Comprehensive study of Kafka architecture for big data stream processing}
-}
-
-@article{sax2018encyclopedia,
-  title={Apache Kafka},
-  author={Sax, Matthias J},
-  journal={Encyclopedia of Big Data Technologies},
-  publisher={Springer},
-  address={Cham},
-  year={2018},
-  doi={10.1007/978-3-319-63962-8_196-1},
-  note={Encyclopedia entry covering Kafka's role in big data technologies}
-}
-
-@inproceedings{jafarpour2019ksql,
-  title={KSQL: Streaming SQL engine for Apache Kafka},
-  author={Jafarpour, Hojjat and Desai, Rohan and Guy, Damian},
-  booktitle={Proceedings of the 22nd International Conference on Extending Database Technology (EDBT)},
-  pages={524--533},
-  year={2019},
-  note={SQL interface for stream processing on Kafka}
-}
-
-@misc{kafka2024documentation,
-  title={Apache Kafka documentation},
-  author={{Apache Software Foundation}},
-  year={2024},
-  howpublished={\url{https://kafka.apache.org/documentation/}},
-  note={Official Apache Kafka documentation and architecture guide}
-}
-
-% Additional drift detection algorithms referenced in thesis
-
-@article{widmer1996learning,
-  title={Learning in the presence of concept drift and hidden contexts},
-  author={Widmer, Gerhard and Kubat, Miroslav},
-  journal={Machine Learning},
-  volume={23},
-  number={1},
-  pages={69--101},
-  year={1996},
-  publisher={Springer},
-  doi={10.1023/A:1018046501280},
-  note={Introduced FLORA family of algorithms for learning under concept drift}
-}
-
-@article{elwell2011learn,
-  author = {Elwell, Ryan and Polikar, Robi},
-  year = {2011},
-  month = {11},
-  pages = {1517 - 1531},
-  title = {Incremental Learning of Concept Drift in Nonstationary Environments},
-  volume = {22},
-  journal = {Neural Networks, IEEE Transactions on},
-  doi = {10.1109/TNN.2011.2160459}
-}
-
-@software{river2021,
-  title={River: online machine learning in Python},
-  author={Montiel, Jacob and Halford, Max and Mastelini, Saulo Martiello and Bolmier, Geoffrey and Sourty, Raphael and Vaysse, Robin and Zouitine, Adil and Gomes, Heitor Murilo and Read, Jesse and Abdessalem, Talel and Bifet, Albert},
-  year={2021},
-  publisher={GitHub},
-  url={https://riverml.xyz/},
-  note={Python library for online/incremental machine learning}
-}
-
-@article{pedregosa2011scikit,
-  title={Scikit-learn: Machine Learning in Python},
-  author={Pedregosa, Fabian and Varoquaux, Ga{\"e}l and Gramfort, Alexandre and Michel, Vincent and Thirion, Bertrand and Grisel, Olivier and Blondel, Mathieu and Prettenhofer, Peter and Weiss, Ron and Dubourg, Vincent and others},
-  journal={Journal of Machine Learning Research},
-  volume={12},
-  pages={2825--2830},
-  year={2011},
-  note={Popular Python library for machine learning algorithms and model building}
-}
-
-@inproceedings{raab2020reactive,
-  title={Reactive Soft Prototype Computing for Concept Drift Streams},
-  author={Raab, Christoph and Heusinger, Moritz and Schleif, Frank-Michael},
-  booktitle={Neurocomputing},
-  volume={416},
-  pages={340--351},
-  year={2020},
-  publisher={Elsevier},
-  doi={10.1016/j.neucom.2019.11.111},
-  note={Introduces KSWIN (Kolmogorov-Smirnov Windowing) drift detector}
-}
-
-@inproceedings{pratama2019automatic,
-  title={Automatic construction of multi-layer perceptron network from streaming examples},
-  author={Pratama, Mahardhika and Za'in, Choiru and Ashfahani, Andri and Ong, Yew Soon and Ding, Weiping},
-  booktitle={Proceedings of the 28th ACM international conference on information and knowledge management},
-  pages={1171--1180},
-  year={2019}
-}
-
-@inproceedings{bharti2023owmmd,
-  author    = {Bharti, Ayush and Naslidnyk, Masha and Key, Oscar and Kaski, Samuel and Briol, François-Xavier},
-  title     = {Optimally-Weighted Estimators of the Maximum Mean Discrepancy for Likelihood-Free Inference},
-  booktitle = {Proceedings of the 40th International Conference on Machine Learning},
-  series    = {Proceedings of Machine Learning Research},
-  volume    = {202},
-  pages     = {2289--2312},
-  year      = {2023},
-  publisher = {PMLR},
-  url       = {https://proceedings.mlr.press/v202/bharti23a.html},
-  note      = {Optimally-weighted MMD for variance reduction in two-sample testing}
-}
-
-% ============================================================================
-% THEORETICAL FOUNDATIONS - ADDITIONAL CITATIONS
-% ============================================================================
-
-@book{scott2015multivariate,
-  title={Multivariate Density Estimation: Theory, Practice, and Visualization},
-  author={Scott, David W},
-  year={2015},
-  edition={2nd},
-  publisher={John Wiley \& Sons},
-  address={Hoboken, NJ},
-  isbn={978-0-471-69755-8},
-  note={Comprehensive treatment of multivariate density estimation including Scott's rule}
-}
-
-@book{scott1992multivariate,
-  title={Multivariate Density Estimation: Theory, Practice, and Visualization},
-  author={Scott, David W},
-  year={1992},
-  publisher={John Wiley \& Sons},
-  address={New York},
-  note={Original edition introducing Scott's rule for bandwidth selection}
-}
-
-@book{silverman1986density,
-  title={Density Estimation for Statistics and Data Analysis},
-  author={Silverman, Bernard W},
-  year={1986},
-  publisher={Chapman and Hall},
-  address={London},
-  isbn={0-412-24620-1},
-  note={Classic text on kernel density estimation and bandwidth selection}
-}
-
-@book{maronna2019robust,
-  title={Robust Statistics: Theory and Methods (with R)},
-  author={Maronna, Ricardo A and Martin, R Douglas and Yohai, Victor J and Salibián-Barrera, Matías},
-  year={2019},
-  edition={2nd},
-  publisher={John Wiley \& Sons},
-  address={Hoboken, NJ},
-  isbn={978-1-119-21468-7},
-  note={Comprehensive reference on robust statistical methods}
-}
-
-@book{david2003order,
-  title={Order Statistics},
-  author={David, Herbert A and Nagaraja, Haikady N},
-  year={2003},
-  edition={3rd},
-  publisher={John Wiley \& Sons},
-  address={Hoboken, NJ},
-  isbn={978-0-471-38926-2},
-  note={Definitive reference on order statistics theory}
-}
-
-@book{hampel1986robust,
-  title={Robust Statistics: The Approach Based on Influence Functions},
-  author={Hampel, Frank R and Ronchetti, Elvezio M and Rousseeuw, Peter J and Stahel, Werner A},
-  year={1986},
-  publisher={John Wiley \& Sons},
-  address={New York},
-  isbn={0-471-82921-8},
-  note={Introduces breakdown point and influence functions for robust estimation}
-}
-
-@book{rousseeuw1987robust,
-  title={Robust Regression and Outlier Detection},
-  author={Rousseeuw, Peter J and Leroy, Annick M},
-  year={1987},
-  publisher={John Wiley \& Sons},
-  address={New York},
-  isbn={0-471-85233-3},
-  note={Classic text on robust regression with high breakdown point estimators}
-}
-
-@book{hamming1989digital,
-  title={Digital Filters},
-  author={Hamming, Richard W},
-  year={1989},
-  edition={3rd},
-  publisher={Prentice Hall},
-  address={Englewood Cliffs, NJ},
-  isbn={0-13-212571-4},
-  note={Classic text on digital filter design including moving average filters}
-}
-
-@book{cohen1995time,
-  title={Time-Frequency Analysis},
-  author={Cohen, Leon},
-  year={1995},
-  publisher={Prentice Hall},
-  address={Englewood Cliffs, NJ},
-  isbn={0-13-594532-1},
-  note={Comprehensive treatment of time-frequency analysis and uncertainty principle}
-}
-
-@article{canny1986computational,
-  title={A Computational Approach to Edge Detection},
-  author={Canny, John},
-  journal={IEEE Transactions on Pattern Analysis and Machine Intelligence},
-  volume={PAMI-8},
-  number={6},
-  pages={679--698},
-  year={1986},
-  publisher={IEEE},
-  doi={10.1109/TPAMI.1986.4767851},
-  note={Definitive paper on edge detection principles and Canny edge detector}
-}
-
-@article{savitzky1964smoothing,
-  title={Smoothing and Differentiation of Data by Simplified Least Squares Procedures},
-  author={Savitzky, Abraham and Golay, Marcel JE},
-  journal={Analytical Chemistry},
-  volume={36},
-  number={8},
-  pages={1627--1639},
-  year={1964},
-  publisher={ACS Publications},
-  doi={10.1021/ac60214a047},
-  note={Original Savitzky-Golay filter paper for polynomial smoothing}
-}
-
-% ============================================================================
-% NEW REFERENCES FOR BENCHMARK COMPARISON (Added for comprehensive discussion)
-% ============================================================================
-
-@article{haug2024benchmark,
-  title={A benchmark and survey of fully unsupervised concept drift detectors on real-world data streams},
-  author={Haug, Johannes and others},
-  journal={International Journal of Data Science and Analytics},
-  year={2024},
-  publisher={Springer},
-  doi={10.1007/s41060-024-00620-y},
-  note={Comprehensive benchmark of 10 unsupervised drift detectors on 11 real-world streams}
-}
-
-@article{bayram2023benchmarking,
-  title={Benchmarking Change Detector Algorithms from Different Concept Drift Perspectives},
-  author={Bayram, Firas and Ahmed, Bestoun S and Kassler, Andreas},
-  journal={Future Internet},
-  volume={15},
-  number={5},
-  pages={169},
-  year={2023},
-  publisher={MDPI},
-  doi={10.3390/fi15050169}
-}
-
-@inproceedings{gozuacik2019d3,
-  title={Unsupervised Concept Drift Detection with a Discriminative Classifier},
-  author={G{\"o}z{\"u}a{\c{c}}{\i}k, {\"O}mer and B{\"u}y{\"u}k{\c{c}}akir, Alican and Bonab, Hamed and Can, Fazli},
-  booktitle={Proceedings of the 28th ACM International Conference on Information and Knowledge Management (CIKM)},
-  pages={1179--1188},
-  year={2019},
-  organization={ACM},
-  doi={10.1145/3357384.3357993},
-  note={Original D3 paper with threshold range [0.6, 0.65, 0.7, 0.75, 0.8]}
-}
-
-@inproceedings{raab2020kswin,
-  title={Reactive Soft Prototype Computing for Concept Drift Streams},
-  author={Raab, Christoph and Heusinger, Moritz and Schleif, Frank-Michael},
-  booktitle={Neurocomputing},
-  volume={416},
-  pages={340--351},
-  year={2020},
-  publisher={Elsevier},
-  note={Includes KSWIN analysis with high FPR findings}
-}
-
-@article{demsar2006statistical,
-  title={Statistical Comparisons of Classifiers over Multiple Data Sets},
-  author={Dem{\v{s}}ar, Janez},
-  journal={Journal of Machine Learning Research},
-  volume={7},
-  pages={1--30},
-  year={2006},
-  note={Foundational paper for Friedman-Nemenyi statistical tests and CD diagrams}
-}
-
-@article{raschka2018mlxtend,
-  title={MLxtend: Providing machine learning and data science utilities and extensions to Python's scientific computing stack},
-  author={Raschka, Sebastian},
-  journal={Journal of Open Source Software},
-  volume={3},
-  number={24},
-  pages={638},
-  year={2018},
-  doi={10.21105/joss.00638}
-}
-
-@article{lu2018learning,
-  title={Learning under Concept Drift: A Review},
-  author={Lu, Jie and Liu, Anjin and Dong, Fan and Gu, Feng and Gama, Joao and Zhang, Guangquan},
-  journal={IEEE Transactions on Knowledge and Data Engineering},
-  volume={31},
-  number={12},
-  pages={2346--2363},
-  year={2018},
-  publisher={IEEE},
-  doi={10.1109/TKDE.2018.2876857}
-}
-
-@article{sethi2017reliable,
-  title={On the reliable detection of concept drift from streaming unlabeled data},
-  author={Sethi, Tegjyot Singh and Kantardzic, Mehmed},
-  journal={Expert Systems with Applications},
-  volume={82},
-  pages={77--99},
-  year={2017},
-  publisher={Elsevier},
-  doi={10.1016/j.eswa.2017.04.008}
-}
-
-@article{webb2016characterizing,
-  title={Characterizing Concept Drift},
-  author={Webb, Geoffrey I and Hyde, Roy and Cao, Hong and Nguyen, Hai Long and Petitjean, Francois},
-  journal={Data Mining and Knowledge Discovery},
-  volume={30},
-  number={4},
-  pages={964--994},
-  year={2016},
-  publisher={Springer},
-  doi={10.1007/s10618-015-0448-4}
-}
-
-@article{souza2020challenges,
-  title={Challenges in Benchmarking Stream Learning Algorithms with Real-world Data},
-  author={Souza, Vinicius MA and dos Reis, Denis M and Maletzke, Andre G and Batista, Gustavo EAPA},
-  journal={Data Mining and Knowledge Discovery},
-  volume={34},
-  pages={1805--1858},
-  year={2020},
-  publisher={Springer},
-  doi={10.1007/s10618-020-00698-5}
-}
-
-@article{schrab2023mmdagg,
-  title={MMD Aggregated Two-Sample Test},
-  author={Schrab, Antonin and Kim, Ilmun and Albert, Mika and Laurent, Beatrice and Chwialkowski, Kacper and Gretton, Arthur},
-  journal={Journal of Machine Learning Research},
-  volume={24},
-  number={194},
-  pages={1--72},
-  year={2023},
-  url={https://jmlr.org/papers/v24/22-0927.html},
-  note={Aggregated MMD test using multiple kernel bandwidths with wild bootstrap for non-asymptotic Type I error control}
-}
-
