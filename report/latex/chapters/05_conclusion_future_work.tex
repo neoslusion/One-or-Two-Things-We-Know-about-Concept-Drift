@@ -45,11 +45,11 @@ Luận văn này đã nghiên cứu và triển khai thành công một hệ th�
 
 \textbf{Kết quả comprehensive benchmark (8 methods × 7 datasets):}
 \begin{itemize}
-    \item \textbf{KS đạt hiệu suất tốt nhất:} F1 = 0.686, cân bằng tốt giữa Precision (0.769) và Recall (0.766)
-    \item \textbf{MMD-based methods có Precision cao:} ShapeDD\_OW\_MMD đạt Precision = 0.847, phù hợp cho low false alarm requirements
-    \item \textbf{ShapeDD\_OW\_MMD:} Đạt Precision = 0.847, F1 = 0.623, throughput cao nhất (47,000 samples/giây) trong ShapeDD variants
+    \item \textbf{MMD\_OW đạt F1 cao nhất (0.576):} Phương pháp sử dụng trọng số tối ưu cho kết quả tốt nhất về F1-score
+    \item \textbf{ShapeDD\_OW\_MMD xếp hạng 2 (F1 = 0.562):} Kết hợp OW-MMD với đặc trưng hình dạng, throughput $\approx 47,000$ samples/giây
+    \item \textbf{Friedman test p = 0.8161:} Không có sự khác biệt thống kê đáng kể giữa các phương pháp
     \item Key finding: OW-MMD variance reduction cho phép giảm bootstrap từ 2500 xuống 10 mà không mất accuracy
-    \item Practical contribution: Threshold calibration từ 0.5 (theory) xuống 0.010 (buffer-based)
+    \item Practical contribution: Cải thiện throughput $\approx 7\times$ so với ShapeDD gốc
 \end{itemize}
 
 \section{Những phát hiện và hiểu biết chính}

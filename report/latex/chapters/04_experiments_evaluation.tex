@@ -6,7 +6,7 @@
 \subsection{Mục tiêu}
 Chương này trình bày các kết quả thực nghiệm nhằm kiểm chứng hiệu quả của hệ thống đề xuất. Quá trình đánh giá được chia thành hai giai đoạn chính:
 \begin{enumerate}
-    \item \textbf{Đánh giá khả năng phát hiện Drift (Detection Benchmark):} So sánh hiệu suất của ShapeDD và các biến thể cải tiến (OW-MMD, SNR-Adaptive) với các phương pháp phổ biến (Baseline) trên các tập dữ liệu đa dạng.
+    \item \textbf{Đánh giá khả năng phát hiện Drift (Detection Benchmark):} So sánh hiệu suất của ShapeDD và các biến thể cải tiến (OW-MMD, MMD-Agg) với các phương pháp phổ biến (Baseline) trên các tập dữ liệu đa dạng.
     \item \textbf{Đánh giá khả năng thích ứng (Adaptation Evaluation):} Kiểm chứng hiệu quả của chiến lược cập nhật mô hình tự động thông qua chỉ số độ chính xác tích lũy (Prequential Accuracy).
 \end{enumerate}
 
@@ -46,7 +46,7 @@ Phần này so sánh phương pháp đề xuất với các baseline phổ biế
 
 \subsection{Kết quả tổng hợp}
 
-Bảng\ref{tab:comprehensive_performance} tóm tắt hiệu suất trung bình của các phương pháp trên toàn bộ 7 tập dữ liệu qua 30 lần chạy.
+Bảng~\ref{tab:comprehensive_performance} tóm tắt hiệu suất trung bình của các phương pháp trên toàn bộ 7 tập dữ liệu qua 30 lần chạy.
 
 % =============================================================================
 % Bảng tổng hợp hiệu suất (Auto-generated)
@@ -55,24 +55,24 @@ Bảng\ref{tab:comprehensive_performance} tóm tắt hiệu suất trung bình c
 
 \textbf{Phân tích kết quả:}
 \begin{itemize}
-    \item \textbf{KS (Kolmogorov-Smirnov) đạt F1 cao nhất ($0.686 \pm 0.179$):} Đây là phương pháp thống kê phi tham số, hoạt động ổn định trên nhiều loại dữ liệu nhờ khả năng phát hiện thay đổi ở từng đặc trưng riêng lẻ.
-    \item \textbf{MMD-based methods (MMD, ShapeDD, ShapeDD\_OW\_MMD):} Các phương pháp này thể hiện \textbf{Precision cao} (từ $0.786$ đến $0.847$), nghĩa là rất ít báo động giả (False Positives). Tuy nhiên, độ nhạy (Recall) thấp hơn KS, cho thấy xu hướng \"bảo thủ\" (conservative) -- chỉ báo động khi drift thực sự rõ ràng.
-    \item \textbf{ShapeDD\_SNR\_Adaptive:} Đạt MTTD (Mean Time To Detection) thấp nhất ($24$ mẫu), phản ứng nhanh nhất với các thay đổi. Tuy nhiên, F1-score thấp ($0.236$) do trade-off giữa tốc độ và độ nhạy trong cơ chế adaptive.
-    \item \textbf{D3 (Discriminative Drift Detector):} Đạt F1 xấp xỉ 0. Nguyên nhân sẽ được phân tích chi tiết ở mục\ref{sec:d3_analysis}.
+    \item \textbf{MMD\_OW đạt F1 cao nhất ($0.576 \pm 0.442$):} Phương pháp sử dụng trọng số tối ưu (Optimally-Weighted MMD) đạt kết quả tốt nhất về F1-score, cho thấy hiệu quả của kỹ thuật giảm phương sai.
+    \item \textbf{ShapeDD\_OW\_MMD xếp hạng 2 (F1 = $0.562$):} Biến thể kết hợp OW-MMD với đặc trưng hình dạng (shape feature) cho kết quả tương đương MMD\_OW, đồng thời có throughput cao (46,773 samples/s).
+    \item \textbf{D3 (Discriminative Drift Detector) xếp hạng 3 (F1 = $0.517$):} Kết quả này cao hơn dự kiến do trong bộ dữ liệu có các dataset với Real Drift (thay đổi $P(X)$). Tuy nhiên, D3 vẫn thất bại hoàn toàn trên các dataset Virtual Drift (xem mục~\ref{sec:d3_analysis}).
+    \item \textbf{KS xếp hạng 8 (F1 = $0.299$):} Mặc dù có Recall cao nhất (0.775), KS tạo ra nhiều False Positives (9,397 FPs), dẫn đến Precision thấp (0.197) và F1-score thấp.
 \end{itemize}
 
 \subsection{Phân tích ý nghĩa thống kê}
 
-Để khẳng định sự khác biệt về hiệu suất không phải do ngẫu nhiên, biểu đồ Critical Difference (CD) sử dụng kiểm định Friedman và Nemenyi post-hoc test được trình bày trong Hình\ref{fig:critical_difference}.
+Để khẳng định sự khác biệt về hiệu suất không phải do ngẫu nhiên, biểu đồ Critical Difference (CD) sử dụng kiểm định Friedman và Nemenyi post-hoc test được trình bày trong Hình~\ref{fig:critical_difference}.
 
 \begin{figure}[h]
 \centering
 \includegraphics[width=0.9\textwidth]{../../experiments/drift_detection_benchmark/publication_figures/critical_difference_f1.pdf}
-\caption{Biểu đồ Critical Difference (CD) với mức ý nghĩa $\alpha = 0.05$. Các phương pháp được nối bởi thanh ngang không có sự khác biệt thống kê đáng kể.}
+\caption{Biểu đồ Critical Difference (CD) với mức ý nghĩa $\alpha = 0.05$. Friedman test cho p-value = 0.8161 (không có sự khác biệt thống kê đáng kể giữa các phương pháp).}
 \label{fig:critical_difference}
 \end{figure}
 
-Kết quả kiểm định cho thấy KS xếp hạng 1 (tốt nhất), nhưng không có sự khác biệt thống kê đáng kể so với nhóm MMD và DAWIDD (nằm trong cùng khoảng CD). Điều này khẳng định các phương pháp dựa trên phân phối (Distribution-based) như MMD và KS vẫn là lựa chọn tin cậy nhất cho bài toán unsupervised drift detection.
+Kết quả kiểm định Friedman (p = 0.8161) cho thấy \textbf{không có sự khác biệt thống kê đáng kể} giữa các phương pháp. Điều này ngụ ý rằng việc lựa chọn phương pháp nên dựa vào các tiêu chí khác như \textit{throughput}, \textit{Precision} (nếu cần giảm false alarm), hoặc \textit{Recall} (nếu cần phát hiện nhiều nhất có thể).
 
 \subsection{Đánh giá chi tiết trên từng loại dữ liệu}
 
@@ -83,30 +83,30 @@ Hiệu suất của các phương pháp thay đổi tùy thuộc vào đặc tí
 % =============================================================================
 \input{../../experiments/drift_detection_benchmark/publication_figures/table_II_f1_by_dataset.tex}
 
-\textbf{Quan sát chi tiết:}
+\textbf{Quan sát chi tiết (tham khảo Bảng~\ref{tab:f1_by_dataset}):}
 \begin{enumerate}
-    \item \textbf{Sudden Drift (STAGGER, LED):}
-    ShapeDD và các biến thể hoạt động tốt trên các tập dữ liệu có sự thay đổi khái niệm rõ ràng (concept shift). Đặc biệt trên STAGGER, ShapeDD\_OW\_MMD đạt F1 = 0.779, tiệm cận với KS. Điều này xác nhận lý thuyết về \"hình dạng tam giác\" (triangle shape) của ShapeDD hoạt động hiệu quả nhất với các thay đổi đột ngột.
+    \item \textbf{Synthetic datasets có drift rõ ràng (gaussian\_shift, gen\_random\_severe):}
+    Các biến thể OW-MMD và ShapeDD hoạt động xuất sắc. Trên \textit{stagger}, ShapeDD\_OW\_MMD đạt F1 = 0.994 và ShapeDD\_MMDAgg đạt F1 = 1.000 (hoàn hảo). Điều này xác nhận lý thuyết \"hình dạng tam giác\" của ShapeDD hoạt động hiệu quả nhất với các thay đổi đột ngột.
 
-    \item \textbf{Gradual Drift (Hyperplane, Sea\_gradual):}
-    Các phương pháp cửa sổ trượt (window-based) như ShapeDD gặp khó khăn với drift diễn ra từ từ. Do sự thay đổi phân phối bị \"pha loãng\" trong bộ đệm (buffer dilution), tín hiệu drift không tạo thành đỉnh nhọn rõ ràng, dẫn đến Recall thấp. KS test vượt trội ở đây nhờ khả năng so sánh phân phối tích lũy mà không phụ thuộc vào hình dạng tín hiệu theo thời gian.
+    \item \textbf{Gradual/Incremental Drift (hyperplane, standard\_sea):}
+    Tất cả các phương pháp đều gặp khó khăn (F1 $< 0.25$). Đây là hạn chế cố hữu của các phương pháp window-based: sự thay đổi phân phối bị \"pha loãng\" trong bộ đệm (buffer dilution), tín hiệu drift không tạo thành đỉnh nhọn rõ ràng.
 
-    \item \textbf{Real-world (Electricity):}
-    Trên dữ liệu thực tế, ShapeDD (F1 = 0.600) vượt qua KS (F1 = 0.417). Điều này cho thấy tính bền vững (robustness) của phương pháp ShapeDD trước nhiễu thực tế, nơi KS test có thể quá nhạy cảm và tạo ra nhiều báo động giả.
+    \item \textbf{Blip Drift (rbfblips):}
+    D3, ShapeDD\_MMDAgg đạt F1 = 1.000; ShapeDD\_OW\_MMD đạt F1 = 0.920. Các phương pháp này phát hiện tốt các thay đổi ngắn hạn (blips) nhờ khả năng bắt tín hiệu nhanh.
 \end{enumerate}
 
 \subsection{Phân tích đặc biệt: Tại sao D3 thất bại?}
 \label{sec:d3_analysis}
 
-Một phát hiện quan trọng từ thực nghiệm là phương pháp D3 (Discriminative Drift Detector) đạt F1 = 0.000 trên hầu hết các tập dữ liệu tổng hợp. Đây không phải là lỗi cài đặt mà là một \textbf{hạn chế phương pháp luận} của các bộ phát hiện dựa trên bộ phân loại (discriminative classifiers).
+Mặc dù D3 (Discriminative Drift Detector) đạt F1 = 0.517 tổng thể (xếp hạng 3), phân tích chi tiết cho thấy hiệu suất rất không đồng đều giữa các dataset:
 
 \begin{itemize}
-    \item \textbf{Cơ chế:} D3 huấn luyện một mô hình để phân biệt giữa dữ liệu cũ và dữ liệu mới. Nếu mô hình phân biệt tốt (AUC cao), nó kết luận có drift.
-    \item \textbf{Vấn đề:} Các tập dữ liệu như SEA hay Hyperplane chứa \textit{Virtual Drift} hoặc thay đổi về $P(Y|X)$ (xác suất hậu nghiệm) trong khi $P(X)$ (phân phối đầu vào) giữ nguyên (thường là phân phối đều Uniform).
-    \item \textbf{Hệ quả:} Vì phân phối đầu vào $P(X)$ không đổi, bộ phân loại của D3 không thể phân biệt được dữ liệu cũ và mới (AUC $\approx$ 0.5), dẫn đến không phát hiện được drift.
+    \item \textbf{Hoạt động tốt (F1 $> 0.9$):} Các dataset có \textit{Real Drift} (thay đổi $P(X)$) như \texttt{gaussian\_shift} (F1=0.998), \texttt{gen\_random\_severe} (F1=0.959), \texttt{rbfblips} (F1=1.000).
+    \item \textbf{Thất bại hoàn toàn (F1 = 0):} Các dataset có \textit{Virtual Drift} (chỉ thay đổi $P(Y|X)$) như \texttt{hyperplane}, \texttt{standard\_sea}, \texttt{led\_abrupt}.
+    \item \textbf{Cơ chế:} D3 huấn luyện một mô hình để phân biệt giữa dữ liệu cũ và mới. Nếu phân phối đầu vào $P(X)$ không đổi, bộ phân loại không thể phân biệt (AUC $\approx$ 0.5).
 \end{itemize}
 
-Kết quả này khẳng định rằng các phương pháp unsupervised (như D3, KS, MMD) chỉ thực sự hiệu quả khi có sự thay đổi trong phân phối đầu vào $P(X)$ (Real Drift/Covariate Shift).
+Kết quả này khẳng định rằng D3 chỉ hiệu quả khi có sự thay đổi trong phân phối đầu vào $P(X)$ (Real Drift/Covariate Shift).
 
 \subsection{Đánh giá hiệu suất tính toán (Runtime & Throughput)}
 
@@ -114,11 +114,12 @@ Bảng\ref{tab:runtime_stats} so sánh thời gian xử lý trung bình và thô
 
 \input{../../experiments/drift_detection_benchmark/publication_figures/table_III_runtime_stats.tex}
 
-\textbf{Kết quả:}
+\textbf{Kết quả (tham khảo Bảng~\ref{tab:runtime_stats}):}
 \begin{itemize}
-    \item \textbf{MMD\_OW (Optimally-Weighted):} Là phương pháp nhanh nhất với throughput $>27,000$ mẫu/giây. Việc sử dụng trọng số tối ưu giúp loại bỏ nhu cầu hoán vị (permutation) tốn kém.
-    \item \textbf{ShapeDD gốc:} Có tốc độ trung bình ($\sim 3,600$ mẫu/giây), bị giới hạn bởi bước kiểm định hoán vị.
-    \item \textbf{ShapeDD\_OW\_MMD:} Mặc dù chậm hơn MMD\_OW đơn lẻ do phải tính toán thêm đặc trưng hình dạng, nhưng vẫn cải thiện đáng kể so với ShapeDD gốc trong các tình huống kích thước cửa sổ lớn.
+    \item \textbf{MMD\_OW và ShapeDD\_OW\_MMD:} Nhanh nhất với throughput $\approx 47,000$ mẫu/giây. Việc sử dụng trọng số tối ưu giúp loại bỏ nhu cầu hoán vị (permutation) tốn kém.
+    \item \textbf{ShapeDD gốc:} Tốc độ trung bình ($\sim 6,800$ mẫu/giây), bị giới hạn bởi bước kiểm định hoán vị.
+    \item \textbf{DAWIDD:} Chậm nhất ($\sim 3,700$ mẫu/giây) do tính toán phức tạp.
+    \item \textbf{Cải thiện:} OW-MMD variants nhanh hơn $\approx 7\times$ so với ShapeDD gốc.
 \end{itemize}
 
 \section{Đánh giá khả năng thích ứng mô hình}
