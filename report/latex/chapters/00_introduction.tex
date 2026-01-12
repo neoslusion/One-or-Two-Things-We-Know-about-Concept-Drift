@@ -50,7 +50,13 @@ Cụ thể, luận văn sẽ tập trung vào việc phát triển hệ thống 
     \item Đánh giá hiệu năng của hệ thống trên các tập dữ liệu thực tế và các kịch bản drift khác nhau.
 \end{itemize}
 
-\textbf{Trọng tâm đánh giá:} Mặc dù hệ thống được thiết kế để hỗ trợ nhiều loại drift (sudden, gradual, incremental, recurrent, blip), luận văn này \textbf{tập trung đánh giá chuyên sâu vào sudden drift (trôi dạt đột ngột)}. Lý do cho sự lựa chọn này bao gồm: (1) sudden drift có tầm quan trọng thực tế cao nhất trong các hệ thống production, (2) ShapeDD có nền tảng lý thuyết vững chắc nhất cho hiện tượng trôi dạt đột ngột, và (3) để đảm bảo chất lượng nghiên cứu với phân tích sâu thay vì coverage nông. Các loại drift khác đã được implement trong framework và có thể được đánh giá trong nghiên cứu tương lai.
+\textbf{Trọng tâm đánh giá:} Mặc dù hệ thống được thiết kế để hỗ trợ nhiều loại drift (sudden, gradual, incremental, recurrent, blip), luận văn này \textbf{tập trung đánh giá chuyên sâu vào sudden drift (trôi dạt đột ngột)}. Lý do cho sự lựa chọn này bao gồm:
+\begin{enumerate}
+    \item \textbf{Tầm quan trọng thực tế cao:} Theo các nghiên cứu về hệ thống production~\cite{hinder2024survey_partA}, sudden drift chiếm đa số các trường hợp nghiêm trọng trong môi trường công nghiệp (system failures, policy changes, equipment malfunctions) --- những tình huống đòi hỏi phát hiện và phản ứng nhanh nhất.
+    \item \textbf{Nền tảng lý thuyết vững chắc:} ShapeDD dựa trên Triangle Shape Property (Định lý 2.1), một kết quả toán học đã được chứng minh \textbf{chỉ đúng cho sudden drift}. Gradual và incremental drift không tạo ra hình dạng tam giác đặc trưng, khiến việc áp dụng ShapeDD cho các loại drift này cần thêm nghiên cứu lý thuyết.
+    \item \textbf{Đảm bảo chất lượng nghiên cứu:} Thay vì coverage nông trên nhiều drift types với kết quả không rõ ràng, luận văn ưu tiên phân tích sâu trên một drift type với statistical rigor (30 runs, Friedman test, confidence intervals).
+\end{enumerate}
+Các loại drift khác đã được implement trong framework (xem Chương~\ref{chap:proposed-model}, Module \texttt{adaptation\_strategies.py}) và có thể được đánh giá trong nghiên cứu tương lai với minimal code changes.
 
 \subsection{Đối tượng nghiên cứu}
 Đối tượng nghiên cứu của đề tài này là các mô hình và phương pháp phát hiện, phân loại và thích ứng concept drift, bao gồm:

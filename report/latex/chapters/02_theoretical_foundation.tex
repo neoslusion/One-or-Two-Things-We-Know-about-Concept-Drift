@@ -118,22 +118,23 @@ trong đó $P_{W_l(t)}$ là phân phối trung bình trên cửa sổ $W_l(t)$ v
 
 \subsubsection{Hình dạng đặc trưng của drift đột ngột (Định lý 1)}
 
-Kết quả lý thuyết trung tâm của ShapeDD được phát biểu trong Định lý~1, mô tả \textit{hình dạng đặc trưng, không phụ thuộc vào phân phối} 
-của tín hiệu $\sigma$ khi xảy ra một trôi dạt đột ngột.
+Kết quả lý thuyết trung tâm của ShapeDD được phát biểu chính thức như sau:
 
-Giả sử phân phối nền $p_t$ thay đổi \textbf{tức thời} tại $t=0$ từ $P$ sang $Q$, khi đó tín hiệu độ lớn trôi dạt có thể được phân tách thành hai phần:
+\begin{theorem}[Triangle Shape Property~\cite{shapeDD2024}]
+\label{thm:triangle_shape}
+Cho luồng dữ liệu với phân phối nền $p_t$ thay đổi \textbf{tức thời} tại $t=0$ từ phân phối $P$ sang phân phối $Q$. Giả sử sử dụng cửa sổ trượt có kích thước $l$ và độ đo khoảng cách $\|\cdot\|$ thỏa mãn các điều kiện metric tiêu chuẩn. Khi đó, tín hiệu độ lớn trôi dạt được phân tách thành:
 \begin{equation}
     \sigma_{\parallel \cdot \parallel, l, p^\cdot}(t)
     = \underbrace{ \| P - Q \| }_{\text{Độ mạnh drift}} \cdot
       \underbrace{ h_l(t) }_{\text{Hình dạng drift}},
 \end{equation}
-trong đó $h_l(t)$ chỉ phụ thuộc vào độ dài cửa sổ $l$, được định nghĩa bởi:
+trong đó hàm hình dạng $h_l(t)$ được định nghĩa bởi:
 \begin{equation}
     h_l(t) = \max\left( 0, \, 1 - \frac{|l - t|}{l} \right).
 \end{equation}
+\end{theorem}
 
-Hàm $h_l(t)$ có dạng \textbf{tam giác cân}, đạt cực đại tại thời điểm xảy ra drift, và suy giảm tuyến tính về hai phía. 
-Đặc tính này hoàn toàn không phụ thuộc vào dạng phân phối hay độ đo khoảng cách sử dụng, mà chỉ bị co giãn theo hệ số $\|P - Q\|$.
+\textbf{Ý nghĩa:} Hàm $h_l(t)$ có dạng \textbf{tam giác cân}, đạt cực đại tại thời điểm xảy ra drift ($t=0$), và suy giảm tuyến tính về hai phía. Đặc tính này hoàn toàn \textbf{không phụ thuộc vào dạng phân phối hay độ đo khoảng cách} sử dụng, mà chỉ bị co giãn theo hệ số $\|P - Q\|$. Đây là lý do tại sao ShapeDD có thể áp dụng cho nhiều domain khác nhau mà không cần thay đổi kernel hay metric.
 
 \subsubsection{Tổng quát hoá cho nhiều sự kiện drift (Hệ quả 1)}
 

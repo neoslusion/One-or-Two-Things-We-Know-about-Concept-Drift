@@ -239,40 +239,56 @@ học sâu vận hành bền vững trong môi trường dữ liệu luôn biế
 \begin{tabular}{|l|l|l|l|l|}
 \hline
 \textbf{Thuật toán} & \textbf{Nhóm chiến lược} & \textbf{Cơ chế cốt lõi} & \textbf{Ưu điểm} & \textbf{Hạn chế} \\ \hline
-\textbf{DDM} & Statistical Process Control & Binomial Distribution & Ít tốn bộ nhớ, chạy nhanh [1, 2] & Hiệu suất giảm khi cửa sổ lớn [3] \\ \hline
-\textbf{EDDM} & Statistical Process Control & Distance between errors & Nhạy với gradual drift [4, 5] & Dễ báo động giả lúc mới học [6] \\ \hline
-\textbf{ADWIN} & Sliding Window & Adaptive Windowing & Có cam kết toán học về tỷ lệ FP [7, 8] & Tốn bộ nhớ hơn DDM/EDDM [6] \\ \hline
-\textbf{HDDM} & Sliding Window & Hoeffding's Bound & Phù hợp cho abrupt/gradual drift [9, 10] & Cần dữ liệu nhãn liên tục [11] \\ \hline
-\textbf{FHDDM} & Sliding Window & Hoeffding + Sliding Win. & Chỉ duy trì 2 biến số, cực nhẹ [6, 12] & Cần chọn kích thước cửa sổ phù hợp [13] \\ \hline
-\textbf{D3} & Virtual Classifier & Unsupervised Separation & Tốc độ nhanh, không cần nhãn [14, 15] & Nhạy cảm với nhiễu tuyến tính [16] \\ \hline
-\textbf{ShapeDD} & Meta-Statistic & Shape-based Filtering & Pinpointing điểm drift chính xác [17, 18] & Độ trễ phụ thuộc kích thước cửa sổ [17] \\ \hline
-\textbf{DAWIDD} & Block-Based & Independence Test (HSIC) & Phù hợp với gradual/reoccurring drift [19, 20] & Tỷ lệ báo động giả khá cao [21] \\ \hline
+\textbf{DDM} & Statistical Process Control & Binomial Distribution & Ít tốn bộ nhớ, chạy nhanh~\cite{gama2004learning} & Hiệu suất giảm khi cửa sổ lớn~\cite{hinder2024survey_partA} \\ \hline
+\textbf{EDDM} & Statistical Process Control & Distance between errors & Nhạy với gradual drift~\cite{baena2006early} & Dễ báo động giả lúc mới học~\cite{santos2024evolving} \\ \hline
+\textbf{ADWIN} & Sliding Window & Adaptive Windowing & Có cam kết toán học về tỷ lệ FP~\cite{bifet2007learning} & Tốn bộ nhớ hơn DDM/EDDM~\cite{hinder2024survey_partA} \\ \hline
+\textbf{HDDM} & Sliding Window & Hoeffding's Bound & Phù hợp cho abrupt/gradual drift~\cite{friasblanco2015hddm} & Cần dữ liệu nhãn liên tục~\cite{santos2024evolving} \\ \hline
+\textbf{FHDDM} & Sliding Window & Hoeffding + Sliding Win. & Chỉ duy trì 2 biến số, cực nhẹ~\cite{HDDM} & Cần chọn kích thước cửa sổ phù hợp~\cite{hinder2024survey_partA} \\ \hline
+\textbf{D3} & Virtual Classifier & Unsupervised Separation & Tốc độ nhanh, không cần nhãn~\cite{gozuacik2019d3} & Chỉ phát hiện Real Drift (thay đổi $P(X)$)~\cite{hinder2024survey_partA} \\ \hline
+\textbf{ShapeDD} & Meta-Statistic & Shape-based Filtering & Pinpointing điểm drift chính xác~\cite{shapeDD2024} & Độ trễ phụ thuộc kích thước cửa sổ~\cite{shapeDD2024} \\ \hline
+\textbf{DAWIDD} & Block-Based & Independence Test (HSIC) & Phù hợp với gradual/reoccurring drift~\cite{hinder2020dawidd} & Tỷ lệ báo động giả khá cao~\cite{hinder2024survey_partA} \\ \hline
 \end{tabular}
 }
 \end{table}
 
-Các phương pháp cũng đã được thực nghiệm trên các tập dữ liệu giả lập và thực tế chuẩn để đánh giá hiệu năng. Bảng \ref{tab:performance_results} tổng hợp kết quả từ các nghiên cứu 
+Các phương pháp cũng đã được thực nghiệm trên các tập dữ liệu giả lập và thực tế chuẩn để đánh giá hiệu năng. Bảng~\ref{tab:accuracy_results} tổng hợp kết quả từ các nghiên cứu.
 
 \begin{table}[ht]
 \centering
-\caption{So sánh Prequential Accuracy (\%) trên các tập dữ liệu Benchmark}
+\caption{So sánh đa chỉ số (Multi-metric Comparison) của các bộ phát hiện drift trên các tập dữ liệu chuẩn}
 \label{tab:accuracy_results}
-\begin{tabular}{|l|c|c|c|c|}
+\resizebox{\textwidth}{!}{
+\begin{tabular}{|l|c|c|c|c||c|c||c|c|}
 \hline
-\textbf{Thuật toán} & \textbf{Electricity (Elec2)} & \textbf{Forest Covtype} & \textbf{Rotating Hyp.} & \textbf{SEA (Sudden)} \\ \hline
-\textbf{D3} & 86.69 [22] & 87.17 [22] & 85.29 [22] & 88.08 [23] \\ \hline
-\textbf{ADWIN} & 81.33 [22] & 80.48 [22] & 87.28 [22] & 77.59 [23] \\ \hline
-\textbf{DDM} & 79.30 [22] & 83.36 [22] & 84.01 [22] & 85.32 [23] \\ \hline
-\textbf{EDDM} & 78.25 [22] & 82.76 [22] & 80.27 [22] & 75.73 [23] \\ \hline
-\textbf{HDDM-A} & 85.71 [24] & 87.24 [25] & 86.91 [26] & - \\ \hline
-\textbf{FHDDM} & 73.62* [27] & 67.76* [28] & 85.08 [25] & - \\ \hline
-\textbf{DAWIDD} & 21.00** [29] & 31.82** [29] & 37.18** [30] & 29.93** [30] \\ \hline
-\textbf{ShapeDD} & 87.73*** [31] & 96.00*** [31] & 96.00*** [32] & 22.00*** [33] \\ \hline
+\multirow{2}{*}{\textbf{Thuật toán}} & \multicolumn{4}{c||}{\textbf{Prequential Accuracy (\%)}} & \multicolumn{2}{c||}{\textbf{Detection Delay (samples)}} & \multicolumn{2}{c|}{\textbf{$\beta$-score}} \\
+\cline{2-9}
+ & \textbf{Elec2} & \textbf{Covtype} & \textbf{Hyperplane} & \textbf{SEA} & \textbf{Elec2} & \textbf{Hyperplane} & \textbf{Elec2} & \textbf{Hyperplane} \\
+\hline
+\textbf{D3} & 86.69 & 87.17 & 85.29 & 88.08 & -- & -- & -- & -- \\
+\hline
+\textbf{ADWIN} & 81.33 & 80.48 & 87.28 & 77.59 & -- & -- & -- & -- \\
+\hline
+\textbf{DDM} & 79.30 & 83.36 & 84.01 & 85.32 & -- & -- & -- & -- \\
+\hline
+\textbf{EDDM} & 78.25 & 82.76 & 80.27 & 75.73 & -- & -- & -- & -- \\
+\hline
+\textbf{HDDM-A} & 85.71 & 87.24 & 86.91 & -- & -- & -- & -- & -- \\
+\hline
+\textbf{FHDDM} & 73.62$^\dagger$ & 67.76$^\dagger$ & 85.08 & -- & -- & -- & -- & -- \\
+\hline
+\textbf{DAWIDD} & -- & -- & -- & -- & 21.00 & 37.18 & -- & -- \\
+\hline
+\textbf{ShapeDD} & -- & -- & -- & -- & -- & -- & 87.73 & 96.00 \\
+\hline
 \end{tabular}
+}
 \begin{flushleft}
-\small * Tính toán từ tỷ lệ lỗi (Error-rate) của mô hình Hoeffding Tree.\\
-** Chỉ số Delay (số mẫu trễ trung bình) - DAWIDD không tập trung vào Accuracy.\\
-*** Chỉ số $\beta$-score đánh giá chất lượng bộ dò trên tập dữ liệu tương ứng.
+\small 
+\textbf{Ghi chú:} Các chỉ số được tổng hợp từ các nghiên cứu gốc. \\
+$^\dagger$ Tính toán từ tỷ lệ lỗi (Error-rate) của mô hình Hoeffding Tree. \\
+\textbf{Accuracy}: Độ chính xác tích lũy (Prequential) của mô hình kết hợp với bộ phát hiện drift. \\
+\textbf{Delay}: Số mẫu trung bình từ khi drift xảy ra đến khi được phát hiện (thấp = tốt). \\
+\textbf{$\beta$-score}: Chỉ số đánh giá chất lượng phát hiện, cân bằng Precision và Recall (cao = tốt).
 \end{flushleft}
 \end{table}
 
@@ -288,7 +304,10 @@ thống vừa có khả năng học biểu diễn mạnh mẽ vừa linh hoạt 
 \label{sec:drift_type_identification}
 \label{sec:cdt-msw-theory}
 \subsection{Tổng quan}
-Sau khi phát hiện được thời điểm xảy ra trôi dạt, tại thời điểm đó, việc xác định loại trôi dạt là điều cần thiết để có thể có những hành động phù hợp để can thiệp vào mô hình.  Khác với các phương pháp truyền thống chỉ xác định có trôi dạt hay không, phương pháp \textbf{CDT\_MSW} (Concept Drift Type identification based on Multi-Sliding Windows) được Guo \textit{et al.}~\cite{guo2022cdtmsw} đề xuất nhằm \emph{phân biệt bản chất và tốc độ thay đổi của quá trình drift}. Phương pháp này dựa trên việc quan sát hành vi thay đổi của độ chính xác giữa nhiều cửa sổ trượt (traditional sliding windows và adaptive windows), qua đó nhận dạng các loại drift như: \emph{sudden}, \emph{gradual}, \emph{incremental}, và \emph{recurrent}.
+
+\textit{Mặc dù luận văn tập trung đánh giá \textbf{sudden drift} như đã nêu trong Chương~1, việc hệ thống hóa phương pháp phân loại loại drift là nền tảng quan trọng cho kiến trúc thích ứng thông minh được đề xuất trong Chương~3. PhươngPháp CDT\_MSW được tích hợp vào hệ thống ShapeDD-Stream để kích hoạt chiến lược cập nhật mô hình phù hợp với từng loại drift.}
+
+Sau khi phát hiện được thời điểm xảy ra trôi dạt, việc xác định loại trôi dạt là điều cần thiết để có thể có những hành động phù hợp để can thiệp vào mô hình. Khác với các phương pháp truyền thống chỉ xác định có trôi dạt hay không, phương pháp \textbf{CDT\_MSW} (Concept Drift Type identification based on Multi-Sliding Windows) được Guo \textit{et al.}~\cite{guo2022cdtmsw} đề xuất nhằm \emph{phân biệt bản chất và tốc độ thay đổi của quá trình drift}. Phương pháp này dựa trên việc quan sát hành vi thay đổi của độ chính xác giữa nhiều cửa sổ trượt (traditional sliding windows và adaptive windows), qua đó nhận dạng các loại drift như: \emph{sudden}, \emph{gradual}, \emph{incremental}, và \emph{recurrent}.
 
 \subsection{Giai đoạn 1: Phát hiện trôi dạt}
 Trong giai đoạn đầu, CDT\_MSW định nghĩa \textbf{tỷ lệ phát hiện} (Detection Flow Ratio) để đo lường sự thay đổi giữa hai cửa sổ dữ liệu $W_A$ và $W_B$:
