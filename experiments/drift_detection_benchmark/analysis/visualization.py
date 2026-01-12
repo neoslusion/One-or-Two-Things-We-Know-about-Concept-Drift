@@ -51,6 +51,8 @@ def categorize_dataset(name):
     name_lower = name.lower()
     if 'gradual' in name_lower or 'circles' in name_lower:
         return 'B_Gradual'
+    elif 'rbfblips' in name_lower:
+        return 'A_Sudden'
     elif 'rbf' in name_lower:
         return 'C_Incremental'
     elif 'electricity' in name_lower or 'covertype' in name_lower:
@@ -443,58 +445,40 @@ def generate_all_figures(all_results, output_dir="./publication_figures"):
         print("  Skipped: No gradual/incremental drift datasets")
 
     # ========================================================================
-    # FIGURE 4: Real-world & Stationary Results (Heatmap + FP Analysis)
+    # FIGURE 4: Stationary Analysis (False Positives)
     # ========================================================================
-    print("\n[4/8] Real-world & Stationary Analysis...")
+    print("\n[4/8] Stationary Analysis (False Positives)...")
 
-    if len(realworld_results) > 0:
-        # Separate real-world (has drift) from stationary (no drift)
-        rw_drift = realworld_results[realworld_results['N_Drifts'] > 0]
-        rw_stationary = realworld_results[realworld_results['N_Drifts'] == 0]
+    # Filter stationary datasets (no drift)
+    stationary_results = results_df[results_df['DriftType'] == 'E_Stationary'].copy()
+
+    if len(stationary_results) > 0:
+        fig, ax = plt.subplots(figsize=(10, 6))
         
-        fig, axes = plt.subplots(1, 2, figsize=(14, 5))
+        fp_stats = stationary_results.groupby('Method').agg({
+            'FP': 'sum'
+        }).sort_values('FP', ascending=True)
         
-        # Left: Real-world datasets (F1)
-        if len(rw_drift) > 0:
-            f1_rw = rw_drift.pivot_table(values='F1', index='Method', columns='Dataset', aggfunc='mean')
-            f1_rw = f1_rw.sort_values(f1_rw.columns[0], ascending=False) if len(f1_rw.columns) > 0 else f1_rw
-            
-            sns.heatmap(f1_rw, annot=True, fmt='.2f', cmap='RdYlGn', vmin=0, vmax=1,
-                        linewidths=0.5, linecolor='white', 
-                        annot_kws={'fontsize': 10}, ax=axes[0])
-            axes[0].set_title('Real-world: F1-Score', fontsize=11, fontweight='bold')
-            axes[0].set_xticklabels(axes[0].get_xticklabels(), rotation=45, ha='right')
-        else:
-            axes[0].text(0.5, 0.5, 'No real-world datasets', ha='center', va='center')
-            axes[0].set_title('Real-world: F1-Score', fontsize=11, fontweight='bold')
+        y_pos = range(len(fp_stats))
+        # Color coding: Green (0 FP), Orange (<5 FP), Red (High FP)
+        colors = ['green' if fp == 0 else 'orange' if fp < 5 else 'red' for fp in fp_stats['FP']]
         
-        # Right: Stationary datasets (False Positive analysis)
-        if len(rw_stationary) > 0:
-            fp_stats = rw_stationary.groupby('Method').agg({
-                'FP': 'sum',
-                'Precision': 'mean'
-            }).sort_values('FP', ascending=True)
-            
-            y_pos = range(len(fp_stats))
-            colors = ['green' if fp == 0 else 'orange' if fp < 5 else 'red' for fp in fp_stats['FP']]
-            
-            axes[1].barh(y_pos, fp_stats['FP'], color=colors, edgecolor='black', alpha=0.8)
-            axes[1].set_yticks(y_pos)
-            axes[1].set_yticklabels(fp_stats.index)
-            axes[1].set_xlabel('False Positives', fontsize=10)
-            axes[1].set_title('Stationary: False Positive Count\n(Lower is Better)', fontsize=11, fontweight='bold')
-            
-            for i, fp in enumerate(fp_stats['FP']):
-                axes[1].text(fp + 0.1, i, str(int(fp)), va='center', fontsize=9)
-        else:
-            axes[1].text(0.5, 0.5, 'No stationary datasets', ha='center', va='center')
-            axes[1].set_title('Stationary: False Positive Count', fontsize=11, fontweight='bold')
+        bars = ax.barh(y_pos, fp_stats['FP'], color=colors, edgecolor='black', alpha=0.8)
         
+        ax.set_yticks(y_pos)
+        ax.set_yticklabels(fp_stats.index)
+        ax.set_xlabel('Total False Positives', fontsize=11, fontweight='bold')
+        ax.set_title('Stationary Datasets: False Positive Analysis\n(Lower is Better)', fontsize=12, fontweight='bold')
+        
+        # Add value labels
+        for i, fp in enumerate(fp_stats['FP']):
+            ax.text(fp + 0.1, i, str(int(fp)), va='center', fontsize=10, fontweight='bold')
+            
         plt.tight_layout()
-        save_figure(fig, "figure_4_realworld_stationary", output_dir)
+        save_figure(fig, "figure_4_stationary_fp", output_dir)
         plt.close()
     else:
-        print("  Skipped: No real-world/stationary datasets")
+        print("  Skipped: No stationary datasets")
 
     # ========================================================================
     # FIGURE 5: Speed-Accuracy Trade-off
@@ -643,7 +627,7 @@ def generate_all_figures(all_results, output_dir="./publication_figures"):
     print("  1. Overall Method Ranking (bar chart)")
     print("  2. Sudden Drift Performance (heatmap)")
     print("  3. Gradual/Incremental Drift Performance (heatmap)")
-    print("  4. Real-world & Stationary Analysis (heatmap + FP)")
+    print("  4. Stationary Analysis (False Positives)")
     print("  5. Speed-Accuracy Trade-off (scatter)")
     print("  6. Runtime Comparison (bar chart)")
     print("  7. Detection Timeline (example)")

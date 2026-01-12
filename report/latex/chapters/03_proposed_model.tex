@@ -1,7 +1,7 @@
 \chapter{Mô hình đề xuất}
 \label{chap:proposed-model}
 
-\textit{Trên cơ sở lý thuyết về ShapeDD và các phương pháp phát hiện trôi dạt đã trình bày ở Chương~\ref{chap:theoretical_foundation}, chương này đề xuất một hệ thống phát hiện và thích ứng concept drift toàn diện. Chúng tôi giới thiệu các cải tiến thuật toán nhằm tối ưu hóa hiệu suất tính toán và độ chính xác, đồng thời trình bày kiến trúc hệ thống xử lý luồng dữ liệu thời gian thực dựa trên Apache Kafka. Các đóng góp chính bao gồm: (1) Tích hợp Optimally-Weighted MMD (OW-MMD) để tăng tốc độ xử lý, (2) Xây dựng khung chiến lược thích ứng đa dạng dựa trên loại drift, và (3) Thiết kế kiến trúc hệ thống có khả năng mở rộng và chịu lỗi cao.}
+\textit{Trên cơ sở lý thuyết về ShapeDD và các phương pháp phát hiện trôi dạt đã trình bày ở Chương~\ref{chap:theoretical_foundation}, chương này đề xuất một hệ thống phát hiện và thích ứng concept drift toàn diện. Báo cáo giới thiệu các cải tiến thuật toán nhằm tối ưu hóa hiệu suất tính toán và độ chính xác, đồng thời trình bày kiến trúc hệ thống xử lý luồng dữ liệu thời gian thực dựa trên Apache Kafka. Các đóng góp chính bao gồm: (1) Tích hợp Optimally-Weighted MMD (OW-MMD) để tăng tốc độ xử lý, (2) Xây dựng khung chiến lược thích ứng đa dạng dựa trên loại drift, và (3) Thiết kế kiến trúc hệ thống có khả năng mở rộng và chịu lỗi cao.}
 
 \section{Động lực và tổng quan cách tiếp cận}
 
@@ -22,8 +22,11 @@ Mặc dù ShapeDD gốc thể hiện nhiều ưu điểm về độ chính xác 
 
 \section{Cải tiến thuật toán phát hiện trôi dạt}
 
-\subsection{Optimally-Weighted MMD (OW-MMD): Tối ưu hóa hiệu suất}
+
+\subsection{Optimally-Weighted MMD (OW-MMD): Tối ưu hóa hiệu suất và độ chính xác}
 \label{sec:ow-mmd}
+
+Trong các hệ thống học máy dòng dữ liệu (data stream), sự trôi dạt khái niệm (concept drift) xảy ra khi các đặc tính thống kê của biến mục tiêu thay đổi đột ngột hoặc từ từ theo thời gian. Các phương pháp MMD truyền thống thường gặp khó khăn về chi phí tính toán khi áp dụng cho dữ liệu lớn.
 
 \subsubsection{Vấn đề của ước lượng MMD truyền thống}
 Trong ShapeDD gốc, thống kê MMD được tính toán dựa trên trọng số đều (uniform weights), coi vai trò của mọi điểm dữ liệu trong cửa sổ là như nhau. Để đạt được độ tin cậy thống kê (statistical power) mong muốn, phương pháp này yêu cầu kích thước mẫu lớn hoặc quy trình kiểm định hoán vị tốn kém ($O(N_{perm} \cdot n^2)$). Điều này không phù hợp với các ứng dụng yêu cầu phản hồi tức thì.
@@ -42,41 +45,80 @@ w_{ij} \propto \frac{1}{\sqrt{\sum_{k} k(x_i, x_k)}} \cdot \frac{1}{\sqrt{\sum_{
 \end{equation}
 
 \subsubsection{Quy trình phát hiện lai (Hybrid Detection Strategy)}
-Để cân bằng giữa tốc độ và độ chính xác, chúng tôi đề xuất quy trình phát hiện hai giai đoạn cho ShapeDD\_OW\_MMD:
+Để cân bằng giữa tốc độ và độ chính xác, báo cáo đề xuất quy trình phát hiện hai giai đoạn cho ShapeDD\_OW\_MMD:
 
 \begin{algorithm}[H]
-\caption{ShapeDD\_OW\_MMD Hybrid Detection}
+\caption{Optimally-Weighted MMD (OW-MMD)}
+\label{alg:ow_mmd}
 \begin{algorithmic}[1]
-\REQUIRE Data buffer $W$, window sizes $l_1$, $l_2$
-\ENSURE Drift detection results
-\STATE \textbf{Giai đoạn 1: Phát hiện mẫu hình học nhanh (Fast Geometric Detection)}
-\STATE Tính ma trận kernel $K$ cho cửa sổ $W$
-\STATE Tính đường cong hình dạng $\sigma(t)$ thông qua tích chập (như ShapeDD gốc)
-\STATE Xác định tập các điểm ứng viên $C = \{t \mid \text{zero-crossing}(\sigma'(t)) \land \sigma(t) > \text{threshold}\}$
-\STATE
-\STATE \textbf{Giai đoạn 2: Xác thực bằng OW-MMD (Validation)}
-\FOR{mỗi điểm ứng viên $t_c \in C$}
-    \STATE Chia cửa sổ $W$ thành $X_{ref}$ và $X_{test}$ tại điểm cắt $t_c$
-    \STATE Tính thống kê $\text{MMD}^2_{\text{OW}}$ với trọng số tối ưu
-    \STATE Ước lượng ngưỡng (threshold) $\tau$ thông qua bootstrap rút gọn ($N=10$)
-    \IF{$\text{MMD}^2_{\text{OW}} > \tau$}
-        \STATE Xác nhận drift tại $t_c$
-        \RETURN \textbf{Drift Detected}
-    \ENDIF
+\REQUIRE Reference window $X_{ref}$, test window $X_{test}$, kernel $k(\cdot, \cdot)$
+\ENSURE OW-MMD Statistic $\widehat{\text{MMD}}^2_{OW}$
+\STATE Combine samples: $Z = X_{ref} \cup X_{test}$
+\STATE Compute Kernel Matrix $K$ on $Z$
+\STATE \textbf{1. Compute Optimal Weights (Variance Reduction)}
+\FOR{each sample $z_i \in Z$}
+    \STATE Calculate local density: $d_i = \sum_{j} K_{ij}$
+    \STATE Assign inverse-sqrt weight: $w_i \propto \frac{1}{\sqrt{d_i}}$
 \ENDFOR
+\STATE Normalize weights: $\sum_{i \in X_{ref}} w_i = 1$, $\sum_{j \in X_{test}} w_j = 1$
+\STATE \textbf{2. Compute Weighted Statistic}
+\STATE $\widehat{\text{MMD}}^2_{OW} = \sum_{i,j} w_i w_j k(x_i, x_j) + \sum_{p,q} w_p w_q k(y_p, y_q) - 2 \sum_{i,p} w_i w_p k(x_i, y_p)$
+\RETURN $\widehat{\text{MMD}}^2_{OW}$
 \end{algorithmic}
 \end{algorithm}
 
 Cải tiến này giúp giảm số lượng mẫu bootstrap cần thiết từ 2500 xuống còn khoảng 10-50 mẫu mà vẫn duy trì độ chính xác tương đương, giúp tăng tốc độ xử lý lên đáng kể.
 
-\subsection{MMD-Agg: Tăng cường độ bền vững}
+\subsection{MMD-Agg: Tăng cường độ bền vững và tính thích nghi}
 \label{sec:mmdagg}
 
-Một hạn chế khác của MMD là độ nhạy đối với việc lựa chọn tham số độ rộng kernel ($\sigma$). Nếu $\sigma$ quá nhỏ, MMD chỉ bắt được các thay đổi cục bộ; nếu quá lớn, nó có thể bỏ qua các chi tiết quan trọng.
+Một hạn chế cốt yếu của các phương pháp MMD truyền thống là sự phụ thuộc nhạy cảm vào việc lựa chọn tham số độ rộng hạt nhân (kernel bandwidth, $\sigma$). Trong thực tế, sự trôi dạt khái niệm có thể diễn ra ở nhiều quy mô khác nhau: sự thay đổi nhỏ cục bộ (yêu cầu $\sigma$ nhỏ) hoặc sự dịch chuyển phân phối toàn cục (yêu cầu $\sigma$ lớn). Việc cố định một giá trị $\sigma$ (thường dùng median heuristic) thường dẫn đến việc mất mát thông tin quan trọng, làm giảm độ mạnh (power) của kiểm định.
 
-Để khắc phục, chúng tôi tích hợp kỹ thuật \textbf{MMD-Agg} (MMD Aggregated)~\cite{schrab2023mmdagg}. Thay vì chọn một $\sigma$ cố định (thường dùng median heuristic), MMD-Agg tính toán MMD trên một tập hợp các bandwidths khác nhau {$\sigma_1, \sigma_2, \dots, \sigma_k$} và tổng hợp kết quả.
+Để khắc phục vấn đề này, luận văn tích hợp phương pháp \textbf{MMD-Agg} (MMD Aggregated) được đề xuất bởi Schrab et al.~\cite{schrab2023mmdagg}. Đây là một bước tiến quan trọng về mặt lý thuyết so với các phương pháp lựa chọn kernel heuristic.
 
-Quy trình này cho phép bộ phát hiện "nhìn" dữ liệu ở nhiều độ phân giải khác nhau, giúp phát hiện được cả các thay đổi nhỏ (cục bộ) và các thay đổi lớn (toàn cục) trong phân phối dữ liệu, làm tăng đáng kể độ chính xác (F1-score) trên các tập dữ liệu phức tạp.
+\subsubsection{Cơ chế thích nghi đa hạt nhân (Adaptive Multi-Kernel Strategy)}
+Thay vì chọn một kernel đơn lẻ $k_{\sigma}$, MMD-Agg thực hiện kiểm định trên một tập hợp các kernel $\mathcal{K} = \{k_{\sigma_1}, k_{\sigma_2}, \dots, k_{\sigma_M}\}$ với các độ rộng băng thông trải dài trên nhiều quy mô khác nhau. 
+
+Thống kê kiểm định không còn là một giá trị MMD duy nhất, mà là giá trị tổng hợp từ tập hợp này:
+\begin{equation}
+\Delta_{Agg} = \max_{k \in \mathcal{K}} \left( \widehat{\text{MMD}}_k^2 - \lambda_k \right)
+\end{equation}
+trong đó $\lambda_k$ là các trọng số điều chỉnh (correction terms) được tính toán để đảm bảo mức ý nghĩa thống kê tổng thể. Cơ chế này cho phép bộ phát hiện "quét" qua nhiều độ phân giải của dữ liệu, tự động "thích nghi" để chọn ra kernel phản ánh tốt nhất sự thay đổi phân phối hiện tại mà không cần tham số hóa thủ công.
+
+\subsubsection{Đảm bảo lý thuyết: Tối ưu Minimax và Kiểm soát phi tiệm cận}
+Điểm vượt trội của MMD-Agg so với các phương pháp ensemble thông thường nằm ở các đảm bảo lý thuyết vững chắc:
+\begin{enumerate}
+    \item \textbf{Tối ưu Minimax (Minimax Optimality):} Schrab et al. chứng minh rằng MMD-Agg đạt được tỷ lệ hội tụ tối ưu minimax (minimax optimal rate) trên các không gian Sobolev. Nghĩa là, đối với các hàm mật độ có độ trơn (smoothness) không xác định trước, MMD-Agg có khả năng phát hiện sự khác biệt nhỏ nhất có thể phân biệt được về mặt thống kê, hiệu quả hơn bất kỳ kiểm định đơn kernel nào.
+    \item \textbf{Kiểm soát lỗi loại I phi tiệm cận (Non-asymptotic Type I Error Control):} Khác với nhiều phương pháp chỉ đúng khi số lượng mẫu $n \to \infty$, MMD-Agg đảm bảo kiểm soát chặt chẽ xác suất báo động giả (Type I error) ngay cả với kích thước mẫu hữu hạn ($n < \infty$). Điều này đặc biệt quan trọng trong bối cảnh streaming, nơi các cửa sổ dữ liệu thường có kích thước nhỏ và biến động.
+\end{enumerate}
+
+Tóm lại, việc tích hợp MMD-Agg biến ShapeDD từ một bộ phát hiện phụ thuộc tham số thành một hệ thống \textit{adaptive}, có khả năng phát hiện mạnh mẽ cả các trôi dạt tinh vi (local changes) lẫn các trôi dạt cấu trúc lớn (global shifts) mà không cần tinh chỉnh thủ công.
+
+\begin{algorithm}[H]
+\caption{MMD Aggregated (MMD-Agg)}
+\label{alg:mmd_agg}
+\begin{algorithmic}[1]
+\REQUIRE Windows $X, Y$, collection of bandwidths $\Lambda = \{\sigma_1, \dots, \sigma_M\}$, level $\alpha$
+\ENSURE Test decision (Drift/No Drift)
+\STATE \textbf{1. Kernel Collection}
+\FOR{each $\sigma_m \in \Lambda$}
+    \STATE Define kernel $k_m(x, y) = \exp(-\|x-y\|^2 / 2\sigma_m^2)$
+    \STATE Compute standard MMD estimator $\widehat{\text{MMD}}^2_m(X, Y)$ using $k_m$
+\ENDFOR
+\STATE \textbf{2. Aggregation}
+\FOR{each $m \in \{1, \dots, M\}$}
+    \STATE Compute threshold $u_{\alpha, m}$ (via bootstrap or asymptotic quantile)
+    \STATE Compute adjusted statistic: $T_m = \widehat{\text{MMD}}^2_m - u_{\alpha, m}$
+\ENDFOR
+\STATE \textbf{3. Decision}
+\STATE Global statistic $\Delta_{Agg} = \max_{m} T_m$
+\IF{$\Delta_{Agg} > 0$}
+    \RETURN \textbf{Drift Detected} (Reject $H_0$)
+\ELSE
+    \RETURN \textbf{No Drift} (Fail to reject $H_0$)
+\ENDIF
+\end{algorithmic}
+\end{algorithm}
 
 \subsection{Tổng kết hiệu quả các cải tiến}
 
