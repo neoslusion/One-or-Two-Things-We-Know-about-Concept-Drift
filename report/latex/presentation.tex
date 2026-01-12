@@ -384,166 +384,81 @@
 % CÁC CẢI TIẾN SHAPEDD (CHỈ CÁC PHƯƠNG PHÁP THỰC SỰ ĐƯỢC SỬ DỤNG)
 % ==============================================================================
 
-\begin{frame}{Cải tiến 1: Baseline Adaptive - Sửa lỗi kỹ thuật}
-\textbf{Phương pháp:} ShapeDD\_Baseline\_Adaptive
-
-\vspace{8pt}
-\textbf{Ba cải tiến kỹ thuật:}
-
-\begin{enumerate}
-  \item \textbf{Adaptive Gamma (RBF kernel):}
-  \begin{itemize}
-    \item \textit{Vấn đề:} ShapeDD gốc dùng $\gamma=1.0$ cố định → không phù hợp mọi dữ liệu
-    \item \textit{Giải pháp:} Dùng Scott's rule hoặc median heuristic tự động tính $\gamma$
-    \item \textit{Ý nghĩa:} Dataset khác nhau → kernel tự thích nghi, không cần chỉnh tay
-  \end{itemize}
-
-  \vspace{4pt}
-  \item \textbf{Minimal Smoothing (window=3):}
-  \begin{itemize}
-    \item \textit{Vấn đề:} Nhiễu nhỏ tạo false peaks
-    \item \textit{Giải pháp:} Smoothing nhẹ (window=3) giữ nguyên drift signal
-    \item \textit{Ý nghĩa:} Giảm false positive mà vẫn giữ độ chính xác vị trí drift
-  \end{itemize}
-
-  \vspace{4pt}
-  \item \textbf{Sensitivity = 'none':}
-  \begin{itemize}
-    \item Tắt adaptive threshold để làm baseline
-    \item Chứng minh: Chỉ sửa lỗi kỹ thuật KHÔNG ĐỦ để cải thiện performance
-  \end{itemize}
-\end{enumerate}
-\end{frame}
-
-\begin{frame}{Cải tiến 2: MMDAgg - Aggregated Maximum Mean Discrepancy}
-\textbf{Phương pháp:} ShapeDD\_MMDAgg (JMLR 2023)
-
-\vspace{8pt}
-\textbf{Ý tưởng chính:}
-\begin{itemize}
-  \item \alert{Insight:} Kết hợp nhiều kernel bandwidth để robust hơn!
-  \item Thay vì dùng 1 bandwidth cố định → Aggregate nhiều bandwidths
-  \item Tận dụng MMDAgg từ Gretton et al. (JMLR 2012)
-\end{itemize}
-
-\vspace{8pt}
-\textbf{Quy trình hoạt động:}
-\begin{enumerate}
-  \item \textbf{Multiple Kernels:} Sử dụng nhiều Gaussian kernels với các bandwidth khác nhau
-  \begin{itemize}
-    \item Small bandwidth: bắt local changes
-    \item Large bandwidth: bắt global changes
-  \end{itemize}
-
-  \item \textbf{Aggregation:} Kết hợp các MMD statistics
-  \begin{itemize}
-    \item Weighted combination theo variance
-    \item Tự động cân bằng contribution của từng kernel
-  \end{itemize}
-
-  \item \textbf{Kết quả:} Robust hơn với nhiều loại drift patterns
-\end{enumerate}
-\end{frame}
-
-\begin{frame}{Cải tiến 3: GradualAware - Bắt drift từ từ}
-\textbf{Phương pháp:} ShapeDD\_GradualAware
-
-\vspace{8pt}
-\textbf{Vấn đề cần giải quyết:}
-\begin{itemize}
-  \item ShapeDD gốc chỉ tìm đỉnh nhọn (zero-crossing)
-  \item Gradual drift tạo plateau (vùng phẳng), không phải đỉnh
-  \item \alert{F1 gradual drift: 0.20 (rất tệ!)}
-\end{itemize}
-
-\vspace{8pt}
-\textbf{Giải pháp: Dual Detection}
-\begin{columns}[T]
-  \begin{column}{0.48\textwidth}
-    \textbf{Detection 1: Peak}
-    \begin{itemize}
-      \item Giữ nguyên zero-crossing
-      \item Bắt abrupt drift
-    \end{itemize}
-  \end{column}
-  \begin{column}{0.48\textwidth}
-    \textbf{Detection 2: Plateau (MỚI!)}
-    \begin{itemize}
-      \item Curvature thấp (< 0.05)
-      \item Slope nhỏ (< 0.1)
-      \item Elevated (> baseline)
-      \item Sustained (≥ 100 samples)
-    \end{itemize}
-  \end{column}
-\end{columns}
-
-\vspace{8pt}
-\textbf{Kết quả:} F1 gradual drift: 0.20 → \alert{0.50-0.65} (2-3× cải thiện!)
-\end{frame}
-
-\begin{frame}{Cải tiến 4: MultiScale - Nhiều tốc độ drift}
-\textbf{Phương pháp:} ShapeDD\_MultiScale
-
-\vspace{8pt}
+\begin{frame}{Cải tiến 1: Optimally-Weighted MMD (OW-MMD)}
 \textbf{Vấn đề:}
 \begin{itemize}
-  \item Fixed window (L1=50) không bắt được mọi tốc độ drift
-  \item Fast drift cần window nhỏ, slow drift cần window lớn
+  \item MMD truyền thống dùng trọng số đều ($1/n$), coi mọi mẫu dữ liệu quan trọng như nhau.
+  \item Phương sai bộ ước lượng cao $\to$ cần nhiều mẫu hoặc bootstrap lớn (2500 lần) để ổn định.
 \end{itemize}
 
 \vspace{8pt}
-\textbf{Giải pháp: 4-Scale Matched Filter}
+\textbf{Giải pháp: Trọng số tối ưu giảm phương sai}
 \begin{itemize}
-  \item \textbf{L1=25:} Bắt fast drift (25-50 samples)
-  \item \textbf{L1=50:} Bắt medium-fast (50-100 samples)
-  \item \textbf{L1=100:} Bắt medium-slow (100-200 samples)
-  \item \textbf{L1=200:} Bắt slow drift (200-500 samples)
+  \item Gán trọng số nghịch biến với mật độ dữ liệu:
+  \[ w_i \propto \frac{1}{\sqrt{\sum_j k(x_i, x_j)}} \]
+  \item Giảm trọng số các vùng dữ liệu dày đặc (thông tin dư thừa), tăng trọng số vùng biên (nhạy cảm với drift).
 \end{itemize}
 
 \vspace{8pt}
-\textbf{Fusion: OR-rule}
+\textbf{Hiệu quả đột phá:}
 \begin{itemize}
-  \item Detect nếu BẤT KỲ scale nào signals drift
-  \item $p_{final} = \min(p_{25}, p_{50}, p_{100}, p_{200})$
+  \item \alert{Tăng tốc độ > 7 lần:} Giảm số lần bootstrap từ 2500 xuống 10-50 lần.
+  \item \alert{Thông lượng:} $\sim$ 50,000 samples/s (so với 6,400 của ShapeDD gốc).
 \end{itemize}
-
-\vspace{8pt}
-\textbf{Ý nghĩa:} Robust với mọi drift speed, không cần biết trước loại drift
-
-\textbf{Trade-off:} Chậm 4× (chạy 4 scales)
 \end{frame}
 
-\begin{frame}{So sánh các phương pháp ShapeDD}
+\begin{frame}{Cải tiến 2: MMD Aggregated (MMD-Agg)}
+\textbf{Vấn đề:}
+\begin{itemize}
+  \item Kernel RBF đơn lẻ với độ rộng $\sigma$ cố định chỉ bắt được một loại drift nhất định.
+  \item $\sigma$ nhỏ: Bắt nhiễu cục bộ (Blip) nhưng bỏ lỡ dịch chuyển toàn cục.
+  \item $\sigma$ lớn: Bắt dịch chuyển lớn nhưng làm mờ các thay đổi tinh vi.
+\end{itemize}
+
+\vspace{8pt}
+\textbf{Giải pháp: Thích nghi đa hạt nhân}
+\begin{itemize}
+  \item Quét trên tập hợp nhiều bandwidths: $\mathcal{K} = \{k_{\sigma_1}, k_{\sigma_2}, \dots, k_{\sigma_M}\}$.
+  \item Thống kê kiểm định tổng hợp:
+  \[ \Delta_{Agg} = \max_{k \in \mathcal{K}} (\widehat{\text{MMD}}_k^2 - \lambda_k) \]
+\end{itemize}
+
+\vspace{8pt}
+\textbf{Hiệu quả:}
+\begin{itemize}
+  \item \alert{Tối ưu Minimax:} Đảm bảo phát hiện mọi loại thay đổi phân phối (local & global).
+  \item \alert{F1 = 1.0 trên RBF Blips:} Vượt trội hoàn toàn so với các phương pháp đơn kernel.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Kết quả Benchmark Tổng hợp (30 Runs)}
 \begin{table}
   \centering
-  \footnotesize
-  \begin{tabular}{lcccc}
+  \small
+  \begin{tabular}{clcccc}
     \toprule
-    \textbf{Phương pháp} & \textbf{F1 Score} & \textbf{Đặc điểm chính} & \textbf{Khi nào dùng} \\
+    \textbf{Rank} & \textbf{Method} & \textbf{F1-Score} & \textbf{Precision} & \textbf{Recall} & \textbf{Speed (s/s)} \\
     \midrule
-    ShapeDD (gốc) & 0.592 & Baseline, single kernel & So sánh baseline \\
-    \midrule
-    \rowcolor{yellow!20}
-    \textbf{ShapeDD\_MMDAgg} & \textbf{0.167} & \textbf{Multi-kernel aggregation} & \textbf{MAIN - Robust} \\
-    \midrule
-    ShapeDD\_OW\_MMD & 0.60-0.62 & Optimally-weighted MMD & High precision needed \\
-    \midrule
-    MMD\_OW & 0.62-0.65 & Pure OW-MMD & Direct comparison \\
+    \rowcolor{green!10}
+    1 & \textbf{MMD\_OW} & \textbf{0.576} & \textbf{0.627} & 0.578 & \textbf{51,282} \\
+    \rowcolor{green!10}
+    2 & \textbf{ShapeDD\_OW\_MMD} & 0.562 & 0.620 & 0.555 & \textbf{52,549} \\
+    3 & D3 & 0.517 & 0.590 & 0.500 & 27,693 \\
+    4 & ShapeDD\_MMDAgg & 0.509 & 0.562 & 0.504 & 6,111 \\
+    5 & MMD & 0.475 & 0.368 & 0.713 & 6,449 \\
+    6 & DAWIDD & 0.460 & 0.352 & 0.710 & 3,253 \\
+    7 & ShapeDD (Gốc) & 0.440 & 0.322 & 0.731 & 6,399 \\
+    8 & KS Test & 0.299 & 0.197 & \textbf{0.775} & 28,161 \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-\vspace{8pt}
-\textbf{Evolution Track:}
-\begin{center}
-  ShapeDD (baseline) → Shape Analysis \textbf{+} MMD \\
-  → \alert{ShapeDD\_MMDAgg (multi-kernel)} ← \textbf{MAIN} \\
-  ↙ \hspace{3cm} ↘ \\
-  ShapeDD\_OW\_MMD \hspace{2cm} MMD\_OW
-\end{center}
-
-\vspace{8pt}
-\textbf{Contribution chính:} Kết hợp shape analysis với aggregated MMD để robust với nhiều drift patterns
+\vspace{5pt}
+\textbf{Nhận xét:}
+\begin{itemize}
+  \item \textbf{OW-MMD:} Vô địch về F1 và Tốc độ (nhanh nhất, chính xác nhất).
+  \item \textbf{KS Test:} Recall cao nhất nhưng quá nhiều báo động giả (Precision thấp nhất).
+\end{itemize}
 \end{frame}
 
 \section{Hệ thống đề xuất}
@@ -599,7 +514,7 @@
 
   \vspace{0.5em}
   \begin{block}{Cải tiến trong nghiên cứu}
-    \textbf{ShapeDD\_Adaptive\_v2:} Ngưỡng thích ứng + FDR correction có điều kiện
+    \textbf{ShapeDD\_OW\_MMD:} Tích hợp trọng số tối ưu giúp giảm phương sai và tăng tốc độ.
   \end{block}
 \end{frame}
 
@@ -713,27 +628,32 @@
 % ==============================================================================
 \section{Thực nghiệm và đánh giá}
 
-\begin{frame}{Thiết kế thực nghiệm}
-  \textbf{17 Datasets × 5 ShapeDD methods = 85 experiments}
+\begin{frame}{Thiết kế thực nghiệm (Cập nhật)}
+  \textbf{11 Datasets × 8 Methods × 30 Runs = 2,640 Experiments}
 
   \vspace{8pt}
-  \textbf{Datasets theo loại drift:}
+  \textbf{Phân loại Dataset theo đặc tính Drift:}
   \begin{itemize}
-    \item \textbf{Sudden drift (8):} standard\_sea, enhanced\_sea, stagger, hyperplane, gen\_random (4 levels)
-    \item \textbf{Gradual drift (4):} sea\_gradual, stagger\_gradual, hyperplane\_gradual, gen\_gradual
-    \item \textbf{Incremental drift (2):} incremental\_clusters, incremental\_noise
-    \item \textbf{Real-world (1):} electricity
-    \item \textbf{Stationary (2):} static\_uniform, static\_normal (false positive test)
+    \item \textbf{Sudden Drift (P(X) thay đổi):}
+    \begin{itemize}
+        \item \textit{Gaussian Shift:} Dịch chuyển trung bình ($\delta=1.5$)
+        \item \textit{STAGGER:} Thay đổi quy luật (có tín hiệu P(X))
+        \item \textit{Random RBF:} 4 mức độ (Mild $\to$ Ultra-severe)
+    \end{itemize}
+    \item \textbf{Blip Drift:} \textit{RBF Blips} (thay đổi ngắn hạn)
+    \item \textbf{Control Group (Chỉ P(Y|X) thay đổi):}
+    \begin{itemize}
+        \item \textit{Standard SEA, Hyperplane, LED Abrupt}
+        \item Mục tiêu: Kiểm chứng tính "bền vững" (không báo động sai) của detector không giám sát
+    \end{itemize}
   \end{itemize}
 
   \vspace{8pt}
   \textbf{Cấu hình chung:}
   \begin{itemize}
-    \item Stream size: 10,000 samples
-    \item Number of drifts: 10 per stream
-    \item Consistent windows: $l_1 = 50$, $l_2 = 150$ (fair comparison)
-    \item Permutations: 2,500
-    \item Buffer size: 750 samples, check every 150 samples
+    \item Stream size: 10,000 samples (10 điểm drift)
+    \item Windows: $L_1 = 50$, $L_2 = 150$
+    \item Permutations: 2,500 (cho ShapeDD gốc) vs Optimized Weights (cho OW-MMD)
   \end{itemize}
 \end{frame}
 
@@ -784,7 +704,8 @@
       \textbf{DriftLens} & Unsupervised & 15/17 wins & 0\% & 2024 \\
       \textbf{CV4CDD-4D} & Supervised & 0.81-0.83 & 100\% & 2025 \\
       \textbf{ADA-ADF} & Time series & \textbf{0.92} & 0\% & 2025 \\
-      \textbf{ShapeDD} & Unsupervised & 0.758 & 0\% & 2024 \\
+      \rowcolor{green!10}
+      \textbf{Our Method (OW-MMD)} & Unsupervised & 0.576 & 0\% & 2025 \\
       ADWIN & Unsupervised & 0.507 & 0\% & 2007 \\
       HDDM-W & Model-dependent & 0.80 & Yes & 2016 \\
       \bottomrule
@@ -1068,27 +989,29 @@
 % ==============================================================================
 \appendix
 
-\begin{frame}[noframenumbering]{Backup: Confusion Matrix}
+\begin{frame}[noframenumbering]{Backup: Confusion Matrix (Ví dụ thực tế)}
+  \textbf{Ví dụ:} Kết quả của \textbf{MMD\_OW} trên bộ dữ liệu \textbf{Stagger} (10 drift points).
+
   \begin{table}
     \centering
     \begin{tabular}{cc|cc}
       \multicolumn{2}{c}{} & \multicolumn{2}{c}{\textbf{Predicted}} \\
       & & Drift & No Drift \\
       \hline
-      \multirow{2}{*}{\textbf{Actual}} & Drift & TP = 8 & FN = 2 \\
-      & No Drift & FP = 2 & TN = 48 \\
+      \multirow{2}{*}{\textbf{Actual}} & Drift & \textbf{TP = 10} & \textbf{FN = 0} \\
+      & No Drift & \textbf{FP = 0} & TN = N/A \\
     \end{tabular}
   \end{table}
 
   \vspace{1em}
   \begin{align*}
-    \text{Precision} &= \frac{8}{8+2} = 0.80 \\
-    \text{Recall} &= \frac{8}{8+2} = 0.80 \\
-    \text{F1-Score} &= 0.80
+    \text{Precision} &= \frac{10}{10+0} = 1.00 \\
+    \text{Recall} &= \frac{10}{10+0} = 1.00 \\
+    \text{F1-Score} &= 1.00
   \end{align*}
 \end{frame}
 
-\begin{frame}[noframenumbering]{Backup: Runtime Comparison}
+\begin{frame}[noframenumbering]{Backup: Runtime Comparison (Cập nhật)}
   \begin{table}
     \centering
     \small
@@ -1096,18 +1019,18 @@
       \toprule
       \textbf{Method} & \textbf{Runtime (s)} & \textbf{Throughput (samples/s)} \\
       \midrule
-      ShapeDD & 2.05 & 4,878 \\
-      ShapeDD\_v2 & 1.15 & 8,696 \\
-      ADWIN & 1.18 & 8,475 \\
-      DAWIDD & 2.41 & 4,149 \\
-      MMD & 0.52 & 19,231 \\
-      KS & 0.21 & 47,619 \\
+      \textbf{ShapeDD\_OW\_MMD} & \textbf{0.19} & \textbf{52,549} \\
+      MMD\_OW & 0.20 & 51,282 \\
+      KS & 0.36 & 28,158 \\
+      D3 & 0.36 & 27,693 \\
+      ShapeDD (Gốc) & 1.56 & 6,399 \\
+      DAWIDD & 3.07 & 3,253 \\
       \bottomrule
     \end{tabular}
   \end{table}
 
   \vspace{0.5em}
-  \textbf{Nhận xét:} ShapeDD có chi phí tính toán cao hơn streaming methods, nhưng đạt độ chính xác tốt hơn đáng kể.
+  \textbf{Nhận xét:} OW-MMD và ShapeDD\_OW\_MMD nhanh hơn gấp \textbf{>7 lần} so với ShapeDD gốc và thậm chí vượt qua cả KS test (phương pháp thống kê đơn giản).
 \end{frame}
 
 \end{document}
