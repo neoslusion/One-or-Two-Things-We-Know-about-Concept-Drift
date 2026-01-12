@@ -8,19 +8,19 @@ Luận văn này đã nghiên cứu và triển khai thành công một hệ th�
 
 \textbf{Kiến trúc streaming real-time:} Xây dựng hệ thống hoàn chỉnh sử dụng Apache Kafka cho xử lý luồng dữ liệu, cho phép phát hiện drift và thích ứng mô hình tự động trong thời gian thực. Kiến trúc modular với các thành phần độc lập: Producer, Consumer (ShapeDD), Drift Classifier, Adaptor và Visualization.
 
-\textbf{Tích hợp ShapeDD detector:} Triển khai phương pháp ShapeDD với adaptive window sizing (ShapeDD\_Improved) đạt hiệu suất phát hiện drift tốt nhất trong sudden drift scenario (F1 = 1.0, tied with ADWIN and EDDM, delay = 4 samples). Hệ thống sử dụng permutation test với 2500 lần hoán vị đảm bảo độ tin cậy thống kê cao.
+\textbf{Tích hợp ShapeDD detector:} Triển khai phương pháp \textbf{ShapeDD\_OW\_MMD} với cơ chế trọng số tối ưu, đạt hiệu suất phát hiện drift ổn định trong các kịch bản sudden drift (F1 $\approx$ 0.54-0.56, delay trung bình 18 mẫu). Hệ thống sử dụng kiểm định thống kê MMD cải tiến giúp giảm đáng kể chi phí tính toán so với phương pháp hoán vị truyền thống.
 
 \textbf{Phân loại drift tự động:} Tích hợp phương pháp CDT\_MSW để tự động phân loại drift thành 5 loại (sudden, incremental, gradual, recurrent, blip) dựa trên đặc trưng thay đổi phân phối. Sử dụng KS distance tracking và stability analysis để xác định drift length và category (TCD/PCD).
 
 \subsection{Đóng góp về triển khai}
 
-\textbf{Chiến lược thích ứng đa dạng:} Triển khai 5 chiến lược thích ứng khác nhau trong module \texttt{adaptation\_strategies.py}:
+\textbf{Chiến lược thích ứng đa dạng:} Framework đã triển khai trọn vẹn 5 chiến lược thích ứng trong module \texttt{adaptation\_strategies.py} để xử lý các loại drift khác nhau, trong đó chiến lược cho \textbf{Sudden Drift} được đánh giá chi tiết nhất trong luận văn:
 \begin{itemize}
-    \item \textbf{Sudden drift:} Full model reset - tạo mô hình mới hoàn toàn
-    \item \textbf{Incremental drift:} Gradual online updates với River framework
-    \item \textbf{Gradual drift:} Weighted updates ưu tiên mẫu gần đây
-    \item \textbf{Recurrent drift:} Model cache \& reuse với distribution similarity matching
-    \item \textbf{Blip drift:} Minimal update để tránh overreact với noise
+    \item \textbf{Sudden drift (Đánh giá chính):} Full model reset - tạo mô hình mới hoàn toàn.
+    \item \textbf{Incremental drift:} Gradual online updates với River framework.
+    \item \textbf{Gradual drift:} Weighted updates ưu tiên mẫu gần đây.
+    \item \textbf{Recurrent drift:} Model cache \& reuse với distribution similarity matching.
+    \item \textbf{Blip drift:} Minimal update để tránh overreact với noise.
 \end{itemize}
 
 \textbf{Frozen model deployment:} Áp dụng chiến lược deployment mô hình đóng băng (frozen), không có online learning trong quá trình inference. Cách tiếp cận này cho phép:
@@ -41,28 +41,24 @@ Luận văn này đã nghiên cứu và triển khai thành công một hệ th�
 
 \subsection{Đóng góp thực nghiệm}
 
-\textbf{So sánh detector toàn diện:} Đánh giá 8 drift detectors trên 7 datasets đa dạng (bao gồm synthetic và real-world data), với 10 drift points mỗi dataset. Kết quả cho thấy các phương pháp có trade-offs khác nhau phù hợp với các use cases khác nhau.
+\textbf{So sánh detector toàn diện:} Đánh giá 8 drift detectors trên 11 datasets, tập trung vào các bộ dữ liệu tổng hợp (synthetic) được thiết kế để mô phỏng đa dạng các kịch bản thực tế, với 10 drift points mỗi dataset. Kết quả cho thấy các phương pháp có trade-offs khác nhau phù hợp với các use cases khác nhau.
 
-\textbf{Kết quả comprehensive benchmark (8 methods × 7 datasets):}
+\textbf{Kết quả comprehensive benchmark (8 methods × 11 datasets):}
 \begin{itemize}
     \item \textbf{MMD\_OW đạt F1 cao nhất (0.576):} Phương pháp sử dụng trọng số tối ưu cho kết quả tốt nhất về F1-score
-    \item \textbf{ShapeDD\_OW\_MMD xếp hạng 2 (F1 = 0.562):} Kết hợp OW-MMD với đặc trưng hình dạng, throughput $\approx 47,000$ samples/giây
-    \item \textbf{Friedman test p = 0.8161:} Không có sự khác biệt thống kê đáng kể giữa các phương pháp
+    \item \textbf{ShapeDD\_OW\_MMD xếp hạng 2 (F1 = 0.562):} Kết hợp OW-MMD với đặc trưng hình dạng, throughput $\approx 50,300$ samples/giây
+    \item \textbf{Friedman test p > 0.05:} Không có sự khác biệt thống kê đáng kể giữa các phương pháp top đầu
     \item Key finding: OW-MMD variance reduction cho phép giảm bootstrap từ 2500 xuống 10 mà không mất accuracy
-    \item Practical contribution: Cải thiện throughput $\approx 7\times$ so với ShapeDD gốc
+    \item Practical contribution: Cải thiện throughput \textbf{hơn 7 lần} so với ShapeDD gốc
 \end{itemize}
 
 \section{Những phát hiện và hiểu biết chính}
 
 \subsection{Hiểu biết về phát hiện drift}
 
-\textbf{Adaptive window sizing quan trọng:} ShapeDD\_Improved với adaptive window (L1 = 5\% stream length) vượt trội so với fixed window. Adaptive sizing tự động điều chỉnh theo magnitude và characteristics của drift, giảm false positives và tăng sensitivity.
+\textbf{Adaptive window sizing quan trọng:} \textbf{ShapeDD\_OW\_MMD} với adaptive window vượt trội so với fixed window. Adaptive sizing tự động điều chỉnh theo magnitude và characteristics của drift, giảm false positives và tăng sensitivity.
 
-\textbf{Trade-off accuracy vs. speed:} Window-based detectors (ShapeDD) chính xác hơn nhưng chậm hơn (1.6 ms/sample) so với streaming detectors (0.27-0.31 ms/sample). Lựa chọn phụ thuộc vào requirements:
-\begin{itemize}
-    \item Mission-critical systems: Chọn accuracy (ShapeDD)
-    \item High-throughput streams: Chọn speed (ADWIN, EDDM)
-\end{itemize}
+\textbf{Trade-off accuracy vs. speed:} Window-based detectors truyền thống (ShapeDD gốc) chính xác nhưng chậm ($\sim 1.5$ ms/sample). Với cải tiến OW-MMD, tốc độ xử lý được cải thiện đáng kể ($\sim 0.19$ ms/sample), đưa hiệu năng tiệm cận với các phương pháp streaming siêu nhẹ như ADWIN/EDDM trong khi vẫn duy trì độ chính xác cao của MMD.
 
 \textbf{Permutation test hiệu quả:} 2500 permutations cung cấp statistical confidence cao, lọc được noise và false positives. P-value threshold 0.05 cân bằng tốt giữa sensitivity và specificity.
 
@@ -129,9 +125,9 @@ Luận văn này đã nghiên cứu và triển khai thành công một hệ th�
 
 \subsection{Hạn chế về đánh giá}
 
-\textbf{Thiên kiến dữ liệu tổng hợp:} Mặc dù sử dụng các tập dữ liệu tổng hợp đa dạng, chúng có thể không nắm bắt được tất cả sự phức tạp của các mẫu drift trong thế giới thực.
+\textbf{Thiên kiến dữ liệu tổng hợp:} Mặc dù sử dụng 11 tập dữ liệu tổng hợp đa dạng, nghiên cứu vẫn thiếu sự kiểm chứng trên các luồng dữ liệu thực tế quy mô lớn (real-world traces). Dữ liệu tổng hợp, dù được thiết kế kỹ lưỡng, có thể không nắm bắt được toàn bộ sự phức tạp, nhiễu và tính ngẫu nhiên của các hệ thống sản xuất.
 
-\textbf{Tính chủ quan của chú thích:} Chú thích thủ công các điểm drift trong tập dữ liệu thực tế liên quan đến các đánh giá chủ quan có thể ảnh hưởng đến độ tin cậy của việc đánh giá.
+\textbf{Giả định về Drift Types:} Benchmark hiện tại tập trung chủ yếu vào các loại drift cơ bản (sudden, blip) với các giả định rõ ràng về sự thay đổi. Trong thực tế, các dạng drift hỗn hợp (hybrid drifts) hoặc drift phụ thuộc ngữ cảnh (contextual drifts) có thể xuất hiện, đặt ra thách thức cho các bộ phát hiện dựa trên quy tắc cố định.
 
 \textbf{Nghiên cứu dài hạn hạn chế:} Hầu hết các đánh giá kéo dài trong khoảng thời gian tương đối ngắn. Hiệu suất dài hạn trong môi trường liên tục phát triển cần điều tra thêm.
 
