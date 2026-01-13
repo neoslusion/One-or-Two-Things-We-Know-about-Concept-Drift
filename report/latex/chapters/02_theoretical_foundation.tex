@@ -12,15 +12,14 @@ Chương bắt đầu với định nghĩa chi tiết về concept drift, sau đ
 Concept drift, hay còn gọi là sự trôi dạt khái niệm, đề cập đến những thay đổi trong phân phối dữ liệu được tạo ra, 
 đặc biệt là trong môi trường động và thay đổi theo thời gian, chẳng hạn như trong ứng dụng về IoT~\cite{ramakrishnan2014enabling} 
 hoặc trong công nghiệp nơi dữ liệu luôn được tạo ra theo thời gian và thay đổi liên tục tùy theo môi trường làm việc khác nhau. 
-Cụ thể hơn, sự trôi dạt khái niệm là một vấn đề trong đó các mối quan hệ thống kê giữa các giá trị đầu vào và giá trị mục tiêu bị thay 
+Cụ thể hơn, sự concept drift là một vấn đề trong đó các mối quan hệ thống kê giữa các giá trị đầu vào và giá trị mục tiêu bị thay 
 đổi theo thời gian theo cách không thể dự đoán được~\cite{schlimmer1986incremental}.
 
-Sự trôi dạt khái niệm có thể dẫn đến hiệu suất giảm trong quá trình vận hành thực tế của mô hình học máy, do bản 
+Sự concept drift có thể dẫn đến hiệu suất giảm trong quá trình vận hành thực tế của mô hình học máy, do bản 
 chất của dữ liệu đầu vào đã bị thay đổi so với khi mô hình học máy được huấn luyện, điều này trái ngược với hiệu 
 suất được đánh giá trên tập dữ liệu thử nghiệm tĩnh trong quá trình phát triển.
 \subsection{Phân loại các loại concept drift}
-Có nhiều loại trôi dạt khác nhau, tùy thuộc vào các yếu tố dữ liệu đang thay đổi. Các loại chính của sự trôi dạt khái 
-niệm bao gồm~\cite{sciencedirect2024drift, hovakimyan2024evolving} như sau:
+Có nhiều loại trôi dạt khác nhau, tùy thuộc vào các yếu tố dữ liệu đang thay đổi. Các loại chính của concept drift bao gồm~\cite{sciencedirect2024drift, hovakimyan2024evolving} như sau:
 
 Phân loại theo sự thay đổi phân phối:
 \textbf{Sự trôi dạt ảo (Virtual Drift):} Còn được gọi là sự dịch chuyển biến phụ (covariate shift), đề cập đến tình huống 
@@ -57,8 +56,8 @@ Những thay đổi trong dữ liệu không phải mới mà đã từng xảy 
 \end{figure}
 
 \subsection{Ảnh hưởng của concept drift}
-Sự trôi dạt khái niệm có thể ảnh hưởng lớn đến hiệu suất của mô hình dự đoán, đặc biệt là khi mô hình học từ luồng dữ liệu. 
-Một loạt các dịch vụ/ứng dụng trong bối cảnh hệ thống và mạng truyền thông có thể bị cản trở bởi sự trôi dạt khái niệm như~\cite{ramakrishnan2014enabling}:
+Sự concept drift có thể ảnh hưởng lớn đến hiệu suất của mô hình dự đoán, đặc biệt là khi mô hình học từ luồng dữ liệu. 
+Một loạt các dịch vụ/ứng dụng trong bối cảnh hệ thống và mạng truyền thông có thể bị cản trở bởi sự concept drift như~\cite{ramakrishnan2014enabling}:
 
 \begin{itemize}
     \item \textbf{Hệ thống phát hiện xâm nhập (IDS):} Các mẫu tấn công mạng liên tục thay đổi, đòi hỏi IDS phải thích ứng với các mối đe dọa mới
@@ -67,7 +66,7 @@ Một loạt các dịch vụ/ứng dụng trong bối cảnh hệ thống và m
     \item \textbf{Thành phố thông minh:} Dữ liệu được thu thập cho nhiều mục đích như đảm bảo an ninh mạng, dự đoán ô nhiễm không khí, dự đoán giao thông đường bộ và dự báo tải điện
 \end{itemize}
 
-Sự phân phối của dữ liệu có thể thay đổi theo thời gian do máy móc lão hóa và cần quy trình bảo trì, hoặc do các yếu tố môi trường thay đổi. Do đó, một kỹ thuật CBM không có khả năng xử lý sự trôi dạt khái niệm sẽ hoạt động kém~\cite{jourdan2021machine}. Do đó, sự trôi dạt khái niệm có thể ảnh hưởng đến hiệu quả và tính mạnh mẽ của phân tích luồng dữ liệu~\cite{tripathi2021ensuring}. Trong môi trường không cố định, có một số cân nhắc mà các mô hình dự đoán phải tính đến để phát hiện và tự thích ứng với sự trôi dạt khái niệm, nếu không, hiệu suất của các mô hình này sẽ giảm sút về độ chính xác và độ mạnh mẽ. Theo thời gian, một mô hình dự đoán có thể cần cập nhật lại dữ liệu mới, hoặc thay đổi các tham số và cấu trúc của nó bằng cách kết hợp các dữ liệu huấn luyện mới hoặc thay thế hoàn toàn mô hình cũ để xử lý sự trôi dạt khái niệm.
+Sự phân phối của dữ liệu có thể thay đổi theo thời gian do máy móc lão hóa và cần quy trình bảo trì, hoặc do các yếu tố môi trường thay đổi. Do đó, một kỹ thuật CBM không có khả năng xử lý sự concept drift sẽ hoạt động kém~\cite{jourdan2021machine}. Do đó, sự concept drift có thể ảnh hưởng đến hiệu quả và tính mạnh mẽ của phân tích luồng dữ liệu~\cite{tripathi2021ensuring}. Trong môi trường không cố định, có một số cân nhắc mà các mô hình dự đoán phải tính đến để phát hiện và tự thích ứng với sự concept drift, nếu không, hiệu suất của các mô hình này sẽ giảm sút về độ chính xác và độ mạnh mẽ. Theo thời gian, một mô hình dự đoán có thể cần cập nhật lại dữ liệu mới, hoặc thay đổi các tham số và cấu trúc của nó bằng cách kết hợp các dữ liệu huấn luyện mới hoặc thay thế hoàn toàn mô hình cũ để xử lý sự concept drift.
 
 \section{ShapeDD - Phương pháp phát hiện trôi dạt dựa trên hình dạng và khử nhiễu tín hiệu}
 
@@ -75,7 +74,7 @@ Sự phân phối của dữ liệu có thể thay đổi theo thời gian do m�
 
 Trong học máy cổ điển, dữ liệu thường được giả định là \textit{độc lập và phân phối đồng nhất} (IID - Independent and identically distributed data) theo một phân phối 
 tĩnh $P_X$. Tuy nhiên, trong các ứng dụng thực tế như luồng dữ liệu từ mạng xã hội, thiết bị IoT hay cảm biến, phân phối dữ 
-liệu thường thay đổi theo thời gian — hiện tượng này được gọi là \textbf{trôi dạt khái niệm (concept drift)}. Khi đó, các mô hình học 
+liệu thường thay đổi theo thời gian — hiện tượng này được gọi là \textbf{concept drift (concept drift)}. Khi đó, các mô hình học 
 máy có xu hướng trở nên lỗi thời, đòi hỏi cơ chế phát hiện và điều chỉnh kịp thời.
 
 Các phương pháp \textbf{không giám sát (unsupervised)} cho bài toán phát hiện drift thường dựa trên việc đo \textit{độ khác biệt} giữa 
@@ -165,7 +164,7 @@ Do hàm $h_l(t)$ có cấu trúc hình học cố định và chỉ phụ thuộ
 Trong thực nghiệm, quá trình khớp hàm này được thực hiện bằng \textbf{Fast Sequential Function Fitting}, áp dụng trên các tín hiệu thu được từ nhiều 
 độ đo (như MMD) và các độ dài cửa sổ khác nhau, nhằm tạo ra ước lượng cuối cùng có độ chính xác cao.
 
-Tóm lại, ShapeDD tiếp cận bài toán phát hiện trôi dạt khái niệm từ góc nhìn của \textbf{xử lý tín hiệu}. 
+Tóm lại, ShapeDD tiếp cận bài toán phát hiện concept drift từ góc nhìn của \textbf{xử lý tín hiệu}. 
 Phương pháp dựa vào việc chứng minh rằng độ lớn thay đổi của phân phối khi drift xảy ra luôn tạo ra một tín hiệu có \textit{hình tam giác đặc trưng}. 
 Nhờ đó, ShapeDD có thể:
 \begin{itemize}
