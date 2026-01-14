@@ -52,15 +52,19 @@ Luận văn này đã nghiên cứu và triển khai thành công một hệ th�
     \item Practical contribution: Cải thiện throughput \textbf{hơn 7 lần} so với ShapeDD gốc
 \end{itemize}
 
-\subsection{Đóng góp về phân loại drift không giám sát (SE-CDT)}
+\subsection{Đóng góp về phân loại drift không giám sát (SHAPED\_CDT)}
 
-Luận văn đề xuất phương pháp \textbf{SE-CDT (ShapeDD-Enhanced CDT)} — một phương pháp phân loại drift không giám sát dựa trên tín hiệu MMD $\sigma(t)$ (xem Chi tiết tại Chương~\ref{chap:proposed-model} và kết quả thực nghiệm tại Chương~\ref{chap:experiments}).
+Luận văn đề xuất phương pháp \textbf{SHAPED\_CDT (ShapeDD-Enhanced CDT)} — một phương pháp phân loại drift không giám sát dựa trên tín hiệu MMD $\sigma(t)$ (xem Chi tiết tại Chương~\ref{chap:proposed-model} và kết quả thực nghiệm tại Chương~\ref{chap:experiments}).
 
 \textbf{Kết quả chính:}
 \begin{itemize}
-    \item Phân loại cấp Category (TCD vs PCD): Đạt \textbf{88\%} accuracy
+    \item Phân loại cấp Category (TCD vs PCD): Đạt \textbf{80\%} accuracy
+    \item Phân loại cấp Subcategory (5 loại drift): Đạt \textbf{20\%} accuracy
     \item So với CDT\_MSW~\cite{guo2022cdtmsw}: Không cần labels, phù hợp streaming real-time
 \end{itemize}
+
+\textbf{Thử nghiệm bổ sung với OW-MMD:}
+Luận văn cũng thử nghiệm biến thể sử dụng OW-MMD thay cho standard MMD. Kết quả cho thấy OW-MMD không phù hợp cho classification (CAT\_ACC = 20\%) do cơ chế variance reduction loại bỏ những thay đổi nhỏ từ PCD (Gradual, Incremental). Đây là trade-off quan trọng: OW-MMD tốt cho detection nhưng không phù hợp cho classification.
 
 \section{Những phát hiện và hiểu biết chính}
 

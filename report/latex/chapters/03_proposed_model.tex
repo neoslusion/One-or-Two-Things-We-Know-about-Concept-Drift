@@ -228,12 +228,16 @@ Phương pháp CDT\_MSW gốc~\cite{guo2022cdtmsw} yêu cầu \textit{labels} đ
 \end{algorithmic}
 \end{algorithm}
 
-\textbf{Ưu điểm của SE-CDT:}
+\textbf{Ưu điểm của SE-CDT (SHAPED\_CDT):}
 \begin{itemize}
     \item \textbf{Không giám sát:} Không cần labels, phù hợp với streaming data.
     \item \textbf{Tích hợp:} Sử dụng cùng tín hiệu $\sigma(t)$ đã tính cho detection, không cần tính toán thêm.
     \item \textbf{Thời gian thực:} Phân loại ngay sau khi phát hiện drift.
+    \item \textbf{Sử dụng standard MMD:} Phù hợp hơn OW-MMD cho classification vì standard MMD giữ lại tất cả sự khác biệt bao gồm cả những thay đổi nhỏ từ PCD (Gradual, Incremental).
 \end{itemize}
+
+\textbf{Lưu ý về biến thể OW-MMD:}
+Luận văn cũng thử nghiệm sử dụng OW-MMD thay cho standard MMD trong SHAPED\_CDT. Tuy nhiên, kết quả cho thấy OW-MMD không phù hợp cho classification do cơ chế variance reduction loại bỏ những thay đổi nhỏ (coi là noise). OW-MMD phù hợp hơn cho drift detection (phát hiện có/không có drift) với F1 = 0.562, nhưng standard MMD tốt hơn cho classification với CAT\_ACC = 80\% so với 20\% của OW-MMD. Chi tiết thử nghiệm được trình bày ở Chương~\ref{chap:experiments}.
 
 \subsubsection{Cơ chế Meta-Learning (Hướng phát triển)}
 Hệ thống được thiết kế để hỗ trợ Meta-Learning trong tương lai: một mô hình cấp cao (meta-learner) sẽ học cách chọn chiến lược tốt nhất dựa trên lịch sử các lần thích ứng thành công hay thất bại, thay vì chỉ dựa vào quy tắc cố định.
