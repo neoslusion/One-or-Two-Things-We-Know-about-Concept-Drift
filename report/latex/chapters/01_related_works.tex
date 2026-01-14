@@ -43,7 +43,7 @@ cả drift đột ngột lẫn dần dần, và đã tạo nền tảng cho nhi�
 phí tính toán khá cao do phải kiểm tra nhiều kích thước cửa sổ, và nhạy cảm với nhiễu (noise) trong dữ liệu~\cite{hinder2024survey_partA}. Bên cạnh 
 ADWIN, nhiều phương pháp thống kê khác lần lượt xuất hiện. 
 
-Một phương pháp khác là \textbf{KSWIN} (Kolmogorov–Smirnov WINdowing \cite{wang2020kswin}), kết hợp kiểm định Kolmogorov–Smirnov với cửa 
+Một phương pháp khác là \textbf{KSWIN} (Kolmogorov–Smirnov WINdowing~\cite{raab2020kswin}), kết hợp kiểm định Kolmogorov–Smirnov với cửa 
 sổ trượt nhằm phát hiện thay đổi phân phối một cách phi tham số.  Các phương pháp thống kê thuần túy này có ưu điểm là không phụ 
 thuộc vào mô hình học máy cụ thể, do đó có thể áp dụng trong môi trường phi giám sát (không cần nhãn). Mặt khác, chúng thường đòi
 hỏi giả định mạnh về độc lập và phân phối dữ liệu, và có thể bỏ sót những thay đổi nhỏ nếu kích thước mẫu không đủ lớn. Dù vậy, nhóm 
@@ -119,7 +119,7 @@ hơn và \textbf{DDM-FPW} (2020) kiểm soát tỷ lệ dương tính giả (fal
 Mục tiêu chung của các cải tiến này là tăng độ nhạy với nhiều loại drift (sudden, gradual, incremental, recurrent), đồng thời giảm báo động giả và 
 phân biệt được drift thực sự với nhiễu.
 
-\begin{table}[h]
+\begin{table}[H]
 \centering
 \caption{So sánh các phương pháp DDM-family}
 \label{tab:ddm_comparison}
@@ -127,13 +127,13 @@ phân biệt được drift thực sự với nhiễu.
 \toprule
 \textbf{Phương pháp} & \textbf{Năm} & \textbf{Cải tiến chính} & \textbf{Điểm mạnh} \\
 \midrule
-DDM & 2004 & Theo dõi error rate & Đơn giản, phát hiện sudden drift tốt \\
-EDDM & 2006 & Khoảng cách giữa lỗi & Phát hiện gradual drift sớm hơn \\
-HDDM & 2015 & Hoeffding bound & Phi tham số, không giả định phân phối \\
-FHDDM & 2016 & Tối ưu tốc độ & Nhanh cho high-speed stream \\
-FHDDMS & 2016 & Dual windows & Cân bằng sudden/gradual detection \\
-MDDM & 2017 & McDiarmid + weights & Nhấn mạnh dữ liệu gần đây \\
-RDDM & 2017 & Rút ngắn warning & Phản ứng nhanh với sudden drift \\
+DDM~\cite{gama2004learning} & 2004 & Theo dõi error rate & Đơn giản, phát hiện sudden drift tốt \\
+EDDM~\cite{baena2006early} & 2006 & Khoảng cách giữa lỗi & Phát hiện gradual drift sớm hơn \\
+HDDM~\cite{friasblanco2015hddm} & 2015 & Hoeffding bound & Phi tham số, không giả định phân phối \\
+FHDDM~\cite{pesaranghader2016fhddm} & 2016 & Tối ưu tốc độ & Nhanh cho high-speed stream \\
+FHDDMS~\cite{pesaranghader2016fhddm} & 2016 & Dual windows & Cân bằng sudden/gradual detection \\
+MDDM~\cite{pesaranghader2018mcdiarmid} & 2018 & McDiarmid + weights & Nhấn mạnh dữ liệu gần đây \\
+RDDM~\cite{barros2017rddm} & 2017 & Rút ngắn warning & Phản ứng nhanh với sudden drift \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -156,7 +156,7 @@ nhanh dần dần phân kỳ khỏi mô hình cũ).
 
 Một hướng khác là tận dụng \textbf{ensemble learning} – sử dụng nhiều mô hình phân loại chạy song song – không chỉ để nâng cao độ 
 chính xác, mà còn để nhận biết concept drift thông qua sự đa dạng (diversity) của ensemble. Ví dụ, 
-phương pháp \textbf{ACE} (Adaptive Classifier Ensemble, 2009) duy trì một tập phân loại viên và liên tục đánh giá mỗi mô hình trên luồng dữ 
+phương pháp \textbf{ACE} (Adaptive Classifier Ensemble~\cite{nishida2007ace}, 2007) duy trì một tập phân loại viên và liên tục đánh giá mỗi mô hình trên luồng dữ 
 liệu. Khi có mô hình suy giảm độ chính xác, nó bị thay thế bởi mô hình mới huấn luyện trên dữ liệu gần đây. Việc mô hình cũ bị loại bỏ 
 chính là dấu hiệu của drift (tức concept cũ không còn phù hợp). Tương tự, \textbf{Learn++.NSE}~\cite{elwell2011learn} mở rộng ý tưởng 
 ensemble bằng cách gán trọng số thời gian (temporal weights) cho các classifier theo độ tuổi – classifier mới được thêm vào để học concept 
@@ -211,28 +211,26 @@ tái huấn luyện. Dần dần, các kiến trúc deep thích ứng (như NADI
 drift diễn ra. Mặc dù vẫn đang trong giai đoạn phát triển, các phương pháp này hứa hẹn đem lại sự linh hoạt và mạnh mẽ, giúp mô hình 
 học sâu vận hành bền vững trong môi trường dữ liệu luôn biến động.
 
-\begin{table}[h]
+\begin{table}[H]
 \centering
 \caption{Tóm tắt một số mốc chính trong phát triển phương pháp phát hiện concept drift}\label{tab:drift-history}
 \begin{tabular}{@{}p{1.2cm}p{2.8cm}p{9cm}@{}}
 \toprule
 \textbf{Năm} & \textbf{Phương pháp} & \textbf{Đặc điểm chính} \\
 \midrule
-1996 & FLORA${}^*$ & Cửa sổ trượt thích ứng đầu tiên, xử lý drift bằng chọn bộ nhớ ngắn hạn. \\
+1996 & FLORA~\cite{widmer1996learning} & Cửa sổ trượt thích ứng đầu tiên, xử lý drift bằng chọn bộ nhớ ngắn hạn. \\
 2004 & DDM~\cite{gama2004learning} & Giám sát tỉ lệ lỗi mô hình, đặt ngưỡng cảnh báo và drift theo luật SPC; phát hiện drift đột ngột hiệu quả. \\
 2006 & EDDM~\cite{baena2006early} & Mở rộng DDM, cải thiện phát hiện drift dần dần bằng cách theo dõi khoảng cách giữa các lỗi. \\
 2007 & ADWIN~\cite{bifet2007learning} & Cửa sổ trượt thích ứng với đảm bảo lý thuyết, so sánh thống kê hai cửa sổ con để phát hiện thay đổi phân phối. \\
-2015 & HDDM & Sử dụng bất đẳng thức Hoeffding (phi tham số) để phát hiện drift trên dòng lỗi; giảm giả định phân phối so với DDM. \\
-2016 & FHDDM & Phiên bản nhanh của HDDM, tăng tốc độ và độ nhạy khi drift (đột ngột và dần dần). \\
-2017 & RDDM & Phản ứng nhanh với drift đột ngột, rút ngắn giai đoạn cảnh báo của DDM; phù hợp cả drift lặp lại. \\
+2015 & HDDM~\cite{friasblanco2015hddm} & Sử dụng bất đẳng thức Hoeffding (phi tham số) để phát hiện drift trên dòng lỗi; giảm giả định phân phối so với DDM. \\
+2016 & FHDDM~\cite{pesaranghader2016fhddm} & Phiên bản nhanh của HDDM, tăng tốc độ và độ nhạy khi drift (đột ngột và dần dần). \\
+2017 & RDDM~\cite{barros2017rddm} & Phản ứng nhanh với drift đột ngột, rút ngắn giai đoạn cảnh báo của DDM; phù hợp cả drift lặp lại. \\
 2020 & DAWIDD~\cite{hinder2020dawidd} & Phương pháp phi tham số dùng kiểm định độc lập (independence test) thay vì mô hình dự đoán; linh hoạt với nhiều dạng drift khác nhau. \\
 2019--22 & Học sâu thích ứng & Xuất hiện các mô hình deep learning tích hợp phát hiện drift (NADINE, ADL, DEVDAN, CIDD-ADODNN…); mạng tự mở rộng hoặc dùng detector gắn ngoài để duy trì hiệu năng dưới concept drift. \\
 \bottomrule
 \end{tabular}
-
-
 \end{table}
-\begin{table}[ht]
+\begin{table}[H]
 \centering
 \caption{Phân loại và đặc tính kỹ thuật của các bộ dò Concept Drift tiêu biểu}
 \label{tab:algorithm_taxonomy}
@@ -244,7 +242,7 @@ học sâu vận hành bền vững trong môi trường dữ liệu luôn biế
 \textbf{EDDM} & Statistical Process Control & Distance between errors & Nhạy với gradual drift~\cite{baena2006early} & Dễ báo động giả lúc mới học~\cite{santos2024evolving} \\ \hline
 \textbf{ADWIN} & Sliding Window & Adaptive Windowing & Có cam kết toán học về tỷ lệ FP~\cite{bifet2007learning} & Tốn bộ nhớ hơn DDM/EDDM~\cite{hinder2024survey_partA} \\ \hline
 \textbf{HDDM} & Sliding Window & Hoeffding's Bound & Phù hợp cho abrupt/gradual drift~\cite{friasblanco2015hddm} & Cần dữ liệu nhãn liên tục~\cite{santos2024evolving} \\ \hline
-\textbf{FHDDM} & Sliding Window & Hoeffding + Sliding Win. & Chỉ duy trì 2 biến số, cực nhẹ~\cite{HDDM} & Cần chọn kích thước cửa sổ phù hợp~\cite{hinder2024survey_partA} \\ \hline
+\textbf{FHDDM} & Sliding Window & Hoeffding + Sliding Win. & Chỉ duy trì 2 biến số, cực nhẹ~\cite{pesaranghader2016fhddm} & Cần chọn kích thước cửa sổ phù hợp~\cite{hinder2024survey_partA} \\ \hline
 \textbf{D3} & Virtual Classifier & Unsupervised Separation & Tốc độ nhanh, không cần nhãn~\cite{gozuacik2019d3} & Chỉ phát hiện Real Drift (thay đổi $P(X)$)~\cite{hinder2024survey_partA} \\ \hline
 \textbf{ShapeDD} & Meta-Statistic & Shape-based Filtering & Pinpointing điểm drift chính xác~\cite{shapeDD2024} & Độ trễ phụ thuộc kích thước cửa sổ~\cite{shapeDD2024} \\ \hline
 \textbf{DAWIDD} & Block-Based & Independence Test (HSIC) & Phù hợp với gradual/reoccurring drift~\cite{hinder2020dawidd} & Tỷ lệ báo động giả khá cao~\cite{hinder2024survey_partA} \\ \hline
@@ -254,7 +252,7 @@ học sâu vận hành bền vững trong môi trường dữ liệu luôn biế
 
 Các phương pháp cũng đã được thực nghiệm trên các tập dữ liệu giả lập và thực tế chuẩn để đánh giá hiệu năng. Bảng~\ref{tab:accuracy_results} tổng hợp kết quả từ các nghiên cứu.
 
-\begin{table}[ht]
+\begin{table}[H]
 \centering
 \caption{So sánh đa chỉ số (Multi-metric Comparison) của các bộ phát hiện drift trên các tập dữ liệu chuẩn}
 \label{tab:accuracy_results}
@@ -285,7 +283,8 @@ Các phương pháp cũng đã được thực nghiệm trên các tập dữ li
 }
 \begin{flushleft}
 \small 
-\textbf{Ghi chú:} Các chỉ số được tổng hợp từ các nghiên cứu gốc. \\
+\textbf{Ghi chú:} Các chỉ số được tổng hợp từ các nghiên cứu gốc. Giá trị có thể khác nhau tùy theo cấu hình thực nghiệm (classifier, hyperparameters). \\
+\textbf{D3}: Kết quả từ~\cite{gozuacik2019d3}. \textbf{DAWIDD}: Kết quả từ~\cite{hinder2020dawidd}. \textbf{ShapeDD}: Kết quả từ~\cite{shapeDD2024}. \\
 $^\dagger$ Tính toán từ tỷ lệ lỗi (Error-rate) của mô hình Hoeffding Tree. \\
 \textbf{Accuracy}: Độ chính xác tích lũy (Prequential) của mô hình kết hợp với bộ phát hiện drift. \\
 \textbf{Delay}: Số mẫu trung bình từ khi drift xảy ra đến khi được phát hiện (thấp = tốt). \\
@@ -306,7 +305,7 @@ thống vừa có khả năng học biểu diễn mạnh mẽ vừa linh hoạt 
 \label{sec:cdt-msw-theory}
 \subsection{Tổng quan}
 
-\textit{Mặc dù luận văn tập trung đánh giá \textbf{sudden drift} như đã nêu trong Chương~1, việc hệ thống hóa phương pháp phân loại loại drift là nền tảng quan trọng cho kiến trúc thích ứng thông minh được đề xuất trong Chương~3. PhươngPháp CDT\_MSW được tích hợp vào hệ thống ShapeDD-Stream để kích hoạt chiến lược cập nhật mô hình phù hợp với từng loại drift.}
+\textit{Mặc dù luận văn tập trung đánh giá \textbf{sudden drift} như đã nêu trong Chương~0, việc hệ thống hóa phương pháp phân loại loại drift là nền tảng quan trọng cho kiến trúc thích ứng thông minh được đề xuất trong Chương~3. Phương pháp CDT\_MSW được tích hợp vào hệ thống ShapeDD-Stream để kích hoạt chiến lược cập nhật mô hình phù hợp với từng loại drift.}
 
 Sau khi phát hiện được thời điểm xảy ra trôi dạt, việc xác định loại trôi dạt là điều cần thiết để có thể có những hành động phù hợp để can thiệp vào mô hình. Khác với các phương pháp truyền thống chỉ xác định có trôi dạt hay không, phương pháp \textbf{CDT\_MSW} (Concept Drift Type identification based on Multi-Sliding Windows) được Guo \textit{et al.}~\cite{guo2022cdtmsw} đề xuất nhằm \emph{phân biệt bản chất và tốc độ thay đổi của quá trình drift}. Phương pháp này dựa trên việc quan sát hành vi thay đổi của độ chính xác giữa nhiều cửa sổ trượt (traditional sliding windows và adaptive windows), qua đó nhận dạng các loại drift như: \emph{sudden}, \emph{gradual}, \emph{incremental}, và \emph{recurrent}.
 
