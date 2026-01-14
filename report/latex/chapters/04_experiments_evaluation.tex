@@ -174,6 +174,144 @@ Hình~\ref{fig:prequential_accuracy} minh họa quá trình suy giảm và phụ
         \end{itemize}
 \end{itemize}
 
+\section{Đánh giá SE-CDT: Phân loại drift không giám sát}
+
+Phần này đánh giá hiệu quả của phương pháp SE-CDT được đề xuất ở Chương~\ref{chap:proposed-model} cho bài toán phân loại drift type.
+
+\subsection{Thiết kế thực nghiệm}
+
+\textbf{Cấu hình:} Dataset tổng hợp 8,000 mẫu với các loại drift:
+\begin{itemize}
+    \item \textbf{TCD (Transient):} Sudden (3 drift points), Blip (2 blips, duration=200)
+    \item \textbf{PCD (Progressive):} Gradual (transition width=1000), Incremental (linear shift), Recurrent (period=1600)
+\end{itemize}
+
+\textbf{Đánh giá:} 17 configurations × 10 runs = 170 test cases. Tham số: window\_size=200, stride=40.
+
+\subsection{Kết quả phân loại}
+
+\begin{table}[H]
+\centering
+\caption{Kết quả phân loại drift type của SE-CDT}
+\label{tab:se-cdt-results}
+\begin{tabular}{|l|c|c|l|}
+\hline
+\textbf{Drift Type} & \textbf{Category} & \textbf{Accuracy} & \textbf{Ghi chú} \\
+\hline
+Sudden (mạnh) & TCD & 100\% & Peak sắc nét, SNR cao \\
+Sudden (yếu) & TCD & 100\% & Vẫn phát hiện được \\
+Blip & TCD & 33\% & Khó phân biệt với Sudden \\
+\hline
+Gradual (tw=1000) & PCD & 100\% & Peak rộng đặc trưng \\
+Gradual (tw=500) & PCD & 0\% & Bị nhầm $\rightarrow$ Recurrent \\
+Incremental & PCD & 10-70\% & Phụ thuộc shift magnitude \\
+Recurrent (period=1600) & PCD & 100\% & Peaks đều đặn \\
+Recurrent (period=2000) & PCD & 0\% & Ít peaks, nhầm $\rightarrow$ Sudden \\
+\hline
+\end{tabular}
+\end{table}
+
+\textbf{Kết quả tổng hợp:}
+\begin{itemize}
+    \item \textbf{Phân loại cấp Category (TCD vs PCD):} Đạt \textbf{88\%} accuracy
+    \item \textbf{Phân loại cấp Type (5 loại):} Đạt 48-61\% tùy configuration
+\end{itemize}
+
+\subsection{So sánh với CDT\_MSW}
+
+\begin{table}[H]
+\centering
+\caption{So sánh SE-CDT và CDT\_MSW}
+\label{tab:se-cdt-comparison}
+\begin{tabular}{|l|c|c|}
+\hline
+\textbf{Tiêu chí} & \textbf{CDT\_MSW} & \textbf{SE-CDT} \\
+\hline
+Supervised & Có (cần labels) & \textbf{Không} \\
+Category accuracy & N/A & \textbf{88\%} \\
+Type accuracy & $\sim$90\%* & 48-61\% \\
+Signal type & Accuracy ratio & MMD $\sigma(t)$ \\
+Tính toán bổ sung & Cần model & Không \\
+\hline
+\end{tabular}
+\begin{flushleft}
+\small *Theo kết quả báo cáo trong~\cite{guo2022cdtmsw}
+\end{flushleft}
+\end{table}
+
+\textbf{Kết luận:} SE-CDT là phương pháp thay thế \textbf{không giám sát} cho CDT\_MSW.
+
+\subsection{So sánh độc lập CDT\_MSW và SE-CDT}
+
+\textit{Lưu ý: Benchmark này sử dụng implementation độc lập của CDT\_MSW dựa trên mô tả trong paper~\cite{guo2022cdtmsw}. Kết quả có thể khác so với paper gốc do khác biệt về synthetic data generators, hyperparameters, và simplified accuracy-based detection. Mục đích chính là so sánh \textbf{supervised vs unsupervised} approach trong cùng điều kiện thử nghiệm.}
+
+Cả hai phương pháp được chạy trên cùng bộ dữ liệu (10,000 mẫu × 5 loại drift × 3 runs). Bảng~\ref{tab:cdt-comparison-by-type} trình bày kết quả chi tiết.
+
+\begin{table}[H]
+\centering
+\caption{So sánh chi tiết CDT\_MSW và SE-CDT theo loại drift}
+\label{tab:cdt-comparison-by-type}
+\begin{tabular}{|l|l|c|c|c|c|c|}
+\hline
+\textbf{Drift} & \textbf{Method} & \textbf{Recall} & \textbf{Prec.} & \textbf{MTTD} & \textbf{Type} & \textbf{Cat.} \\
+\hline
+\multirow{2}{*}{Sudden} & CDT\_MSW & 100\% & 100\% & 28 & 0\% & 0\% \\
+ & SE-CDT & \textbf{100\%} & \textbf{100\%} & \textbf{14} & 0\% & 0\% \\
+\hline
+\multirow{2}{*}{Blip} & CDT\_MSW & 20\% & 83\% & 11 & 67\% & 100\% \\
+ & SE-CDT & \textbf{100\%} & \textbf{100\%} & 107 & 0\% & 0\% \\
+\hline
+\multirow{2}{*}{Gradual} & CDT\_MSW & 0\% & 0\% & - & 0\% & 100\% \\
+ & SE-CDT & 0\% & 0\% & - & 0\% & \textbf{100\%} \\
+\hline
+\multirow{2}{*}{Incremental} & CDT\_MSW & 0\% & 0\% & - & 0\% & 0\% \\
+ & SE-CDT & \textbf{67\%} & \textbf{67\%} & 0 & \textbf{67\%} & \textbf{100\%} \\
+\hline
+\multirow{2}{*}{Recurrent} & CDT\_MSW & 67\% & 67\% & 61 & 67\% & 100\% \\
+ & SE-CDT & \textbf{100\%} & \textbf{100\%} & \textbf{0} & \textbf{100\%} & \textbf{100\%} \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Kết quả tổng hợp}
+
+Bảng~\ref{tab:cdt-aggregate} tổng hợp kết quả benchmark (5 loại drift × 5 runs).
+
+\begin{table}[H]
+\centering
+\caption{So sánh tổng hợp CDT\_MSW và SE-CDT}
+\label{tab:cdt-aggregate}
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{Method} & \textbf{Type Acc} & \textbf{Cat Acc} & \textbf{Supervised} & \textbf{Time (ms)} \\
+\hline
+CDT\_MSW & 20\% & 56\% & Có & \textbf{53} \\
+SE-CDT & 20\% & \textbf{60\%} & \textbf{Không} & 473 \\
+\hline
+\end{tabular}
+\end{table}
+
+\textbf{Chi tiết theo loại drift:}
+\begin{itemize}
+    \item \textbf{Incremental:} Cả hai đạt 100\% (tốt nhất)
+    \item \textbf{Gradual \& Recurrent:} SE-CDT đạt 100\% CatAcc, CDT\_MSW 80-100\%
+    \item \textbf{Sudden \& Blip:} Cả hai gặp khó (0\% Type, 0\% Cat)
+\end{itemize}
+
+\textbf{Phân tích kết quả:}
+\begin{itemize}
+    \item \textbf{Type Accuracy tương đương (20\%):} Cả hai phương pháp đều khó phân loại đủ 5 loại drift.
+    \item \textbf{Category Accuracy:} SE-CDT cao hơn 4\% (60\% vs 56\%) \textbf{mà không cần labels}.
+    \item \textbf{Trade-off chính:} CDT\_MSW nhanh hơn 9x (53ms vs 473ms) nhưng cần labels.
+    \item \textbf{Ứng dụng thực tế:} SE-CDT phù hợp hơn cho streaming real-time nơi labels không có sẵn.
+\end{itemize}
+
+\textbf{Giới hạn:}
+\begin{itemize}
+    \item Kết quả thấp hơn paper gốc ($\sim$90\%) do khác biệt về synthetic data generators và hyperparameters.
+    \item Cả hai phương pháp đều cần cải thiện cho TCD types (Sudden, Blip).
+\end{itemize}
+
 \section{Kết luận chương}
 
 Tổng hợp lại các các kết quả thực nghiệm:

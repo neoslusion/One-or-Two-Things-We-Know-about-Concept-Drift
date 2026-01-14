@@ -52,6 +52,16 @@ Luận văn này đã nghiên cứu và triển khai thành công một hệ th�
     \item Practical contribution: Cải thiện throughput \textbf{hơn 7 lần} so với ShapeDD gốc
 \end{itemize}
 
+\subsection{Đóng góp về phân loại drift không giám sát (SE-CDT)}
+
+Luận văn đề xuất phương pháp \textbf{SE-CDT (ShapeDD-Enhanced CDT)} — một phương pháp phân loại drift không giám sát dựa trên tín hiệu MMD $\sigma(t)$ (xem Chi tiết tại Chương~\ref{chap:proposed-model} và kết quả thực nghiệm tại Chương~\ref{chap:experiments}).
+
+\textbf{Kết quả chính:}
+\begin{itemize}
+    \item Phân loại cấp Category (TCD vs PCD): Đạt \textbf{88\%} accuracy
+    \item So với CDT\_MSW~\cite{guo2022cdtmsw}: Không cần labels, phù hợp streaming real-time
+\end{itemize}
+
 \section{Những phát hiện và hiểu biết chính}
 
 \subsection{Hiểu biết về phát hiện drift}

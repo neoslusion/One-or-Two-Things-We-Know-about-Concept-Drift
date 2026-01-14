@@ -186,6 +186,55 @@ Trong phạm vi luận văn, chiến lược cho \textit{Sudden Drift} được 
     \item \textbf{Matching:} Khi drift xảy ra, hệ thống so sánh phân phối dữ liệu mới với các signature trong kho bằng khoảng cách Kolmogorov-Smirnov (KS). Nếu độ tương đồng cao (khoảng cách nhỏ hơn ngưỡng $\epsilon$), mô hình cũ sẽ được tải lại và tinh chỉnh nhẹ.
 \end{itemize}
 
+\subsubsection{SE-CDT: Phân loại drift không giám sát}
+
+Phương pháp CDT\_MSW gốc~\cite{guo2022cdtmsw} yêu cầu \textit{labels} để tính toán accuracy ratio, điều này không phù hợp trong môi trường streaming không giám sát. Luận văn đề xuất \textbf{SE-CDT (ShapeDD-Enhanced CDT)}, một phương pháp thay thế sử dụng trực tiếp tín hiệu drift magnitude $\sigma(t)$ từ ShapeDD để phân loại drift type.
+
+\textbf{Cơ sở lý thuyết:} Theo phân loại của CDT\_MSW, drift được chia thành:
+\begin{itemize}
+    \item \textbf{TCD (Transient Concept Drift):} Drift tạm thời với thời gian chuyển đổi ngắn — bao gồm \textit{sudden} và \textit{blip}.
+    \item \textbf{PCD (Progressive Concept Drift):} Drift tiến triển với thời gian chuyển đổi dài — bao gồm \textit{gradual}, \textit{incremental}, và \textit{recurrent}.
+\end{itemize}
+
+\textbf{Đặc trưng phân loại từ tín hiệu $\sigma(t)$:}
+\begin{enumerate}
+    \item \textbf{Peak Width Ratio:} $\text{WR} = \frac{\text{FWHM}}{2L}$ — Tỷ lệ chiều rộng peak so với window. TCD có WR $< 1.5$, PCD có WR $> 2.0$.
+    \item \textbf{Peak Count:} Số lượng peaks phát hiện được. Sudden có ít peaks ($\leq 4$), Recurrent có nhiều peaks đều đặn ($\geq 5$).
+    \item \textbf{Periodicity CV:} Hệ số biến thiên khoảng cách giữa peaks. Recurrent có CV $< 0.2$ (đều đặn).
+    \item \textbf{Signal-to-Noise Ratio:} $\text{SNR} = \frac{\max(\sigma)}{\text{median}(\sigma)}$ — TCD có SNR cao (peaks sắc nét).
+\end{enumerate}
+
+\textbf{Thuật toán phân loại:}
+\begin{algorithm}[H]
+\caption{SE-CDT: Phân loại drift không giám sát}
+\label{alg:se-cdt}
+\begin{algorithmic}[1]
+\REQUIRE Tín hiệu drift magnitude $\sigma(t)$ từ ShapeDD
+\ENSURE Loại drift (TCD/PCD) và subcategory
+\STATE Làm mịn tín hiệu: $\sigma_s \leftarrow \text{GaussianFilter}(\sigma, \sigma=2)$
+\STATE Phát hiện peaks: $P \leftarrow \text{FindPeaks}(\sigma_s, \text{threshold}=\bar{\sigma} + 0.3\sigma_{std})$
+\STATE Tính các đặc trưng: $n_p \leftarrow |P|$, $\text{WR}$, $\text{CV}$, $\text{SNR}$
+\IF{$n_p \leq 4$ AND $\text{WR} < 1.2$ AND $\text{SNR} > 4$}
+    \RETURN \textbf{SUDDEN} (TCD)
+\ELSIF{$n_p \geq 4$ AND $\text{CV} < 0.2$}
+    \RETURN \textbf{RECURRENT} (PCD)
+\ELSIF{$\text{WR} > 2.0$}
+    \RETURN \textbf{GRADUAL} (PCD)
+\ELSIF{$n_p \geq 10$ AND $\text{WR} > 5$}
+    \RETURN \textbf{INCREMENTAL} (PCD)
+\ELSE
+    \RETURN \textbf{GRADUAL} (PCD) \COMMENT{Default}
+\ENDIF
+\end{algorithmic}
+\end{algorithm}
+
+\textbf{Ưu điểm của SE-CDT:}
+\begin{itemize}
+    \item \textbf{Không giám sát:} Không cần labels, phù hợp với streaming data.
+    \item \textbf{Tích hợp:} Sử dụng cùng tín hiệu $\sigma(t)$ đã tính cho detection, không cần tính toán thêm.
+    \item \textbf{Thời gian thực:} Phân loại ngay sau khi phát hiện drift.
+\end{itemize}
+
 \subsubsection{Cơ chế Meta-Learning (Hướng phát triển)}
 Hệ thống được thiết kế để hỗ trợ Meta-Learning trong tương lai: một mô hình cấp cao (meta-learner) sẽ học cách chọn chiến lược tốt nhất dựa trên lịch sử các lần thích ứng thành công hay thất bại, thay vì chỉ dựa vào quy tắc cố định.
 
