@@ -11,7 +11,7 @@ Chương này trình bày các kết quả thực nghiệm nhằm kiểm chứng
 \end{enumerate}
 
 \subsection{Môi trường và Cấu hình}
-Hệ thống streaming được giả lập sử dụng Apache Kafka\footnote{Triển khai thực nghiệm sử dụng Redpanda v24.1.9, một hệ thống Kafka-compatible với API tương thích 100\%.}.
+Các thực nghiệm được tiến hành trên hệ thống có cấu hình: CPU 8-core, RAM 16GB, chạy trên nền tảng Docker container hóa để đảm bảo tính tái lập. Hệ thống streaming được giả lập sử dụng Apache Kafka\footnote{Triển khai thực nghiệm sử dụng Redpanda v24.1.9, một hệ thống Kafka-compatible với API tương thích 100\%.}.
 
 \textbf{Cấu hình tham số chung:}
 \begin{itemize}
@@ -31,7 +31,7 @@ Hệ thống được đánh giá trên bộ 10 tập dữ liệu tổng hợp (
 \begin{itemize}
 	\item \textbf{Gaussian Shift (Moderate):} Dữ liệu phân phối chuẩn đa chiều ($d=10$) với sự dịch chuyển trung bình (mean shift) đột ngột ($\delta=1.5$). Đây là trường hợp lý tưởng để kiểm tra độ nhạy của kernel RBF.
 	\item \textbf{STAGGER Concepts:} Bộ dữ liệu kinh điển với các đặc trưng nhị phân. Mặc dù thường được dùng cho supervised drift, nó cũng chứa sự thay đổi phân phối $P(X)$ do cách lấy mẫu, tạo ra tín hiệu drift rõ ràng.
-	\item \textbf{Random RBF (Sensitivity Test):} Bộ 4 dataset (\textit{mild, moderate, severe, ultra\_severe}) được sinh ngẫu nhiên với cường độ thay đổi (intensity) tăng dần từ 0.125 đến 2.0. Bộ này dùng để đánh giá "ngưỡng phát hiện" (detection threshold) của các thuật toán.
+	\item \textbf{Random RBF (Sensitivity Test):} Bộ 4 dataset (\textit{mild, moderate, severe, ultra_severe}) được sinh ngẫu nhiên với cường độ thay đổi (intensity) tăng dần từ 0.125 đến 2.0. Bộ này dùng để đánh giá "ngưỡng phát hiện" (detection threshold) của các thuật toán.
 \end{itemize}
 
 \subsection{Nhóm 2: Blip Drift (Thay đổi ngắn hạn)}

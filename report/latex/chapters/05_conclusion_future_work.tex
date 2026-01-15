@@ -1,305 +1,72 @@
-\chapter{Kết luận}
+\chapter{Kết luận và Hướng phát triển}
+\label{chap:conclusion}
 
-\section{Tổng kết đóng góp của nghiên cứu}
+\section{Tổng kết các đóng góp chính}
 
-Luận văn này đã nghiên cứu và triển khai thành công một hệ thống phát hiện và thích ứng concept drift tự động sử dụng ShapeDD detector và chiến lược thích ứng theo loại drift. Nghiên cứu kết hợp lý thuyết vững chắc với triển khai thực tế, tạo ra một giải pháp khả thi cho các ứng dụng streaming data.
+Luận văn này đã giải quyết bài toán phát hiện và thích ứng với concept drift trong môi trường dữ liệu luồng (streaming data) thông qua việc kết hợp nền tảng lý thuyết vững chắc và triển khai hệ thống thực tế. Ba đóng góp trọng tâm của nghiên cứu bao gồm:
 
-\subsection{Đóng góp về hệ thống}
-
-\textbf{Kiến trúc streaming real-time:} Xây dựng hệ thống hoàn chỉnh sử dụng Apache Kafka cho xử lý luồng dữ liệu, cho phép phát hiện drift và thích ứng mô hình tự động trong thời gian thực. Kiến trúc modular với các thành phần độc lập: Producer, Consumer (ShapeDD), Drift Classifier, Adaptor và Visualization.
-
-\textbf{Tích hợp ShapeDD detector:} Triển khai phương pháp \textbf{ShapeDD\_OW\_MMD} với cơ chế trọng số tối ưu, đạt hiệu suất phát hiện drift ổn định trong các kịch bản sudden drift (F1 $\approx$ 0.54-0.56, delay trung bình 18 mẫu). Hệ thống sử dụng kiểm định thống kê MMD cải tiến giúp giảm đáng kể chi phí tính toán so với phương pháp hoán vị truyền thống.
-
-\textbf{Phân loại drift tự động:} Tích hợp phương pháp CDT\_MSW để tự động phân loại drift thành 5 loại (sudden, incremental, gradual, recurrent, blip) dựa trên đặc trưng thay đổi phân phối. Sử dụng KS distance tracking và stability analysis để xác định drift length và category (TCD/PCD).
-
-\subsection{Đóng góp về triển khai}
-
-\textbf{Chiến lược thích ứng đa dạng:} Framework đã triển khai trọn vẹn 5 chiến lược thích ứng trong module \texttt{adaptation\_strategies.py} để xử lý các loại drift khác nhau, trong đó chiến lược cho \textbf{Sudden Drift} được đánh giá chi tiết nhất trong luận văn:
+\subsection{Đóng góp về Phương pháp luận (Methodological)}
 \begin{itemize}
-    \item \textbf{Sudden drift (Đánh giá chính):} Full model reset - tạo mô hình mới hoàn toàn.
-    \item \textbf{Incremental drift:} Gradual online updates với River framework.
-    \item \textbf{Gradual drift:} Weighted updates ưu tiên mẫu gần đây.
-    \item \textbf{Recurrent drift:} Model cache \& reuse với distribution similarity matching.
-    \item \textbf{Blip drift:} Minimal update để tránh overreact với noise.
+	\item \textbf{Tích hợp ShapeDD\_OW\_MMD:} Tích hợp thành công phương pháp OW-MMD (Optimally-Weighted MMD)~\cite{bharti2023owmmd} vào ShapeDD detector. Kết quả cho thấy phương pháp này cải thiện thông lượng xử lý gấp \textbf{7 lần} (đạt $\approx$ 50,300 mẫu/giây) so với ShapeDD gốc, trong khi vẫn duy trì độ chính xác phát hiện ổn định (F1 $\approx$ 0.56).
+	\item \textbf{Đề xuất SHAPED\_CDT:} Xây dựng phương pháp phân loại drift không giám sát \textbf{SHAPED\_CDT}, tận dụng khả năng định vị chính xác thời điểm drift của ShapeDD để trích xuất cửa sổ dữ liệu cho CDT\_MSW. Phương pháp đạt độ chính xác \textbf{80\%} trong việc phân loại nhóm drift (TCD vs PCD), tạo tiền đề cho chiến lược thích ứng thông minh.
 \end{itemize}
 
-\textbf{Frozen model deployment:} Áp dụng chiến lược deployment mô hình đóng băng (frozen), không có online learning trong quá trình inference. Cách tiếp cận này cho phép:
+\subsection{Đóng góp về Thực nghiệm (Empirical)}
 \begin{itemize}
-    \item Đo lường chính xác impact của drift qua accuracy degradation
-    \item Stability cao cho production systems
-    \item Clear separation giữa deployment và adaptation phases
-    \item Easy rollback nếu cần thiết
+	\item \textbf{Benchmark toàn diện:} Thực hiện đánh giá có hệ thống 8 phương pháp phát hiện drift trên 10 tập dữ liệu tổng hợp (synthetic) đa dạng. Kết quả được kiểm chứng thống kê bằng kiểm định Friedman và Nemenyi (với 30 lần chạy độc lập), cung cấp cái nhìn khách quan về hiệu năng của các thuật toán hiện đại.
+	\item \textbf{Phân tích độ trễ và chi phí:} Chứng minh hiệu quả của việc giảm số lượng hoán vị (permutation) nhờ cơ chế giảm phương sai của OW-MMD, giúp giảm độ trễ phát hiện trung bình xuống còn 18 mẫu.
 \end{itemize}
 
-\textbf{Event-driven architecture:} Sử dụng Kafka message queue để decouple các thành phần, cho phép:
+\subsection{Đóng góp về Hệ thống (System)}
 \begin{itemize}
-    \item Independent scaling của từng component
-    \item Asynchronous processing giảm latency
-    \item Event replay cho debugging và testing
-    \item Flexible deployment (Docker containers)
+	\item \textbf{Kiến trúc Real-time Streaming:} Thiết kế và triển khai kiến trúc hệ thống dựa trên \textbf{Apache Kafka}, cho phép xử lý phân tán và mở rộng. Hệ thống tách biệt các module (Detection, Classification, Adaptation) giúp dễ dàng bảo trì và nâng cấp.
+	\item \textbf{Khung chiến lược thích ứng:} Hiện thực hóa 5 chiến lược thích ứng tương ứng với các loại drift (Sudden, Incremental, Gradual, Recurrent, Blip). Đặc biệt, chiến lược \textit{Frozen Model Deployment} được đề xuất để đo lường chính xác tác động của drift trong môi trường production.
 \end{itemize}
-
-\subsection{Đóng góp thực nghiệm}
-
-\textbf{So sánh detector toàn diện:} Đánh giá 8 drift detectors trên 10 datasets tổng hợp (synthetic), được thiết kế để mô phỏng đa dạng các kịch bản thực tế, với 10 drift points mỗi dataset. Kết quả cho thấy các phương pháp có trade-offs khác nhau phù hợp với các use cases khác nhau.
-
-\textbf{Kết quả comprehensive benchmark (8 methods × 10 datasets):}
-\begin{itemize}
-    \item \textbf{MMD\_OW đạt F1 cao nhất (0.576):} Phương pháp sử dụng trọng số tối ưu cho kết quả tốt nhất về F1-score
-    \item \textbf{ShapeDD\_OW\_MMD xếp hạng 2 (F1 = 0.562):} Kết hợp OW-MMD với đặc trưng hình dạng, throughput $\approx 50,300$ samples/giây
-    \item \textbf{Friedman test p > 0.05:} Không có sự khác biệt thống kê đáng kể giữa các phương pháp top đầu
-    \item Key finding: OW-MMD variance reduction cho phép giảm bootstrap từ 2500 xuống 10 mà không mất accuracy
-    \item Practical contribution: Cải thiện throughput \textbf{hơn 7 lần} so với ShapeDD gốc
-\end{itemize}
-
-\subsection{Đóng góp về phân loại drift không giám sát (SHAPED\_CDT)}
-
-Luận văn đề xuất phương pháp \textbf{SHAPED\_CDT (ShapeDD-Enhanced CDT)} — một phương pháp phân loại drift không giám sát dựa trên tín hiệu MMD $\sigma(t)$ (xem Chi tiết tại Chương~\ref{chap:proposed-model} và kết quả thực nghiệm tại Chương~\ref{chap:experiments}).
-
-\textbf{Kết quả chính:}
-\begin{itemize}
-    \item Phân loại cấp Category (TCD vs PCD): Đạt \textbf{80\%} accuracy
-    \item Phân loại cấp Subcategory (5 loại drift): Đạt \textbf{20\%} accuracy
-    \item So với CDT\_MSW~\cite{guo2022cdtmsw}: Không cần labels, phù hợp streaming real-time
-\end{itemize}
-
-\textbf{Thử nghiệm bổ sung với OW-MMD:}
-Luận văn cũng thử nghiệm biến thể sử dụng OW-MMD thay cho standard MMD. Kết quả cho thấy OW-MMD không phù hợp cho classification (CAT\_ACC = 20\%) do cơ chế variance reduction loại bỏ những thay đổi nhỏ từ PCD (Gradual, Incremental). Đây là trade-off quan trọng: OW-MMD tốt cho detection nhưng không phù hợp cho classification.
 
 \section{Những phát hiện và hiểu biết chính}
 
-\subsection{Hiểu biết về phát hiện drift}
+Từ quá trình nghiên cứu và thực nghiệm, luận văn rút ra các bài học quan trọng:
 
-\textbf{Adaptive window sizing quan trọng:} \textbf{ShapeDD\_OW\_MMD} với adaptive window vượt trội so với fixed window. Adaptive sizing tự động điều chỉnh theo magnitude và characteristics của drift, giảm false positives và tăng sensitivity.
+\begin{enumerate}
+	\item \textbf{Adaptive Window là yếu tố then chốt:} ShapeDD với kích thước cửa sổ thích ứng (adaptive sizing) vượt trội hoàn toàn so với cửa sổ cố định. Khả năng tự điều chỉnh theo độ lớn drift giúp giảm báo động giả (False Positives) và tăng độ nhạy.
 
-\textbf{Trade-off accuracy vs. speed:} Window-based detectors truyền thống (ShapeDD gốc) chính xác nhưng chậm ($\sim 1.5$ ms/sample). Với cải tiến OW-MMD, tốc độ xử lý được cải thiện đáng kể ($\sim 0.19$ ms/sample), đưa hiệu năng tiệm cận với các phương pháp streaming siêu nhẹ như ADWIN/EDDM trong khi vẫn duy trì độ chính xác cao của MMD.
+	\item \textbf{Trade-off giữa Tốc độ và Độ chính xác:} Các phương pháp cửa sổ trượt truyền thống chính xác nhưng chậm. Việc tích hợp OW-MMD đã giải quyết nút thắt này, đưa tốc độ xử lý của phương pháp dựa trên kernel tiệm cận với các thuật toán thống kê nhẹ (như ADWIN) mà không hy sinh độ chính xác.
 
-\textbf{Permutation test hiệu quả:} 2500 permutations cung cấp statistical confidence cao, lọc được noise và false positives. P-value threshold 0.05 cân bằng tốt giữa sensitivity và specificity.
+	\item \textbf{Hiệu quả của Full Reset cho Sudden Drift:} Đối với các thay đổi đột ngột (Sudden Drift), việc huấn luyện lại mô hình từ đầu (Full Reset) cho hiệu quả phục hồi cao hơn (82.8\%) so với cập nhật tăng cường (incremental updates), đồng thời tránh được hiện tượng "catastrophic forgetting".
 
-\subsection{Hiểu biết về chiến lược thích ứng}
+	\item \textbf{Vai trò của Phân loại Drift:} Việc xác định đúng loại drift (ví dụ: Blip vs. Sudden) là cực kỳ quan trọng để tránh phản ứng thái quá với nhiễu (noise). Chiến lược thích ứng dựa trên loại drift giúp hệ thống vận hành ổn định và tiết kiệm tài nguyên.
+\end{enumerate}
 
-\textbf{Full reset tốt cho sudden drift:} Khi concept thay đổi hoàn toàn, full model reset hiệu quả hơn incremental updates:
-\begin{itemize}
-    \item Recovery rate: 82.8\% vs. 78-79\% (incremental)
-    \item Training time: <1s (acceptable)
-    \item Không bị "catastrophic forgetting" từ old concept
-\end{itemize}
+\section{Hạn chế và Phạm vi nghiên cứu}
 
-\textbf{Frozen model phát hiện drift tốt hơn:} Deployment model đóng băng (không online learning) giúp:
-\begin{itemize}
-    \item Accuracy degradation rõ ràng khi drift xảy ra (0.996 → 0.550)
-    \item Dễ measure impact của drift
-    \item Stable behavior trong production
-    \item Clear trigger cho adaptation
-\end{itemize}
+Mặc dù đạt được những kết quả khả quan, nghiên cứu vẫn tồn tại một số hạn chế cần được xem xét:
 
-\textbf{Drift type classification enables smart adaptation:} Phân loại đúng drift type (sudden, incremental, etc.) cho phép chọn strategy phù hợp, tránh over-adaptation hoặc under-adaptation.
+\subsection{Tập trung vào Sudden Drift}
+Luận văn tập trung chuyên sâu vào phát hiện và thích ứng với \textbf{Sudden Drift}. Các loại drift khác (Gradual, Incremental) tuy đã được hỗ trợ trong kiến trúc nhưng chưa được đánh giá sâu về mặt lý thuyết (tính chất hình học của tín hiệu MMD) và thực nghiệm rộng rãi. Kết quả hiện tại đảm bảo tính đúng đắn cao nhất cho các kịch bản thay đổi đột ngột.
 
-\subsection{Hiểu biết về kiến trúc hệ thống}
-
-\textbf{Event-driven architecture scalable:} Kafka-based messaging cho phép:
-\begin{itemize}
-    \item Independent scaling: Consumer, Adaptor scale riêng biệt
-    \item Fault tolerance: Message persistence đảm bảo không mất data
-    \item Flexibility: Dễ thêm consumers mới (visualization, logging, etc.)
-\end{itemize}
-
-\textbf{Modular design dễ maintain:} Separation of concerns:
-\begin{itemize}
-    \item Detection module: Chỉ lo phát hiện drift
-    \item Classification module: Phân loại drift type
-    \item Adaptation module: Update model theo strategy
-    \item Mỗi module có thể test và optimize độc lập
-\end{itemize}
-
-\section{Hạn chế và ràng buộc}
-
-\subsection{Hạn chế về scope}
-
-\textbf{Focus on sudden drift only:} Luận văn này tập trung chuyên sâu vào sudden (abrupt) drift detection và adaptation. Quyết định này được đưa ra dựa trên:
-
-\begin{itemize}
-    \item \textbf{Rationale}: Sudden drift có tầm quan trọng thực tế cao nhất (system failures, policy changes, equipment malfunctions critical cho safety) và theoretical foundation vững chắc nhất (Triangle Shape Property - Theorem 2.1)
-    \item \textbf{Trade-off}: Deep analysis of one drift type thoroughly với statistical rigor thay vì shallow coverage của multiple types
-    \item \textbf{Framework ready}: CDT\_MSW và adaptation strategies đã được implement as extensible framework cho 5 drift types
-    \item \textbf{Future work}: Gradual, incremental, và recurrent drift có thể được evaluate trong future research với minimal architecture changes
-\end{itemize}
-
-\textbf{Impact}: Kết quả và conclusions của luận văn này strictly applicable cho sudden drift scenarios. Generalization sang các drift types khác cần additional research và validation. Tuy nhiên, framework architecture đã được design sẵn sàng cho extensions này.
-
-\subsection{Hạn chế về phương pháp luận}
-
-\textbf{Độ nhạy tham số:} Mặc dù các phương pháp của nghiên cứu cho thấy độ bền vững tốt, chúng vẫn yêu cầu điều chỉnh tham số để đạt hiệu suất tối ưu. Tối ưu hóa tham số tự động vẫn còn là thách thức.
-
-\textbf{Thách thức đa chiều cao:} Các tập dữ liệu có số chiều rất cao (>1000 features) đặt ra các thách thức tính toán và thống kê cho một số thành phần của framework.
-
-\textbf{Yêu cầu meta-learning:} Phương pháp meta-learning yêu cầu đủ dữ liệu lịch sử với các chú thích drift, điều này có thể không khả dụng trong tất cả các ứng dụng.
-
-\textbf{Đánh đổi khả năng giải thích:} Sự phức tạp của các phương pháp ensemble có thể khiến việc hiểu tại sao các quyết định cụ thể được đưa ra trở nên khó khăn, hạn chế khả năng giải thích trong các ứng dụng quan trọng.
-
-\subsection{Hạn chế về đánh giá}
-
-\textbf{Thiên kiến dữ liệu tổng hợp:} Mặc dù sử dụng 11 tập dữ liệu tổng hợp đa dạng, nghiên cứu vẫn thiếu sự kiểm chứng trên các luồng dữ liệu thực tế quy mô lớn (real-world traces). Dữ liệu tổng hợp, dù được thiết kế kỹ lưỡng, có thể không nắm bắt được toàn bộ sự phức tạp, nhiễu và tính ngẫu nhiên của các hệ thống sản xuất.
-
-\textbf{Giả định về Drift Types:} Benchmark hiện tại tập trung chủ yếu vào các loại drift cơ bản (sudden, blip) với các giả định rõ ràng về sự thay đổi. Trong thực tế, các dạng drift hỗn hợp (hybrid drifts) hoặc drift phụ thuộc ngữ cảnh (contextual drifts) có thể xuất hiện, đặt ra thách thức cho các bộ phát hiện dựa trên quy tắc cố định.
-
-\textbf{Nghiên cứu dài hạn hạn chế:} Hầu hết các đánh giá kéo dài trong khoảng thời gian tương đối ngắn. Hiệu suất dài hạn trong môi trường liên tục phát triển cần điều tra thêm.
-
-\section{Tác động rộng và ứng dụng}
-
-\subsection{Ứng dụng công nghiệp}
-
-Nghiên cứu có ứng dụng trực tiếp trong nhiều ngành công nghiệp:
-
-\textbf{Dịch vụ tài chính:}
-\begin{itemize}
-    \item Hệ thống phát hiện gian lận thích ứng với các mẫu gian lận đang phát triển
-    \item Mô hình đánh giá rủi ro tính đến điều kiện thị trường thay đổi
-    \item Hệ thống giao dịch thuật toán phản ứng với thay đổi chế độ thị trường
-\end{itemize}
-
-\textbf{Y tế:}
-\begin{itemize}
-    \item Hệ thống chẩn đoán y tế thích ứng với các bệnh mới nổi
-    \item Pipeline khám phá thuốc tính đến sự hiểu biết sinh học đang phát triển
-    \item Hệ thống giám sát bệnh nhân điều chỉnh theo các mẫu sức khỏe cá nhân
-\end{itemize}
-
-\textbf{Công nghệ:}
-\begin{itemize}
-    \item Hệ thống đề xuất thích ứng với sở thích người dùng thay đổi
-    \item Hệ thống an ninh mạng phản hồi với các vector tấn công mới
-    \item Ứng dụng Internet of Things với các mẫu cảm biến đang phát triển
-\end{itemize}
-
-\subsection{Tác động xã hội}
-
-\textbf{Công bằng và giảm thiểu thiên kiến:} Các phương pháp concept drift có thể giúp xác định và giải quyết các mẫu thiên kiến đang phát triển trong hệ thống học máy, thúc đẩy các ứng dụng AI công bằng hơn.
-
-\textbf{Nghiên cứu biến đổi khí hậu:} Các phương pháp xử lý mẫu thời gian của nghiên cứu này có thể đóng góp vào mô hình hóa khí hậu và hệ thống giám sát môi trường.
-
-\textbf{Sức khỏe cộng đồng:} Hệ thống thích ứng có thể cải thiện mô hình hóa dịch bệnh và phản ứng sức khỏe cộng đồng bằng cách phát hiện và thích ứng với các mẫu bệnh tật thay đổi.
+\subsection{Dữ liệu tổng hợp (Synthetic Data)}
+Việc đánh giá chủ yếu dựa trên các tập dữ liệu tổng hợp. Mặc dù chúng cho phép kiểm soát chính xác ground truth (thời điểm drift, loại drift) để đo lường F1-score và độ trễ, nhưng có thể chưa phản ánh hết độ phức tạp, nhiễu tạp và tính bất định của dữ liệu thực tế (real-world traces) trong các hệ thống sản xuất quy mô lớn.
 
 \section{Hướng nghiên cứu tương lai}
 
-\subsection{Mở rộng sang các loại drift khác (Top Priority)}
+Dựa trên nền tảng của luận văn, các hướng phát triển tiếp theo được đề xuất theo thứ tự ưu tiên:
 
-Luận văn này đã establish strong foundation cho sudden drift detection và adaptation. Future research nên extend sang các drift types còn lại:
-
-\textbf{1. Gradual drift evaluation:}
+\subsection{Mở rộng sang các loại Drift khác (Ưu tiên hàng đầu)}
 \begin{itemize}
-    \item \textbf{Theoretical analysis}: Gradual drift không có closed-form triangle shape như sudden drift - cần derive new theoretical characterization
-    \item \textbf{Algorithm adaptation}: ShapeDD có thể cần modified threshold hoặc window strategy để accommodate slower transitions
-    \item \textbf{Expected challenge}: Gradual drift signal spread over longer time, harder to detect with window-based methods
-    \item \textbf{Dataset generation}: Implement gradual transition functions (linear, sigmoid, exponential)
-    \item \textbf{Estimated effort}: 2-3 tuần
+	\item \textbf{Gradual Drift:} Nghiên cứu đặc trưng lý thuyết của tín hiệu MMD đối với drift dần dần (không có dạng tam giác nhọn). Cần điều chỉnh ngưỡng hoặc chiến lược cửa sổ để bắt được các thay đổi chậm.
+	\item \textbf{Incremental Drift:} Thử nghiệm chiến lược thích ứng liên tục (continuous adaptation) sử dụng framework River, tập trung vào cân bằng giữa tốc độ cập nhật và độ ổn định mô hình.
+	\item \textbf{Recurrent Drift:} Tối ưu hóa cơ chế lưu trữ (caching) mô hình cũ và thuật toán so khớp phân phối để tái sử dụng mô hình hiệu quả hơn.
 \end{itemize}
 
-\textbf{2. Incremental drift testing:}
+\subsection{Tầm nhìn dài hạn}
 \begin{itemize}
-    \item \textbf{Continuous adaptation strategy evaluation}: Test \texttt{adapt\_incremental\_drift()} với River framework (already implemented)
-    \item \textbf{Metrics}: Cumulative accuracy degradation over time, adaptation efficiency
-    \item \textbf{Challenge}: Balancing update frequency vs stability (catastrophic forgetting risk)
-    \item \textbf{Estimated effort}: 2 tuần
+	\item \textbf{Meta-learning trực tuyến:} Phát triển các thuật toán có khả năng tự động lựa chọn chiến lược thích ứng và tham số tối ưu dựa trên đặc điểm dữ liệu quan sát được, giảm thiểu sự can thiệp thủ công.
+	\item \textbf{Deep Learning Integration:} Khám phá việc sử dụng Deep Learning để học các biểu diễn (representations) bất biến với drift, giúp mô hình bền vững hơn trước các thay đổi nhỏ.
+	\item \textbf{Benchmark chuẩn hóa:} Xây dựng bộ benchmark chuẩn với dữ liệu thực tế được gán nhãn drift kỹ lưỡng, đóng góp cho cộng đồng nghiên cứu concept drift.
 \end{itemize}
-
-\textbf{3. Recurrent drift scenarios:}
-\begin{itemize}
-    \item \textbf{Model cache effectiveness testing}: Validate \texttt{adapt\_recurrent\_drift()} strategy
-    \item \textbf{Distribution similarity matching accuracy}: KS-test threshold tuning
-    \item \textbf{Memory management strategies}: Cache size limits, eviction policies
-    \item \textbf{Estimated effort}: 2-3 tuần
-\end{itemize}
-
-\textbf{Framework advantage:} Vì system architecture đã extensible, extending sang các drift types này chỉ cần:
-\begin{itemize}
-    \item Generate appropriate synthetic datasets (gradual transition functions)
-    \item Run evaluation pipeline (code reuse ~80\%)
-    \item Analyze results và tune parameters
-    \item Update thesis Chapter 4 với new experimental results
-\end{itemize}
-
-\textbf{Expected deliverables:}
-\begin{itemize}
-    \item Comprehensive comparison table: sudden vs gradual vs incremental vs recurrent
-    \item Parameter sensitivity analysis cho mỗi drift type
-    \item Recommendations: Which detector + strategy for which drift type
-\end{itemize}
-
-\subsection{Tiến bộ lý thuyết}
-
-\textbf{Khung lý thuyết thống nhất:} Công việc tương lai nên phát triển khung lý thuyết toàn diện thống nhất các khía cạnh khác nhau của nghiên cứu concept drift, bao gồm phát hiện, thích ứng và đánh giá.
-
-\textbf{Lý thuyết dừng tối ưu:} Điều tra các ứng dụng lý thuyết dừng tối ưu để xác định khi nào kích hoạt thích ứng dựa trên phân tích chi phí-lợi ích.
-
-\textbf{Nền tảng thông tin lý thuyết:} Phát triển các thước đo thông tin lý thuyết để định lượng drift và lựa chọn chiến lược thích ứng.
-
-\textbf{Phân tích drift nhân quả:} Tích hợp các kỹ thuật suy luận nhân quả để hiểu các nguyên nhân cơ bản của drift thay vì chỉ phát hiện ảnh hưởng của nó.
-
-\subsection{Phát triển phương pháp luận}
-
-\textbf{Tích hợp Deep Learning:} Điều tra các phương pháp deep learning để phát hiện drift và thích ứng, đặc biệt là representation learning cho các feature bất biến drift.
-
-\textbf{Meta-learning trực tuyến:} Phát triển các thuật toán meta-learning trực tuyến có thể thích ứng khả năng lựa chọn chiến lược của chúng trong thời gian thực.
-
-\textbf{Xử lý drift đa phương thức:} Mở rộng đến các kịch bản với nhiều loại dữ liệu (văn bản, hình ảnh, cảm biến) trải qua các mẫu drift phối hợp.
-
-\textbf{Phát hiện drift liên kết:} Phát triển các phương pháp phát hiện drift bảo tồn quyền riêng tư cho các kịch bản học liên kết.
-
-\subsection{Đánh giá và benchmarking}
-
-\textbf{Benchmark chuẩn hóa:} Tạo ra các bộ benchmark toàn diện với dataset thực tế được chú thích và giao thức đánh giá chuẩn hóa.
-
-\textbf{Nghiên cứu dài hạn:} Các nghiên cứu dọc về các phương pháp concept drift trong môi trường sản xuất để hiểu hành vi và tính ổn định dài hạn.
-
-\textbf{Metric cụ thể theo miền:} Phát triển các metric đánh giá cụ thể theo ứng dụng nắm bắt các khía cạnh liên quan đến miền của hiệu suất phát hiện drift và thích ứng.
-
-\textbf{Framework mô phỏng:} Môi trường mô phỏng tiên tiến có thể tạo ra các mẫu drift thực tế để thử nghiệm có kiểm soát.
-
-\subsection{Ứng dụng thực tế}
-
-\textbf{Tích hợp AutoML:} Tích hợp xử lý concept drift vào pipeline học máy tự động để giảm nhu cầu can thiệp của chuyên gia.
-
-\textbf{Edge Computing:} Phát triển các phương pháp phát hiện drift nhẹ phù hợp cho môi trường edge computing hạn chế tài nguyên.
-
-\textbf{Phát hiện drift có thể giải thích:} Các phương pháp không chỉ phát hiện drift mà còn cung cấp giải thích có thể hiểu được về những gì đã thay đổi và tại sao.
-
-\textbf{Thích ứng có ý thức chi phí:} Framework xem xét chi phí kinh tế của các chiến lược thích ứng khác nhau và tối ưu hóa hiệu quả chi phí.
-
-\section{Cải thiện phương pháp luận nghiên cứu}
-
-\subsection{Thiết kế thực nghiệm}
-
-Nghiên cứu tương lai nên giải quyết một số cải thiện phương pháp luận:
-
-\textbf{Nghiên cứu so sánh có kiểm soát:} Thiết kế thực nghiệm nghiêm ngặt hơn cô lập ảnh hưởng của các thành phần thuật toán riêng lẻ.
-
-\textbf{Tối ưu hóa đa mục tiêu:} Framework đánh giá đồng thời xem xét nhiều mục tiêu như độ chính xác, hiệu quả và khả năng giải thích.
-
-\textbf{Kiểm tra độ bền vững:} Phân tích độ bền vững toàn diện dưới các điều kiện khác nhau bao gồm nhiễu, dữ liệu thiếu và kịch bản đối kháng.
-
-\subsection{Khả năng tái tạo và khoa học mở}
-
-\textbf{Framework mã nguồn mở:} Phát triển framework phần mềm toàn diện, được tài liệu hóa tốt cho nghiên cứu concept drift.
-
-\textbf{Thí nghiệm có thể tái tạo:} Giao thức thực nghiệm chuẩn hóa đảm bảo khả năng tái tạo và cho phép so sánh công bằng các phương pháp.
-
-\textbf{Dataset cộng đồng:} Phát triển hợp tác các dataset được chia sẻ, có chú thích cho nghiên cứu concept drift.
-
-\section{Suy ngẫm cuối cùng}
-
-Nghiên cứu này đã tiết lộ rằng mặc dù đã có tiến bộ đáng kể trong việc hiểu concept drift, nhưng vẫn còn những thách thức quan trọng. Lĩnh vực này đang hướng tới các phương pháp thích ứng, tinh vi hơn có thể tự động cấu hình dựa trên đặc trưng dữ liệu quan sát được.
-
-Việc tích hợp nhiều phương pháp phát hiện, adaptive thresholding và meta-learning để lựa chọn chiến lược đại diện cho một bước tiến đáng kể so với các phương pháp truyền thống. Tuy nhiên, sự phức tạp của các kịch bản thực tế tiếp tục đưa ra những thách thức mới đòi hỏi sự chú ý nghiên cứu liên tục.
-
-Tác động thực tế của công việc này mở rộng ra ngoài đóng góp học thuật. Các phương pháp được phát triển ở đây có ứng dụng trực tiếp trong nhiều lĩnh vực nơi hệ thống học máy thích ứng là quan trọng để duy trì hiệu suất trong môi trường động.
 
 \section{Kết luận}
 
-Hành trình hiểu biết về concept drift còn lâu mới hoàn thành, nhưng luận văn này cung cấp những bước đệm quan trọng hướng tới các hệ thống học máy mạnh mẽ và thích ứng hơn. "Một hoặc hai điều chúng ta biết về concept drift" đã được mở rộng thông qua nghiên cứu này, nhưng chúng cũng tiết lộ còn bao nhiêu điều cần khám phá.
+Hành trình giải quyết bài toán concept drift là một quá trình liên tục. Luận văn này đã đóng góp một bước tiến cụ thể thông qua việc (1) tích hợp các tiến bộ lý thuyết mới nhất (OW-MMD) để giải quyết bài toán hiệu năng, và (2) đề xuất hướng tiếp cận phân loại drift không giám sát (SHAPED\_CDT) để định hướng thích ứng.
 
-Sự kết hợp của tiến bộ lý thuyết, đổi mới phương pháp luận và đánh giá thực nghiệm toàn diện được trình bày trong luận văn này đóng góp có ý nghĩa cho lĩnh vực đồng thời chỉ ra các hướng thú vị cho nghiên cứu tương lai. Khi các hệ thống học máy ngày càng được triển khai trong môi trường thực tế, động, tầm quan trọng của việc xử lý concept drift mạnh mẽ sẽ chỉ tiếp tục tăng lên.
-
-Sự thành công của các phương pháp thích ứng, meta-learning cho thấy tương lai của nghiên cứu concept drift nằm trong việc phát triển các hệ thống có thể liên tục học hỏi và cải thiện khả năng xử lý drift của chúng. Điều này đại diện cho sự chuyển đổi từ các phương pháp tĩnh, phù hợp-với-tất-cả hướng tới các hệ thống thích ứng, thông minh thực sự có thể điều hướng sự phức tạp của môi trường dữ liệu đang phát triển.
-
-Thông qua nghiên cứu và hợp tác tiếp tục, cộng đồng học máy có thể xây dựng dựa trên những nền tảng này để tạo ra các giải pháp hiệu quả và thực tế hơn cho một trong những thách thức cơ bản nhất trong học máy ứng dụng: học hỏi và thích ứng trong một thế giới không bao giờ ngừng thay đổi. 
+Kết quả nghiên cứu khẳng định rằng việc chuyển dịch từ các mô hình tĩnh sang các hệ thống thích ứng (adaptive systems) là xu hướng tất yếu. Với kiến trúc đề xuất và những hiểu biết thu được, hệ thống hoàn toàn có khả năng mở rộng để đối mặt với những thách thức phức tạp hơn của dữ liệu luồng trong tương lai, hướng tới các ứng dụng AI vận hành bền vững và tin cậy.
