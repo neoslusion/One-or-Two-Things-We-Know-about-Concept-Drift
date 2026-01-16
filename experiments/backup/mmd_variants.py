@@ -1,43 +1,5 @@
-"""
-Optimally-Weighted MMD (OW-MMD) for Drift Detection
-====================================================
-
-Based on: Bharti et al., ICML 2023
-"Optimally-weighted Estimators of the Maximum Mean Discrepancy"
-
-Key Insight:
-    OW-MMD uses variance-optimal weights that upweight samples in sparse regions
-    (distribution boundaries) and downweight samples in dense regions. This
-    provides better sample efficiency, especially for small windows (n < 100).
-
-Main Functions:
-    1. mmd_ow_permutation()  - OW-MMD with permutation test for p-value
-    2. shape_ow_mmd()        - Original ShapeDD algorithm with OW-MMD testing
-
-Supporting Functions:
-    - compute_ow_mmd()       - Compute OW-MMD between separate X, Y samples
-    - compute_ow_mmd_squared() - Return MMD² (for hypothesis testing)
-    - mmd_ow()               - Basic OW-MMD with fixed threshold (fast, less accurate)
-
-Usage Example:
-    from ow_mmd import shape_ow_mmd, mmd_ow_permutation
-    
-    # Option 1: Full ShapeDD with OW-MMD (recommended for drift detection)
-    results = shape_ow_mmd(data_stream, l1=50, l2=150, n_perm=500)
-    drift_points = np.where(results[:, 2] < 0.05)[0]  # p-value < 0.05
-    
-    # Option 2: Standalone OW-MMD test on a window
-    mmd_val, p_val = mmd_ow_permutation(window, n_perm=500)
-    is_drift = p_val < 0.05
-"""
-
 import numpy as np
 from scipy.spatial.distance import cdist, pdist
-
-
-# =============================================================================
-# SECTION 1: KERNEL FUNCTIONS
-# =============================================================================
 
 def rbf_kernel(X, Y, gamma='auto'):
     """
@@ -100,11 +62,6 @@ def compute_gamma_median_heuristic(X):
         return 1.0 / (2 * median_dist**2)
     return 1.0
 
-
-# =============================================================================
-# SECTION 2: OPTIMAL WEIGHT COMPUTATION
-# =============================================================================
-
 def compute_optimal_weights(K, method: str = 'variance_reduction'):
     """
     Compute optimal weights for MMD estimation.
@@ -165,10 +122,6 @@ def compute_optimal_weights(K, method: str = 'variance_reduction'):
     else:
         raise ValueError(f"Unknown weight method: {method}")
 
-
-# =============================================================================
-# SECTION 3: OW-MMD COMPUTATION
-# =============================================================================
 
 def compute_ow_mmd_squared(X, Y, gamma=None, weight_method='variance_reduction'):
     """
@@ -476,15 +429,6 @@ def shape_ow_mmd(X, l1, l2, n_perm=500):
     
     return res
 
-
-# =============================================================================
-# SECTION 6: LEGACY/HEURISTIC FUNCTIONS (For Backward Compatibility)
-# =============================================================================
-
-# Alias for backward compatibility
-rbf_kernel_ow = rbf_kernel
-
-
 def shapedd_ow_mmd(X, l1=50, l2=150, gamma='auto', mode='simple'):
     """
     LEGACY: ShapeDD-OW-MMD Hybrid with heuristic pattern detection.
@@ -594,11 +538,6 @@ def shapedd_ow_mmd_enhanced(X, l1=50, l2=150, gamma='auto'):
     """
     return shapedd_ow_mmd(X, l1=l1, l2=l2, gamma=gamma, mode='enhanced')
 
-
-# =============================================================================
-# SECTION 7: PATTERN DETECTION HELPERS
-# =============================================================================
-
 def _simple_pattern_detection(mmd_norm):
     """Simple 3-check triangle pattern detection."""
     peak_idx = np.argmax(mmd_norm)
@@ -690,3 +629,230 @@ def _check_significant_peak(sequence, sigma=2.0):
         return False
     
     return np.max(sequence) > mean_val + sigma * std_val
+
+import numpy as np
+from scipy.spatial.distance import pdist, cdist
+
+# =============================================================================
+# ENHANCED SHAPEDD++ FOR SUDDEN DRIFT DETECTION
+# =============================================================================
+
+# def rbf_kernel(X, Y, gamma):
+#     """RBF kernel with given gamma."""
+#     sq_dist = cdist(X, Y, 'sqeuclidean')
+#     return np.exp(-gamma * sq_dist)
+
+
+def compute_gamma_median(X):
+    """Median heuristic for kernel bandwidth."""
+    distances = pdist(X, 'euclidean')
+    if len(distances) == 0 or np.all(distances == 0):
+        return 1.0
+    return 1.0 / (2 * np.median(distances[distances > 0])**2)
+
+
+def studentized_mmd_test(X, Y, gamma=None, n_perm=200):
+    """
+    Studentized MMD with permutation test.
+    
+    Optimized for sudden drift detection with:
+    - Variance normalization for stable thresholds
+    - Efficient permutation testing
+    """
+    m, n = len(X), len(Y)
+    combined = np.vstack([X, Y])
+    
+    if gamma is None:
+        gamma = compute_gamma_median(combined)
+    
+    def compute_stat(X_s, Y_s):
+        """Compute studentized MMD²."""
+        m_s, n_s = len(X_s), len(Y_s)
+        
+        K_XX = rbf_kernel(X_s, X_s, gamma)
+        K_YY = rbf_kernel(Y_s, Y_s, gamma)
+        K_XY = rbf_kernel(X_s, Y_s, gamma)
+        
+        np.fill_diagonal(K_XX, 0)
+        np.fill_diagonal(K_YY, 0)
+        
+        # MMD²
+        mmd_sq = (np.sum(K_XX) / (m_s * (m_s - 1)) +
+                  np.sum(K_YY) / (n_s * (n_s - 1)) -
+                  2 * np.sum(K_XY) / (m_s * n_s))
+        
+        # Variance estimate
+        h_X = np.sum(K_XX, axis=1) / (m_s - 1) - np.sum(K_XY, axis=1) / n_s
+        h_Y = np.sum(K_YY, axis=1) / (n_s - 1) - np.sum(K_XY, axis=0) / m_s
+        
+        var_est = 4 * (np.var(h_X) / m_s + np.var(h_Y) / n_s)
+        
+        return mmd_sq / np.sqrt(max(var_est, 1e-10))
+    
+    # Observed statistic
+    stat_obs = compute_stat(X, Y)
+    
+    # Permutation test
+    count = 0
+    for _ in range(n_perm):
+        perm = np.random.permutation(m + n)
+        stat_perm = compute_stat(combined[perm[:m]], combined[perm[m:]])
+        if stat_perm >= stat_obs:
+            count += 1
+    
+    p_value = (count + 1) / (n_perm + 1)
+    mmd_value = np.sqrt(max(0, stat_obs))
+    
+    return mmd_value, p_value
+
+
+def shape_dd_plus_plus(X, l1, l2=None, n_perm=300, 
+                        use_studentized=True,
+                        early_validation=True):
+    """
+    ShapeDD++ : Enhanced ShapeDD for Sudden Drift Detection.
+    
+    Improvements over original ShapeDD:
+    1. Studentized MMD for variance reduction
+    2. Efficient sliding window computation
+    3. Early validation option for strong drifts
+    
+    Parameters:
+
+    X : array-like, shape (n_samples, n_features)
+        Data stream
+    l1 : int
+        Window size for shape statistic (half-window)
+    l2 : int, optional
+        Window size for validation (default: 3*l1)
+    n_perm : int
+        Number of permutations for p-value
+    use_studentized : bool
+        Use studentized MMD (recommended for sudden drift)
+    early_validation : bool
+        Skip validation for very strong shape signals
+    
+    Returns:
+
+    results : list of dict
+        Each dict contains: position, mmd, p_value, shape_strength
+    """
+    n = X.shape[0]
+    if l2 is None:
+        l2 = 3 * l1
+    
+    # Validate inputs
+    if n < 4 * l1:
+        raise ValueError(f"Stream too short: {n} < 4*l1 = {4*l1}")
+    
+    # Step 1: Compute drift magnitude on sliding windows
+    gamma = compute_gamma_median(X)
+    sigma = np.zeros(n)
+    
+    for t in range(2*l1, n):
+        ref = X[t-2*l1:t-l1]
+        test = X[t-l1:t]
+        
+        if len(ref) >= l1 and len(test) >= l1:
+            if use_studentized:
+                mmd_val, _ = studentized_mmd_test(ref, test, gamma, n_perm=50)
+            else:
+                # Standard MMD (faster, less accurate)
+                K_XX = rbf_kernel(ref, ref, gamma)
+                K_YY = rbf_kernel(test, test, gamma)
+                K_XY = rbf_kernel(ref, test, gamma)
+                np.fill_diagonal(K_XX, 0)
+                np.fill_diagonal(K_YY, 0)
+                mmd_sq = (np.sum(K_XX)/(l1*(l1-1)) + 
+                          np.sum(K_YY)/(l1*(l1-1)) - 
+                          2*np.sum(K_XY)/(l1*l1))
+                mmd_val = np.sqrt(max(0, mmd_sq))
+            
+            sigma[t] = mmd_val
+    
+    # Step 2: Shape matching via matched filter
+    w = np.concatenate([np.ones(l1)/l1, -np.ones(l1)/l1])
+    shape_stat = np.convolve(sigma, w, mode='same')
+    
+    # Step 3: Find zero-crossings (positive to negative)
+    candidates = []
+    for t in range(1, n):
+        if shape_stat[t-1] > 0 and shape_stat[t] <= 0:
+            # Drift position is at t - l1 (center of triangle)
+            drift_pos = t - l1
+            if drift_pos > l1 and drift_pos < n - l1:
+                candidates.append((drift_pos, shape_stat[t-1]))
+    
+    # Step 4: Validate candidates with permutation test
+    results = []
+    
+    for pos, strength in candidates:
+        # Extract validation window
+        a = max(0, pos - l2//2)
+        b = min(n, pos + l2//2)
+        window = X[a:b]
+        split = pos - a
+        
+        if split < 5 or len(window) - split < 5:
+            continue
+        
+        ref_window = window[:split]
+        test_window = window[split:]
+        
+        # Early validation: skip full test for very strong signals
+        if early_validation and strength > 0.5:
+            # Quick check with fewer permutations
+            mmd_val, p_val = studentized_mmd_test(
+                ref_window, test_window, gamma, n_perm=100
+            )
+        else:
+            # Full validation
+            mmd_val, p_val = studentized_mmd_test(
+                ref_window, test_window, gamma, n_perm=n_perm
+            )
+        
+        results.append({
+            'position': pos,
+            'mmd': mmd_val,
+            'p_value': p_val,
+            'shape_strength': strength,
+            'is_drift': p_val < 0.05
+        })
+    
+    return results
+
+
+# =============================================================================
+# CONVENIENCE WRAPPER
+# =============================================================================
+
+def detect_sudden_drift(X, window_size=50, significance=0.05, n_perm=300):
+    """
+    Simple interface for sudden drift detection.
+    
+    Parameters:
+
+    X : array-like
+        Data stream
+    window_size : int
+        Size of detection window
+    significance : float
+        Significance level for drift detection
+    n_perm : int
+        Number of permutations
+    
+    Returns:
+
+    drift_points : list of int
+        Detected drift positions
+    """
+    results = shape_dd_plus_plus(
+        X, 
+        l1=window_size, 
+        n_perm=n_perm,
+        use_studentized=True
+    )
+    
+    drift_points = [r['position'] for r in results if r['p_value'] < significance]
+    
+    return drift_points

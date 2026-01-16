@@ -20,7 +20,7 @@ from shape_dd import shape, shape_mmdagg
 from d3 import d3
 from dawidd import dawidd
 from mmd import mmd
-from ow_mmd import mmd_ow, mmd_ow_permutation, shapedd_ow_mmd, shape_ow_mmd
+from mmd_variants import mmd_ow, mmd_ow_permutation, shapedd_ow_mmd, shape_dd_plus_plus
 from ks import ks
 
 from ..config import (
@@ -67,7 +67,16 @@ def evaluate_drift_detector(method_name, X, true_drifts, chunk_size=None, overla
                     window, l1=SHAPE_L1, l2=SHAPE_L2, gamma='auto'
                 )
                 trigger = pattern_score > 0.5
-            
+
+            elif method_name == 'ShapeDD++':
+                # ShapeDD++ returns list of drift candidates for the window
+                # Check if any drift was detected in this window
+                results = shape_dd_plus_plus(
+                    window, l1=SHAPE_L1, l2=SHAPE_L2, n_perm=300, use_studentized=True,
+                )
+                # Trigger if any candidate has p_value < 0.05
+                trigger = any(r['p_value'] < 0.05 for r in results) if results else False
+
             # === Baseline Methods (unchanged) ===
             elif method_name == 'D3':
                 score = d3(window)

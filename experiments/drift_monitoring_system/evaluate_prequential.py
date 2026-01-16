@@ -38,7 +38,7 @@ from sklearn.pipeline import Pipeline
 
 # Import ShapeDD detector
 try:
-    from ow_mmd import shapedd_ow_mmd_buffer as shapedd_detect
+    from mmd_variants import shapedd_ow_mmd_buffer as shapedd_detect
 except ImportError:
     print("[WARNING] ow_mmd not found, using dummy detector")
     shapedd_detect = None

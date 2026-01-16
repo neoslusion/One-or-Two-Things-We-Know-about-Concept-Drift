@@ -33,14 +33,14 @@ MODEL_DIR = Path(os.getenv("MODEL_DIR", "./models"))
 SNAPSHOT_DIR.mkdir(parents=True, exist_ok=True)
 MODEL_DIR.mkdir(parents=True, exist_ok=True)
 
-# Make experiments/backup importable for ow_mmd
+# Make experiments/backup importable for mmd_variants
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SHAPE_DD_DIR = REPO_ROOT / "experiments" / "backup"
 if str(SHAPE_DD_DIR) not in sys.path:
     sys.path.append(str(SHAPE_DD_DIR))
 
 # Use ShapeDD_OW_MMD (best performer in benchmark - F1=0.623)
-from ow_mmd import shapedd_ow_mmd_buffer as shapedd_detect
+from mmd_variants import shapedd_ow_mmd_buffer as shapedd_detect
 
 # Import drift type classifier
 from drift_type_classifier import classify_drift_at_detection, DriftTypeConfig
