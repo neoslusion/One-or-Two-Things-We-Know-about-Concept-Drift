@@ -71,13 +71,14 @@ PREQUENTIAL_WINDOW = 100       # Window for prequential accuracy
 # Window-based methods
 WINDOW_METHODS = [
     'D3',              # Margin density drift detector
-    'DAWIDD',          # Distance-aware windowed drift detector
+    # 'DAWIDD',          # Distance-aware windowed drift detector
     'MMD',             # Maximum Mean Discrepancy (permutation test)
     'KS',              # Kolmogorov-Smirnov test
     'ShapeDD',         # Original ShapeDD (MMD + convolution pattern detection)
-    'ShapeDD_MMDAgg',  # ShapeDD with Aggregated MMD (JMLR 2023)
+    # 'ShapeDD_MMDAgg',  # ShapeDD with Aggregated MMD (JMLR 2023)
     'MMD_OW',          # Optimally-Weighted MMD (fixed threshold, fast)
     'ShapeDD_OW_MMD',  # ShapeDD + OW-MMD Hybrid (heuristic pattern detection)
+    'ShapeDD_WMMD',    # ShapeDD + WMMD Hybrid (heuristic pattern detection)
 ]
 
 # Streaming methods (require model for accuracy signal)

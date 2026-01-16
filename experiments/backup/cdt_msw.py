@@ -81,10 +81,12 @@ class CDT_MSW:
         
         variance, _ = compute_variance_in_WR(start_R)
         if variance is None:
-            return 1, "TCD"
+            print("Variance None at start")
+            return 1, "TCD", 0.0
         
+        print(f"DEBUG: Initial variance at pos {start_R}: {variance:.6f} (delta={self.delta})")
         if variance <= self.delta:
-            return 1, "TCD"
+            return 1, "TCD", variance
         
         drift_length = 1
         for i in range(1, 10):
@@ -97,9 +99,9 @@ class CDT_MSW:
             drift_length = i + 1
             
             if variance <= self.delta:
-                return drift_length, "PCD"
+                return drift_length, "PCD", variance
         
-        return drift_length, "PCD"
+        return drift_length, "PCD", variance
     
     def tracking_process(self, stream_X, stream_y, drift_pos, drift_length):
         """Algorithm 3: Compute TFR curve
@@ -141,6 +143,7 @@ class CDT_MSW:
     
     def identify_subcategory(self, tfr_values, drift_category):
         """Identify subcategory from TFR curve"""
+        print(f"DEBUG: Identifying subcategory for {drift_category}. TFR curve: {tfr_values}")
         if len(tfr_values) < 3:
             return "Unknown"
         
@@ -173,7 +176,8 @@ class CDT_MSW:
             'drift_length': None,
             'drift_category': None,
             'drift_subcategory': None,
-            'tfr_curve': None
+            'tfr_curve': None,
+            'variance_val': None
         }
         
         drift_pos = self.detection_process(stream_X, stream_y)
@@ -184,9 +188,10 @@ class CDT_MSW:
         result['drift_detected'] = True
         result['drift_position'] = drift_pos
         
-        drift_length, drift_category = self.growth_process(stream_X, stream_y, drift_pos)
+        drift_length, drift_category, variance_val = self.growth_process(stream_X, stream_y, drift_pos)
         result['drift_length'] = drift_length
         result['drift_category'] = drift_category
+        result['variance_val'] = variance_val
         
         tfr_values = self.tracking_process(stream_X, stream_y, drift_pos, drift_length)
         result['tfr_curve'] = tfr_values

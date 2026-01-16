@@ -5,7 +5,10 @@ Contains the evaluate_drift_detector function for evaluating window-based
 drift detection methods including:
 - D3, DAWIDD, MMD, KS
 - ShapeDD variants (buffer-based approach)
-- MMD_OW, ShapeDD_OW_MMD
+# - MMD_ADW, ShapeDD_ADW_MMD
+# Note: MMD_ADW and ShapeDD_ADW_MMD were previously named MMD_OW and ShapeDD_OW_MMD,
+# respectively. The renaming reflects the "Adaptive Window" (ADW) approach
+# described in Bharti et al. (2023) for clarity and consistency.
 """
 
 import time
@@ -20,7 +23,7 @@ from shape_dd import shape, shape_mmdagg
 from d3 import d3
 from dawidd import dawidd
 from mmd import mmd
-from mmd_variants import mmd_ow, shapedd_ow_mmd, shape_plus_plus
+from mmd_variants import mmd_adw, shapedd_adw_mmd, shape_with_wmmd
 from ks import ks
 
 from ..config import (
@@ -62,12 +65,17 @@ def evaluate_drift_detector(method_name, X, true_drifts, chunk_size=None, overla
                 min_pvalue = shp_results[:, 2].min()
                 trigger = min_pvalue < 0.05
                 
-            elif method_name == 'ShapeDD_OW_MMD':
-                pattern_score, mmd_max = shapedd_ow_mmd(
+            elif method_name == 'ShapeDD_ADW_MMD':
+                pattern_score, mmd_max = shapedd_adw_mmd(
                     window, l1=SHAPE_L1, l2=SHAPE_L2, gamma='auto'
                 )
                 trigger = pattern_score > 0.5
-
+            
+            elif method_name == 'ShapeDD_WMMD':
+                shp_results = shape_with_wmmd(window, SHAPE_L1, SHAPE_L2)
+                min_pvalue = shp_results[:, 2].min()
+                trigger = min_pvalue < 0.05
+            
             # === Baseline Methods (unchanged) ===
             elif method_name == 'D3':
                 score = d3(window)
@@ -85,8 +93,8 @@ def evaluate_drift_detector(method_name, X, true_drifts, chunk_size=None, overla
                 p_value = ks(window)
                 trigger = p_value < 0.05
                 
-            elif method_name == 'MMD_OW':
-                stat, threshold = mmd_ow(window, gamma='auto')
+            elif method_name == 'MMD_ADW':
+                stat, threshold = mmd_adw(window, gamma='auto')
                 trigger = stat > threshold
                                 
             else:
