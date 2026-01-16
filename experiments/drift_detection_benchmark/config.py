@@ -76,12 +76,8 @@ WINDOW_METHODS = [
     'KS',              # Kolmogorov-Smirnov test
     'ShapeDD',         # Original ShapeDD (MMD + convolution pattern detection)
     'ShapeDD_MMDAgg',  # ShapeDD with Aggregated MMD (JMLR 2023)
-    # OW-MMD variants (Bharti et al., ICML 2023)
     'MMD_OW',          # Optimally-Weighted MMD (fixed threshold, fast)
-    # 'MMD_OW_Perm',     # Optimally-Weighted MMD (permutation test, fair comparison)
     'ShapeDD_OW_MMD',  # ShapeDD + OW-MMD Hybrid (heuristic pattern detection)
-    # 'ShapeDD_OW',      # ShapeDD + OW-MMD (proper algorithm, recommended)
-    'ShapeDD++',        # Enhanced ShapeDD++ for sudden drift detection
 ]
 
 # Streaming methods (require model for accuracy signal)

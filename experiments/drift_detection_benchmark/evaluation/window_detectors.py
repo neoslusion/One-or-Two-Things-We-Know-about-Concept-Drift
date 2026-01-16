@@ -20,7 +20,7 @@ from shape_dd import shape, shape_mmdagg
 from d3 import d3
 from dawidd import dawidd
 from mmd import mmd
-from mmd_variants import mmd_ow, mmd_ow_permutation, shapedd_ow_mmd, shape_dd_plus_plus
+from mmd_variants import mmd_ow, shapedd_ow_mmd, shape_plus_plus
 from ks import ks
 
 from ..config import (
@@ -68,15 +68,6 @@ def evaluate_drift_detector(method_name, X, true_drifts, chunk_size=None, overla
                 )
                 trigger = pattern_score > 0.5
 
-            elif method_name == 'ShapeDD++':
-                # ShapeDD++ returns list of drift candidates for the window
-                # Check if any drift was detected in this window
-                results = shape_dd_plus_plus(
-                    window, l1=SHAPE_L1, l2=SHAPE_L2, n_perm=300, use_studentized=True,
-                )
-                # Trigger if any candidate has p_value < 0.05
-                trigger = any(r['p_value'] < 0.05 for r in results) if results else False
-
             # === Baseline Methods (unchanged) ===
             elif method_name == 'D3':
                 score = d3(window)
@@ -97,19 +88,7 @@ def evaluate_drift_detector(method_name, X, true_drifts, chunk_size=None, overla
             elif method_name == 'MMD_OW':
                 stat, threshold = mmd_ow(window, gamma='auto')
                 trigger = stat > threshold
-            
-            elif method_name == 'MMD_OW_Perm':
-                # OW-MMD with permutation test (fair comparison with standard MMD)
-                stat, p_value = mmd_ow_permutation(window, n_perm=SHAPE_N_PERM, gamma='auto')
-                trigger = p_value < 0.05
-            
-            elif method_name == 'ShapeDD_OW':
-                # Proper ShapeDD algorithm with OW-MMD for statistical testing
-                # This uses the same algorithm as ShapeDD but with OW-MMD instead of MMD
-                shp_results = shape_ow_mmd(window, SHAPE_L1, SHAPE_L2, n_perm=SHAPE_N_PERM)
-                min_pvalue = shp_results[:, 2].min()
-                trigger = min_pvalue < 0.05
-            
+                                
             else:
                 trigger = False
             

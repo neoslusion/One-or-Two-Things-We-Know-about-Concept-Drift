@@ -121,7 +121,7 @@ def run_statistical_analysis(all_results, n_runs):
     print("="*80)
 
     # Define methods to compare (focus on ShapeDD variants)
-    shapedd_methods = ['ShapeDD', 'ShapeDD_SNR_Adaptive', 'ShapeDD_OW_MMD']
+    shapedd_methods = ['ShapeDD', 'ShapeDD_OW_MMD']
     baseline_methods = ['MMD', 'D3', 'DAWIDD', 'KS']
 
     # Filter for methods that actually have results
