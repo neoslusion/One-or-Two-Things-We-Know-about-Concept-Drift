@@ -186,6 +186,13 @@ DATASET_CATALOG = {
             "sort_feature": "nswdemand"
         }
     },
+    "electricity_semisynthetic": {
+        "enabled": True,  # ENABLED: Real features + known drift positions
+        "type": "electricity_semisynthetic",
+        "n_drift_events": 10,
+        "ground_truth_type": "exact",  # Synthetic drifts at known positions
+        "params": {}
+    },
 
     # ========================================================================
     # SEMI-REAL DATASETS - Controlled Drift from Real Data

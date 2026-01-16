@@ -20,7 +20,7 @@ from shape_dd import shape, shape_mmdagg
 from d3 import d3
 from dawidd import dawidd
 from mmd import mmd
-from ow_mmd import mmd_ow, shapedd_ow_mmd, shapedd_ow_mmd_buffer
+from ow_mmd import mmd_ow, mmd_ow_permutation, shapedd_ow_mmd, shape_ow_mmd
 from ks import ks
 
 from ..config import (
@@ -88,6 +88,18 @@ def evaluate_drift_detector(method_name, X, true_drifts, chunk_size=None, overla
             elif method_name == 'MMD_OW':
                 stat, threshold = mmd_ow(window, gamma='auto')
                 trigger = stat > threshold
+            
+            elif method_name == 'MMD_OW_Perm':
+                # OW-MMD with permutation test (fair comparison with standard MMD)
+                stat, p_value = mmd_ow_permutation(window, n_perm=SHAPE_N_PERM, gamma='auto')
+                trigger = p_value < 0.05
+            
+            elif method_name == 'ShapeDD_OW':
+                # Proper ShapeDD algorithm with OW-MMD for statistical testing
+                # This uses the same algorithm as ShapeDD but with OW-MMD instead of MMD
+                shp_results = shape_ow_mmd(window, SHAPE_L1, SHAPE_L2, n_perm=SHAPE_N_PERM)
+                min_pvalue = shp_results[:, 2].min()
+                trigger = min_pvalue < 0.05
             
             else:
                 trigger = False
