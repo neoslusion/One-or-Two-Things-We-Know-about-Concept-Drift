@@ -1,0 +1,312 @@
+\chapter{Mô hình đề xuất}
+\label{chap:proposed-model}
+
+\textit{Tóm tắt: Trên cơ sở lý thuyết về ShapeDD và các phương pháp phát hiện concept drift đã trình bày ở Chương~\ref{chap:theoretical-foundation}, chương này trình bày việc tích hợp các phương pháp MMD cải tiến gần đây (OW-MMD, MMD-Agg) vào framework ShapeDD nhằm cải thiện hiệu suất tính toán, đồng thời đề xuất phương pháp mới SHAPED\_CDT cho phân loại drift không giám sát. Báo cáo cũng trình bày kiến trúc hệ thống xử lý luồng dữ liệu thời gian thực dựa trên Apache Kafka. Các đóng góp chính bao gồm: (1) Tích hợp Optimally-Weighted MMD (OW-MMD) để tăng tốc độ xử lý, (2) Xây dựng khung chiến lược thích ứng đa dạng dựa trên loại drift, và (3) Thiết kế kiến trúc hệ thống có khả năng mở rộng và chịu lỗi cao.}
+
+\section{Động lực và tổng quan cách tiếp cận}
+
+Mặc dù ShapeDD gốc thể hiện nhiều ưu điểm về độ chính xác định vị và khả năng khử nhiễu, việc áp dụng phương pháp này trong các hệ thống thời gian thực (real-time) quy mô lớn gặp phải hai thách thức chính:
+
+\begin{enumerate}
+	\item \textbf{Chi phí tính toán cao:} Việc sử dụng kiểm định hoán vị (permutation test) với số lượng lớn (thường là 2500 lần) để ước lượng p-value tạo ra nút thắt cổ chai về hiệu năng, giới hạn thông lượng (throughput) xử lý.
+	\item \textbf{Độ nhạy với tham số:} Hiệu suất của ShapeDD phụ thuộc nhiều vào việc lựa chọn độ rộng hạt nhân (kernel bandwidth) và kích thước cửa sổ, làm giảm khả năng tổng quát hóa trên các luồng dữ liệu có đặc tính drift đa dạng.
+	\item \textbf{Thiếu cơ chế thích ứng:} Phát hiện drift chỉ là bước đầu; hệ thống cần một cơ chế để tự động cập nhật mô hình một cách phù hợp với bản chất của sự thay đổi (đột ngột hay dần dần).
+\end{enumerate}
+
+Để giải quyết các thách thức trên, luận văn xây dựng hệ thống \textbf{ShapeDD-Stream} --- một framework tích hợp kết hợp các phương pháp MMD tiên tiến với kiến trúc streaming, bao gồm ba tầng xử lý chính:
+\begin{itemize}
+	\item \textbf{Tầng thuật toán:} Cải tiến ShapeDD bằng cách tích hợp \textit{Optimally-Weighted MMD (OW-MMD)} để giảm phương sai và chi phí tính toán, cùng với \textit{MMD-Agg} để tăng độ bền vững (robustness).
+	\item \textbf{Tầng chiến lược:} Xây dựng khung thích ứng thông minh, sử dụng kết quả phân loại từ \textit{CDT\_MSW} để kích hoạt chiến lược cập nhật mô hình tối ưu (Reset, Incremental, hoặc Reuse).
+	\item \textbf{Tầng kiến trúc:} Triển khai hệ thống trên nền tảng \textit{Apache Kafka}, đảm bảo khả năng xử lý luồng dữ liệu phân tán, độ trễ thấp và khả năng chịu lỗi.
+\end{itemize}
+
+\section{Cải tiến thuật toán phát hiện concept drift}
+
+\subsection{Optimally-Weighted MMD (OW-MMD): Tối ưu hóa hiệu suất và độ chính xác}
+\label{sec:ow-mmd}
+
+Trong các hệ thống học máy dòng dữ liệu (data stream), concept drift xảy ra khi các đặc tính thống kê của biến mục tiêu thay đổi đột ngột hoặc từ từ theo thời gian. Các phương pháp MMD truyền thống thường gặp khó khăn về chi phí tính toán khi áp dụng cho dữ liệu lớn.
+
+\subsubsection{Vấn đề của ước lượng MMD truyền thống}
+Trong ShapeDD gốc, thống kê MMD được tính toán dựa trên trọng số đều (uniform weights), coi vai trò của mọi điểm dữ liệu trong cửa sổ là như nhau. Để đạt được độ tin cậy thống kê (statistical power) mong muốn, phương pháp này yêu cầu kích thước mẫu lớn hoặc quy trình kiểm định hoán vị tốn kém ($O(N_{perm} \cdot n^2)$). Điều này không phù hợp với các ứng dụng yêu cầu phản hồi tức thì.
+
+\subsubsection{Giải pháp: Trọng số tối ưu giảm phương sai}
+Nghiên cứu tích hợp phương pháp \textbf{OW-MMD} (Optimally-Weighted MMD) được đề xuất bởi Bharti et al.~\cite{bharti2023owmmd}. Thay vì sử dụng trọng số đều, OW-MMD gán trọng số cho các mẫu dữ liệu nhằm tối thiểu hóa phương sai của bộ ước lượng.
+
+Công thức MMD bình phương có trọng số được định nghĩa lại như sau:
+\begin{equation}
+	\text{MMD}^2_{\text{OW}} = \sum_{i,j} w^{XX}_{ij} k(x_i, x_j) + \sum_{i,j} w^{YY}_{ij} k(y_i, y_j) - 2\sum_{i,j} w^{XY}_{ij} k(x_i, y_j)
+\end{equation}
+
+Trong đó, trọng số $w_{ij}$ được tính toán dựa trên nguyên lý giảm phương sai: các điểm dữ liệu nằm trong vùng mật độ cao (có tổng độ tương đồng kernel lớn) sẽ được gán trọng số thấp hơn để giảm sự dư thừa thông tin, trong khi các điểm ở vùng biên hoặc vùng thưa thớt được gán trọng số cao hơn.
+\begin{equation}
+	w_{ij} \propto \frac{1}{\sqrt{\sum_{k} k(x_i, x_k)}} \cdot \frac{1}{\sqrt{\sum_{k} k(x_j, x_k)}}
+\end{equation}
+
+\subsubsection{Quy trình phát hiện lai (Hybrid Detection Strategy)}
+Để cân bằng giữa tốc độ và độ chính xác, báo cáo đề xuất quy trình phát hiện hai giai đoạn cho ShapeDD\_OW\_MMD:
+
+\begin{algorithm}[H]
+	\caption{Optimally-Weighted MMD (OW-MMD)}
+	\label{alg:ow_mmd}
+	\begin{algorithmic}[1]
+		\REQUIRE Reference window $X_{ref}$, test window $X_{test}$, kernel $k(\cdot, \cdot)$
+		\ENSURE OW-MMD Statistic $\widehat{\text{MMD}}^2_{OW}$
+		\STATE Combine samples: $Z = X_{ref} \cup X_{test}$
+		\STATE Compute Kernel Matrix $K$ on $Z$
+		\STATE \textbf{1. Compute Optimal Weights (Variance Reduction)}
+		\FOR{each sample $z_i \in Z$}
+		\STATE Calculate local density: $d_i = \sum_{j} K_{ij}$
+		\STATE Assign inverse-sqrt weight: $w_i \propto \frac{1}{\sqrt{d_i}}$
+		\ENDFOR
+		\STATE Normalize weights: $\sum_{i \in X_{ref}} w_i = 1$, $\sum_{j \in X_{test}} w_j = 1$
+		\STATE \textbf{2. Compute Weighted Statistic}
+		\STATE $\widehat{\text{MMD}}^2_{OW} = \sum_{i,j} w_i w_j k(x_i, x_j) + \sum_{p,q} w_p w_q k(y_p, y_q) - 2 \sum_{i,p} w_i w_p k(x_i, y_p)$
+		\RETURN $\widehat{\text{MMD}}^2_{OW}$
+	\end{algorithmic}
+\end{algorithm}
+
+Cải tiến này giúp giảm số lượng mẫu bootstrap cần thiết từ 2500 xuống còn khoảng 10-50 mẫu mà vẫn duy trì độ chính xác tương đương, giúp tăng tốc độ xử lý lên đáng kể.
+
+\subsection{MMD-Agg: Tăng cường độ bền vững và tính thích nghi}
+\label{sec:mmdagg}
+
+Một hạn chế cốt yếu của các phương pháp MMD truyền thống là sự phụ thuộc nhạy cảm vào việc lựa chọn tham số độ rộng hạt nhân (kernel bandwidth, $\sigma$). Trong thực tế, sự trôi dạt khái niệm có thể diễn ra ở nhiều quy mô khác nhau: sự thay đổi nhỏ cục bộ (yêu cầu $\sigma$ nhỏ) hoặc sự dịch chuyển phân phối toàn cục (yêu cầu $\sigma$ lớn). Việc cố định một giá trị $\sigma$ (thường dùng median heuristic) thường dẫn đến việc mất mát thông tin quan trọng, làm giảm độ mạnh (power) của kiểm định.
+
+Để khắc phục vấn đề này, luận văn tích hợp phương pháp \textbf{MMD-Agg} (MMD Aggregated) được đề xuất bởi Schrab et al.~\cite{schrab2023mmdagg}. Đây là một bước tiến quan trọng về mặt lý thuyết so với các phương pháp lựa chọn kernel heuristic.
+
+\subsubsection{Cơ chế thích nghi đa hạt nhân (Adaptive Multi-Kernel Strategy)}
+Thay vì chọn một kernel đơn lẻ $k_{\sigma}$, MMD-Agg thực hiện kiểm định trên một tập hợp các kernel $\mathcal{K} = \{k_{\sigma_1}, k_{\sigma_2}, \dots, k_{\sigma_M}\}$ với các độ rộng băng thông trải dài trên nhiều quy mô khác nhau.
+
+Thống kê kiểm định không còn là một giá trị MMD duy nhất, mà là giá trị tổng hợp từ tập hợp này:
+\begin{equation}
+	\Delta_{Agg} = \max_{k \in \mathcal{K}} \left( \widehat{\text{MMD}}_k^2 - \lambda_k \right)
+\end{equation}
+trong đó $\lambda_k$ là các trọng số điều chỉnh (correction terms) được tính toán để đảm bảo mức ý nghĩa thống kê tổng thể. Cơ chế này cho phép bộ phát hiện "quét" qua nhiều độ phân giải của dữ liệu, tự động "thích nghi" để chọn ra kernel phản ánh tốt nhất sự thay đổi phân phối hiện tại mà không cần tham số hóa thủ công.
+
+\subsubsection{Đảm bảo lý thuyết: Tối ưu Minimax và Kiểm soát phi tiệm cận}
+Điểm vượt trội của MMD-Agg so với các phương pháp ensemble thông thường nằm ở các đảm bảo lý thuyết vững chắc:
+\begin{enumerate}
+	\item \textbf{Tối ưu Minimax (Minimax Optimality):} Schrab et al. chứng minh rằng MMD-Agg đạt được tỷ lệ hội tụ tối ưu minimax (minimax optimal rate) trên các không gian Sobolev. Nghĩa là, đối với các hàm mật độ có độ trơn (smoothness) không xác định trước, MMD-Agg có khả năng phát hiện sự khác biệt nhỏ nhất có thể phân biệt được về mặt thống kê, hiệu quả hơn bất kỳ kiểm định đơn kernel nào.
+	\item \textbf{Kiểm soát lỗi loại I phi tiệm cận (Non-asymptotic Type I Error Control):} Khác với nhiều phương pháp chỉ đúng khi số lượng mẫu $n \to \infty$, MMD-Agg đảm bảo kiểm soát chặt chẽ xác suất báo động giả (Type I error) ngay cả với kích thước mẫu hữu hạn ($n < \infty$). Điều này đặc biệt quan trọng trong bối cảnh streaming, nơi các cửa sổ dữ liệu thường có kích thước nhỏ và biến động.
+\end{enumerate}
+
+Tóm lại, việc tích hợp MMD-Agg biến ShapeDD từ một bộ phát hiện phụ thuộc tham số thành một hệ thống \textit{adaptive}, có khả năng phát hiện mạnh mẽ cả các trôi dạt tinh vi (local changes) lẫn các trôi dạt cấu trúc lớn (global shifts) mà không cần tinh chỉnh thủ công.
+
+\begin{algorithm}[H]
+	\caption{MMD Aggregated (MMD-Agg)}
+	\label{alg:mmd_agg}
+	\begin{algorithmic}[1]
+		\REQUIRE Windows $X, Y$, collection of bandwidths $\Lambda = \{\sigma_1, \dots, \sigma_M\}$, level $\alpha$
+		\ENSURE Test decision (Drift/No Drift)
+		\STATE \textbf{1. Kernel Collection}
+		\FOR{each $\sigma_m \in \Lambda$}
+		\STATE Define kernel $k_m(x, y) = \exp(-\|x-y\|^2 / 2\sigma_m^2)$
+		\STATE Compute standard MMD estimator $\widehat{\text{MMD}}^2_m(X, Y)$ using $k_m$
+		\ENDFOR
+		\STATE \textbf{2. Aggregation}
+		\FOR{each $m \in \{1, \dots, M\}$}
+		\STATE Compute threshold $u_{\alpha, m}$ (via bootstrap or asymptotic quantile)
+		\STATE Compute adjusted statistic: $T_m = \widehat{\text{MMD}}^2_m - u_{\alpha, m}$
+		\ENDFOR
+		\STATE \textbf{3. Decision}
+		\STATE Global statistic $\Delta_{Agg} = \max_{m} T_m$
+		\IF{$\Delta_{Agg} > 0$}
+		\RETURN \textbf{Drift Detected} (Reject $H_0$)
+		\ELSE
+		\RETURN \textbf{No Drift} (Fail to reject $H_0$)
+		\ENDIF
+	\end{algorithmic}
+\end{algorithm}
+
+\section{Khung chiến lược thích ứng mô hình}
+\label{sec:model-adaptation-framework}
+
+Việc phát hiện drift chỉ có ý nghĩa khi hệ thống có hành động cụ thể để duy trì hiệu suất mô hình. Phần này trình bày khung chiến lược thích ứng (Adaptation Framework), liên kết kết quả phân loại loại drift từ CDT\_MSW (đã trình bày ở Chương 2) với các hành động cập nhật mô hình cụ thể.
+
+\subsection{Ma trận quyết định chiến lược}
+
+Thay vì áp dụng một chiến lược duy nhất (như huấn luyện lại toàn bộ) cho mọi trường hợp, hệ thống đề xuất sử dụng thông tin về loại drift để tối ưu hóa chi phí và hiệu suất. Bảng~\ref{tab:adaptation-strategies} mô tả ánh xạ giữa loại drift và chiến lược thích ứng:
+
+\begin{table}[H]
+	\centering
+	\caption{Chiến lược thích ứng theo loại Drift}
+	\label{tab:adaptation-strategies}
+	\begin{tabular}{|l|p{5.5cm}|p{5cm}|}
+		\hline
+		\textbf{Loại Drift}  & \textbf{Chiến lược Thích ứng}                                                                                               & \textbf{Cơ sở lý luận}                                                                  \\
+		\hline
+		\textbf{Sudden}      & \textbf{Full Model Reset:} Khởi tạo lại mô hình và huấn luyện lại trên cửa sổ dữ liệu mới nhất (post-drift).                & Dữ liệu cũ không còn giá trị, cần loại bỏ hoàn toàn để tránh nhiễu (negative transfer). \\
+		\hline
+		\textbf{Incremental} & \textbf{Continuous Update:} Cập nhật mô hình hiện tại với dữ liệu mới (online learning/fine-tuning).                        & Sự thay đổi mang tính tiệm tiến, kiến thức cũ vẫn còn giá trị một phần.                 \\
+		\hline
+		\textbf{Gradual}     & \textbf{Weighted Ensemble/Window:} Sử dụng cửa sổ trượt có trọng số, ưu tiên dữ liệu mới nhưng giữ lại một phần dữ liệu cũ. & Giai đoạn chuyển tiếp có sự pha trộn giữa hai phân phối, cần bộ nhớ đệm.                \\
+		\hline
+		\textbf{Recurrent}   & \textbf{Model Caching \& Reuse:} Tìm kiếm trong kho lưu trữ mô hình cũ phù hợp và kích hoạt lại.                            & Tái sử dụng tri thức đã học, tiết kiệm chi phí huấn luyện lại.                          \\
+		\hline
+		\textbf{Blip}        & \textbf{No Action / Minimal Update:} Bỏ qua hoặc cập nhật với trọng số rất thấp.                                            & Thay đổi chỉ là nhiễu tạm thời, tránh việc mô hình "quên" kiến thức ổn định.            \\
+		\hline
+	\end{tabular}
+\end{table}
+
+\subsection{Triển khai các chiến lược}
+
+\subsubsection{Chiến lược cho Sudden Drift (Trọng tâm nghiên cứu)}
+Trong phạm vi luận văn, chiến lược cho \textit{Sudden Drift} được cài đặt và đánh giá chi tiết nhất. Quy trình cụ thể như sau:
+\begin{enumerate}
+	\item \textbf{Kích hoạt:} Khi CDT\_MSW phân loại drift là "Sudden".
+	\item \textbf{Thu thập dữ liệu:} Hệ thống chờ và thu thập một lượng dữ liệu mới ($N_{new}$) ngay sau điểm drift.
+	\item \textbf{Huấn luyện lại:} Một instance mô hình mới (ví dụ: Logistic Regression) được khởi tạo với trọng số ngẫu nhiên và huấn luyện trên $N_{new}$.
+	\item \textbf{Thay thế:} Mô hình cũ bị loại bỏ hoàn toàn, mô hình mới được đưa vào sử dụng (hot-swap).
+\end{enumerate}
+
+\subsubsection{Cơ chế Model Caching cho Recurrent Drift}
+Để xử lý drift lặp lại, hệ thống duy trì một \textit{Model Repository}. Mỗi khi một mô hình bị thay thế (do drift), nó được lưu lại cùng với "chữ ký" phân phối (distribution signature) của dữ liệu mà nó đã học.
+\begin{itemize}
+	\item \textbf{Signature:} Vector trung bình và ma trận hiệp phương sai của đặc trưng.
+	\item \textbf{Matching:} Khi drift xảy ra, hệ thống so sánh phân phối dữ liệu mới với các signature trong kho bằng khoảng cách Kolmogorov-Smirnov (KS). Nếu độ tương đồng cao (khoảng cách nhỏ hơn ngưỡng $\epsilon$), mô hình cũ sẽ được tải lại và tinh chỉnh nhẹ.
+\end{itemize}
+
+\subsubsection{SE-CDT: Phân loại drift không giám sát}
+
+Phương pháp CDT\_MSW gốc~\cite{guo2022cdtmsw} yêu cầu \textit{labels} để tính toán accuracy ratio, điều này không phù hợp trong môi trường streaming không giám sát. Luận văn đề xuất \textbf{SE-CDT (ShapeDD-Enhanced CDT)}, một phương pháp thay thế sử dụng trực tiếp tín hiệu drift magnitude $\sigma(t)$ từ ShapeDD để phân loại drift type.
+
+\textbf{Cơ sở lý thuyết:} Theo phân loại của CDT\_MSW, drift được chia thành:
+\begin{itemize}
+	\item \textbf{TCD (Transient Concept Drift):} Drift tạm thời với thời gian chuyển đổi ngắn — bao gồm \textit{sudden} và \textit{blip}.
+	\item \textbf{PCD (Progressive Concept Drift):} Drift tiến triển với thời gian chuyển đổi dài — bao gồm \textit{gradual}, \textit{incremental}, và \textit{recurrent}.
+\end{itemize}
+
+\textbf{Đặc trưng phân loại từ tín hiệu $\sigma(t)$:}
+\begin{enumerate}
+	\item \textbf{Peak Width Ratio:} $\text{WR} = \frac{\text{FWHM}}{2L}$ — Tỷ lệ chiều rộng peak so với window. TCD có WR $< 1.5$, PCD có WR $> 2.0$.
+	\item \textbf{Peak Count:} Số lượng peaks phát hiện được. Sudden có ít peaks ($\leq 4$), Recurrent có nhiều peaks đều đặn ($\geq 5$).
+	\item \textbf{Periodicity CV:} Hệ số biến thiên khoảng cách giữa peaks. Recurrent có CV $< 0.2$ (đều đặn).
+	\item \textbf{Signal-to-Noise Ratio:} $\text{SNR} = \frac{\max(\sigma)}{\text{median}(\sigma)}$ — TCD có SNR cao (peaks sắc nét).
+\end{enumerate}
+
+\textbf{Thuật toán phân loại:}
+\begin{algorithm}[H]
+	\caption{SE-CDT: Phân loại drift không giám sát}
+	\label{alg:se-cdt}
+	\begin{algorithmic}[1]
+		\REQUIRE Tín hiệu drift magnitude $\sigma(t)$ từ ShapeDD
+		\ENSURE Loại drift (TCD/PCD) và subcategory
+		\STATE Làm mịn tín hiệu: $\sigma_s \leftarrow \text{GaussianFilter}(\sigma, \sigma=2)$
+		\STATE Phát hiện peaks: $P \leftarrow \text{FindPeaks}(\sigma_s, \text{threshold}=\bar{\sigma} + 0.3\sigma_{std})$
+		\STATE Tính các đặc trưng: $n_p \leftarrow |P|$, $\text{WR}$, $\text{CV}$, $\text{SNR}$
+		\IF{$n_p \leq 4$ AND $\text{WR} < 1.2$ AND $\text{SNR} > 4$}
+		\RETURN \textbf{SUDDEN} (TCD)
+		\ELSIF{$n_p \geq 4$ AND $\text{CV} < 0.2$}
+		\RETURN \textbf{RECURRENT} (PCD)
+		\ELSIF{$\text{WR} > 2.0$}
+		\RETURN \textbf{GRADUAL} (PCD)
+		\ELSIF{$n_p \geq 10$ AND $\text{WR} > 5$}
+		\RETURN \textbf{INCREMENTAL} (PCD)
+		\ELSE
+		\RETURN \textbf{GRADUAL} (PCD) \COMMENT{Default}
+		\ENDIF
+	\end{algorithmic}
+\end{algorithm}
+
+\textbf{Ưu điểm của SE-CDT (SHAPED\_CDT):}
+\begin{itemize}
+	\item \textbf{Không giám sát:} Không cần labels, phù hợp với streaming data.
+	\item \textbf{Tích hợp:} Sử dụng cùng tín hiệu $\sigma(t)$ đã tính cho detection, không cần tính toán thêm.
+	\item \textbf{Thời gian thực:} Phân loại ngay sau khi phát hiện drift.
+	\item \textbf{Sử dụng standard MMD:} Phù hợp hơn OW-MMD cho classification vì standard MMD giữ lại tất cả sự khác biệt bao gồm cả những thay đổi nhỏ từ PCD (Gradual, Incremental).
+\end{itemize}
+
+\textbf{Lưu ý về biến thể OW-MMD:}
+Luận văn cũng thử nghiệm sử dụng OW-MMD thay cho standard MMD trong SHAPED\_CDT. Tuy nhiên, kết quả cho thấy OW-MMD không phù hợp cho classification do cơ chế variance reduction loại bỏ những thay đổi nhỏ (coi là noise). OW-MMD phù hợp hơn cho drift detection, nhưng standard MMD tốt hơn cho classification. Chi tiết thử nghiệm và so sánh định lượng được trình bày ở Chương~\ref{chap:experiments}.
+
+\subsubsection{Cơ chế Meta-Learning (Hướng phát triển)}
+Hệ thống được thiết kế để hỗ trợ Meta-Learning trong tương lai: một mô hình cấp cao (meta-learner) sẽ học cách chọn chiến lược tốt nhất dựa trên lịch sử các lần thích ứng thành công hay thất bại, thay vì chỉ dựa vào quy tắc cố định.
+
+\section{Kiến trúc đề xuất cho hệ thống Streaming Real-time với Apache Kafka}
+
+Để hiện thực hóa các phương pháp trên trong môi trường thực tế, luận văn đề xuất một kiến trúc xử lý luồng dữ liệu phân tán dựa trên Apache Kafka. Kiến trúc này được thiết kế để đảm bảo tính tách biệt (decoupling), khả năng mở rộng (scalability) và độ tin cậy (reliability). \textit{Lưu ý: Phần này trình bày thiết kế kiến trúc; đánh giá hiệu năng hệ thống (latency, throughput dưới tải cao) là hướng phát triển trong tương lai.}
+
+\subsection{Tổng quan kiến trúc}
+
+Hệ thống được thiết kế theo mô hình \textbf{Event-Driven Architecture} gồm 5 thành phần chính hoạt động độc lập và giao tiếp qua các Kafka topics:
+
+\begin{figure}[h]
+	\centering
+	% System Architecture Diagram
+	\includegraphics[width=0.95\textwidth]{image/system_architecture.png}
+	\caption{Sơ đồ kiến trúc hệ thống phát hiện và thích ứng Drift}
+	\label{fig:system_architecture}
+\end{figure}
+
+\begin{enumerate}
+	\item \textbf{Data Producer (Nguồn dữ liệu):} Mô phỏng hoặc thu thập dữ liệu từ cảm biến/nguồn phát, gửi vào topic \texttt{sensor.stream}.
+	\item \textbf{Drift Detection Consumer (Bộ phát hiện):} Đọc dữ liệu từ stream, duy trì cửa sổ trượt và thực thi thuật toán ShapeDD\_OW\_MMD.
+	\item \textbf{Drift Classifier (Bộ phân loại):} Được kích hoạt khi có tín hiệu drift, thực thi CDT\_MSW để xác định loại drift và gửi sự kiện vào topic \texttt{drift.results}.
+	\item \textbf{Adaptation Manager (Bộ thích ứng):} Lắng nghe sự kiện drift, thực thi chiến lược thích ứng (huấn luyện lại/cập nhật) và publish mô hình mới.
+	\item \textbf{Monitoring Dashboard:} Trực quan hóa dữ liệu, điểm drift và hiệu suất mô hình theo thời gian thực.
+\end{enumerate}
+
+\subsection{Thiết kế chi tiết các thành phần}
+
+\subsubsection{Producer và Data Ingestion}
+Producer được thiết kế để chịu lỗi và đảm bảo tính toàn vẹn dữ liệu:
+\begin{itemize}
+	\item Sử dụng cơ chế \textbf{retry with exponential backoff} để xử lý mất kết nối mạng.
+	\item Dữ liệu được serialize dưới dạng JSON bao gồm timestamp, feature vector và metadata.
+	\item Hỗ trợ điều chỉnh tốc độ phát tin (throughput control) để mô phỏng các tải hệ thống khác nhau.
+\end{itemize}
+
+\subsubsection{Consumer và Cơ chế Windowing}
+Thành phần Consumer đóng vai trò quan trọng nhất, thực hiện phát hiện drift:
+\begin{itemize}
+	\item \textbf{Circular Buffer:} Duy trì một bộ đệm tuần hoàn (ví dụ: 1000 mẫu) trong bộ nhớ để phục vụ tính toán cửa sổ trượt mà không cần truy xuất lại Kafka quá nhiều.
+	\item \textbf{4-Phase Lifecycle:}
+	      \begin{enumerate}
+		      \item \textit{Pre-training:} Thu thập dữ liệu ban đầu để huấn luyện mô hình gốc.
+		      \item \textit{Warm-up:} Giai đoạn ổn định, thiết lập baseline hiệu suất.
+		      \item \textit{Monitoring (Frozen):} Mô hình chạy ở chế độ dự đoán (không học), liên tục kiểm tra drift bằng ShapeDD.
+		      \item \textit{Adaptation:} Tạm dừng monitoring để cập nhật mô hình khi có drift.
+	      \end{enumerate}
+\end{itemize}
+
+\subsubsection{Quản lý Topic và Giao tiếp}
+Hệ thống sử dụng các topic riêng biệt để phân tách luồng dữ liệu và luồng điều khiển:
+\begin{table}[H]
+	\centering
+	\caption{Danh sách Kafka Topics và Chức năng}
+	\label{tab:kafka-topics}
+	\begin{tabular}{|l|l|l|}
+		\hline
+		\textbf{Topic Name}     & \textbf{Nội dung}   & \textbf{Mục đích}                               \\
+		\hline
+		\texttt{sensor.stream}  & Raw data samples    & Luồng dữ liệu đầu vào cho mô hình và detector.  \\
+		\hline
+		\texttt{drift.results}  & Drift events        & Thông báo drift đã được phát hiện và phân loại. \\
+		\hline
+		\texttt{model.updated}  & Model metadata      & Thông báo mô hình mới đã sẵn sàng (hot-reload). \\
+		\hline
+		\texttt{model.accuracy} & Performance metrics & Dữ liệu giám sát độ chính xác real-time.        \\
+		\hline
+	\end{tabular}
+\end{table}
+
+\section{Cơ chế chịu lỗi và đảm bảo độ tin cậy}
+
+Trong môi trường phân tán, các sự cố là không thể tránh khỏi. Hệ thống đề xuất tích hợp các cơ chế chịu lỗi (Fault Tolerance) ở nhiều cấp độ:
+
+\subsection{Xử lý lỗi ở mức ứng dụng}
+\begin{itemize}
+	\item \textbf{Graceful Degradation:} Nếu module Adaptor gặp lỗi (ví dụ: tràn bộ nhớ khi huấn luyện), hệ thống sẽ fallback về mô hình cũ và ghi log cảnh báo, thay vì dừng toàn bộ pipeline.
+	\item \textbf{Try-Catch Wrapper:} Quá trình tính toán ShapeDD được bọc trong các khối an toàn để xử lý các ngoại lệ số học (như ma trận không nghịch đảo) mà không làm crash Consumer.
+\end{itemize}
+
+\subsection{Xử lý lỗi ở mức hạ tầng (Kafka)}
+\begin{itemize}
+	\item \textbf{Replication:} Các topic quan trọng được cấu hình \texttt{replication.factor=3} để đảm bảo không mất dữ liệu ngay cả khi 1-2 broker bị lỗi.
+	\item \textbf{Offset Management:} Consumer chỉ commit offset sau khi đã xử lý xong batch dữ liệu, đảm bảo ngữ nghĩa "at-least-once" (không bỏ sót dữ liệu).
+	\item \textbf{Consumer Rebalancing:} Nếu một instance của Consumer bị lỗi, Kafka sẽ tự động phân phối lại các partition cho các consumer còn lại trong nhóm.
+\end{itemize}
+
+\section{Kết luận chương}
+Chương này đã trình bày chi tiết mô hình đề xuất \textbf{ShapeDD-Stream}, bao gồm các cải tiến thuật toán (OW-MMD, MMD-Agg), chiến lược thích ứng thông minh, và kiến trúc hệ thống dựa trên Kafka. Các cải tiến thuật toán được đánh giá thực nghiệm chi tiết trong Chương~\ref{chap:experiments}, trong khi kiến trúc Kafka được trình bày như một thiết kế đề xuất cho triển khai production trong tương lai.

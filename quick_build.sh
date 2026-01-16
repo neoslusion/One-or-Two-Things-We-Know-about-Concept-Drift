@@ -25,7 +25,7 @@ rm -f *.aux *.bbl *.blg *.fdb_latexmk *.fls *.log *.out *.synctex.gz *.toc *.lof
 echo -e "${BLUE}📝 Compiling LaTeX...${NC}"
 pdflatex -interaction=nonstopmode main.tex > build1.log 2>&1
 if [ $? -ne 0 ] && ! grep -q "Output written on main.pdf" build1.log; then
-    echo -e "${RED}❌ First pass failed${NC}"
+    echo -e "${RED}First pass failed${NC}"
     tail -10 main.log
     exit 1
 fi
@@ -36,7 +36,7 @@ bibtex main > /dev/null 2>&1 || echo -e "${BLUE}⚠️  No bibliography to proce
 echo -e "${BLUE}📝 Second pass...${NC}"
 pdflatex -interaction=nonstopmode main.tex > build2.log 2>&1
 if [ $? -ne 0 ] && ! grep -q "Output written on main.pdf" build2.log; then
-    echo -e "${RED}❌ Second pass failed${NC}"
+    echo -e "${RED}Second pass failed${NC}"
     tail -10 main.log
     exit 1
 fi
@@ -44,7 +44,7 @@ fi
 echo -e "${BLUE}📝 Final pass...${NC}"
 pdflatex -interaction=nonstopmode main.tex > build3.log 2>&1
 if [ $? -ne 0 ] && ! grep -q "Output written on main.pdf" build3.log; then
-    echo -e "${RED}❌ Final pass failed${NC}"
+    echo -e "${RED}Final pass failed${NC}"
     tail -10 main.log
     exit 1
 fi
@@ -54,15 +54,15 @@ if [ -f "main.pdf" ]; then
     pages=$(pdfinfo main.pdf 2>/dev/null | grep Pages | awk '{print $2}' || echo "Unknown")
     size=$(ls -lh main.pdf | awk '{print $5}')
     echo ""
-    echo -e "${GREEN}✅ Success! PDF generated${NC}"
+    echo -e "${GREEN}Success! PDF generated${NC}"
     echo -e "   📄 Pages: $pages"
     echo -e "   📦 Size: $size"
     echo -e "   📍 Location: report/latex/main.pdf"
 else
-    echo -e "${RED}❌ PDF generation failed!${NC}"
+    echo -e "${RED}PDF generation failed!${NC}"
     exit 1
 fi
 
 cd - > /dev/null
 echo ""
-echo -e "${GREEN}🎉 Build completed!${NC}"
+echo -e "${GREEN} Build completed!${NC}"

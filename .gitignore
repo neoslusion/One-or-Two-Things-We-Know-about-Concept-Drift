@@ -30,8 +30,15 @@ output/
 *.swo
 *~
 
-# Generated PDFs (optional - uncomment if you don't want to track PDFs)
+# Generated PDFs (for LaTeX source documents, we use PNG outputs)
 *.pdf
+
+# Publication figures - keep only benchmark results (no PDFs, ignore logs)
+experiments/drift_detection_benchmark/publication_figures/*.pdf
+experiments/drift_detection_benchmark/publication_figures/*.log
+
+# Old root publication_figures directory (deprecated - now uses experiments/drift_detection_benchmark/publication_figures/)
+/publication_figures/
 
 # OS generated files
 .DS_Store
@@ -70,7 +77,6 @@ venv.bak/
 *.pickle
 *.h5
 *.hdf5
-*.png
 
 
 # Log files
@@ -83,6 +89,6 @@ temp/
 # Extra files
 [Reference] - *
 *.npz
-*.md
+# *.md
 *.txt
 *.csv

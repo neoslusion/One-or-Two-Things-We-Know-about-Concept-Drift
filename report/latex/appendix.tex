@@ -1,189 +1,580 @@
 \chapter*{PHỤ LỤC}
+\addcontentsline{toc}{chapter}{PHỤ LỤC}
 
-\section*{Phụ lục A: Bảng số liệu thống kê chi tiết}
+\section*{Phụ lục A: Ghi chú về số liệu thực nghiệm}
 
-Phần này chứa các bảng số liệu thống kê chi tiết từ các thí nghiệm được thực hiện trong nghiên cứu.
+Các bảng số liệu thống kê chi tiết từ benchmark (bao gồm độ chính xác, độ trễ, và hiệu suất) đã được trình bày đầy đủ và cập nhật mới nhất trong Chương 4 (Thực nghiệm và Đánh giá). Phụ lục này sẽ tập trung vào cung cấp mã nguồn minh họa và hướng dẫn triển khai hệ thống.
 
-\subsection*{A.1 Kết quả phát hiện trôi dạt theo từng dataset}
+\section*{Phụ lục B: Mã nguồn và pseudocode}
 
-\begin{table}[h]
-\centering
-\caption{Kết quả chi tiết theo dataset}
-\begin{tabular}{|l|c|c|c|c|}
-\hline
-\textbf{Dataset} & \textbf{True Positive} & \textbf{False Positive} & \textbf{Detection Delay} & \textbf{Accuracy} \\
-\hline
-Abrupt Drift 1 & 0.942 & 0.043 & 15.7 & 0.918 \\
-Abrupt Drift 2 & 0.938 & 0.051 & 16.2 & 0.915 \\
-Incremental Drift 1 & 0.673 & 0.089 & 89.4 & 0.789 \\
-Incremental Drift 2 & 0.689 & 0.076 & 82.1 & 0.801 \\
-\hline
-\end{tabular}
-\end{table}
+\subsection*{B.1 Thuật toán ShapeDD (4 bước chính)}
 
-\subsection*{A.2 Tham số tối ưu cho từng loại drift}
-
-\begin{table}[h]
-\centering
-\caption{Tham số tối ưu}
-\begin{tabular}{|l|c|c|c|c|}
-\hline
-\textbf{Drift Type} & \textbf{Window Size} & \textbf{Kernel Bandwidth} & \textbf{Significance} & \textbf{Performance} \\
-\hline
-Abrupt & 50 & 0.5 & 0.05 & 0.918 \\
-Incremental & 100 & 1.0 & 0.1 & 0.789 \\
-Gradual & 75 & 0.8 & 0.05 & 0.834 \\
-\hline
-\end{tabular}
-\end{table}
-
-\section*{Phụ lục B: Mã giả thuật toán}
-
-\subsection*{B.1 Thuật toán ShapeDD}
-
-\begin{algorithm}
-\caption{Shape Drift Detector (ShapeDD)}
+\begin{algorithm}[H]
+\caption{Shape-based Drift Detector (ShapeDD)}
+\label{alg:shapedd}
 \begin{algorithmic}[1]
-\REQUIRE Data stream $S$, window size $l_1$, kernel bandwidth $\sigma$, significance threshold $\alpha$
-\ENSURE Drift detection signals
-\STATE Initialize sliding window $W$ of size $2l_1$
-\WHILE{new data point $x_t$ arrives}
-    \STATE Update window $W$ with $x_t$
-    \IF{$|W| = 2l_1$}
-        \STATE Compute kernel matrix $K$ using Gaussian RBF
-        \STATE Apply weight function to create contrasting halves
-        \STATE Calculate MMD statistic: $MMD^2 = \sum_{i,j} w_i w_j K_{ij}$
-        \STATE Apply convolution for shape analysis
-        \STATE Identify zero-crossing points
-        \IF{zero-crossing detected}
-            \STATE Perform permutation test
-            \STATE Calculate p-value
-            \IF{p-value $< \alpha$}
+\REQUIRE Data stream $S = \{x_1, x_2, \ldots, x_T\}$, window size $L_1$, kernel bandwidth $\sigma$, significance level $\alpha$
+\ENSURE Set of drift points $D = \{t_1, t_2, \ldots\}$
+\STATE \textbf{// Bước 1: Adaptive Window Strategy}
+\STATE Initialize sliding windows: $W_{\text{ref}}$ (reference), $W_{\text{test}}$ (test)
+\STATE Set $L_1 = 0.05 \times |S|$
+\FOR{each time step $t$ in stream $S$}
+    \STATE Update $W_{\text{ref}}$ and $W_{\text{test}}$ with new sample $x_t$
+    \IF{$|W_{\text{ref}}| = L_1$ AND $|W_{\text{test}}| = L_1$}
+        \STATE \textbf{// Bước 2: Compute Kernel Matrix}
+        \STATE Combine windows: $W = W_{\text{ref}} \cup W_{\text{test}}$
+        \STATE Estimate $\sigma$ using median heuristic: $\sigma = \text{median}(\{||x_i - x_j|| : i \neq j\})$
+        \FOR{$i, j \in \{1, \ldots, 2L_1\}$}
+            \STATE $K_{ij} = \exp\left(-\frac{||w_i - w_j||^2}{2\sigma^2}\right)$
+        \ENDFOR
+        \STATE \textbf{// Bước 3: Weighted MMD Computation}
+        \STATE Create triangular weight function: $w_i = 1 - \frac{i}{L_1}$ for $i \leq L_1$, else $w_i = -1 + \frac{i - L_1}{L_1}$
+        \STATE Compute weighted MMD: $\text{MMD}^2 = \sum_{i,j} w_i w_j K_{ij}$
+        \STATE \textbf{// Bước 4: Shape Detection via Convolution}
+        \STATE Apply convolution to detect zero-crossing
+        \IF{zero-crossing detected at position $t_c$}
+            \STATE \textbf{// Permutation Test}
+            \STATE Compute $\text{MMD}^2_{\text{obs}}$ at $t_c$
+            \FOR{$p = 1$ to $N_{\text{perm}}$}
+                \STATE Randomly permute labels in $W$
+                \STATE Compute $\text{MMD}^2_{\text{perm}}(p)$
+            \ENDFOR
+            \STATE Calculate p-value: $p = \frac{\#\{\text{MMD}^2_{\text{perm}} \geq \text{MMD}^2_{\text{obs}}\}}{N_{\text{perm}}}$
+            \IF{$p < \alpha$}
+                \STATE Add $t_c$ to drift set $D$
                 \STATE \textbf{Signal drift detection}
             \ENDIF
         \ENDIF
     \ENDIF
-\ENDWHILE
+\ENDFOR
+\RETURN $D$
 \end{algorithmic}
 \end{algorithm}
 
-\subsection*{B.2 Thuật toán Meta-learning Adaptation}
+\subsection*{B.2 Thuật toán CDT\_MSW (Phân loại loại drift)}
 
-\begin{algorithm}
-\caption{Meta-learning Adaptation Strategy}
+\begin{algorithm}[H]
+\caption{Concept Drift Type Classification using Multi-Sliding Windows}
+\label{alg:cdt_msw}
 \begin{algorithmic}[1]
-\REQUIRE Detected drift characteristics $f_{drift}$, strategy set $\mathcal{S}$, meta-classifier $M$
-\ENSURE Selected adaptation strategy $s^*$
-\STATE Extract drift features: magnitude, speed, affected dimensions
-\STATE Query meta-classifier: $P(s|f_{drift}) = M.predict(f_{drift})$
-\STATE Select strategy: $s^* = \arg\max_{s \in \mathcal{S}} P(s|f_{drift})$
-\STATE Apply selected strategy to model
-\STATE Update meta-classifier with adaptation outcome
-\RETURN $s^*$
+\REQUIRE Data stream $S$, detected drift point $t_d$, window sizes $\{w_1, w_2, \ldots, w_k\}$
+\ENSURE Drift type classification $\in \{\text{Sudden, Gradual, Incremental, Recurrent, Blip}\}$
+\STATE \textbf{// Extract data around drift point}
+\STATE $W_{\text{before}} = S[t_d - w_{\max} : t_d]$
+\STATE $W_{\text{after}} = S[t_d : t_d + w_{\max}]$
+\STATE \textbf{// Compute MMD across multiple window sizes}
+\FOR{each window size $w_i \in \{w_1, \ldots, w_k\}$}
+    \STATE Compute $\text{MMD}^2_{w_i} = \text{MMD}^2(W_{\text{before}}[{-w_i:}], W_{\text{after}}[{:w_i}])$
+\ENDFOR
+\STATE \textbf{// Extract drift characteristics}
+\STATE $\text{magnitude} = \max_i \text{MMD}^2_{w_i}$
+\STATE $\text{slope} = \frac{d(\text{MMD}^2)}{dt}$ (gradient of MMD curve)
+\STATE $\text{duration} = \arg\max_i \{\text{MMD}^2_{w_i} > \theta\}$ (transition period)
+\STATE \textbf{// Classification based on shape features}
+\IF{magnitude high AND slope steep}
+    \RETURN \textbf{Sudden Drift}
+\ELSIF{magnitude high AND slope moderate}
+    \RETURN \textbf{Gradual Drift}
+\ELSIF{magnitude increases monotonically}
+    \RETURN \textbf{Incremental Drift}
+\ELSIF{pattern repeats from history}
+    \RETURN \textbf{Recurrent Drift}
+\ELSIF{magnitude high but short duration}
+    \RETURN \textbf{Blip Drift}
+\ENDIF
 \end{algorithmic}
 \end{algorithm}
 
-\section*{Phụ lục C: Chứng minh lý thuyết}
+\subsection*{B.3 Code snippet: ShapeDD implementation trong Python}
 
-\subsection*{C.1 Chứng minh tính chất của MMD}
+\begin{verbatim}
+import numpy as np
+from scipy.spatial.distance import pdist, squareform
+from scipy.stats import permutation_test
 
-Cho hai phân phối xác suất $P$ và $Q$, Maximum Mean Discrepancy (MMD) được định nghĩa trong không gian RKHS như sau:
+class ShapeDD:
+    def __init__(self, window_size_ratio=0.05, alpha=0.05,
+                 n_permutations=1000):
+        self.window_size_ratio = window_size_ratio
+        self.alpha = alpha
+        self.n_permutations = n_permutations
 
-\begin{equation}
-MMD^2(P, Q) = \mathbb{E}_{X,X' \sim P}[k(X,X')] + \mathbb{E}_{Y,Y' \sim Q}[k(Y,Y')] - 2\mathbb{E}_{X \sim P, Y \sim Q}[k(X,Y)]
-\end{equation}
+    def _compute_kernel_matrix(self, X):
+        """Compute Gaussian RBF kernel matrix with median heuristic"""
+        pairwise_dists = pdist(X, metric='euclidean')
+        sigma = np.median(pairwise_dists)
+        K = squareform(np.exp(-squareform(pairwise_dists)**2 /
+                               (2 * sigma**2)))
+        return K
 
-\textbf{Định lý:} MMD là một metric thực sự nếu kernel $k$ là characteristic.
+    def _weighted_mmd(self, K, L1):
+        """Compute weighted MMD with triangular shape"""
+        n = K.shape[0]
+        weights = np.concatenate([
+            1 - np.arange(L1) / L1,  # Decreasing triangle
+            -1 + np.arange(L1) / L1  # Increasing triangle
+        ])
+        mmd_squared = np.sum(weights[:, None] * weights[None, :] * K)
+        return mmd_squared
 
-\textbf{Chứng minh:}
+    def detect(self, X):
+        """Detect drift points in data stream X"""
+        n = len(X)
+        L1 = int(self.window_size_ratio * n)
+        drift_points = []
+
+        for t in range(L1, n - L1):
+            window = X[t - L1 : t + L1]
+            K = self._compute_kernel_matrix(window)
+            mmd_obs = self._weighted_mmd(K, L1)
+
+            # Permutation test
+            null_mmds = []
+            for _ in range(self.n_permutations):
+                perm_idx = np.random.permutation(2 * L1)
+                K_perm = K[perm_idx][:, perm_idx]
+                null_mmds.append(self._weighted_mmd(K_perm, L1))
+
+            p_value = np.mean(np.array(null_mmds) >= mmd_obs)
+            if p_value < self.alpha:
+                drift_points.append(t)
+
+        return drift_points
+\end{verbatim}
+
+\subsection*{B.4 Code snippet: Full Model Reset adaptation}
+
+\begin{verbatim}
+from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import StandardScaler
+from collections import deque
+
+class AdaptiveMLPipeline:
+    def __init__(self, adaptation_window=200):
+        self.scaler = StandardScaler()
+        self.model = LogisticRegression(random_state=42)
+        self.adaptation_window = adaptation_window
+        self.buffer = deque(maxlen=adaptation_window)
+
+    def adapt_on_drift(self, drift_detected=False):
+        """Full model reset when sudden drift detected"""
+        if drift_detected and len(self.buffer) >= self.adaptation_window:
+            # Extract recent data from buffer
+            X_recent = [item[0] for item in self.buffer]
+            y_recent = [item[1] for item in self.buffer]
+
+            # Reset and retrain scaler
+            self.scaler = StandardScaler()
+            X_scaled = self.scaler.fit_transform(X_recent)
+
+            # Reset and retrain model
+            self.model = LogisticRegression(random_state=42)
+            self.model.fit(X_scaled, y_recent)
+
+            print(f"[ADAPTATION] Model reset completed with "
+                  f"{len(self.buffer)} recent samples")
+
+    def predict_and_update(self, x, y_true, drift_signal):
+        """Make prediction and update buffer"""
+        # Add to buffer
+        self.buffer.append((x, y_true))
+
+        # Adapt if drift detected
+        self.adapt_on_drift(drift_detected=drift_signal)
+
+        # Make prediction
+        x_scaled = self.scaler.transform([x])
+        y_pred = self.model.predict(x_scaled)
+
+        return y_pred
+\end{verbatim}
+
+\section*{Phụ lục C: Hướng dẫn cài đặt và chạy thử nghiệm}
+
+\subsection*{C.1 Yêu cầu hệ thống}
+
+\textbf{Phần cứng tối thiểu:}
+\begin{itemize}
+    \item CPU: 4 cores (khuyến nghị 8 cores)
+    \item RAM: 8 GB (khuyến nghị 16 GB cho các dataset lớn)
+    \item Disk: 10 GB trống
+    \item Network: Ethernet/WiFi cho kết nối Kafka (nếu distributed)
+\end{itemize}
+
+\textbf{Phần mềm:}
+\begin{itemize}
+    \item Operating System: Linux (Ubuntu 20.04+), macOS 11+, hoặc Windows 10+ với WSL2
+    \item Python: 3.8, 3.9, hoặc 3.10
+    \item Java: JDK 11 hoặc 17 (cho Apache Kafka)
+    \item Docker: phiên bản 20.10+ (tùy chọn, cho Kafka containerized)
+\end{itemize}
+
+\subsection*{C.2 Cài đặt Python dependencies}
+
+\textbf{Bước 1: Tạo virtual environment}
+\begin{verbatim}
+# Tạo môi trường ảo
+python3 -m venv venv_thesis
+
+# Kích hoạt
+# Linux/macOS:
+source venv_thesis/bin/activate
+# Windows:
+venv_thesis\Scripts\activate
+\end{verbatim}
+
+\textbf{Bước 2: Cài đặt thư viện cần thiết}
+\begin{verbatim}
+pip install --upgrade pip
+
+# Core libraries
+pip install numpy==1.23.5
+pip install scipy==1.10.1
+pip install scikit-learn==1.2.2
+pip install pandas==2.0.1
+
+# Streaming and drift detection
+pip install river==0.18.0
+pip install kafka-python==2.0.2
+
+# Visualization
+pip install matplotlib==3.7.1
+pip install seaborn==0.12.2
+
+# Jupyter for notebooks
+pip install jupyter==1.0.0
+pip install ipywidgets==8.0.6
+\end{verbatim}
+
+\subsection*{C.3 Cài đặt Apache Kafka}
+
+\textbf{Phương án 1: Sử dụng Docker (Khuyến nghị)}
+\begin{verbatim}
+# Tải docker-compose.yml cho Kafka
+wget https://raw.githubusercontent.com/confluentinc/\
+cp-all-in-one/7.4.0-post/cp-all-in-one/docker-compose.yml
+
+# Khởi chạy Kafka cluster
+docker-compose up -d
+
+# Kiểm tra Kafka đang chạy
+docker-compose ps
+\end{verbatim}
+
+\textbf{Phương án 2: Cài đặt thủ công}
+\begin{verbatim}
+# Tải Kafka
+wget https://downloads.apache.org/kafka/3.4.0/\
+kafka_2.13-3.4.0.tgz
+tar -xzf kafka_2.13-3.4.0.tgz
+cd kafka_2.13-3.4.0
+
+# Khởi chạy Zookeeper
+bin/zookeeper-server-start.sh \
+config/zookeeper.properties &
+
+# Khởi chạy Kafka broker
+bin/kafka-server-start.sh config/server.properties &
+
+# Tạo topic cho stream
+bin/kafka-topics.sh --create --topic drift-stream \
+--bootstrap-server localhost:9092 --partitions 3 \
+--replication-factor 1
+\end{verbatim}
+
+\subsection*{C.4 Chạy thử nghiệm từ Jupyter Notebook}
+
+\textbf{Bước 1: Clone repository và mở notebook}
+\begin{verbatim}
+# Clone thesis repository
+git clone https://github.com/username/concept-drift-thesis
+cd concept-drift-thesis
+
+# Mở Jupyter
+jupyter notebook
+
+# Mở file:
+# experiments/notebooks/MultiDetectors_Evaluation_WithAdaptation.ipynb
+\end{verbatim}
+
+\textbf{Bước 2: Cấu trúc notebook chính}
+
+Notebook \texttt{MultiDetectors\_Evaluation\_WithAdaptation.ipynb} bao gồm các phần:
 \begin{enumerate}
-    \item \textit{Tính không âm:} $MMD^2(P,Q) \geq 0$ theo định nghĩa của norm trong RKHS
-    \item \textit{Tính đối xứng:} $MMD(P,Q) = MMD(Q,P)$ rõ ràng từ định nghĩa
-    \item \textit{Bất đẳng thức tam giác:} Được suy ra từ tính chất của norm trong RKHS
-    \item \textit{MMD(P,Q) = 0 khi và chỉ khi P = Q:} Đây là định nghĩa của characteristic kernel
+    \item \textbf{Cell 1-3:} Import libraries và setup parameters
+    \item \textbf{Cell 4-6:} Load datasets (SEA, STAGGER, Hyperplane)
+    \item \textbf{Cell 7-10:} Initialize ShapeDD detector
+    \item \textbf{Cell 11-15:} Run detection on 7 sudden drift scenarios
+    \item \textbf{Cell 16-18:} CDT\_MSW drift type classification
+    \item \textbf{Cell 19-22:} Full Model Reset adaptation
+    \item \textbf{Cell 23-27:} Evaluate metrics (Precision, Recall, F1, Delay, Recovery)
+    \item \textbf{Cell 28-30:} Visualization (detection plots, confusion matrix)
 \end{enumerate}
 
-\subsection*{C.2 Độ phức tạp tính toán của ShapeDD}
-
-\textbf{Định lý:} Độ phức tạp tính toán của thuật toán ShapeDD là $O(T \cdot n^2)$ với $T$ là chiều dài stream và $n$ là kích thước window.
-
-\textbf{Chứng minh:}
-\begin{itemize}
-    \item Tính toán kernel matrix: $O(n^2)$ cho mỗi window
-    \item Tính toán MMD: $O(n^2)$ cho mỗi vị trí sliding window
-    \item Permutation test: $O(k \cdot n^2)$ với $k$ permutations (thực hiện khi có candidate)
-    \item Tổng cộng: $O(T \cdot n^2)$ cho toàn bộ stream
-\end{itemize}
-
-\section*{Phụ lục D: Cài đặt và sử dụng}
-
-\subsection*{D.1 Hướng dẫn cài đặt}
-
-\textbf{Yêu cầu hệ thống:}
-\begin{itemize}
-    \item Python 3.8 trở lên
-    \item NumPy, SciPy, scikit-learn
-    \item Matplotlib cho visualization
-    \item Jupyter notebook (tùy chọn)
-\end{itemize}
-
-\textbf{Cài đặt từ source:}
+\textbf{Bước 3: Chạy toàn bộ thử nghiệm}
 \begin{verbatim}
-git clone https://github.com/username/shapedd-concept-drift
-cd shapedd-concept-drift
-pip install -r requirements.txt
-python setup.py install
+# Trong Jupyter notebook, chạy tất cả cells:
+Cell > Run All
+
+# Hoặc chạy từng phần:
+Shift + Enter (để chạy cell hiện tại và chuyển sang cell tiếp theo)
+
+# Kết quả xuất hiện ở cuối notebook:
+# - Bảng kết quả detection (F1=1.0, delay=4 samples)
+# - Bảng kết quả adaptation (Recovery=82.8%)
+# - Các biểu đồ trực quan hóa
 \end{verbatim}
 
-\subsection*{D.2 Ví dụ sử dụng}
+\subsection*{C.5 Cấu trúc thư mục source code}
 
 \begin{verbatim}
-from shapedd import ShapeDD
-from shapedd.datasets import generate_abrupt_drift
-
-# Generate synthetic dataset
-data, drift_points = generate_abrupt_drift(n_samples=1000, 
-                                          drift_magnitude=0.5)
-
-# Initialize detector
-detector = ShapeDD(window_size=50, 
-                   kernel_bandwidth=0.5,
-                   significance_level=0.05)
-
-# Detect drift
-detected_points = detector.fit_detect(data)
-
-# Evaluate performance
-from shapedd.evaluation import evaluate_detection
-results = evaluate_detection(detected_points, drift_points)
-print(f"True Positive Rate: {results['tpr']:.3f}")
-print(f"False Positive Rate: {results['fpr']:.3f}")
+concept-drift-thesis/
+|-- experiments/
+|   |-- notebooks/
+|   |   \-- MultiDetectors_Evaluation_WithAdaptation.ipynb
+|   |-- data/
+|   |   |-- sea_abrupt_1.csv
+|   |   |-- stagger_abrupt_1.csv
+|   |   \-- hyperplane_sudden_1.csv
+|   \-- results/
+|       \-- detection_results.csv
+|-- src/
+|   |-- detectors/
+|   |   |-- shapedd.py
+|   |   \-- cdt_msw.py
+|   |-- adaptation/
+|   |   |-- full_model_reset.py
+|   |   \-- adaptive_pipeline.py
+|   \-- utils/
+|       |-- evaluation_metrics.py
+|       \-- visualization.py
+|-- kafka_integration/
+|   |-- producer.py
+|   |-- consumer.py
+|   \-- drift_processor.py
+|-- report/
+|   \-- latex/
+|       \-- (cac file .tex cua luan van)
+|-- requirements.txt
+\-- README.md
 \end{verbatim}
 
-\section*{Phụ lục E: Kết quả thí nghiệm bổ sung}
+\subsection*{C.6 Khắc phục sự cố thường gặp}
 
-\subsection*{E.1 Phân tích sensitivity với noise}
+\textbf{Lỗi 1: "Kafka connection refused"}
+\begin{verbatim}
+# Kiểm tra Kafka đang chạy
+netstat -an | grep 9092
 
-Bảng dưới đây thể hiện hiệu suất của ShapeDD khi có noise với các mức độ khác nhau:
+# Nếu không thấy, restart Kafka
+docker-compose restart  # Nếu dùng Docker
+# hoặc
+bin/kafka-server-start.sh config/server.properties  # Nếu manual
+\end{verbatim}
+
+\textbf{Lỗi 2: "ModuleNotFoundError: No module named 'river'"}
+\begin{verbatim}
+# Đảm bảo virtual environment đã được kích hoạt
+source venv_thesis/bin/activate
+
+# Cài lại river
+pip install river==0.18.0
+\end{verbatim}
+
+\textbf{Lỗi 3: "MemoryError during kernel matrix computation"}
+\begin{verbatim}
+# Giảm window size trong ShapeDD initialization
+detector = ShapeDD(window_size_ratio=0.03)  # Thay vì 0.05
+
+# Hoặc xử lý stream theo batch nhỏ hơn
+\end{verbatim}
+
+\section*{Phụ lục D: Kiến trúc hệ thống chi tiết}
+
+\subsection*{D.1 Sơ đồ luồng dữ liệu (Data Flow Diagram)}
+
+Hệ thống tích hợp theo kiến trúc 3 tầng:
+
+\textbf{Tầng 1: Data Ingestion Layer}
+\begin{itemize}
+    \item \textbf{Kafka Producer:} Đọc dữ liệu từ streaming sources (sensors, logs, databases)
+    \item \textbf{Kafka Topics:} \texttt{raw-stream-topic} (dữ liệu thô), \texttt{processed-stream-topic} (đã xử lý)
+    \item \textbf{Schema Registry:} Quản lý schema versioning cho data evolution
+\end{itemize}
+
+\textbf{Tầng 2: Drift Detection \& Classification Layer}
+\begin{itemize}
+    \item \textbf{ShapeDD Consumer:} Nhận stream từ Kafka, áp dụng sliding window
+    \item \textbf{MMD Computation Engine:} Tính toán kernel matrix và weighted MMD
+    \item \textbf{CDT\_MSW Classifier:} Phân loại loại drift khi phát hiện
+    \item \textbf{Drift Event Publisher:} Gửi drift alerts tới \texttt{drift-events-topic}
+\end{itemize}
+
+\textbf{Tầng 3: Adaptation \& Monitoring Layer}
+\begin{itemize}
+    \item \textbf{Adaptation Manager:} Nhận drift events, chọn strategy (Full Model Reset)
+    \item \textbf{Model Registry:} Lưu trữ model versions (pre-drift, post-adaptation)
+    \item \textbf{Monitoring Dashboard:} Real-time visualization của detection và adaptation metrics
+\end{itemize}
+
+\subsection*{D.2 Cấu hình Kafka topics}
+
+\begin{verbatim}
+# Topic cho raw data stream
+bin/kafka-topics.sh --create \
+  --topic raw-stream-topic \
+  --bootstrap-server localhost:9092 \
+  --partitions 3 \
+  --replication-factor 1 \
+  --config retention.ms=86400000
+
+# Topic cho drift events
+bin/kafka-topics.sh --create \
+  --topic drift-events-topic \
+  --bootstrap-server localhost:9092 \
+  --partitions 1 \
+  --replication-factor 1 \
+  --config retention.ms=604800000
+
+# Topic cho adaptation results
+bin/kafka-topics.sh --create \
+  --topic adaptation-results-topic \
+  --bootstrap-server localhost:9092 \
+  --partitions 1 \
+  --replication-factor 1
+\end{verbatim}
+
+\subsection*{D.3 Message format}
+
+\textbf{Raw Stream Message (JSON):}
+\begin{verbatim}
+{
+  "timestamp": "2024-01-15T10:30:45.123Z",
+  "sample_id": 12345,
+  "features": [0.234, -0.567, 1.234, 0.891],
+  "label": 1,
+  "metadata": {
+    "source": "sensor_A",
+    "batch_id": "batch_001"
+  }
+}
+\end{verbatim}
+
+\textbf{Drift Event Message (JSON):}
+\begin{verbatim}
+{
+  "timestamp": "2024-01-15T10:35:12.456Z",
+  "drift_detected": true,
+  "drift_point": 5234,
+  "drift_type": "sudden",
+  "mmd_value": 0.0234,
+  "p_value": 0.001,
+  "confidence": 0.999,
+  "affected_features": [0, 2, 3]
+}
+\end{verbatim}
+
+\textbf{Adaptation Result Message (JSON):}
+\begin{verbatim}
+{
+  "timestamp": "2024-01-15T10:36:00.789Z",
+  "adaptation_strategy": "full_model_reset",
+  "samples_used": 200,
+  "pre_drift_accuracy": 0.92,
+  "post_drift_accuracy": 0.54,
+  "post_adaptation_accuracy": 0.89,
+  "recovery_rate": 0.850,
+  "model_version": "v2.3.1"
+}
+\end{verbatim}
+
+\section*{Phụ lục E: Thuật ngữ tiếng Việt - tiếng Anh}
 
 \begin{table}[h]
 \centering
-\caption{Hiệu suất với noise levels}
-\begin{tabular}{|c|c|c|c|}
+\caption{Bảng thuật ngữ chuyên ngành}
+\label{tab:terminology}
+\begin{tabular}{|l|l|}
 \hline
-\textbf{Noise Level (\%)} & \textbf{Detection Rate} & \textbf{False Alarm Rate} & \textbf{Detection Delay} \\
+\textbf{Tiếng Việt} & \textbf{Tiếng Anh} \\
 \hline
-0 & 0.942 & 0.043 & 15.7 \\
-5 & 0.921 & 0.051 & 17.2 \\
-10 & 0.896 & 0.063 & 19.8 \\
-15 & 0.847 & 0.078 & 24.1 \\
-20 & 0.789 & 0.095 & 31.4 \\
+Trôi dạt khái niệm & Concept Drift \\
+Phát hiện drift & Drift Detection \\
+Thích ứng & Adaptation \\
+Luồng dữ liệu & Data Stream \\
+Cửa sổ trượt & Sliding Window \\
+Không gian tái tạo hạt nhân Hilbert & Reproducing Kernel Hilbert Space (RKHS) \\
+Độ lệch trung bình cực đại & Maximum Mean Discrepancy (MMD) \\
+Hàm kernel Gaussian RBF & Gaussian RBF Kernel \\
+Kiểm định hoán vị & Permutation Test \\
+Độ trễ phát hiện & Detection Delay \\
+Báo động giả & False Alarm \\
+Tỷ lệ phục hồi & Recovery Rate \\
+Drift đột ngột & Sudden Drift \\
+Drift dần dần & Gradual Drift \\
+Drift tăng dần & Incremental Drift \\
+Drift tuần hoàn & Recurrent Drift \\
+Drift nhấp nháy & Blip Drift \\
+Đặt lại mô hình hoàn toàn & Full Model Reset \\
+Học trực tuyến & Online Learning \\
+Học theo lô & Batch Learning \\
+Cân bằng lại phân phối & Distribution Rebalancing \\
+Mô hình đông lạnh & Frozen Model \\
+Môi trường không dừng & Non-stationary Environment \\
 \hline
 \end{tabular}
 \end{table}
 
-\subsection*{E.2 So sánh chi tiết với baseline methods}
+\section*{Phụ lục F: Tài liệu tham khảo mở rộng}
 
-Chi tiết kết quả so sánh với các phương pháp baseline trên nhiều dataset khác nhau được trình bày trong các bảng sau đây:
+\subsection*{F.1 Papers quan trọng về Concept Drift}
 
-[Các bảng số liệu chi tiết khác sẽ được thêm vào đây...]
+\begin{enumerate}
+    \item \textbf{Survey chính (2024):}
+    \begin{itemize}
+        \item Hinder et al., "One or two things we know about concept drift—a survey on monitoring in evolving environments. Part A: detecting concept drift"
+        \item Hinder et al., "Part B: locating and explaining concept drift"
+    \end{itemize}
+
+    \item \textbf{ShapeDD method (2024):}
+    \begin{itemize}
+        \item Hinder et al., "Shape-Based Method for Concept Drift Detection and Signal Denoising", Frontiers in AI
+    \end{itemize}
+
+    \item \textbf{Drift type classification:}
+    \begin{itemize}
+        \item Guo et al. (2022), "Concept drift type identification based on multi-sliding windows (CDT\_MSW)", Information Sciences
+    \end{itemize}
+
+    \item \textbf{Classical detectors:}
+    \begin{itemize}
+        \item Gama et al. (2004), "Learning with Drift Detection (DDM)"
+        \item Bifet \& Gavaldà (2007), "ADWIN: Adaptive Windowing"
+        \item Ross et al. (2012), "EDDM: Early Drift Detection Method"
+    \end{itemize}
+\end{enumerate}
+
+\subsection*{F.2 Datasets và benchmarks}
+
+\begin{itemize}
+    \item \textbf{River library:} \url{https://riverml.xyz/} - Synthetic datasets (SEA, STAGGER, Hyperplane)
+    \item \textbf{Real-world datasets:}
+    \begin{itemize}
+        \item Electricity pricing (Harries, 1999)
+        \item Weather prediction
+        \item Network intrusion detection (KDD Cup)
+    \end{itemize}
+\end{itemize}
+
+\subsection*{F.3 Tools và frameworks}
+
+\begin{itemize}
+    \item \textbf{scikit-learn:} \url{https://scikit-learn.org/} - ML algorithms
+    \item \textbf{River:} \url{https://riverml.xyz/} - Online learning library
+    \item \textbf{Apache Kafka:} \url{https://kafka.apache.org/} - Distributed streaming platform
+    \item \textbf{Jupyter:} \url{https://jupyter.org/} - Interactive notebooks
+\end{itemize}
+
+\vspace{1cm}
+
+\noindent\textit{---Hết Phụ lục---}
