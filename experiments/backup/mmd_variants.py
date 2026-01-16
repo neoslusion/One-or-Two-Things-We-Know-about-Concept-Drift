@@ -79,7 +79,7 @@ def compute_optimal_weights(K, method: str = 'variance_reduction'):
         Weighting strategy:
         - 'uniform': Standard V-statistic (equal weights)
         - 'variance_reduction': Optimal for variance minimization
-        - 'adaptive': Density-based weighting
+        - 'adaptive': Density-based weighting (synonym for variance_reduction in this context)
     
     Returns:
     --------
@@ -124,12 +124,18 @@ def compute_optimal_weights(K, method: str = 'variance_reduction'):
         raise ValueError(f"Unknown weight method: {method}")
 
 
-def compute_ow_mmd_squared(X, Y, gamma=None, weight_method='variance_reduction'):
+def compute_adw_mmd_squared(X, Y, gamma=None, weight_method='variance_reduction'):
     """
-    Compute Optimally-Weighted MMD² between X and Y.
+    Compute Adaptive Density-Weighted MMD² (ADW-MMD²) between X and Y.
     
     Returns MMD² directly (can be negative due to variance reduction).
     This is the correct statistic for hypothesis testing.
+    
+    The weighting scheme corresponds to the "Optimally-Weighted" estimator from
+    Bharti et al. (2023), which uses weights inversely proportional to the 
+    square root of the kernel density to minimize estimation variance.
+    We rename it to ADW-MMD to avoid confusion with "Optimal MMD" (test power optimization)
+    and "Importance Weighted MMD" (covariate shift).
     
     Parameters:
     -----------
@@ -145,7 +151,7 @@ def compute_ow_mmd_squared(X, Y, gamma=None, weight_method='variance_reduction')
     Returns:
     --------
     mmd_squared : float
-        OW-MMD² statistic (can be negative)
+        ADW-MMD² statistic (can be negative)
     """
     m, n = X.shape[0], Y.shape[0]
     
@@ -167,9 +173,9 @@ def compute_ow_mmd_squared(X, Y, gamma=None, weight_method='variance_reduction')
     return term1 + term2 - 2 * term3
 
 
-def compute_ow_mmd(X, Y, gamma='auto', weight_method='variance_reduction'):
+def compute_adw_mmd(X, Y, gamma='auto', weight_method='variance_reduction'):
     """
-    Compute Optimally-Weighted MMD between X and Y.
+    Compute Adaptive Density-Weighted MMD (ADW-MMD) between X and Y.
     
     Convenience wrapper that returns sqrt of MMD² (always non-negative).
     
@@ -187,18 +193,17 @@ def compute_ow_mmd(X, Y, gamma='auto', weight_method='variance_reduction'):
     Returns:
     --------
     mmd_value : float
-        OW-MMD statistic (non-negative)
+        ADW-MMD statistic (non-negative)
     """
-    mmd_sq = compute_ow_mmd_squared(X, Y, gamma, weight_method)
+    mmd_sq = compute_adw_mmd_squared(X, Y, gamma, weight_method)
     return np.sqrt(max(0, mmd_sq))
 
 
-def mmd_ow(X, s=None, gamma='auto', weight_method='variance_reduction'):
+def mmd_adw(X, s=None, gamma='auto', weight_method='variance_reduction'):
     """
-    Compute OW-MMD between two halves of X (split-based interface).
+    Compute ADW-MMD between two halves of X (split-based interface).
     
-    This is the basic OW-MMD computation with a fixed threshold.
-    For proper hypothesis testing, use mmd_ow_permutation() instead.
+    This is the basic ADW-MMD computation with a fixed threshold.
     
     Parameters:
     -----------
@@ -214,7 +219,7 @@ def mmd_ow(X, s=None, gamma='auto', weight_method='variance_reduction'):
     Returns:
     --------
     mmd_value : float
-        OW-MMD statistic
+        ADW-MMD statistic
     threshold : float
         Fixed heuristic threshold (0.1)
     """
@@ -224,23 +229,21 @@ def mmd_ow(X, s=None, gamma='auto', weight_method='variance_reduction'):
     X_ref = X[:s]
     X_test = X[s:]
     
-    mmd_value = compute_ow_mmd(X_ref, X_test, gamma, weight_method)
+    mmd_value = compute_adw_mmd(X_ref, X_test, gamma, weight_method)
     
     # Fixed threshold heuristic (for quick detection)
-    # Use mmd_ow_permutation() for proper p-value
     threshold = 0.1
     
     return mmd_value, threshold
 
 
-def shapedd_ow_mmd(X, l1=50, l2=150, gamma='auto', mode='simple'):
+def shapedd_adw_mmd(X, l1=50, l2=150, gamma='auto', mode='simple'):
     """
-    LEGACY: ShapeDD-OW-MMD Hybrid with heuristic pattern detection.
+    LEGACY: ShapeDD-ADW-MMD Hybrid with heuristic pattern detection.
     
-    NOTE: This is a fast heuristic version. For proper statistical testing,
-    use shape_ow_mmd() instead.
+    NOTE: This is a fast heuristic version.
     
-    This computes OW-MMD values over sliding windows and analyzes geometric
+    This computes ADW-MMD values over sliding windows and analyzes geometric
     patterns (triangles, peaks) using heuristics instead of permutation tests.
     
     Parameters:
@@ -280,7 +283,7 @@ def shapedd_ow_mmd(X, l1=50, l2=150, gamma='auto', mode='simple'):
             ratio = l1 / (l1 + l2)
             split_point = max(min_required, int(n_samples * ratio))
         
-        mmd_val, _ = mmd_ow(X, s=split_point, gamma=gamma)
+        mmd_val, _ = mmd_adw(X, s=split_point, gamma=gamma)
         
         threshold = 0.10 if n_samples < l1 + l2 else 0.15
         if mmd_val > threshold:
@@ -305,7 +308,7 @@ def shapedd_ow_mmd(X, l1=50, l2=150, gamma='auto', mode='simple'):
         test_window = X[ref_end:test_end]
         
         window_combined = np.vstack([ref_window, test_window])
-        mmd_val, _ = mmd_ow(window_combined, s=l1, gamma=gamma)
+        mmd_val, _ = mmd_adw(window_combined, s=l1, gamma=gamma)
         mmd_sequence.append(mmd_val)
     
     if len(mmd_sequence) < 3:
@@ -434,295 +437,89 @@ def compute_gamma_median(X):
         return 1.0
     return 1.0 / (2 * np.median(distances[distances > 0])**2)
 
-
-def studentized_mmd_test(X, Y, gamma=None, n_perm=200):
+# Hàm validate mới: WMMD với studentized + permutation
+def wmmd_studentized(X_window, s, n_perm=500, weight_method='variance_reduction'):
     """
-    Studentized MMD with permutation test.
-    
-    Optimized for sudden drift detection with:
-    - Variance normalization for stable thresholds
-    - Efficient permutation testing
+    Weighted MMD studentized với permutation, dùng cho validate.
+    Trả về mmd_value, p_value như mmd gốc.
     """
-    m, n = len(X), len(Y)
-    combined = np.vstack([X, Y])
-    
-    if gamma is None:
-        gamma = compute_gamma_median(combined)
-    
-    def compute_stat(X_s, Y_s):
-        """Compute studentized MMD²."""
-        m_s, n_s = len(X_s), len(Y_s)
-        
-        K_XX = rbf_kernel(X_s, X_s, gamma)
-        K_YY = rbf_kernel(Y_s, Y_s, gamma)
-        K_XY = rbf_kernel(X_s, Y_s, gamma)
-        
-        np.fill_diagonal(K_XX, 0)
-        np.fill_diagonal(K_YY, 0)
-        
-        # MMD²
-        mmd_sq = (np.sum(K_XX) / (m_s * (m_s - 1)) +
-                  np.sum(K_YY) / (n_s * (n_s - 1)) -
-                  2 * np.sum(K_XY) / (m_s * n_s))
-        
-        # Variance estimate
-        h_X = np.sum(K_XX, axis=1) / (m_s - 1) - np.sum(K_XY, axis=1) / n_s
-        h_Y = np.sum(K_YY, axis=1) / (n_s - 1) - np.sum(K_XY, axis=0) / m_s
-        
-        var_est = 4 * (np.var(h_X) / m_s + np.var(h_Y) / n_s)
-        
-        return mmd_sq / np.sqrt(max(var_est, 1e-10))
-    
-    # Observed statistic
-    stat_obs = compute_stat(X, Y)
-    
-    # Permutation test
-    count = 0
-    for _ in range(n_perm):
-        perm = np.random.permutation(m + n)
-        stat_perm = compute_stat(combined[perm[:m]], combined[perm[m:]])
-        if stat_perm >= stat_obs:
-            count += 1
-    
-    p_value = (count + 1) / (n_perm + 1)
-    mmd_value = np.sqrt(max(0, stat_obs))
-    
-    return mmd_value, p_value
-
-def mmd_fast(X, K, s=None, n_perm=500):
-    """
-    Original fast MMD using precomputed kernel and einsum.
-    """
-    if s is None:
-        s = X.shape[0] // 2
-    
-    W = gen_window_matrix(s, K.shape[0] - s, n_perm)
-    stats = np.einsum('ij,ij->i', np.dot(W, K), W)
-    p = (stats[0] < stats).sum() / n_perm
-    
-    return stats[0], p
-
-
-def mmd_studentized_fast(K, s, n_perm=500):
-    """
-    Studentized MMD using precomputed kernel matrix.
-    
-    Maintains O(n²) complexity while adding variance normalization.
-    
-    Key insight: We can estimate variance from the kernel matrix
-    without recomputing kernels.
-    """
-    n = K.shape[0]
-    m = s  # Reference window size
-    
-    # Extract sub-matrices
-    K_XX = K[:m, :m]
-    K_YY = K[m:, m:]
-    K_XY = K[:m, m:]
-    
-    n_y = n - m
-    
-    # MMD² unbiased
-    K_XX_sum = np.sum(K_XX) - np.trace(K_XX)  # Exclude diagonal
-    K_YY_sum = np.sum(K_YY) - np.trace(K_YY)
-    K_XY_sum = np.sum(K_XY)
-    
-    if m > 1 and n_y > 1:
-        mmd_sq = (K_XX_sum / (m * (m - 1)) + 
-                  K_YY_sum / (n_y * (n_y - 1)) - 
-                  2 * K_XY_sum / (m * n_y))
-    else:
-        return 0.0, 1.0
-    
-    # Variance estimate using h-statistics
-    # h_X[i] = mean(K_XX[i,:]) - mean(K_XY[i,:])
-    K_XX_rowsum = (np.sum(K_XX, axis=1) - np.diag(K_XX)) / (m - 1)
-    K_YY_rowsum = (np.sum(K_YY, axis=1) - np.diag(K_YY)) / (n_y - 1)
-    K_XY_rowsum = np.sum(K_XY, axis=1) / n_y
-    K_YX_colsum = np.sum(K_XY, axis=0) / m
-    
-    h_X = K_XX_rowsum - K_XY_rowsum
-    h_Y = K_YY_rowsum - K_YX_colsum
-    
-    var_est = 4 * (np.var(h_X) / m + np.var(h_Y) / n_y)
-    std_est = np.sqrt(max(var_est, 1e-10))
-    
-    # Studentized statistic
-    stat_obs = mmd_sq / std_est
-    
-    # Permutation test
-    count = 0
-    indices = np.arange(n)
-    
-    for _ in range(n_perm):
-        perm = np.random.permutation(indices)
-        K_perm = K[np.ix_(perm, perm)]
-        
-        # Fast MMD² on permuted kernel
-        K_XX_p = K_perm[:m, :m]
-        K_YY_p = K_perm[m:, m:]
-        K_XY_p = K_perm[:m, m:]
-        
-        K_XX_sum_p = np.sum(K_XX_p) - np.trace(K_XX_p)
-        K_YY_sum_p = np.sum(K_YY_p) - np.trace(K_YY_p)
-        K_XY_sum_p = np.sum(K_XY_p)
-        
-        mmd_sq_p = (K_XX_sum_p / (m * (m - 1)) + 
-                    K_YY_sum_p / (n_y * (n_y - 1)) - 
-                    2 * K_XY_sum_p / (m * n_y))
-        
-        # Variance for permuted
-        K_XX_rowsum_p = (np.sum(K_XX_p, axis=1) - np.diag(K_XX_p)) / (m - 1)
-        K_YY_rowsum_p = (np.sum(K_YY_p, axis=1) - np.diag(K_YY_p)) / (n_y - 1)
-        K_XY_rowsum_p = np.sum(K_XY_p, axis=1) / n_y
-        K_YX_colsum_p = np.sum(K_XY_p, axis=0) / m
-        
-        h_X_p = K_XX_rowsum_p - K_XY_rowsum_p
-        h_Y_p = K_YY_rowsum_p - K_YX_colsum_p
-        
-        var_p = 4 * (np.var(h_X_p) / m + np.var(h_Y_p) / n_y)
-        std_p = np.sqrt(max(var_p, 1e-10))
-        
-        stat_perm = mmd_sq_p / std_p
-        
-        if stat_perm >= stat_obs:
-            count += 1
-    
-    p_value = (count + 1) / (n_perm + 1)
-    mmd_value = np.sqrt(max(0, mmd_sq))
-    
-    return mmd_value, p_value
-
-
-def mmd_studentized_fast_v2(K, s, n_perm=500):
-    """
-    Even faster studentized MMD - uses einsum like original.
-    
-    Trade-off: Slightly less accurate variance estimate but much faster.
-    """
-    n = K.shape[0]
+    n = len(X_window)
     m = s
     n_y = n - m
-    
     if m < 2 or n_y < 2:
         return 0.0, 1.0
     
-    # Use weight matrix approach like original
-    W = gen_window_matrix(m, n_y, n_perm)
+    # Precompute kernel toàn window (thay vì full X)
+    combined = X_window
+    gamma = compute_gamma_median_heuristic(combined)  # Hoặc 'auto'
+    K = rbf_kernel(combined, combined, gamma)
     
-    # Compute all MMD values at once
-    stats = np.einsum('ij,ij->i', np.dot(W, K), W)
+    # Tính observed MMD² weighted
+    K_XX = K[:m, :m]
+    K_YY = K[m:, m:]
+    K_XY = K[:m, m:]
+    W_XX = compute_optimal_weights(K_XX, weight_method)
+    W_YY = compute_optimal_weights(K_YY, weight_method)
+    W_XY = np.ones((m, n_y)) / (m * n_y)
+    mmd_obs = np.sum(W_XX * K_XX) + np.sum(W_YY * K_YY) - 2 * np.sum(W_XY * K_XY)
     
-    # For studentization, estimate variance from observed statistic
-    # Simple approach: use bootstrap variance from permutation stats
-    mmd_obs = stats[0]
+    # Permutation cho stats
+    stats = [mmd_obs]  # Observed là stats[0]
+    indices = np.arange(n)
+    for _ in range(n_perm):
+        perm = np.random.permutation(indices)
+        K_perm = K[np.ix_(perm, perm)]
+        K_XX_p = K_perm[:m, :m]
+        K_YY_p = K_perm[m:, m:]
+        K_XY_p = K_perm[:m, m:]
+        W_XX_p = compute_optimal_weights(K_XX_p, weight_method)
+        W_YY_p = compute_optimal_weights(K_YY_p, weight_method)
+        W_XY_p = np.ones((m, n_y)) / (m * n_y)
+        mmd_p = np.sum(W_XX_p * K_XX_p) + np.sum(W_YY_p * K_YY_p) - 2 * np.sum(W_XY_p * K_XY_p)
+        stats.append(mmd_p)
+    
+    stats = np.array(stats)
     mmd_perms = stats[1:]
-    
-    # Studentize using permutation std
-    std_null = np.std(mmd_perms)
-    if std_null < 1e-10:
-        std_null = 1e-10
-    
+    std_null = np.std(mmd_perms) if np.std(mmd_perms) > 1e-10 else 1e-10
     stat_obs = mmd_obs / std_null
     stat_perms = mmd_perms / std_null
-    
     p_value = (np.sum(stat_perms >= stat_obs) + 1) / (n_perm + 1)
     mmd_value = np.sqrt(max(0, mmd_obs))
-    
     return mmd_value, p_value
 
-def shape_plus_plus(X, l1, l2, n_perm, mode='fast'):
+# Hàm ShapeDD sửa với WMMD
+def shape_with_wmmd(X, l1, l2, n_perm, weight_method='variance_reduction'):
     """
-    ShapeDD++ Optimized: Same speed as original + studentized MMD.
-    
-    Parameters:
-
-    X : array-like, shape (n_samples, n_features)
-        Data stream
-    l1 : int
-        Half-window size for shape statistic
-    l2 : int
-        Window size for validation
-    n_perm : int
-        Number of permutations
-    mode : str
-        'fast' - Fastest, uses permutation std (recommended)
-        'accurate' - More accurate variance estimate, slower
-        'original' - Same as original ShapeDD (no studentization)
-    
-    Returns:
-
-    res : array, shape (n, 3)
-        [:, 0] - Shape statistic
-        [:, 1] - MMD value
-        [:, 2] - p-value
+    ShapeDD với Weighted MMD (variance reduction).
+    Giống gốc nhưng validate bằng WMMD studentized.
     """
-    w = np.array(l1*[1.] + l1*[-1.]) / float(l1)
+    w = np.array(l1 * [1.] + l1 * [-1.]) / float(l1)
     
     n = X.shape[0]
+    K = rbf_kernel(X, X)  # Giữ apply_kernel như gốc, giả sử là rbf
+    W = np.zeros((n - 2 * l1, n))
     
-    # Single kernel computation for entire stream
-    K_full = apply_kernel(X, metric="rbf")
+    for i in range(n - 2 * l1):
+        W[i, i:i + 2 * l1] = w
     
-    # Build weight matrix (vectorized)
-    W = np.zeros((n - 2*l1, n))
-    for i in range(n - 2*l1):
-        W[i, i:i+2*l1] = w
-    
-    # Compute shape statistic (same as original)
-    stat = np.einsum('ij,ij->i', np.dot(W, K_full), W)
+    stat = np.einsum('ij,ij->i', np.dot(W, K), W)
     shape_stat = np.convolve(stat, w)
     shape_prime = shape_stat[1:] * shape_stat[:-1]
     
-    # Initialize results
     res = np.zeros((n, 3))
     res[:, 2] = 1  # Default p-value
     
-    # Validate at zero-crossings
     for pos in np.where(shape_prime < 0)[0]:
         if shape_stat[pos] > 0:
             res[pos, 0] = shape_stat[pos]
-            
-            # Extract window
-            a = max(0, pos - int(l2/2))
-            b = min(n, pos + int(l2/2))
-            s = pos - a  # Split point
-            
-            # Skip if window too small
+            a = max(0, pos - int(l2 / 2))
+            b = min(n, pos + int(l2 / 2))
+            s = pos - a
             if s < 2 or (b - a - s) < 2:
                 continue
-            
-            # Get kernel submatrix (no recomputation!)
-            K_window = K_full[a:b, a:b]
-            
-            # Choose MMD variant
-            if mode == 'original':
-                mmd_val, p_val = mmd_fast(X[a:b], K_window, s, n_perm)
-            elif mode == 'fast':
-                mmd_val, p_val = mmd_studentized_fast_v2(K_window, s, n_perm)
-            elif mode == 'accurate':
-                mmd_val, p_val = mmd_studentized_fast(K_window, s, n_perm)
-            else:
-                raise ValueError(f"Unknown mode: {mode}")
-            
+            # Thay mmd bằng wmmd_studentized
+            mmd_val, p_val = wmmd_studentized(X[a:b], s, n_perm, weight_method)
             res[pos, 1] = mmd_val
             res[pos, 2] = p_val
     
     return res
-
-
-# =============================================================================
-# SECTION 4: CONVENIENCE WRAPPERS
-# =============================================================================
-
-def detect_drift(X, l1=50, l2=150, n_perm=500, significance=0.05, mode='fast'):
-    """
-    Simple interface for drift detection.
-    
-    Returns:
-
-    drift_points : list of int
-        Positions where drift was detected
-    """
-    res = shape_plus_plus(X, l1, l2, n_perm, mode)
-    return np.where(res[:, 2] < significance)[0].tolist()
