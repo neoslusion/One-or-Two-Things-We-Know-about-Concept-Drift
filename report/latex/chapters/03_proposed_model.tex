@@ -68,7 +68,32 @@ Cách tiếp cận này ("Density-Weighted") giúp giảm phương sai bằng c�
 	\end{algorithmic}
 \end{algorithm}
 
-Cải tiến này giúp giảm số lượng mẫu bootstrap cần thiết từ 2500 xuống còn khoảng 10-50 mẫu mà vẫn duy trì độ chính xác tương đương, giúp tăng tốc độ xử lý lên đáng kể.
+\subsubsection{Phân tích độ phức tạp tính toán}
+
+Độ phức tạp của ADW-MMD được phân tích như sau:
+
+\begin{table}[H]
+	\centering
+	\caption{Độ phức tạp tính toán của ADW-MMD và các phương pháp liên quan}
+	\label{tab:complexity}
+	\begin{tabular}{|l|c|c|l|}
+		\hline
+		\textbf{Thành phần} & \textbf{Thời gian} & \textbf{Bộ nhớ} & \textbf{Ghi chú} \\
+		\hline
+		Kernel Matrix & $O(n^2)$ & $O(n^2)$ & $n$ = window size \\
+		Density weights & $O(n)$ & $O(n)$ & Sum over rows \\
+		Weighted MMD & $O(n^2)$ & $O(1)$ & Scalar output \\
+		\hline
+		\textbf{ADW-MMD tổng} & $O(n^2)$ & $O(n^2)$ & Dominated by kernel \\
+		\hline
+		ShapeDD gốc (2500 perm) & $O(n^2 \times 2500)$ & $O(n^2)$ & Permutation test \\
+		ADW-MMD (50 perm) & $O(n^2 \times 50)$ & $O(n^2)$ & Giảm 50× \\
+		\hline
+	\end{tabular}
+\end{table}
+
+Với window size $n = 100$, ADW-MMD xử lý khoảng $\approx 50,000$ kernel evaluations mỗi step, so với $\approx 2,500,000$ của ShapeDD gốc. Điều này giải thích tốc độ tăng $\approx 7\times$ trong thực nghiệm.
+
 
 \subsection{MMD-Agg: Tăng cường độ bền vững và tính thích nghi}
 \label{sec:mmdagg}
@@ -218,6 +243,24 @@ Phương pháp CDT\_MSW gốc~\cite{guo2022cdtmsw} yêu cầu \textit{labels} đ
 	\item \textbf{Thời gian thực:} Phân loại ngay sau khi phát hiện drift.
 	\item \textbf{Sử dụng standard MMD:} Phù hợp hơn ADW-MMD cho classification vì standard MMD giữ lại tất cả sự khác biệt bao gồm cả những thay đổi nhỏ từ PCD (Gradual, Incremental).
 \end{itemize}
+
+\textbf{Độ phức tạp tính toán của SE-CDT:}
+\begin{itemize}
+	\item Gaussian smoothing: $O(m)$ với $m$ = độ dài tín hiệu
+	\item Peak detection: $O(m)$ sử dụng thuật toán scipy.signal.find\_peaks
+	\item Feature extraction: $O(n_p)$ với $n_p$ = số peaks
+	\item Classification: $O(1)$ - chỉ so sánh ngưỡng
+	\item \textbf{Tổng:} $O(m)$ - tuyến tính theo độ dài tín hiệu
+\end{itemize}
+
+\textbf{Giải thích lựa chọn ngưỡng:}
+Các ngưỡng trong Algorithm~\ref{alg:se-cdt} được xác định dựa trên phân tích thực nghiệm trên synthetic datasets:
+\begin{itemize}
+	\item \textbf{WR $<$ 0.12 (TCD):} Sudden drift tạo peak sắc nét với FWHM $<$ 24\% window size. Ngưỡng này phân biệt peak ``nhọn'' của sudden với peak ``rộng'' của gradual.
+	\item \textbf{$n_p \geq 4$ và CV $<$ 0.3 (Recurrent):} Recurrent drift có nhiều peaks đều đặn. CV (Coefficient of Variation) thấp chỉ ra khoảng cách giữa các peaks ổn định.
+	\item \textbf{$n_p \geq 10$ (Incremental):} Incremental drift tạo nhiều peaks nhỏ liên tục do sự thay đổi từ từ trong phân phối.
+\end{itemize}
+\textit{Ghi chú: Các ngưỡng này được tối ưu trên synthetic data và có thể cần điều chỉnh cho từng domain cụ thể.}
 
 \textbf{Lưu ý về biến thể ADW-MMD:}
 Luận văn cũng thử nghiệm sử dụng ADW-MMD thay cho standard MMD trong SHAPED\_CDT. Tuy nhiên, kết quả cho thấy ADW-MMD không phù hợp cho classification do cơ chế variance reduction loại bỏ những thay đổi nhỏ (coi là noise). ADW-MMD phù hợp hơn cho drift detection, nhưng standard MMD tốt hơn cho classification. Chi tiết thử nghiệm và so sánh định lượng được trình bày ở Chương~\ref{chap:experiments}.

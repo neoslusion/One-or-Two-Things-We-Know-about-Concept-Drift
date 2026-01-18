@@ -337,12 +337,14 @@ ADW-MMD sử dụng cơ chế \textit{variance reduction weighting} ($w_{ij} \pr
 	\end{tabular}
 \end{table}
 
-\textbf{Kết luận quan trọng:} Ngay cả khi CDT\_MSW được chạy với \textbf{labels đúng} (decision boundary thay đổi khi concept thay đổi), nó chỉ đạt \textbf{32\% recall}. Trong khi SE-CDT không cần labels nhưng đạt \textbf{96\% recall}. Điều này chứng minh:
+\textbf{Kết quả và thảo luận:} Trong thử nghiệm này, SE-CDT không giám sát đạt \textbf{96\% recall} trong khi CDT\_MSW có giám sát chỉ đạt \textbf{32\% recall}. Tuy nhiên, cần lưu ý một số điểm quan trọng:
 \begin{itemize}
-	\item \textbf{Unsupervised approach outperforms supervised baseline 3$\times$} trong detection
-	\item CDT\_MSW yêu cầu model SVC học được concept, với window\_size nhỏ (50 samples) không đủ data
-	\item SE-CDT tận dụng trực tiếp sự thay đổi $P(X)$ qua MMD signal, không phụ thuộc vào model accuracy
+	\item \textbf{Kết quả phụ thuộc setup:} CDT\_MSW yêu cầu model SVC học được concept. Với window\_size nhỏ (50 samples), model không có đủ data để học decision boundary phức tạp.
+	\item \textbf{Ưu điểm của SE-CDT:} Tận dụng trực tiếp sự thay đổi $P(X)$ qua MMD signal, không phụ thuộc vào model accuracy.
+	\item \textbf{Cần validation thêm:} Kết quả này dựa trên implementation độc lập của CDT\_MSW. So sánh với implementation chính thức của tác giả gốc là hướng nghiên cứu cần thiết để khẳng định kết luận.
 \end{itemize}
+
+\textit{Lưu ý: Kết quả trên cho thấy tiềm năng của phương pháp unsupervised trong điều kiện thử nghiệm này, nhưng không nên tổng quát hóa rằng unsupervised luôn tốt hơn supervised trong mọi trường hợp.}
 
 
 \section{Kết luận chương}
