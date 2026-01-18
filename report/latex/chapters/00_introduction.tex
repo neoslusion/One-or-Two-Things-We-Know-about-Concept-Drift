@@ -87,29 +87,23 @@ Cụ thể, luận văn sẽ tập trung vào việc phát triển hệ thống 
 	\item Đánh giá hiệu năng của hệ thống trên các tập dữ liệu thực tế và các kịch bản drift khác nhau.
 \end{itemize}
 
-\textbf{Trọng tâm đánh giá:} Mặc dù hệ thống được thiết kế để hỗ trợ
-nhiều loại \textit{drift} (sudden, gradual, incremental, recurrent, blip),
-luận văn này \textbf{tập trung đánh giá chuyên sâu vào sudden drift}
-(\textit{drift} đột ngột). Lý do bao gồm:
+\textbf{Phạm vi đánh giá:} Hệ thống được thiết kế và đánh giá trên
+\textbf{đa dạng các loại drift} bao gồm sudden, gradual, incremental, recurrent, và blip.
+Cách tiếp cận đánh giá bao gồm:
 
 \begin{enumerate}
-	\item \textbf{Tầm quan trọng thực tế:} Theo nghiên cứu về hệ thống
-	      production~\cite{hinder2024survey_partA}, \textit{sudden drift}
-	      chiếm đa số các trường hợp nghiêm trọng trong môi trường công nghiệp
-	      (system failures, policy changes, equipment malfunctions).
+	\item \textbf{Đánh giá toàn diện:} Thực nghiệm trên 5 kịch bản drift khác nhau
+	      với 10 runs mỗi kịch bản để đảm bảo độ tin cậy thống kê.
 
-	\item \textbf{Nền tảng lý thuyết:} ShapeDD dựa trên Triangle Shape
-	      Property~\cite{shapeDD2024}, một kết quả toán học
-	      \textbf{chỉ đúng cho sudden drift}. Các loại \textit{gradual}
-	      và \textit{incremental drift} không tạo ra hình dạng tam giác
-	      đặc trưng trong tín hiệu drift magnitude.
+	\item \textbf{Phân tích đa tầng:} Đánh giá cả khả năng \textit{phát hiện} (Detection Rate)
+	      lẫn khả năng \textit{phân loại} (Classification Accuracy) của hệ thống,
+	      bao gồm cả phân loại Category (TCD vs PCD) và Subcategory (Sudden, Gradual, Incremental, Recurrent, Blip).
 
-	\item \textbf{Đảm bảo chất lượng nghiên cứu:} Thay vì đánh giá nông
-	      trên nhiều loại \textit{drift}, luận văn ưu tiên phân tích sâu
-	      với statistical rigor (30 runs, Friedman test, confidence intervals).
+	\item \textbf{So sánh công bằng:} Đánh giá phương pháp đề xuất (SE-CDT không giám sát)
+	      so với baseline CDT\_MSW có giám sát trong cùng điều kiện thử nghiệm,
+	      bao gồm cả setup supervised với concept-aware labels.
 \end{enumerate}
 
-% Các loại drift khác đã được implement trong framework (xem Chương~\ref{chap:proposed-model}, Module \texttt{adaptation\_strategies.py}) và có thể được đánh giá trong nghiên cứu tương lai với minimal code changes.
 
 \subsection{Đối tượng nghiên cứu}
 Đối tượng nghiên cứu của luận văn bao gồm:

@@ -41,8 +41,16 @@ Từ quá trình nghiên cứu và thực nghiệm, luận văn rút ra các bà
 
 Mặc dù đạt được những kết quả khả quan, nghiên cứu vẫn tồn tại một số hạn chế cần được xem xét:
 
-\subsection{Tập trung vào Sudden Drift}
-Luận văn tập trung chuyên sâu vào phát hiện và thích ứng với \textbf{Sudden Drift}. Các loại drift khác (Gradual, Incremental) tuy đã được hỗ trợ trong kiến trúc nhưng chưa được đánh giá sâu về mặt lý thuyết (tính chất hình học của tín hiệu MMD) và thực nghiệm rộng rãi. Kết quả hiện tại đảm bảo tính đúng đắn cao nhất cho các kịch bản thay đổi đột ngột.
+\subsection{False Positives cao}
+Phương pháp SE-CDT (Standard MMD) đạt recall 98\% nhưng có số lượng False Positives cao (FP = 1513 trong tổng benchmark). Điều này dẫn đến Precision chỉ đạt 25\%. Trong môi trường production, số lượng báo động giả cao có thể gây quá tải cho hệ thống thích ứng và làm giảm độ tin cậy. Việc phát triển cơ chế post-filtering hoặc adaptive threshold là hướng cải thiện cần thiết.
+
+\subsection{Subcategory Accuracy còn hạn chế}
+Mặc dù Category Accuracy (TCD vs PCD) đạt 74.6\%, Subcategory Accuracy chỉ đạt 42\%. Cụ thể:
+\begin{itemize}
+	\item Gradual và Incremental dễ nhầm lẫn do tín hiệu MMD tương tự
+	\item Recurrent bị phân loại thành chuỗi Sudden do xử lý từng peak độc lập
+	\item Blip detection mới được thêm gần đây, cần validation thêm
+\end{itemize}
 
 \subsection{Dữ liệu tổng hợp (Synthetic Data)}
 Việc đánh giá chủ yếu dựa trên các tập dữ liệu tổng hợp. Mặc dù chúng cho phép kiểm soát chính xác ground truth (thời điểm drift, loại drift) để đo lường F1-score và độ trễ, nhưng có thể chưa phản ánh hết độ phức tạp, nhiễu tạp và tính bất định của dữ liệu thực tế (real-world traces) trong các hệ thống sản xuất quy mô lớn.

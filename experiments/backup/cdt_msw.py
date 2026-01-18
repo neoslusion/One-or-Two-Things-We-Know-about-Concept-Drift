@@ -20,23 +20,34 @@ class CDT_MSW:
         model.fit(X_train, y_train)
         return accuracy_score(y_test, model.predict(X_test))
     
-    def detection_process(self, stream_X, stream_y):
+    def detection_process(self, stream_X, stream_y, ref_start=0):
         """Algorithm 1: Detect drift position
         Train on W_A (reference), Test on W_B (current)
         p_det = accuracy(train W_A, test W_B) / accuracy(train W_A, test W_A)
+        
+        Args:
+            stream_X, stream_y: Data stream
+            ref_start: Starting position for reference window (default 0)
         """
-        W_A_X = stream_X[:self.s]
-        W_A_y = stream_y[:self.s]
+        ref_end = ref_start + self.s
+        if ref_end > len(stream_X):
+            return -1
+            
+        W_A_X = stream_X[ref_start:ref_end]
+        W_A_y = stream_y[ref_start:ref_end]
         
         # Baseline accuracy on W_A
         alpha_A = self._train_and_evaluate(W_A_X, W_A_y, W_A_X, W_A_y)
         
         t = 1
-        max_pos = (len(stream_X) - self.s) // self.s
+        max_pos = (len(stream_X) - ref_start - self.s) // self.s
         
         while t < max_pos:
-            start_idx = t * self.s
+            start_idx = ref_start + t * self.s
             end_idx = start_idx + self.s
+            
+            if end_idx > len(stream_X):
+                break
             
             W_B_X = stream_X[start_idx:end_idx]
             W_B_y = stream_y[start_idx:end_idx]
@@ -46,7 +57,7 @@ class CDT_MSW:
             p_det = alpha_cross / (alpha_A + 1e-10)
             
             if p_det < self.tau:
-                return t
+                return ref_start + t * self.s  # Return absolute position
             t += 1
         
         return -1
@@ -54,12 +65,25 @@ class CDT_MSW:
     def growth_process(self, stream_X, stream_y, drift_pos):
         """Algorithm 2: Detect drift length and category
         Use cross-window accuracy to measure stability
+        
+        Args:
+            drift_pos: Absolute sample position of detected drift
         """
         # Reference window (before drift)
-        W_ref_X = stream_X[:self.s]
-        W_ref_y = stream_y[:self.s]
+        ref_end = max(0, drift_pos - self.s)  # Window before drift
+        ref_start = max(0, ref_end - self.s)
+        if ref_end - ref_start < self.s:
+            ref_start = 0
+            ref_end = min(self.s, drift_pos)
         
-        start_R = (drift_pos + 1) * self.s
+        W_ref_X = stream_X[ref_start:ref_end]
+        W_ref_y = stream_y[ref_start:ref_end]
+        
+        if len(W_ref_X) < 10:
+            return 1, "TCD", 0.0
+        
+        # Start analysis from after drift position
+        start_R = drift_pos + self.s
         
         def compute_variance_in_WR(start_pos):
             accuracies = []
@@ -81,10 +105,8 @@ class CDT_MSW:
         
         variance, _ = compute_variance_in_WR(start_R)
         if variance is None:
-            print("Variance None at start")
             return 1, "TCD", 0.0
         
-        print(f"DEBUG: Initial variance at pos {start_R}: {variance:.6f} (delta={self.delta})")
         if variance <= self.delta:
             return 1, "TCD", variance
         
@@ -101,17 +123,22 @@ class CDT_MSW:
             if variance <= self.delta:
                 return drift_length, "PCD", variance
         
-        return drift_length, "PCD", variance
+        return drift_length, "PCD", variance if variance else 0.0
     
     def tracking_process(self, stream_X, stream_y, drift_pos, drift_length):
         """Algorithm 3: Compute TFR curve
         W'_B: static at drift position
-        W'_A: sliding from position 0
+        W'_A: sliding from before drift toward W'_B
         TFR = accuracy(train W'_A, test W'_B) / accuracy(train W'_B, test W'_B)
+        
+        Args:
+            drift_pos: Absolute sample position
+            drift_length: Number of windows the drift spans
         """
         m = max(drift_length, 1)
         
-        W_B_start = drift_pos * self.s
+        # W'_B starts at drift position
+        W_B_start = drift_pos
         W_B_end = W_B_start + m * self.s
         
         if W_B_end > len(stream_X):
@@ -120,19 +147,26 @@ class CDT_MSW:
         W_B_X = stream_X[W_B_start:W_B_end]
         W_B_y = stream_y[W_B_start:W_B_end]
         
+        if len(np.unique(W_B_y)) < 2:
+            return []
+            
         alpha_B_star = self._train_and_evaluate(W_B_X, W_B_y, W_B_X, W_B_y)
         
         tfr_values = []
         
+        # Slide W'_A from before drift toward W'_B
         for i in range(self.k):
-            W_A_start = i * self.s
+            W_A_start = max(0, drift_pos - (self.k - i) * self.s)
             W_A_end = W_A_start + m * self.s
             
-            if W_A_end > len(stream_X):
+            if W_A_end > len(stream_X) or W_A_start >= W_B_start:
                 break
             
             W_A_X = stream_X[W_A_start:W_A_end]
             W_A_y = stream_y[W_A_start:W_A_end]
+            
+            if len(np.unique(W_A_y)) < 2:
+                continue
             
             # Train on W'_A, Test on W'_B
             alpha_A = self._train_and_evaluate(W_A_X, W_A_y, W_B_X, W_B_y)

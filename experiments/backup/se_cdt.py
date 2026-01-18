@@ -43,7 +43,8 @@ class SE_CDT:
             'WR': 0.0,    # Width Ratio
             'SNR': 0.0,   # Signal-to-Noise Ratio
             'CV': 0.0,    # Coefficient of Variation (Periodicity)
-            'Mean': np.mean(sigma_s) 
+            'Mean': np.mean(sigma_s),
+            'peak_positions': peaks.tolist() if n_p > 0 else []  # For Blip detection
         }
         
         # SNR
@@ -72,6 +73,7 @@ class SE_CDT:
     def classify(self, sigma_signal: np.ndarray) -> SECDTResult:
         """
         Classify drift type based on signal shape (Algorithm 3.4).
+        Decision order: Sudden → Blip → Recurrent → Gradual → Incremental
         """
         features = self.extract_features(sigma_signal)
         if not features:
@@ -82,42 +84,53 @@ class SE_CDT:
         snr = features['SNR']
         cv = features['CV']
         mean_val = features['Mean']
+        peak_positions = features.get('peak_positions', [])
         
         result = SECDTResult(features=features)
         
-
+        # Decision Logic (Algorithm 3.4 - Fixed Order)
         
-        # Decision Logic (Algorithm 3.4)
-        
-        # 1. Incremental Drift (Plateau)
-        # Low SNR (signal is flat high) or High Mean with Low Peak Count
-        if (n_p == 0 and mean_val > 0.0001) or (n_p > 5 and snr < 2.0):
-             result.drift_type = "PCD"
-             result.subcategory = "Incremental"
-             return result
-
-        # 2. Sudden Drift (TCD)
-        # Sharp single peak, high SNR
-        if n_p <= 4 and wr < 0.12 and snr > 3: # Tightened WR < 0.12
+        # 1. Sudden Drift (TCD)
+        # Sharp single peak, high SNR, narrow width
+        if n_p <= 3 and wr < 0.12 and snr > 2.5:
             result.drift_type = "TCD"
             result.subcategory = "Sudden"
             return result
-            
+        
+        # 2. Blip Drift (TCD) - NEW!
+        # Two peaks close together (bump up then down in signal)
+        if n_p == 2 and len(peak_positions) >= 2:
+            peak_distance = abs(peak_positions[1] - peak_positions[0])
+            # Close peaks (< 30 units in smoothed signal) = Blip
+            if peak_distance < 30 and wr < 0.2:
+                result.drift_type = "TCD"
+                result.subcategory = "Blip"
+                return result
+        
         # 3. Recurrent Drift (PCD)
-        if n_p >= 4 and cv < 0.2:
+        # Multiple evenly-spaced peaks
+        if n_p >= 4 and cv < 0.3:
             result.drift_type = "PCD"
             result.subcategory = "Recurrent"
             return result
             
         # 4. Gradual Drift (PCD)
-        # Defined by exclusion: Not Sudden (WR >= 0.12)
-        if wr >= 0.12: 
+        # Wide peak (WR >= 0.12) with moderate peak count
+        if wr >= 0.12 and n_p <= 6:
             result.drift_type = "PCD"
             result.subcategory = "Gradual"
             return result
         
-        # Fallback
+        # 5. Incremental Drift (PCD) - Checked LAST as per thesis
+        # Many peaks or plateau-like signal (high mean, low SNR)
+        if n_p >= 7 or (n_p == 0 and mean_val > 0.0001) or (snr < 2.0 and mean_val > 0.0005):
+            result.drift_type = "PCD"
+            result.subcategory = "Incremental"
+            return result
+        
+        # Fallback: Gradual (most common PCD)
         result.drift_type = "PCD"
         result.subcategory = "Gradual"
         
         return result
+

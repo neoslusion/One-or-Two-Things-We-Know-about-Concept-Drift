@@ -316,6 +316,33 @@ ADW-MMD sử dụng cơ chế \textit{variance reduction weighting} ($w_{ij} \pr
 	\item \textbf{Trade-off chính:} SHAPED\_CDT ưu tiên classification, CDT\_MSW ưu tiên detection
 	\item \textbf{ADW-MMD phù hợp cho detection, không phù hợp cho classification}
 \end{itemize}
+\subsection{So sánh công bằng: Supervised CDT\_MSW vs Unsupervised SE-CDT}
+\label{sec:supervised-comparison}
+
+Để đánh giá công bằng giữa phương pháp có giám sát (CDT\_MSW) và không giám sát (SE-CDT), luận văn thiết kế thử nghiệm đặc biệt với \textbf{Concept-aware labels} --- labels thay đổi cùng với concept drift:
+
+\textbf{Thiết kế:} Khi concept thay đổi, decision boundary xoay 90° (từ $x_0 + x_1 > 0$ sang $x_0 - x_1 > 0$). Điều này tạo ra \textit{real concept drift} mà CDT\_MSW có thể phát hiện qua accuracy drop.
+
+\begin{table}[H]
+	\centering
+	\caption{So sánh Supervised CDT\_MSW vs Unsupervised SE-CDT (Fair Comparison)}
+	\label{tab:supervised-comparison}
+	\begin{tabular}{|l|c|c|c|c|}
+		\hline
+		\textbf{Method} & \textbf{EDR$\uparrow$} & \textbf{MDR$\downarrow$} & \textbf{FP} & \textbf{Setting} \\
+		\hline
+		CDT\_MSW & 32.0\% & 68.0\% & 24 & Supervised \\
+		\textbf{SE-CDT (Std)} & \textbf{96.0\%} & \textbf{4.0\%} & 126 & \textbf{Unsupervised} \\
+		\hline
+	\end{tabular}
+\end{table}
+
+\textbf{Kết luận quan trọng:} Ngay cả khi CDT\_MSW được chạy với \textbf{labels đúng} (decision boundary thay đổi khi concept thay đổi), nó chỉ đạt \textbf{32\% recall}. Trong khi SE-CDT không cần labels nhưng đạt \textbf{96\% recall}. Điều này chứng minh:
+\begin{itemize}
+	\item \textbf{Unsupervised approach outperforms supervised baseline 3$\times$} trong detection
+	\item CDT\_MSW yêu cầu model SVC học được concept, với window\_size nhỏ (50 samples) không đủ data
+	\item SE-CDT tận dụng trực tiếp sự thay đổi $P(X)$ qua MMD signal, không phụ thuộc vào model accuracy
+\end{itemize}
 
 
 \section{Kết luận chương}
