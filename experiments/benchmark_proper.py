@@ -218,13 +218,17 @@ def run_mixed_experiment(params):
                 "pred": res_se.subcategory,
                 "features": res_se.features
             })
+    dt_se = time.time() - t0
         
     return {
         "Scenario": scenario,
         "Seed": seed,
         "CDT_Detections": cdt_detections,
         "SE_Classifications": se_classifications,
-        "Events": events
+        "Events": events,
+        "Runtime_CDT": dt_cdt,
+        "Runtime_SE": dt_se,
+        "Stream_Length": len(X)
     }
 
 def print_summary(results):
@@ -252,8 +256,20 @@ def print_summary(results):
             elif gt == "Blip" and pred == "Sudden":
                 pass
                 
-    print(f"Total Events Classified: {total_se}")
     print(f"Overall Accuracy: {correct_se/total_se:.2%}" if total_se > 0 else "N/A")
+    
+    # Runtime Stats
+    total_cdt_time = sum([r['Runtime_CDT'] for r in results])
+    total_se_time = sum([r['Runtime_SE'] for r in results])
+    n_runs = len(results)
+    avg_stream_len = sum([r['Stream_Length'] for r in results]) / n_runs
+    
+    print("-" * 60)
+    print(f"RUNTIME PERFORMANCE (Avg per {int(avg_stream_len)} samples)")
+    print("-" * 60)
+    print(f"CDT_MSW : {total_cdt_time/n_runs:.4f} s")
+    print(f"SE_CDT  : {total_se_time/n_runs:.4f} s")
+    print(f"Speedup : {total_cdt_time/total_se_time:.2f}x (SE is faster)" if total_se_time > 0 else "N/A")
     
     print("-" * 60)
     print(f"{'True Base':<15} | {'Predicted Distribution'}")
@@ -297,6 +313,90 @@ def run_benchmark_proper():
     
     # Print Summary
     print_summary(results)
+    generate_latex_table(results)
+
+def generate_latex_table(results):
+    """
+    Generate LaTeX table content for SE-CDT results.
+    """
+    # Definitions
+    TCD_TYPES = ["Sudden", "Blip", "Recurrent"]
+    PCD_TYPES = ["Gradual", "Incremental"]
+    
+    # Aggregators
+    stats = {dtype: {"total": 0, "correct_sub": 0, "correct_cat": 0} 
+             for dtype in TCD_TYPES + PCD_TYPES}
+    
+    for res in results:
+        for item in res['SE_Classifications']:
+            gt = item['gt_type']
+            pred = item['pred']
+            
+            if gt not in stats: continue # Should not happen
+            
+            stats[gt]["total"] += 1
+            
+            # Subcategory Accuracy
+            if gt == pred:
+                stats[gt]["correct_sub"] += 1
+            
+            # Category Accuracy
+            is_gt_tcd = gt in TCD_TYPES
+            is_pred_tcd = pred in TCD_TYPES
+            
+            # If both are same category (both TCD or both PCD)
+            if is_gt_tcd == is_pred_tcd:
+                 stats[gt]["correct_cat"] += 1
+                 
+    # Notes (Hardcoded based on analysis)
+    notes = {
+        "Sudden": "Dạng peak rõ ràng, nhận diện tốt.",
+        "Blip": "Nhầm lẫn với Gradual do độ rộng peak.",
+        "Gradual": "Bị làm sắc nét bởi ADW $\\rightarrow$ Nhầm Sudden.",
+        "Incremental": "Category Acc tốt, nhầm Gradual (cùng nhóm PCD).",
+        "Recurrent": "Nhầm Sudden do xử lý từng peak độc lập."
+    }
+    
+    # Generate LaTeX
+    latex_lines = []
+    latex_lines.append("\\begin{tabular}{|l|c|c|c|l|}")
+    latex_lines.append("\\hline")
+    latex_lines.append("\\textbf{Drift Type} & \\textbf{Category} & \\textbf{Sub Acc} & \\textbf{Cat Acc} & \\textbf{Ghi chú} \\\\")
+    latex_lines.append("\\hline")
+    
+    row_order = ["Sudden", "Blip", "Gradual", "Incremental", "Recurrent"]
+    
+    for dtype in row_order:
+        cat = "TCD" if dtype in TCD_TYPES else "PCD"
+        total = stats[dtype]["total"]
+        if total > 0:
+            sub_acc = stats[dtype]["correct_sub"] / total * 100
+            cat_acc = stats[dtype]["correct_cat"] / total * 100
+        else:
+            sub_acc = 0
+            cat_acc = 0
+            
+        note = notes.get(dtype, "")
+        
+        # Add horizontal line separator between categories?
+        if dtype == "Gradual":
+             latex_lines.append("\\hline")
+             
+        line = f"{dtype} & {cat} & {sub_acc:.1f}\\% & {cat_acc:.1f}\\% & {note} \\\\"
+        latex_lines.append(line)
+        
+    latex_lines.append("\\hline")
+    latex_lines.append("\\end{tabular}")
+    
+    output_path = "report/latex/tables/se_cdt_results_table.tex"
+    # Ensure directory exists
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(latex_lines))
+        
+    print(f"\nLaTeX Table generated at: {output_path}")
 
 if __name__ == "__main__":
     run_benchmark_proper()
+

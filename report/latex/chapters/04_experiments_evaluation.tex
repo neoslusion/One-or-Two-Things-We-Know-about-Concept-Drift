@@ -194,24 +194,13 @@ Phần này đánh giá hiệu quả của phương pháp SE-CDT được đề 
 	\centering
 	\caption{Kết quả phân loại drift type của SE-CDT}
 	\label{tab:se-cdt-results}
-	\begin{tabular}{|l|c|c|l|}
-		\hline
-		\textbf{Drift Type}     & \textbf{Category} & \textbf{Accuracy} & \textbf{Ghi chú}                    \\
-		\hline
-		Sudden                  & TCD               & 88.2\%            & Dạng peak rõ ràng, nhận diện tốt.               \\
-		Blip                    & TCD               & 0.0\%             & Nhầm lẫn với Gradual do độ rộng peak.            \\
-		\hline
-		Gradual                 & PCD               & 33.8\%             & Bị làm sắc nét bởi ADW $\rightarrow$ Nhầm Sudden (58\%).                 \\
-		Incremental             & PCD               & 12.3\%             & Category Acc 84.6\% $\rightarrow$ Nhầm Gradual (72\%).           \\
-		Recurrent               & PCD               & 0.0\%             & Nhầm Sudden do xử lý từng peak độc lập.                       \\
-		\hline
-	\end{tabular}
+	\input{tables/se_cdt_results_table.tex}
 \end{table}
 
 \textbf{Kết quả tổng hợp và Thảo luận:}
 \begin{itemize}
-	\item \textbf{Hiệu ứng làm sắc nét của ADW-MMD:} Kết quả cho thấy tỷ lệ phân loại Gradual Drift chỉ đạt 33.8\%. Nguyên nhân chính là do cơ chế trọng số mật độ của ADW-MMD hoạt động "quá hiệu quả", phát hiện sự thay đổi nhỏ nhất ngay khi nó xuất hiện, biến "mound" rộng của Gradual thành peak sắc nét giống Sudden.
-	\item \textbf{Phân biệt Incremental và Gradual:} Mặc dù độ chính xác Subcategory của Incremental thấp (12.3\%), nhưng độ chính xác Category (nhận diện là PCD) đạt tới 84.6\%. Hệ thống thường nhầm Incremental thành Gradual do nhiễu trong tín hiệu ADW tạo ra các "pseudo-peaks" (đỉnh giả) có độ rộng lớn.
+	\item \textbf{Hiệu ứng làm sắc nét của ADW-MMD:} Kết quả cho thấy tỷ lệ phân loại Gradual Drift chỉ đạt 46.2\%. Nguyên nhân chính là do cơ chế trọng số mật độ của ADW-MMD hoạt động "quá hiệu quả", phát hiện sự thay đổi nhỏ nhất ngay khi nó xuất hiện, biến "mound" rộng của Gradual thành peak sắc nét giống Sudden.
+	\item \textbf{Phân biệt Incremental và Gradual:} Mặc dù độ chính xác Subcategory của Incremental thấp (8.5\%), nhưng độ chính xác Category (nhận diện là PCD) đạt tới 80.0\%. Hệ thống thường nhầm Incremental thành Gradual do nhiễu trong tín hiệu ADW tạo ra các "pseudo-peaks" (đỉnh giả) có độ rộng lớn.
 	\item \textbf{Hạn chế với Recurrent:} Hệ thống hiện tại xử lý Recurrent drift như chuỗi các sự kiện Sudden riêng lẻ, dẫn đến việc phân loại sai thành Sudden (TCD). Điều này gợi ý cần có cơ chế "nhớ" trạng thái dài hạn hơn để nhận diện tính chu kỳ.
 \end{itemize}
 
@@ -226,7 +215,7 @@ Phần này đánh giá hiệu quả của phương pháp SE-CDT được đề 
 		\textbf{Tiêu chí} & \textbf{CDT\_MSW} & \textbf{SE-CDT} \\
 		\hline
 		Supervised        & Có (cần labels)   & \textbf{Không}  \\
-		Category accuracy & 46.7\%            & \textbf{66.4\%}   \\
+		Category accuracy & 46.7\%            & \textbf{78.0\%}   \\
 		Signal type       & Accuracy ratio    & MMD $\sigma(t)$ \\
 		Tính toán bổ sung & Cần model         & Không           \\
 		\hline
@@ -283,15 +272,7 @@ Bảng~\ref{tab:cdt-aggregate} tổng hợp kết quả benchmark (5 loại drif
 	\centering
 	\caption{So sánh tổng hợp ba phương pháp phân loại drift}
 	\label{tab:cdt-aggregate}
-	\begin{tabular}{|l|c|c|c|c|c|}
-		\hline
-		\textbf{Method}      & \textbf{CAT Acc} & \textbf{SUB Acc} & \textbf{EDR$\downarrow$} & \textbf{MDR$\downarrow$} & \textbf{Supervised} \\
-		\hline
-		CDT\_MSW             & 46.7\%           & 13.3\%           & \textbf{0.533}           & \textbf{0.267}           & Có                  \\
-		\textbf{SHAPED\_CDT} & \textbf{66.4\%}  & \textbf{42.0\%}  & 0.915                    & 0.678                    & Không               \\
-		SHAPED\_ADW           & 20.0\%           & 6.7\%            & 0.400                    & 1.000                    & Không               \\
-		\hline
-	\end{tabular}
+	\input{tables/table_comparison_aggregate.tex}
 \end{table}
 
 \subsection{Thử nghiệm biến thể ADW-MMD}
@@ -300,8 +281,8 @@ Trong quá trình nghiên cứu, luận văn cũng thử nghiệm biến thể s
 
 \textbf{Kết quả thử nghiệm:}
 \begin{itemize}
-	\item \textbf{ADW-MMD CAT Accuracy:} 20.0\% (so với 80.0\% của standard MMD)
-	\item \textbf{ADW-MMD SUB Accuracy:} 6.7\% (so với 20.0\% của standard MMD)
+	\item \textbf{ADW-MMD CAT Accuracy:} 20.0\% (so với 78.0\% của standard MMD)
+	\item \textbf{ADW-MMD SUB Accuracy:} 6.7\% (so với 44.2\% của standard MMD)
 	\item \textbf{MDR = 1.0:} Bỏ lỡ tất cả các điểm drift trên dataset PCD (Gradual, Incremental)
 \end{itemize}
 
@@ -330,7 +311,7 @@ ADW-MMD sử dụng cơ chế \textit{variance reduction weighting} ($w_{ij} \pr
 
 \textbf{Kết luận chung:}
 \begin{itemize}
-	\item \textbf{SHAPED\_CDT đạt Category Accuracy cao nhất (80\%)} mà không cần labels
+	\item \textbf{SHAPED\_CDT đạt Category Accuracy cao nhất (78.0\%)} mà không cần labels
 	\item \textbf{CDT\_MSW tốt hơn về detection accuracy} (MDR = 0.267 vs 0.678) do sử dụng model accuracy
 	\item \textbf{Trade-off chính:} SHAPED\_CDT ưu tiên classification, CDT\_MSW ưu tiên detection
 	\item \textbf{ADW-MMD phù hợp cho detection, không phù hợp cho classification}
