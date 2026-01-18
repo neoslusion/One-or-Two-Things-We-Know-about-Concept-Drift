@@ -103,7 +103,7 @@ def compute_optimal_weights(K, method: str = 'variance_reduction'):
         k_sums = np.sum(K_off, axis=1)
         k_sums = np.maximum(k_sums, 1e-10)  # Numerical stability
         
-        inv_weights = 1.0 / np.sqrt(k_sums)
+        inv_weights = 1.0 / (np.sqrt(k_sums) + 0.5) # Dampening alpha=0.5
         W = np.outer(inv_weights, inv_weights)
         np.fill_diagonal(W, 0)
         return W / np.sum(W)

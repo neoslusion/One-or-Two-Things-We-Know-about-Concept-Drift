@@ -75,7 +75,7 @@ WINDOW_METHODS = [
     'MMD',             # Maximum Mean Discrepancy (permutation test)
     'KS',              # Kolmogorov-Smirnov test
     'ShapeDD',         # Original ShapeDD (MMD + convolution pattern detection)
-    # 'ShapeDD_MMDAgg',  # ShapeDD with Aggregated MMD (JMLR 2023)
+    'ShapeDD_MMDAgg',  # ShapeDD with Aggregated MMD (JMLR 2023)
     'MMD_ADW',         # Adaptive Density-Weighted MMD (fixed threshold, fast)
     'ShapeDD_ADW_MMD', # ShapeDD + ADW-MMD Hybrid (heuristic pattern detection)
     'ShapeDD_WMMD',    # ShapeDD + WMMD Hybrid (heuristic pattern detection)

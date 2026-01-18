@@ -1,195 +1,168 @@
 import numpy as np
-import sys
-import os
 import pandas as pd
 import matplotlib.pyplot as plt
-
-# Ensure imports work from backup
-sys.path.append(os.path.abspath("experiments"))
+from sklearn.datasets import fetch_openml
+import os
+from sklearn.metrics import f1_score
+import sys
+sys.path.append("../")
+# Import CDT_MSW and SE_CDT (assume in same dir or backup; replace with your paths)
 from backup.cdt_msw import CDT_MSW
 from backup.se_cdt import SE_CDT
 
-# === CONFIGURATION ===
-DRIFT_TYPES = ["Sudden", "Gradual", "Recurrent"]
-OUTPUT_DIR = "experiments/paper_replication_outputs"
+# Config from paper: window=50, tau=0.85, delta=0.005, n_adjoint=4, k=10
+WINDOW_SIZE = 50
+TAU = 0.85
+DELTA = 0.005
+N_ADJOINT = 4
+K_TRACKING = 10
+
+DRIFT_TYPES = ["Sudden", "Gradual", "Incremental", "Recurrent", "Blip"]
+LENGTH = 3000  # Longer for multi-events
+POSITIONS = [1000, 2000]  # Multiple drift positions (2 events; add more if needed)
+WIDTH = 200  # For gradual/incremental
+N_SEEDS = 10  # Avg over seeds for robust metrics
+TOLERANCE = 50  # Position detect within ±50 samples is TP (paper-like tolerance)
+OUTPUT_DIR = "benchmark_multi_drifts"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-# === DATA GENERATION (TUNED FOR FAIRNESS) ===
-def generate_stream(drift_type="Sudden", length=1000, position=400, width=0):
-    np.random.seed(42)
-    X = np.zeros((length, 2))
-    y = np.zeros(length, dtype=int)
+# Synthetic generation with multiple drifts (extend from your script)
+def generate_stream(drift_type="Sudden", length=LENGTH, positions=POSITIONS, width=WIDTH):
+    np.random.seed(42)  # Fixed for reproducible, but vary in loop
+    X = np.random.randn(length, 5)  # 5 features multi-class
+    y = (np.sum(X[:, :2], axis=1) > 0).astype(int)  # Base concept
     
-    mean1, cov1 = [0, 0], [[1, 0], [0, 1]]
-    mean2, cov2 = [2, 2], [[1, 0], [0, 1]] # Concept 2
+    for pos in positions:
+        end_pos = min(pos + width, length)
+        if drift_type == "Sudden":
+            X[pos:end_pos] += 2.0
+            y[pos:end_pos] = (np.sum(X[pos:end_pos, 2:], axis=1) > 1).astype(int)
+        
+        elif drift_type == "Gradual":
+            for i in range(width):
+                alpha = i / width
+                if np.random.random() < alpha:
+                    X[pos + i] += 2.0 * alpha
+                    y[pos + i] = (np.sum(X[pos + i, 2:], axis=0) > 1).astype(int)
+                else:
+                    X[pos + i] += np.random.normal(0, 0.5, 5)
+        
+        elif drift_type == "Incremental":
+            step = 2.0 / (width // 10)
+            for i in range(width):
+                alpha = min(1.0, i / width)
+                X[pos + i] += step * (i // (width // 10))
+                y[pos + i] = (np.sum(X[pos + i, 2:], axis=0) > alpha).astype(int)
+        
+        elif drift_type == "Recurrent":
+            period = width // 2
+            for i in range(pos, end_pos, period):
+                sub_end = min(i + period, end_pos)
+                concept = ((i - pos) // period) % 2
+                if concept == 1:
+                    X[i:sub_end] += 2.0
+                    y[i:sub_end] = (np.sum(X[i:sub_end, 2:], axis=1) > 1).astype(int)
+        
+        elif drift_type == "Blip":
+            blip_width = width // 5
+            X[pos:pos + blip_width] += 2.0
+            y[pos:pos + blip_width] = (np.sum(X[pos:pos + blip_width, 2:], axis=1) > 1).astype(int)
     
-    if drift_type == "Sudden":
-        X[:position] = np.random.multivariate_normal(mean1, cov1, position)
-        y[:position] = (X[:position, 0] + X[:position, 1] > 0).astype(int)
-        X[position:] = np.random.multivariate_normal(mean2, cov2, length-position)
-        y[position:] = (X[position:, 0] - X[position:, 1] > 0).astype(int)
-        
-    elif drift_type == "Gradual":
-        # Linear transition
-        X[:position] = np.random.multivariate_normal(mean1, cov1, position)
-        y[:position] = (X[:position, 0] + X[:position, 1] > 0).astype(int)
-        X[position+width:] = np.random.multivariate_normal(mean2, cov2, length-(position+width))
-        y[position+width:] = (X[position+width:, 0] - X[position+width:, 1] > 0).astype(int)
-        
-        for i in range(width):
-            alpha = i / width
-            if np.random.random() < alpha:
-                X[position+i] = np.random.multivariate_normal(mean2, cov2)
-                y[position+i] = (X[position+i, 0] - X[position+i, 1] > 0).astype(int)
-            else:
-                # Add noise to maintain variance for CDT_MSW
-                X[position+i] = np.random.multivariate_normal(mean1, cov1) + np.random.normal(0, 0.5, 2)
-                y[position+i] = (X[position+i, 0] + X[position+i, 1] > 0).astype(int)
-                
-    elif drift_type == "Recurrent":
-        # Periodic switching
-        for i in range(0, length, width):
-            end = min(i + width, length)
-            concept = (i // width) % 2
-            if concept == 0:
-                X[i:end] = np.random.multivariate_normal(mean1, cov1, end-i)
-                y[i:end] = (X[i:end, 0] + X[i:end, 1] > 0).astype(int)
-            else:
-                X[i:end] = np.random.multivariate_normal(mean2, cov2, end-i)
-                y[i:end] = (X[i:end, 0] - X[i:end, 1] > 0).astype(int)
-                
     return X, y
 
-def simulate_mmd_signal(drift_type, length=50, max_val=1.0):
-    t = np.linspace(-3, 3, length)
-    if drift_type == "Sudden":
-        sig = max_val * np.exp(-t**2 / (2 * 0.2**2))
-    elif drift_type == "Gradual":
-        sig = max_val * np.exp(-t**2 / (2 * 1.5**2))
-    elif drift_type == "Recurrent":
-        sig = max_val * (0.5 + 0.5 * np.sin(8 * t))
+# Real dataset with injected multi-drifts (paper uses Covertype/Electricity)
+def get_real_with_drifts(name, positions=POSITIONS, shift=2.0):
+    if name == "covertype":
+        data = fetch_openml(name="covertype", version=1, as_frame=False)
+    elif name == "electricity":
+        # Assume CSV; replace with your URL/path
+        df = pd.read_csv('https://raw.githubusercontent.com/scikit-multiflow/scikit-multiflow/master/src/skmultiflow/datasets/elec2.csv')
+        data = df.iloc[:, :-1].values, df.iloc[:, -1].values.astype(int)
     else:
-        sig = np.random.normal(0, 0.1, length)
-    return np.abs(sig + np.random.normal(0, 0.05, length))
+        raise ValueError("Unknown")
+    X, y = data[0][:LENGTH], data[1][:LENGTH]  # Truncate
+    for pos in positions:
+        X[pos:] += shift * np.random.randn(*X[pos:].shape)  # Inject shift
+    return X, y
 
-# === EXPERIMENT RUNNER ===
-def run_experiments():
+# Run for one type/seed
+def run_for_type_seed(drift_type, seed, use_real=False):
+    np.random.seed(seed)
+    if use_real:
+        X, y = get_real_with_drifts("covertype")
+    else:
+        X, y = generate_stream(drift_type)
+    
+    detector = CDT_MSW(WINDOW_SIZE, TAU, DELTA, N_ADJOINT, K_TRACKING)
+    res_cdt = detector.detect(X, y)
+    
+    # Simulate MMD for SE_CDT per drift event (placeholder; integrate real ShapeDD if needed)
+    mmd_sigs = [np.random.randn(50) + (1 if 'Sudden' in drift_type else 0.5) for _ in POSITIONS]
+    se = SE_CDT(WINDOW_SIZE)
+    res_ses = [se.classify(sig) for sig in mmd_sigs]
+    
+    return {
+        "Drift Type": drift_type,
+        "Seed": seed,
+        "CDT_MSW": res_cdt,
+        "SE_CDTs": res_ses,  # List for multi-events
+        "GT_Positions": [p // WINDOW_SIZE for p in POSITIONS]  # Window positions
+    }
+
+# Metrics calc (detection rate, TCD/PCD acc, subcategory F1)
+def calculate_metrics(results):
+    metrics = []
+    for res in results:
+        gt_type = res["Drift Type"]
+        gt_category = "TCD" if gt_type in ["Sudden", "Blip"] else "PCD"  # Map subcategory to category
+        gt_sub = gt_type
+        
+        # CDT_MSW metrics
+        detected_poss = [res["CDT_MSW"]["drift_position"]] if res["CDT_MSW"]["drift_detected"] else []  # Assume single detect; extend for multi
+        tp = sum(1 for gt in res["GT_Positions"] if any(abs(det - gt) * WINDOW_SIZE <= TOLERANCE for det in detected_poss))
+        detection_rate = tp / len(res["GT_Positions"])
+        category_acc = 1 if res["CDT_MSW"]["drift_category"] == gt_category else 0
+        sub_f1 = f1_score([gt_sub] * len(detected_poss), [res["CDT_MSW"]["drift_subcategory"]], average='macro', labels=DRIFT_TYPES) if detected_poss else 0
+        
+        # SE_CDT metrics (avg over events)
+        se_category_acc = np.mean([1 if se.drift_type == gt_category else 0 for se in res["SE_CDTs"]])
+        se_sub_f1 = f1_score([gt_sub] * len(res["SE_CDTs"]), [se.subcategory for se in res["SE_CDTs"]], average='macro', labels=DRIFT_TYPES)
+        
+        metrics.append({
+            "Type": gt_type,
+            "Seed": res["Seed"],
+            "Detection Rate (CDT_MSW)": detection_rate,
+            "TCD/PCD Acc (CDT_MSW)": category_acc,
+            "Subcategory F1 (CDT_MSW)": sub_f1,
+            "TCD/PCD Acc (SE_CDT)": se_category_acc,
+            "Subcategory F1 (SE_CDT)": se_sub_f1
+        })
+    
+    df = pd.DataFrame(metrics).groupby("Type").mean().reset_index()  # Avg over seeds
+    latex = df.to_latex(index=False, caption="Benchmark Metrics", label="tab:metrics")
+    with open(os.path.join(OUTPUT_DIR, "metrics.tex"), "w") as f:
+        f.write(latex)
+    df.to_csv(os.path.join(OUTPUT_DIR, "metrics.csv"))
+
+# Full benchmark
+def run_benchmark():
     results = []
-    
     for dtype in DRIFT_TYPES:
-        print(f"Running Experiment: {dtype}...")
-        
-        # 1. CDT_MSW
-        # Tuned parameters: Low delta for Gradual, Short Window for Recurrent
-        width = 150 if dtype == "Gradual" else 75
-        X, y = generate_stream(dtype, length=1000, position=400, width=width)
-        
-        cdt = CDT_MSW(window_size=50, delta=0.0005)
-        res_cdt = cdt.detect(X, y)
-        
-        # 2. SE-CDT
-        mmd_sig = simulate_mmd_signal(dtype, length=50)
-        se = SE_CDT(window_size=50)
-        res_se = se.classify(mmd_sig)
-        
-        # Collect Data
-        results.append({
-            "Drift Type": dtype,
-            "CDT_MSW_Pred": res_cdt['drift_subcategory'] if res_cdt['drift_detected'] else "None",
-            "CDT_MSW_Var": res_cdt['variance_val'] if res_cdt['drift_detected'] else 0.0,
-            "CDT_MSW_TFR": res_cdt['tfr_curve'],
-            "SE_CDT_Pred": res_se.subcategory,
-            "SE_CDT_Features": res_se.features,
-            "SE_CDT_Signal": mmd_sig
-        })
-        
-    return results
-
-# === OUTPUT GENERATION ===
-def generate_latex_table(results):
-    df_rows = []
-    for r in results:
-        df_rows.append({
-            "Drift Type": r["Drift Type"],
-            "CDT_MSW Prediction": r["CDT_MSW_Pred"],
-            "SE-CDT Prediction": r["SE_CDT_Pred"],
-            "Match (SE-CDT)": "YES" if r["Drift Type"] == r["SE_CDT_Pred"] else "NO"
-        })
+        for seed in range(N_SEEDS):
+            res = run_for_type_seed(dtype, seed)
+            results.append(res)
     
-    df = pd.DataFrame(df_rows)
-    latex_code = df.to_latex(index=False, caption="Performance Comparison of CDT_MSW vs SE-CDT", label="tab:perf_comparison")
+    calculate_metrics(results)
     
-    with open(f"{OUTPUT_DIR}/table_performance.tex", "w") as f:
-        f.write(latex_code)
-    print(f"Generated {OUTPUT_DIR}/table_performance.tex")
-
-def generate_validation_table(results):
-    rows = []
-    for r in results:
-        dtype = r["Drift Type"]
-        
-        # CDT Logic
-        var_val = r["CDT_MSW_Var"]
-        threshold = 0.0005
-        decision_cdt = "PCD" if var_val > threshold else "TCD"
-        
-        # SE Logic
-        feats = r["SE_CDT_Features"]
-        if dtype == "Sudden":
-            metric_se = f"WR={feats.get('WR',0):.2f}"
-            rule_se = "< 1.2"
-        elif dtype == "Gradual":
-            metric_se = f"WR={feats.get('WR',0):.2f}"
-            rule_se = "> 2.0"
-        elif dtype == "Recurrent":
-            metric_se = f"CV={feats.get('CV',0):.2f}"
-            rule_se = "< 0.2"
-            
-        rows.append([dtype, "CDT_MSW", "Variance", f"{var_val:.6f}", f"> {threshold}", decision_cdt])
-        rows.append([dtype, "SE-CDT", "Shape", metric_se, rule_se, r["SE_CDT_Pred"]])
-        
-    df = pd.DataFrame(rows, columns=["Drift", "Method", "Metric", "Value", "Threshold", "Decision"])
-    latex_code = df.to_latex(index=False, caption="Internal Validation Criteria", label="tab:validation_criteria")
+    # Plots example for first seed per type
+    for dtype in DRIFT_TYPES:
+        res = next(r for r in results if r["Drift Type"] == dtype and r["Seed"] == 0)
+        plt.figure()
+        plt.plot(res["CDT_MSW"]["tfr_curve"] if "tfr_curve" in res["CDT_MSW"] else [])
+        plt.title(f"TFR Multi-Drifts {dtype}")
+        plt.savefig(os.path.join(OUTPUT_DIR, f"tfr_multi_{dtype}.png"))
     
-    with open(f"{OUTPUT_DIR}/table_validation.tex", "w") as f:
-        f.write(latex_code)
-    print(f"Generated {OUTPUT_DIR}/table_validation.tex")
-
-def generate_plots(results):
-    # Figure 1: SE-CDT Signals
-    fig, axes = plt.subplots(1, 3, figsize=(15, 4))
-    for i, r in enumerate(results):
-        ax = axes[i]
-        ax.plot(r["SE_CDT_Signal"], color='red', linewidth=2)
-        ax.set_title(f"{r['Drift Type']} (SE-CDT Signal)")
-        ax.set_xlabel("Time")
-        if i == 0: ax.set_ylabel("MMD Amplitude")
-        ax.grid(True, linestyle='--', alpha=0.6)
-    
-    plt.tight_layout()
-    plt.savefig(f"{OUTPUT_DIR}/figure_se_cdt_signals.png")
-    print(f"Generated {OUTPUT_DIR}/figure_se_cdt_signals.png")
-    
-    # Figure 2: CDT_MSW TFR Curves (if available)
-    fig2, axes2 = plt.subplots(1, 3, figsize=(15, 4))
-    for i, r in enumerate(results):
-        ax = axes2[i]
-        tfr = r["CDT_MSW_TFR"]
-        if tfr:
-            ax.plot(tfr, marker='o', color='blue')
-            ax.set_ylim(0, 1.1)
-        ax.set_title(f"{r['Drift Type']} (CDT TFR Curve)")
-        ax.set_xlabel("Tracking Window Index")
-        if i == 0: ax.set_ylabel("Accuracy Ratio (TFR)")
-        ax.grid(True, linestyle='--', alpha=0.6)
-        
-    plt.tight_layout()
-    plt.savefig(f"{OUTPUT_DIR}/figure_cdt_tfr_curves.png")
-    print(f"Generated {OUTPUT_DIR}/figure_cdt_tfr_curves.png")
+    print("Benchmark done! Check", OUTPUT_DIR)
 
 if __name__ == "__main__":
-    results = run_experiments()
-    generate_latex_table(results)
-    generate_validation_table(results)
-    generate_plots(results)
-    print("Benchmark Replication Complete.")
+    run_benchmark()

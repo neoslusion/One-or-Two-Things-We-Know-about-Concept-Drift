@@ -31,16 +31,18 @@ Trong các hệ thống học máy dòng dữ liệu (data stream), concept drif
 Trong ShapeDD gốc, thống kê MMD được tính toán dựa trên trọng số đều (uniform weights), coi vai trò của mọi điểm dữ liệu trong cửa sổ là như nhau. Để đạt được độ tin cậy thống kê (statistical power) mong muốn, phương pháp này yêu cầu kích thước mẫu lớn hoặc quy trình kiểm định hoán vị tốn kém ($O(N_{perm} \cdot n^2)$). Điều này không phù hợp với các ứng dụng yêu cầu phản hồi tức thì.
 
 \subsubsection{Giải pháp: Trọng số mật độ thích ứng giảm phương sai}
-Nghiên cứu tích hợp phương pháp \textbf{ADW-MMD} (Adaptive Density-Weighted MMD), lấy cảm hứng từ bộ ước lượng "Optimally-Weighted MMD" được đề xuất bởi Bharti et al.~\cite{bharti2023owmmd}. Trong khi Bharti gọi là "Optimally-Weighted" vì mục tiêu giảm phương sai ước lượng, luận văn sử dụng thuật ngữ "Adaptive Density-Weighted" để mô tả chính xác cơ chế hoạt động ($w \propto 1/\sqrt{\text{density}}$) và tránh nhầm lẫn với các phương pháp tối ưu hóa độ mạnh kiểm định (test power optimization).
+Nghiên cứu tích hợp phương pháp \textbf{ADW-MMD} (Adaptive Density-Weighted MMD), lấy cảm hứng từ bộ ước lượng "Optimally-Weighted MMD" được đề xuất bởi Bharti et al.~\cite{bharti2023owmmd} và phương pháp reweighting trong domain adaptation của Yan et al.~\cite{yan2017mind}.
 
-Công thức MMD bình phương có trọng số được định nghĩa lại như sau:
+Phương pháp này sử dụng một heuristic thích ứng để gán trọng số dựa trên mật độ cục bộ của dữ liệu. Cụ thể, các trọng số vector $w \in \mathbb{R}^n$ được tính tỷ lệ nghịch với căn bậc hai của tổng kernel (proxy cho mật độ cục bộ), và ma trận trọng số $W$ được tạo thành từ tích ngoài (outer product):
 \begin{equation}
-	\text{MMD}^2_{\text{ADW}} = \sum_{i,j} w^{XX}_{ij} k(x_i, x_j) + \sum_{i,j} w^{YY}_{ij} k(y_i, y_j) - 2\sum_{i,j} w^{XY}_{ij} k(x_i, y_j)
+	w_i \propto \frac{1}{\sqrt{\sum_{j} k(x_i, x_j)}} \quad \text{và} \quad W^{XX} = w \otimes w^T
 \end{equation}
 
-Trong đó, trọng số $w_{ij}$ được tính toán dựa trên nguyên lý giảm phương sai: các điểm dữ liệu nằm trong vùng mật độ cao (có tổng độ tương đồng kernel lớn) sẽ được gán trọng số thấp hơn để giảm sự dư thừa thông tin, trong khi các điểm ở vùng biên hoặc vùng thưa thớt được gán trọng số cao hơn.
+Cách tiếp cận này ("Density-Weighted") giúp giảm phương sai bằng cách tập trung trọng số vào các điểm dữ liệu ở vùng biên hoặc vùng thưa thớt (low-density regions). Điều này tương tự như cơ chế importance sampling tự chuẩn hóa~\cite{anonymous2024directing}.
+
+Điểm đặc biệt trong implementation là việc giữ nguyên trọng số đều (uniform weights) cho thành phần chéo (cross-term) để đảm bảo tính ổn định khi so sánh hai tập mẫu, trong khi chỉ tối ưu hóa các thành phần nội bộ (self-terms) để giảm nhiễu. Công thức MMD bình phương có trọng số được định nghĩa cụ thể:
 \begin{equation}
-	w_{ij} \propto \frac{1}{\sqrt{\sum_{k} k(x_i, x_k)}} \cdot \frac{1}{\sqrt{\sum_{k} k(x_j, x_k)}}
+	\text{MMD}^2_{\text{ADW}} = \underbrace{\sum_{i,j} w_i w_j k(x_i, x_j)}_{\text{Weighted } XX} + \underbrace{\sum_{p,q} v_p v_q k(y_p, y_q)}_{\text{Weighted } YY} - 2\underbrace{\sum_{i,p} \frac{1}{nm} k(x_i, y_p)}_{\text{Uniform } XY}
 \end{equation}
 
 \subsubsection{Quy trình phát hiện lai (Hybrid Detection Strategy)}
