@@ -181,7 +181,7 @@ Phương pháp CDT\_MSW gốc~\cite{guo2022cdtmsw} yêu cầu \textit{labels} đ
 
 \textbf{Đặc trưng phân loại từ tín hiệu $\sigma(t)$:}
 \begin{enumerate}
-	\item \textbf{Peak Width Ratio:} $\text{WR} = \frac{\text{FWHM}}{2L}$ — Tỷ lệ chiều rộng peak so với window. TCD có WR $< 1.5$, PCD có WR $> 2.0$.
+	\item \textbf{Peak Width Ratio:} $\text{WR} = \frac{\text{FWHM}}{2L}$. TCD có $\text{WR} < 0.12$, PCD có $\text{WR} \geq 0.12$.
 	\item \textbf{Peak Count:} Số lượng peaks phát hiện được. Sudden có ít peaks ($\leq 4$), Recurrent có nhiều peaks đều đặn ($\geq 5$).
 	\item \textbf{Periodicity CV:} Hệ số biến thiên khoảng cách giữa peaks. Recurrent có CV $< 0.2$ (đều đặn).
 	\item \textbf{Signal-to-Noise Ratio:} $\text{SNR} = \frac{\max(\sigma)}{\text{median}(\sigma)}$ — TCD có SNR cao (peaks sắc nét).
@@ -194,16 +194,16 @@ Phương pháp CDT\_MSW gốc~\cite{guo2022cdtmsw} yêu cầu \textit{labels} đ
 	\begin{algorithmic}[1]
 		\REQUIRE Tín hiệu drift magnitude $\sigma(t)$ từ ShapeDD
 		\ENSURE Loại drift (TCD/PCD) và subcategory
-		\STATE Làm mịn tín hiệu: $\sigma_s \leftarrow \text{GaussianFilter}(\sigma, \sigma=2)$
+		\STATE Làm mịn tín hiệu: $\sigma_s \leftarrow \text{GaussianFilter}(\sigma, \sigma=4)$
 		\STATE Phát hiện peaks: $P \leftarrow \text{FindPeaks}(\sigma_s, \text{threshold}=\bar{\sigma} + 0.3\sigma_{std})$
 		\STATE Tính các đặc trưng: $n_p \leftarrow |P|$, $\text{WR}$, $\text{CV}$, $\text{SNR}$
-		\IF{$n_p \leq 4$ AND $\text{WR} < 1.2$ AND $\text{SNR} > 4$}
+		\IF{$n_p \leq 4$ AND $\text{WR} < 0.12$}
 		\RETURN \textbf{SUDDEN} (TCD)
 		\ELSIF{$n_p \geq 4$ AND $\text{CV} < 0.2$}
 		\RETURN \textbf{RECURRENT} (PCD)
-		\ELSIF{$\text{WR} > 2.0$}
+		\ELSIF{$\text{WR} \geq 0.12$}
 		\RETURN \textbf{GRADUAL} (PCD)
-		\ELSIF{$n_p \geq 10$ AND $\text{WR} > 5$}
+		\ELSIF{$n_p \geq 10$ AND $\text{SignalMean} \approx 0$}
 		\RETURN \textbf{INCREMENTAL} (PCD)
 		\ELSE
 		\RETURN \textbf{GRADUAL} (PCD) \COMMENT{Default}

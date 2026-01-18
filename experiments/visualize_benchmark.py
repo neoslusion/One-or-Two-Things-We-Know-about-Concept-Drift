@@ -120,46 +120,58 @@ def plot_scenario(scenario_name, seed=0):
     plt.close(fig1)
 
     # --- Figure 2: SE_CDT (MMD Signal + Classifications) ---
-    fig2, ax2 = plt.subplots(figsize=(12, 5))
+    # Create 2 subplots sharing x-axis
+    fig2, (ax2_top, ax2_bottom) = plt.subplots(2, 1, figsize=(12, 10), sharex=True)
     
-    ax2.plot(mmd_x_axis, mmd_sig, color='blue', label='ADW-MMD Signal')
-    ax2.set_title(f"SE_CDT: MMD Signal & Classification ({scenario_name})")
-    ax2.set_ylabel("MMD Value")
-    ax2.set_xlabel("Sample Index")
+    # --- Top Panel: Context (Stream Data) ---
+    feat_mean = np.mean(X, axis=1)
+    ax2_top.plot(feat_mean, color='gray', alpha=0.5, label='Stream Mean')
+    ax2_top.set_title(f"SE_CDT: Stream Context & GT ({scenario_name})")
+    ax2_top.set_ylabel("Feature Value")
     
-    # Plot GT Regions again for reference
+    # Plot GT Events on Top Panel
     for evt in events:
         pos = evt['pos']
         width = evt.get('width', 0)
-        # ax2.axvline(pos, color='green', linestyle=':', alpha=0.5) 
-        # Don't clutter SE plot with full lines, just small ticks or the text?
-        # Let's keep the vertical line but fainter
-        ax2.axvline(pos, color='green', linestyle='--', alpha=0.3)
+        label = evt['type']
+        ax2_top.axvline(pos, color='green', linestyle='-', linewidth=2, label='Ground Truth' if pos==800 else "")
         if width > 0:
-             ax2.axvspan(pos, pos+width, color='green', alpha=0.05)
+            ax2_top.axvspan(pos, pos+width, color='green', alpha=0.1)
+        ax2_top.text(pos, np.max(feat_mean)+0.5, label, color='green', fontweight='bold')
+    ax2_top.legend(loc='upper right')
+
+    # --- Bottom Panel: MMD Signal ---
+    ax2_bottom.plot(mmd_x_axis, mmd_sig, color='blue', label='ADW-MMD Signal')
+    ax2_bottom.set_title(f"SE_CDT: MMD Signal & Classification")
+    ax2_bottom.set_ylabel("MMD Value")
+    ax2_bottom.set_xlabel("Sample Index")
+    
+    # Plot GT Regions on Bottom Panel (Faint)
+    for evt in events:
+        pos = evt['pos']
+        width = evt.get('width', 0)
+        ax2_bottom.axvline(pos, color='green', linestyle='--', alpha=0.3)
+        if width > 0:
+             ax2_bottom.axvspan(pos, pos+width, color='green', alpha=0.05)
         
     # Annotate SE Classifications
-    # SE Classifications are tied to the GT events in our benchmark
     for i, seq in enumerate(se_class):
-        # Find corresponding event to place text
         if i < len(events):
             evt_pos = events[i]['pos']
             pred = seq['pred']
             gt = seq['gt_type']
             color = 'green' if pred == gt else 'red'
             
-            # Place text near the signal peak
-            # Find closest signal index
             sig_idx = min(len(mmd_sig)-1, evt_pos // 10)
             sig_val = mmd_sig[sig_idx]
             
-            ax2.annotate(f"Pred: {pred}\n(GT: {gt})", 
+            ax2_bottom.annotate(f"Pred: {pred}\n(GT: {gt})", 
                          xy=(evt_pos, sig_val), 
-                         xytext=(evt_pos, sig_val + 0.15), # Lift text higher
+                         xytext=(evt_pos, sig_val + 0.15), 
                          arrowprops=dict(facecolor=color, shrink=0.05),
                          color=color, fontweight='bold', ha='center')
             
-    ax2.legend()
+    ax2_bottom.legend()
     
     plt.tight_layout()
     plt.savefig(f"{OUTPUT_DIR}/vis_{scenario_name.lower()}_SE.png")
