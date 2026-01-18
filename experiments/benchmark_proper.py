@@ -377,7 +377,7 @@ def run_benchmark_proper():
     #         tasks.append({"drift_type": dtype, "seed": seed})
             
     # 2. Comprehensive Multi-Drift (Mixed & Consistency)
-    scenarios = ["Repeated_Gradual", "Repeated_Incremental", "Repeated_Sudden"]
+    scenarios = ["Mixed_A", "Mixed_B", "Repeated_Gradual", "Repeated_Incremental", "Repeated_Sudden"]
     for sc in scenarios:
         for seed in range(5): 
             tasks.append({"scenario": sc, "seed": seed})
