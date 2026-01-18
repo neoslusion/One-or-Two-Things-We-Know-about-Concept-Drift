@@ -86,15 +86,15 @@ def plot_scenario(scenario_name, seed=0):
     mmd_sig = compute_mmd_sequence(X, WINDOW_SIZE, step=10)
     mmd_x_axis = np.arange(0, len(mmd_sig)) * 10  + WINDOW_SIZE # Align roughly with center of window
     
-    # 3. Plotting
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10), sharex=True)
+    # --- Figure 1: CDT_MSW (Stream Data + Detections) ---
+    fig1, ax1 = plt.subplots(figsize=(12, 5))
     
-    # --- Top Panel: Data Stream + CDT Detections ---
     # Plot feature mean for clarity
     feat_mean = np.mean(X, axis=1)
     ax1.plot(feat_mean, color='gray', alpha=0.5, label='Stream Mean')
-    ax1.set_title(f"Stream Data & CDT_MSW Detections ({scenario_name})")
+    ax1.set_title(f"CDT_MSW: Stream Data & Detections ({scenario_name})")
     ax1.set_ylabel("Feature Value (Mean)")
+    ax1.set_xlabel("Sample Index")
     
     # Plot GT Events
     for evt in events:
@@ -110,14 +110,20 @@ def plot_scenario(scenario_name, seed=0):
     for det in cdt_dets:
         pos = det['pos']
         dtype = det['type']
-        ax1.axvline(pos, color='red', linestyle='--', linewidth=2, label='CDT Detect' if pos==cdt_dets[0]['pos'] else "")
+        ax1.axvline(pos, color='red', linestyle='--', linewidth=2, label='CDT Detect' if len(cdt_dets)>0 and pos==cdt_dets[0]['pos'] else "")
         ax1.text(pos, np.min(feat_mean)-0.5, dtype, color='red', rotation=90, verticalalignment='top')
         
     ax1.legend(loc='upper right')
+    plt.tight_layout()
+    plt.savefig(f"{OUTPUT_DIR}/vis_{scenario_name.lower()}_CDT.png")
+    print(f"Saved CDT plot to {OUTPUT_DIR}/vis_{scenario_name.lower()}_CDT.png")
+    plt.close(fig1)
+
+    # --- Figure 2: SE_CDT (MMD Signal + Classifications) ---
+    fig2, ax2 = plt.subplots(figsize=(12, 5))
     
-    # --- Bottom Panel: MMD Signal + SE Classifications ---
     ax2.plot(mmd_x_axis, mmd_sig, color='blue', label='ADW-MMD Signal')
-    ax2.set_title(f"SE_CDT (MMD Signal) & Classification")
+    ax2.set_title(f"SE_CDT: MMD Signal & Classification ({scenario_name})")
     ax2.set_ylabel("MMD Value")
     ax2.set_xlabel("Sample Index")
     
@@ -125,7 +131,12 @@ def plot_scenario(scenario_name, seed=0):
     for evt in events:
         pos = evt['pos']
         width = evt.get('width', 0)
-        ax2.axvline(pos, color='green', linestyle=':', alpha=0.5)
+        # ax2.axvline(pos, color='green', linestyle=':', alpha=0.5) 
+        # Don't clutter SE plot with full lines, just small ticks or the text?
+        # Let's keep the vertical line but fainter
+        ax2.axvline(pos, color='green', linestyle='--', alpha=0.3)
+        if width > 0:
+             ax2.axvspan(pos, pos+width, color='green', alpha=0.05)
         
     # Annotate SE Classifications
     # SE Classifications are tied to the GT events in our benchmark
@@ -144,15 +155,16 @@ def plot_scenario(scenario_name, seed=0):
             
             ax2.annotate(f"Pred: {pred}\n(GT: {gt})", 
                          xy=(evt_pos, sig_val), 
-                         xytext=(evt_pos, sig_val + 0.1),
+                         xytext=(evt_pos, sig_val + 0.15), # Lift text higher
                          arrowprops=dict(facecolor=color, shrink=0.05),
-                         color=color, fontweight='bold')
+                         color=color, fontweight='bold', ha='center')
             
     ax2.legend()
     
     plt.tight_layout()
-    plt.savefig(f"{OUTPUT_DIR}/vis_{scenario_name.lower()}.png")
-    print(f"Saved plot to {OUTPUT_DIR}/vis_{scenario_name.lower()}.png")
+    plt.savefig(f"{OUTPUT_DIR}/vis_{scenario_name.lower()}_SE.png")
+    print(f"Saved SE plot to {OUTPUT_DIR}/vis_{scenario_name.lower()}_SE.png")
+    plt.close(fig2)
 
 if __name__ == "__main__":
     plot_scenario("Mixed_A", seed=0) # Sudden -> Gradual -> Recurrent
