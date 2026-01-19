@@ -31,7 +31,7 @@ Ví dụ, người ta có thể đề cập đến sự thay đổi trong sở t
 trong khi sự phân phối các mục tin tức nhận được thường không thay đổi~\cite{gama2014survey}.
 
 Phân loại theo mô hình thay đổi theo thời gian:
-\textbf{Sự trôi dạt đột ngột (Abrupt Drift):} Biểu thị trường hợp khi sự phân phối dữ liệu thay đổi đột ngột tại một thời điểm cụ thể. 
+\textbf{Sự trôi dạt đột ngột (Sudden Drift / Abrupt Drift):} Biểu thị trường hợp khi sự phân phối dữ liệu thay đổi đột ngột tại một thời điểm cụ thể. 
 Drift đột ngột dễ nhận biết nhưng đòi hỏi cơ chế phát hiện và thích ứng nhanh để tránh suy giảm hiệu suất nghiêm trọng~\cite{basseville1993detection}.
 
 \textbf{Sự trôi dạt dần dần (Gradual Drift):} Sự trôi dạt dần dần biểu thị trường hợp khi sự phân phối dữ liệu thay đổi dần dần theo thời 
@@ -151,7 +151,7 @@ Triangle Shape Property \textbf{chỉ đúng cho sudden drift}. Các loại drif
 	\item \textbf{Incremental drift:} Tạo chuỗi nhiều peaks nhỏ liên tục
 	\item \textbf{Recurrent drift:} Tạo chuỗi peaks lặp lại theo chu kỳ
 \end{itemize}
-Do đó, phương pháp SE-CDT (Chương~\ref{chap:proposed-model}) sử dụng các đặc trưng bổ sung (WR, $n_p$, CV) để phân loại các loại drift này thay vì chỉ dựa vào hình dạng tam giác.
+Do đó, phương pháp SHAPED\_CDT (Chương~\ref{chap:proposed-model}) sử dụng các đặc trưng bổ sung (WR, $n_p$, CV) để phân loại các loại drift này thay vì chỉ dựa vào hình dạng tam giác.
 \end{quote}
 
 \subsubsection{Tổng quát hoá cho nhiều sự kiện drift (Hệ quả 1)}

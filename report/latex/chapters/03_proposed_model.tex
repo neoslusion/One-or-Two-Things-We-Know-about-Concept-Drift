@@ -28,7 +28,7 @@ Mặc dù ShapeDD gốc thể hiện nhiều ưu điểm về độ chính xác 
 Trong các hệ thống học máy dòng dữ liệu (data stream), concept drift xảy ra khi các đặc tính thống kê của biến mục tiêu thay đổi đột ngột hoặc từ từ theo thời gian. Các phương pháp MMD truyền thống thường gặp khó khăn về chi phí tính toán khi áp dụng cho dữ liệu lớn.
 
 \subsubsection{Vấn đề của ước lượng MMD truyền thống}
-Trong ShapeDD gốc, thống kê MMD được tính toán dựa trên trọng số đều (uniform weights), coi vai trò của mọi điểm dữ liệu trong cửa sổ là như nhau. Để đạt được độ tin cậy thống kê (statistical power) mong muốn, phương pháp này yêu cầu kích thước mẫu lớn hoặc quy trình kiểm định hoán vị tốn kém ($O(N_{perm} \cdot n^2)$). Điều này không phù hợp với các ứng dụng yêu cầu phản hồi tức thì.
+Trong ShapeDD gốc, thống kê MMD được tính toán dựa trên trọng số đều (uniform weights), coi vai trò của mọi điểm dữ liệu trong cửa sổ là như nhau. Để đạt được độ mạnh thống kê (statistical power --- khả năng phát hiện sự khác biệt khi có) mong muốn, phương pháp này yêu cầu kích thước mẫu lớn hoặc quy trình kiểm định hoán vị tốn kém ($O(N_{perm} \cdot n^2)$). Điều này không phù hợp với các ứng dụng yêu cầu phản hồi tức thì.
 
 \subsubsection{Giải pháp: Trọng số mật độ thích ứng giảm phương sai}
 Nghiên cứu tích hợp phương pháp \textbf{ADW-MMD} (Adaptive Density-Weighted MMD), lấy cảm hứng từ bộ ước lượng "Optimally-Weighted MMD" được đề xuất bởi Bharti et al.~\cite{bharti2023owmmd} và phương pháp reweighting trong domain adaptation của Yan et al.~\cite{yan2017mind}.
@@ -38,7 +38,7 @@ Phương pháp này sử dụng một heuristic thích ứng để gán trọng 
 	w_i \propto \frac{1}{\sqrt{\sum_{j} k(x_i, x_j)}} \quad \text{và} \quad W^{XX} = w \otimes w^T
 \end{equation}
 
-Cách tiếp cận này ("Density-Weighted") giúp giảm phương sai bằng cách tập trung trọng số vào các điểm dữ liệu ở vùng biên hoặc vùng thưa thớt (low-density regions). Điều này tương tự như cơ chế importance sampling tự chuẩn hóa~\cite{anonymous2024directing}.
+Cách tiếp cận này ("Density-Weighted") giúp giảm phương sai bằng cách tập trung trọng số vào các điểm dữ liệu ở vùng biên hoặc vùng thưa thớt (low-density regions). Về mặt lý thuyết, cơ chế này tương tự như importance sampling tự chuẩn hóa (self-normalized importance sampling) trong thống kê, nơi các điểm dữ liệu "quan trọng" được gán trọng số cao hơn để giảm phương sai của bộ ước lượng.
 
 Điểm đặc biệt trong implementation là việc giữ nguyên trọng số đều (uniform weights) cho thành phần chéo (cross-term) để đảm bảo tính ổn định khi so sánh hai tập mẫu, trong khi chỉ tối ưu hóa các thành phần nội bộ (self-terms) để giảm nhiễu. Công thức MMD bình phương có trọng số được định nghĩa cụ thể:
 \begin{equation}
@@ -92,7 +92,7 @@ Cách tiếp cận này ("Density-Weighted") giúp giảm phương sai bằng c�
 	\end{tabular}
 \end{table}
 
-Với window size $n = 100$, ADW-MMD xử lý khoảng $\approx 50,000$ kernel evaluations mỗi step, so với $\approx 2,500,000$ của ShapeDD gốc. Điều này giải thích tốc độ tăng $\approx 7\times$ trong thực nghiệm.
+Với window size $n = 100$, ADW-MMD xử lý khoảng $\approx 50,000$ kernel evaluations mỗi step, so với $\approx 2,500,000$ của ShapeDD gốc. Về lý thuyết, việc giảm số lần permutation từ 2500 xuống 50 có thể mang lại tốc độ tăng đáng kể.
 
 
 \subsection{MMD-Agg: Tăng cường độ bền vững và tính thích nghi}
@@ -109,7 +109,7 @@ Thống kê kiểm định không còn là một giá trị MMD duy nhất, mà 
 \begin{equation}
 	\Delta_{Agg} = \max_{k \in \mathcal{K}} \left( \widehat{\text{MMD}}_k^2 - \lambda_k \right)
 \end{equation}
-trong đó $\lambda_k$ là các trọng số điều chỉnh (correction terms) được tính toán để đảm bảo mức ý nghĩa thống kê tổng thể. Cơ chế này cho phép bộ phát hiện "quét" qua nhiều độ phân giải của dữ liệu, tự động "thích nghi" để chọn ra kernel phản ánh tốt nhất sự thay đổi phân phối hiện tại mà không cần tham số hóa thủ công.
+trong đó $\lambda_k$ là các ngưỡng điều chỉnh (correction thresholds) cho từng kernel, được tính toán từ phân phối null của $\widehat{\text{MMD}}_k^2$ thông qua bootstrap hoặc asymptotic quantile (xem Algorithm~\ref{alg:mmd_agg}, bước 2). Cơ chế này cho phép bộ phát hiện ``quét'' qua nhiều độ phân giải của dữ liệu, tự động ``thích nghi'' để chọn ra kernel phản ánh tốt nhất sự thay đổi phân phối hiện tại mà không cần tham số hóa thủ công.
 
 \subsubsection{Đảm bảo lý thuyết: Tối ưu Minimax và Kiểm soát phi tiệm cận}
 Điểm vượt trội của MMD-Agg so với các phương pháp ensemble thông thường nằm ở các đảm bảo lý thuyết vững chắc:
@@ -194,9 +194,9 @@ Trong phạm vi luận văn, chiến lược cho \textit{Sudden Drift} được 
 	\item \textbf{Matching:} Khi drift xảy ra, hệ thống so sánh phân phối dữ liệu mới với các signature trong kho bằng khoảng cách Kolmogorov-Smirnov (KS). Nếu độ tương đồng cao (khoảng cách nhỏ hơn ngưỡng $\epsilon$), mô hình cũ sẽ được tải lại và tinh chỉnh nhẹ.
 \end{itemize}
 
-\subsubsection{SE-CDT: Phân loại drift không giám sát}
+\subsubsection{SHAPED\_CDT: Phân loại drift không giám sát}
 
-Phương pháp CDT\_MSW gốc~\cite{guo2022cdtmsw} yêu cầu \textit{labels} để tính toán accuracy ratio, điều này không phù hợp trong môi trường streaming không giám sát. Luận văn đề xuất \textbf{SE-CDT (ShapeDD-Enhanced CDT)}, một phương pháp thay thế sử dụng trực tiếp tín hiệu drift magnitude $\sigma(t)$ từ ShapeDD để phân loại drift type.
+Phương pháp CDT\_MSW gốc~\cite{guo2022cdtmsw} yêu cầu \textit{labels} để tính toán accuracy ratio, điều này không phù hợp trong môi trường streaming không giám sát. Luận văn đề xuất \textbf{SHAPED\_CDT} (ShapeDD-Enhanced Concept Drift Type --- còn gọi là SE-CDT trong một số tài liệu), một phương pháp thay thế sử dụng trực tiếp tín hiệu drift magnitude $\sigma(t)$ từ ShapeDD để phân loại drift type.
 
 \textbf{Cơ sở lý thuyết:} Theo phân loại của CDT\_MSW, drift được chia thành:
 \begin{itemize}
@@ -214,7 +214,7 @@ Phương pháp CDT\_MSW gốc~\cite{guo2022cdtmsw} yêu cầu \textit{labels} đ
 
 \textbf{Thuật toán phân loại:}
 \begin{algorithm}[H]
-	\caption{SE-CDT: Phân loại drift không giám sát}
+	\caption{SHAPED\_CDT: Phân loại drift không giám sát}
 	\label{alg:se-cdt}
 	\begin{algorithmic}[1]
 		\REQUIRE Tín hiệu drift magnitude $\sigma(t)$ từ ShapeDD
@@ -244,7 +244,7 @@ Phương pháp CDT\_MSW gốc~\cite{guo2022cdtmsw} yêu cầu \textit{labels} đ
 	\item \textbf{Sử dụng standard MMD:} Phù hợp hơn ADW-MMD cho classification vì standard MMD giữ lại tất cả sự khác biệt bao gồm cả những thay đổi nhỏ từ PCD (Gradual, Incremental).
 \end{itemize}
 
-\textbf{Độ phức tạp tính toán của SE-CDT:}
+\textbf{Độ phức tạp tính toán của SHAPED\_CDT:}
 \begin{itemize}
 	\item Gaussian smoothing: $O(m)$ với $m$ = độ dài tín hiệu
 	\item Peak detection: $O(m)$ sử dụng thuật toán scipy.signal.find\_peaks

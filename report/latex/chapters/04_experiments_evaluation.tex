@@ -151,7 +151,7 @@ Yếu tố then chốt cho các hệ thống real-time là tốc độ xử lý.
 Sau khi phát hiện drift, hệ thống kích hoạt quy trình thích ứng. Phần này đánh giá hiệu quả của chiến lược \textbf{"Full Model Reset"} đối với loại \textit{Sudden Drift}.
 
 \subsection{Phương pháp đánh giá}
-Sử dụng chỉ số \textbf{Prequential Accuracy} (độ chính xác dự báo trước - học sau) trên luồng dữ liệu 5,000 mẫu chứa 5 điểm sudden drift.
+Sử dụng chỉ số \textbf{Prequential Accuracy} --- phương pháp đánh giá tuần tự (test-then-train) trong đó mỗi mẫu được sử dụng để kiểm tra hiệu năng mô hình trước khi đưa vào huấn luyện, độ chính xác tích lũy được tính trên toàn bộ quá trình --- trên luồng dữ liệu 5,000 mẫu chứa 5 điểm sudden drift.
 
 \subsection{Kết quả phục hồi (Recovery)}
 

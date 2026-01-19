@@ -6,6 +6,14 @@
 	trên cửa sổ trượt. Các phương pháp sẽ được luận văn trình bày theo những góc nhìn khác nhau, từ đó có thể đưa ra các
 	so sánh, đánh giá, và làm tiền đề để phát triển mô hình phát hiện trôi dạt cho luận văn này.}
 
+\textbf{Quy ước thuật ngữ trong chương này:}
+\begin{itemize}
+	\item \textbf{Concept drift / Trôi dạt khái niệm:} Hiện tượng phân phối dữ liệu thay đổi theo thời gian, bao gồm cả virtual drift ($P(X)$ thay đổi) và real drift ($P(Y|X)$ thay đổi).
+	\item \textbf{Sudden drift / Abrupt drift:} Drift xảy ra đột ngột tại một thời điểm xác định.
+	\item \textbf{Detection delay:} Số lượng mẫu từ khi drift xảy ra đến khi được phát hiện.
+	\item \textbf{Warning zone:} Giai đoạn cảnh báo trước khi xác nhận drift (trong các phương pháp DDM-family).
+\end{itemize}
+
 \section{Các phương pháp phát hiện trôi dạt}
 Trải qua nhiều thập kỷ, bài toán phát hiện hiện tượng trôi dạt đã được nghiên cứu với nhiều cách tiếp cận khác nhau.
 Từ những năm 1990, các hệ thống học máy đầu tiên có khả năng thích ứng với concept drift chủ yếu dựa trên chiến lược
@@ -111,12 +119,15 @@ Các lược đồ trọng số này gán trọng số cao hơn cho các mẫu g
 
 \textbf{RDDM (Reactive DDM)}~\cite{barros2017rddm} tập trung vào việc tối ưu thời gian phản ứng bằng cách rút ngắn giai đoạn cảnh báo (warning phase) của DDM gốc.
 RDDM điều chỉnh các ngưỡng để phát hiện nhanh hơn các thay đổi đột ngột, đồng thời vẫn duy trì khả năng xử lý drift lặp lại (recurrent drift).
-Cải tiến này đặc biệt hữu ích trong các ứng dụng yêu cầu phản ứng thời gian thực. Những năm gần đây còn xuất hiện các biến thể hướng đến các tình
-huống đặc thù: \textbf{ACDDM} (Accurate DDM, 2020) cải thiện độ chính xác cho cả drift lặp lại bằng cách ghi nhớ các concept
-cũ, \textbf{DMDDM} (Diversity-Measure DDM, 2020) tận dụng sự đa dạng (diversity) của một tập classifier để nhận biết drift mạnh
-hơn và \textbf{DDM-FPW} (2020) kiểm soát tỷ lệ dương tính giả (false positive rate) trong luồng dữ liệu IoT đa nhãn (multi-label streams).
-Mục tiêu chung của các cải tiến này là tăng độ nhạy với nhiều loại drift (sudden, gradual, incremental, recurrent), đồng thời giảm báo động giả và
-phân biệt được drift thực sự với nhiễu.
+Cải tiến này đặc biệt hữu ích trong các ứng dụng yêu cầu phản ứng thời gian thực.
+
+Những năm gần đây còn xuất hiện các biến thể hướng đến các tình huống đặc thù:
+\begin{itemize}
+	\item \textbf{ACDDM} (Accurate DDM, 2020): Cải thiện độ chính xác cho drift lặp lại bằng cách lưu trữ và tái sử dụng các concept cũ.
+	\item \textbf{DMDDM} (Diversity-Measure DDM, 2020): Tận dụng tính đa dạng (diversity) của ensemble classifier để tăng độ nhạy phát hiện drift.
+	\item \textbf{DDM-FPW} (2020): Kiểm soát tỷ lệ dương tính giả trong luồng dữ liệu IoT đa nhãn.
+\end{itemize}
+Mục tiêu chung của các cải tiến này là tăng độ nhạy với nhiều loại drift, đồng thời giảm báo động giả và phân biệt được drift thực sự với nhiễu.
 
 \begin{table}[H]
 	\centering

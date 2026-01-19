@@ -56,7 +56,7 @@ từ đó xác định hướng cải tiến phù hợp.
 Dựa trên cơ sở lý thuyết và kết quả đánh giá hiệu năng, nghiên cứu sẽ tích hợp các kỹ thuật tiên tiến gần đây như ADW-MMD (Adaptive Density-Weighted MMD) và MMD-Agg (MMD Aggregated) vào framework ShapeDD. Mục tiêu là giải quyết các hạn chế về chi phí tính toán và độ nhạy của phương pháp gốc.
 
 \subsection{Đề xuất phương pháp phân loại drift SHAPED\_CDT}
-Kết hợp khả năng định vị chính xác thời điểm drift của ShapeDD với mô hình phân loại \textit{drift} CDT\_MSW~\cite{guo2022cdtmsw} để đề xuất phương pháp mới \textbf{SHAPED\_CDT} (ShapeDD-Enhanced Concept Drift Type Identification).
+Kết hợp khả năng định vị chính xác thời điểm drift của ShapeDD với mô hình phân loại \textit{drift} CDT\_MSW (Concept Drift Type identification based on Multi-Sliding Windows --- phương pháp phân loại loại drift dựa trên phân tích cửa sổ trượt đa kích thước~\cite{guo2022cdtmsw}, sẽ được trình bày chi tiết ở Mục~\ref{sec:cdt-msw-theory}) để đề xuất phương pháp mới \textbf{SHAPED\_CDT} (ShapeDD-Enhanced Concept Drift Type Identification).
 Hệ thống này có khả năng: (1) phát hiện chính xác thời điểm xảy ra \textit{drift} nhờ ShapeDD, và (2) sử dụng thông tin đó để trích xuất cửa sổ dữ liệu chính xác cho việc phân loại loại \textit{drift}, từ đó đưa ra chiến lược thích ứng tối ưu.
 
 \subsection{Tối ưu hóa tham số}
@@ -92,16 +92,15 @@ Cụ thể, luận văn sẽ tập trung vào việc phát triển hệ thống 
 Cách tiếp cận đánh giá bao gồm:
 
 \begin{enumerate}
-	\item \textbf{Đánh giá toàn diện:} Thực nghiệm trên 5 kịch bản drift khác nhau
-	      với 10 runs mỗi kịch bản để đảm bảo độ tin cậy thống kê.
+	\item \textbf{Đánh giá toàn diện:} Thực nghiệm trên nhiều kịch bản drift khác nhau
+	      với nhiều lần chạy độc lập để đảm bảo độ tin cậy thống kê.
 
-	\item \textbf{Phân tích đa tầng:} Đánh giá cả khả năng \textit{phát hiện} (Detection Rate)
-	      lẫn khả năng \textit{phân loại} (Classification Accuracy) của hệ thống,
-	      bao gồm cả phân loại Category (TCD vs PCD) và Subcategory (Sudden, Gradual, Incremental, Recurrent, Blip).
+	\item \textbf{Phân tích đa tầng:} Đánh giá cả khả năng \textit{phát hiện}
+	      lẫn khả năng \textit{phân loại} của hệ thống, bao gồm phân loại 
+	      theo nhóm (TCD vs PCD) và theo loại cụ thể.
 
-	\item \textbf{So sánh công bằng:} Đánh giá phương pháp đề xuất (SE-CDT không giám sát)
-	      so với baseline CDT\_MSW có giám sát trong cùng điều kiện thử nghiệm,
-	      bao gồm cả setup supervised với concept-aware labels.
+	\item \textbf{So sánh công bằng:} Đánh giá phương pháp đề xuất (SHAPED\_CDT không giám sát)
+	      so với baseline CDT\_MSW có giám sát trong cùng điều kiện thử nghiệm.
 \end{enumerate}
 
 
