@@ -54,7 +54,7 @@ Một phương pháp khác là \textbf{KSWIN} (Kolmogorov–Smirnov WINdowing~\c
 sổ trượt nhằm phát hiện thay đổi phân phối một cách phi tham số.  Các phương pháp thống kê thuần túy này có ưu điểm là không phụ
 thuộc vào mô hình học máy cụ thể, do đó có thể áp dụng trong môi trường phi giám sát (không cần nhãn). Mặt khác, chúng thường đòi
 hỏi giả định mạnh về độc lập và phân phối dữ liệu, và có thể bỏ sót những thay đổi nhỏ nếu kích thước mẫu không đủ lớn. Dù vậy, nhóm
-phương pháp thống kê đã đặt nền móng quan trọng cho lĩnh vực phát hiện drift, đặc biệt cho các bài toán mà ta quan tâm trực tiếp đến
+phương pháp thống kê đã đặt nền móng quan trọng cho lĩnh vực phát hiện drift, đặc biệt cho các bài toán quan tâm trực tiếp đến
 sự thay đổi của dữ liệu hơn là hiệu năng mô hình.
 
 \subsubsection{Các phương pháp dựa trên hiệu năng mô hình}
@@ -190,7 +190,7 @@ ra hoặc đặc trưng trung gian của mạng deep; (II) thiết kế kiến t
 dụng chính các mô hình deep để trực tiếp phân tích sự thay đổi phân phối trong dữ liệu.
 
 \textbf{Hướng (I): External detectors.} Cách tiếp cận phổ biến là gắn các bộ phát hiện drift cổ điển vào pipeline của mô hình deep learning.
-Ví dụ, trong giám sát mô hình CNN phân loại ảnh, ta có thể theo dõi độ bất định (entropy) của phân phối dự đoán, khi entropy tăng đột
+Ví dụ, trong giám sát mô hình CNN phân loại ảnh, có thể theo dõi độ bất định (entropy) của phân phối dự đoán, khi entropy tăng đột
 biến (mô hình trở nên kém chắc chắn), một bộ phát hiện như ADWIN được kích hoạt để dò tìm thay đổi trong chuỗi entropy theo thời gian.
 Jourdan và cộng sự (2023) đã áp dụng thành công cách này để phát hiện drift trong hệ thống giám sát sản xuất công nghiệp: sử dụng ADWIN theo
 dõi độ lệch xác suất dự đoán của mạng CNN, khi ADWIN báo drift thì hệ thống trigger huấn luyện lại mô hình trên dữ liệu mới. Tương tự, trong
@@ -266,7 +266,7 @@ Các phương pháp cũng đã được thực nghiệm trên các tập dữ li
 	\end{tabular}
 \end{table}
 
-Tổng kết lại, từ khoảng năm 2015 đến nay, chúng ta chứng kiến sự gia tăng các công trình kết hợp giữa deep learning và phát hiện
+Tổng kết lại, từ khoảng năm 2015 đến nay, đã có sự gia tăng đáng kể các công trình kết hợp giữa deep learning và phát hiện
 concept drift. Ban đầu, các mô hình deep thường dựa vào các "cảm biến" drift bên ngoài (như ADWIN, DDM) để quyết định khi nào cần
 tái huấn luyện. Dần dần, các kiến trúc deep thích ứng (như NADINE, DEN, ADL, DEVDAN) ra đời với khả năng tự điều chỉnh cấu trúc khi
 drift diễn ra. Mặc dù vẫn đang trong giai đoạn phát triển, các phương pháp này hứa hẹn đem lại sự linh hoạt và mạnh mẽ, giúp mô hình

@@ -114,10 +114,10 @@ Trước khi đi vào chi tiết, phần này thống nhất các ký hiệu đ�
 
 \subsubsection{Đại lượng độ lớn trôi dạt (\texorpdfstring{$\sigma$}{σ})}
 
-Xét luồng dữ liệu mà phân phối sinh dữ liệu tại thời điểm $t$ được ký hiệu là $D_t$. Khi xảy ra trôi dạt, ta có $D_t \neq D_s$ với một số $s < t$. 
+Xét luồng dữ liệu mà phân phối sinh dữ liệu tại thời điểm $t$ được ký hiệu là $D_t$. Khi xảy ra trôi dạt, $D_t \neq D_s$ với một số $s < t$. 
 ShapeDD định nghĩa đại lượng \textbf{độ lớn trôi dạt} $\sigma$ như là độ đo sự khác biệt giữa hai phân phối quan sát được trong hai cửa sổ thời gian lân cận.
 
-Với hai cửa sổ $W_l(t) = [t - \frac{l}{2}, \, t + \frac{l}{2}]$ và $W_l(s) = [s - \frac{l}{2}, \, s + \frac{l}{2}]$, ta định nghĩa:
+Với hai cửa sổ $W_l(t) = [t - \frac{l}{2}, \, t + \frac{l}{2}]$ và $W_l(s) = [s - \frac{l}{2}, \, s + \frac{l}{2}]$, định nghĩa:
 \begin{equation}
     \sigma_{d,l}(s,t) = d \big( P_{W_l(s)}, \, P_{W_l(t)} \big),
 \end{equation}
@@ -167,7 +167,7 @@ Như vậy, tín hiệu tổng thể $\sigma(t)$ có thể xem là tổng chập
 
 \subsection{Ứng dụng vào Lọc Nhiễu và Phát hiện Drift}
 
-Nhận biết được dạng hình học của tín hiệu trôi dạt giúp ta thực hiện \textbf{ước lượng tham số (parametric estimation)} cho $\sigma$. 
+Nhận biết được dạng hình học của tín hiệu trôi dạt cho phép thực hiện \textbf{ước lượng tham số (parametric estimation)} cho $\sigma$. 
 Cụ thể, thay vì dùng giá trị ước lượng nhiễu $\hat{\sigma}$, ShapeDD tiến hành \textbf{khớp hàm tham số} $\tilde{\sigma}$ có dạng:
 \begin{equation}
     \tilde{\sigma}(t) = \sum_i a_i \, h_l(t - t_i),
@@ -247,7 +247,7 @@ Nếu $P = Q$, ba thành phần này cân bằng nhau và $\text{MMD}^2 = 0$. N�
 
 \subsection{Cách thức hoạt động của ShapeDD}
 
-Các phương pháp phát hiện drift cơ bản đã được trình bày chi tiết trong Chương~\ref{chap:related-work}. Để cung cấp ngữ cảnh cho ShapeDD, chúng ta tóm tắt ngắn gọn các đặc điểm chính:
+Các phương pháp phát hiện drift cơ bản đã được trình bày chi tiết trong Chương~\ref{chap:related-work}. Để cung cấp ngữ cảnh cho ShapeDD, phần này tóm tắt ngắn gọn các đặc điểm chính:
 
 \textbf{Phương pháp dựa trên hiệu suất mô hình:} DDM, EDDM, MDDM, FHDDMS theo dõi các thống kê lỗi của mô hình và phát hiện drift khi hiệu suất giảm đáng kể. Các phương pháp này phụ thuộc vào nhãn ground truth và có thể bị trễ trong việc phát hiện do cần thu thập đủ lỗi.
 
@@ -267,7 +267,7 @@ Giai đoạn đầu tiên bao gồm thu thập dữ liệu sử dụng kỹ thu�
     \item \textbf{Cửa sổ hiện tại}: $l_1$ điểm dữ liệu tiếp theo $[t-l_1+1, t]$
 \end{itemize}
 
-Đối với luồng dữ liệu $\mathcal{S} = \{x_1, x_2, \ldots, x_n\}$, chúng ta duy trì cửa sổ trượt $W_t$ có kích thước tổng cộng $2l_1$ tại thời điểm $t$:
+Đối với luồng dữ liệu $\mathcal{S} = \{x_1, x_2, \ldots, x_n\}$, cửa sổ trượt $W_t$ có kích thước tổng cộng $2l_1$ được duy trì tại thời điểm $t$:
 \begin{equation}
 W_t = \{x_{t-2l_1+1}, x_{t-2l_1+2}, \ldots, x_t\}
 \end{equation}
@@ -282,7 +282,7 @@ W_t = \{x_{t-2l_1+1}, x_{t-2l_1+2}, \ldots, x_t\}
 
 \subsubsection{Giai đoạn 2: Xây dựng feature (Feature Construction)}
 
-Trong giai đoạn này, chúng ta xây dựng ma trận tương đồng (similarity matrix) sử dụng hàm kernel để nắm bắt mối quan hệ giữa các điểm dữ liệu. Gaussian RBF kernel thường được sử dụng:
+Trong giai đoạn này, ma trận tương đồng (similarity matrix) được xây dựng sử dụng hàm kernel để nắm bắt mối quan hệ giữa các điểm dữ liệu. Gaussian RBF kernel thường được sử dụng:
 
 \begin{equation}
 k(x_i, x_j) = \exp\left(-\frac{\|x_i - x_j\|^2}{2\sigma^2}\right)
@@ -305,7 +305,7 @@ Phương pháp này đảm bảo kernel thích nghi với scale của dữ liệ
 
 \subsubsection{Giai đoạn 3: Tính toán sự khác biệt (Difference Computation)}
 
-Cốt lõi của ShapeDD bao gồm tính toán sự khác biệt thống kê giữa hai nửa của cửa sổ trượt sử dụng MMD có trọng số. Chúng ta định nghĩa hàm trọng số $w(t)$ tạo ra trọng số tương phản (+1 và -1) cho hai nửa của cửa sổ:
+Cốt lõi của ShapeDD bao gồm tính toán sự khác biệt thống kê giữa hai nửa của cửa sổ trượt sử dụng MMD có trọng số. Hàm trọng số $w(t)$ được định nghĩa để tạo ra trọng số tương phản (+1 và -1) cho hai nửa của cửa sổ:
 
 \begin{equation}
 w(t) = \begin{cases}
@@ -319,7 +319,7 @@ Thống kê MMD có trọng số sau đó được tính như:
 \text{MMD}^2_t = \sum_{i,j=1}^{2l_1} w_i w_j K_{ij}
 \end{equation}
 
-\textbf{Giải thích công thức:} Khai triển ra, ta có:
+\textbf{Giải thích công thức:} Khai triển ra:
 \begin{align}
 \text{MMD}^2_t = &\frac{1}{l_1^2} \sum_{i,j=1}^{l_1} K_{ij} \quad \text{(tương đồng trong cửa sổ tham chiếu)} \nonumber \\
 + &\frac{1}{l_1^2} \sum_{i,j=l_1+1}^{2l_1} K_{ij} \quad \text{(tương đồng trong cửa sổ hiện tại)} \nonumber \\

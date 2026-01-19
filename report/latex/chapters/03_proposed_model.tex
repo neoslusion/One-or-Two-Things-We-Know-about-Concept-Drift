@@ -111,14 +111,14 @@ Thống kê kiểm định không còn là một giá trị MMD duy nhất, mà 
 \end{equation}
 trong đó $\lambda_k$ là các ngưỡng điều chỉnh (correction thresholds) cho từng kernel, được tính toán từ phân phối null của $\widehat{\text{MMD}}_k^2$ thông qua bootstrap hoặc asymptotic quantile (xem Algorithm~\ref{alg:mmd_agg}, bước 2). Cơ chế này cho phép bộ phát hiện ``quét'' qua nhiều độ phân giải của dữ liệu, tự động ``thích nghi'' để chọn ra kernel phản ánh tốt nhất sự thay đổi phân phối hiện tại mà không cần tham số hóa thủ công.
 
-\subsubsection{Đảm bảo lý thuyết: Tối ưu Minimax và Kiểm soát phi tiệm cận}
+\subsubsection{Đảm bảo lý thuyết}
 Điểm vượt trội của MMD-Agg so với các phương pháp ensemble thông thường nằm ở các đảm bảo lý thuyết vững chắc:
 \begin{enumerate}
-	\item \textbf{Tối ưu Minimax (Minimax Optimality):} Schrab et al. chứng minh rằng MMD-Agg đạt được tỷ lệ hội tụ tối ưu minimax (minimax optimal rate) trên các không gian Sobolev. Nghĩa là, đối với các hàm mật độ có độ trơn (smoothness) không xác định trước, MMD-Agg có khả năng phát hiện sự khác biệt nhỏ nhất có thể phân biệt được về mặt thống kê, hiệu quả hơn bất kỳ kiểm định đơn kernel nào.
-	\item \textbf{Kiểm soát lỗi loại I phi tiệm cận (Non-asymptotic Type I Error Control):} Khác với nhiều phương pháp chỉ đúng khi số lượng mẫu $n \to \infty$, MMD-Agg đảm bảo kiểm soát chặt chẽ xác suất báo động giả (Type I error) ngay cả với kích thước mẫu hữu hạn ($n < \infty$). Điều này đặc biệt quan trọng trong bối cảnh streaming, nơi các cửa sổ dữ liệu thường có kích thước nhỏ và biến động.
+	\item \textbf{Khả năng phát hiện tối ưu:} Schrab et al. đã chứng minh về mặt lý thuyết rằng MMD-Agg có thể phát hiện sự khác biệt nhỏ nhất có thể phân biệt được, mà không cần biết trước đặc tính của dữ liệu. Điều này giúp phương pháp hoạt động tốt trong nhiều tình huống khác nhau.
+	\item \textbf{Kiểm soát báo động giả với mẫu nhỏ:} Khác với nhiều phương pháp chỉ hoạt động tốt khi có nhiều dữ liệu, MMD-Agg đảm bảo kiểm soát chặt chẽ tỷ lệ báo động giả ngay cả với cửa sổ dữ liệu nhỏ. Điều này phù hợp với môi trường streaming, nơi dữ liệu đến liên tục và cửa sổ thường có kích thước hạn chế.
 \end{enumerate}
 
-Tóm lại, việc tích hợp MMD-Agg biến ShapeDD từ một bộ phát hiện phụ thuộc tham số thành một hệ thống \textit{adaptive}, có khả năng phát hiện mạnh mẽ cả các trôi dạt tinh vi (local changes) lẫn các trôi dạt cấu trúc lớn (global shifts) mà không cần tinh chỉnh thủ công.
+Nhờ tích hợp MMD-Agg, ShapeDD không còn phụ thuộc vào việc chọn tham số kernel thủ công. Bộ phát hiện có thể tự động phát hiện cả các thay đổi nhỏ lẫn các thay đổi lớn trong phân phối dữ liệu.
 
 \begin{algorithm}[H]
 	\caption{MMD Aggregated (MMD-Agg)}
