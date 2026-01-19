@@ -84,24 +84,31 @@ này dễ bị \textbf{nhiễu}, khiến việc phân biệt giữa thay đổi 
 \textbf{ShapeDD (Shape-Based Drift Detection)} được đề xuất nhằm khắc phục vấn đề này bằng cách khai thác \textit{đặc trưng hình dạng} 
 mà tín hiệu drift thể hiện, đặc biệt trong các trường hợp \textbf{drift đột ngột (abrupt drift)}.
 
-% \subsection{Quy ước ký hiệu}
+\subsection{Quy ước ký hiệu}
 
-% Trước khi đi vào chi tiết, phần này thống nhất các ký hiệu được sử dụng trong chương:
+Trước khi đi vào chi tiết, phần này thống nhất các ký hiệu được sử dụng trong chương:
 
-% \begin{itemize}
-%     \item $l$: kích thước cửa sổ tổng quát (được dùng trong phần lý thuyết)
-%     \item $l_1$, $l_2$: kích thước hai cửa sổ cụ thể của ShapeDD trong triển khai thực tế
-%         \begin{itemize}
-%             \item $l_1$: nửa cửa sổ nhỏ (half-window) cho so sánh cục bộ, mặc định = 50
-%             \item $l_2$: cửa sổ lớn hơn cho MMD computation, mặc định = 150
-%         \end{itemize}
-%     \item $P$, $Q$: hai phân phối xác suất cần so sánh
-%     \item $D_t$: phân phối sinh dữ liệu tại thời điểm $t$
-%     \item $\sigma$: đại lượng độ lớn trôi dạt (drift magnitude)
-%     \item $h_l(t)$: hình dạng tam giác đặc trưng của tín hiệu drift
-% \end{itemize}
+\begin{table}[H]
+	\centering
+	\caption{Bảng ký hiệu thống nhất}
+	\label{tab:notation}
+	\begin{tabular}{|c|l|l|}
+		\hline
+		\textbf{Ký hiệu} & \textbf{Ý nghĩa} & \textbf{Giá trị mặc định} \\
+		\hline
+		$l$, $l_1$, $l_2$ & Kích thước cửa sổ & $l_1=50$, $l_2=150$ \\
+		$P$, $Q$ & Hai phân phối xác suất & -- \\
+		$D_t$ & Phân phối tại thời điểm $t$ & -- \\
+		$\sigma(t)$ & Drift magnitude signal & -- \\
+		$h_l(t)$ & Hình dạng tam giác đặc trưng & -- \\
+		$\sigma_k$ & Kernel bandwidth (RBF) & median heuristic \\
+		$k(x,y)$ & Kernel function & Gaussian RBF \\
+		\hline
+	\end{tabular}
+\end{table}
 
-% \textit{Lưu ý:} Trong các phương pháp khác nhau (ADWIN, DDM, etc.), ký hiệu cửa sổ có thể khác. Luận văn này giữ nguyên ký hiệu gốc khi trình bày từng phương pháp để thuận tiện tra cứu tài liệu gốc.
+\textit{Lưu ý:} Ký hiệu $\sigma$ được sử dụng với hai nghĩa khác nhau trong tài liệu: (1) drift magnitude signal $\sigma(t)$, và (2) kernel bandwidth $\sigma_k$. Để tránh nhầm lẫn, luận văn sử dụng subscript khi cần phân biệt.
+
 
 \subsection{Cơ sở lý thuyết}
 
@@ -135,6 +142,17 @@ trong đó hàm hình dạng $h_l(t)$ được định nghĩa bởi:
 \end{theorem}
 
 \textbf{Ý nghĩa:} Hàm $h_l(t)$ có dạng \textbf{tam giác cân}, đạt cực đại tại thời điểm xảy ra drift ($t=0$), và suy giảm tuyến tính về hai phía. Đặc tính này hoàn toàn \textbf{không phụ thuộc vào dạng phân phối hay độ đo khoảng cách} sử dụng, mà chỉ bị co giãn theo hệ số $\|P - Q\|$. Đây là lý do tại sao ShapeDD có thể áp dụng cho nhiều domain khác nhau mà không cần thay đổi kernel hay metric.
+
+\begin{quote}
+\textbf{Giới hạn lý thuyết quan trọng:}
+Triangle Shape Property \textbf{chỉ đúng cho sudden drift}. Các loại drift khác (gradual, incremental, recurrent) \textit{không} tạo ra hình dạng tam giác đặc trưng:
+\begin{itemize}
+	\item \textbf{Gradual drift:} Tạo peak ``rộng'' với slope thoải hơn
+	\item \textbf{Incremental drift:} Tạo chuỗi nhiều peaks nhỏ liên tục
+	\item \textbf{Recurrent drift:} Tạo chuỗi peaks lặp lại theo chu kỳ
+\end{itemize}
+Do đó, phương pháp SE-CDT (Chương~\ref{chap:proposed-model}) sử dụng các đặc trưng bổ sung (WR, $n_p$, CV) để phân loại các loại drift này thay vì chỉ dựa vào hình dạng tam giác.
+\end{quote}
 
 \subsubsection{Tổng quát hoá cho nhiều sự kiện drift (Hệ quả 1)}
 
