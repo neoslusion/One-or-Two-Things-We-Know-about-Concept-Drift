@@ -224,7 +224,7 @@ Phương pháp CDT\_MSW gốc~\cite{guo2022cdtmsw} yêu cầu \textit{labels} đ
 		\STATE Tính các đặc trưng: $n_p \leftarrow |P|$, $\text{WR}$, $\text{CV}$, $\text{SNR}$
 		\IF{$n_p \leq 4$ AND $\text{WR} < 0.12$}
 		\RETURN \textbf{SUDDEN} (TCD)
-		\ELSIF{$n_p \geq 4$ AND $\text{CV} < 0.2$}
+		\ELSIF{$n_p \geq 4$ AND $\text{CV} < 0.3$}
 		\RETURN \textbf{RECURRENT} (PCD)
 		\ELSIF{$\text{WR} \geq 0.12$}
 		\RETURN \textbf{GRADUAL} (PCD)

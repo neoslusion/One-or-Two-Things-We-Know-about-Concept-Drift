@@ -13,6 +13,18 @@
 % warning notes
 \usepackage{todonotes}
 
+% Code and text alignment
+\usepackage{listings}
+\usepackage{ragged2e}
+
+\lstset{
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    breakatwhitespace=true,
+    postbreak=\mbox{\textcolor{red}{$\hookrightarrow$}\space},
+    columns=fullflexible
+}
+
 % Theorem environments
 \theoremstyle{plain}
 \newtheorem{theorem}{Định lý}[chapter]

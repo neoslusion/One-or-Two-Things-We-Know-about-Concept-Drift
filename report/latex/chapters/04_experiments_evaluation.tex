@@ -76,7 +76,7 @@ Bảng~\ref{tab:comprehensive_performance} tóm tắt hiệu suất trung bình.
 \begin{figure}[h]
 	\centering
 	\includegraphics[width=0.9\textwidth]{../../experiments/drift_detection_benchmark/publication_figures/critical_difference_f1.pdf}
-	\caption{Biểu đồ Critical Difference (CD) với mức ý nghĩa $\alpha = 0.05$. MMD_ADW và ShapeDD_ADW_MMD nằm ở nhóm đầu (rank thấp nhất là tốt nhất).}
+	\caption[Biểu đồ Critical Difference (CD)]{Biểu đồ Critical Difference (CD) với mức ý nghĩa $\alpha = 0.05$. MMD_ADW và ShapeDD_ADW_MMD nằm ở nhóm đầu (rank thấp nhất là tốt nhất).}
 	\label{fig:critical_difference}
 \end{figure}
 
@@ -94,7 +94,7 @@ Hiệu suất của các phương pháp thay đổi tùy thuộc vào đặc tí
 	\begin{figure}[h]
 	\centering
 	\includegraphics[width=0.9\textwidth]{../../experiments/publication_figures/vis_mixed_a_SE.png}
-	\caption{Minh họa tín hiệu phát hiện trên dữ liệu Sudden Drift (trong kịch bản Mixed A). ShapeDD tạo ra hình dạng "tam giác cân" đặc trưng (Subplot 03) tại điểm drift, đúng như dự báo lý thuyết.}
+	\caption[Minh họa tín hiệu phát hiện trên dữ liệu Sudden Drift]{Minh họa tín hiệu phát hiện trên dữ liệu Sudden Drift (trong kịch bản Mixed A). ShapeDD tạo ra hình dạng "tam giác cân" đặc trưng (Subplot 03) tại điểm drift, đúng như dự báo lý thuyết.}
 	\label{fig:sudden_drift_vis}
 \end{figure}
 
@@ -122,14 +122,14 @@ Hiệu suất của các phương pháp thay đổi tùy thuộc vào đặc tí
 \begin{figure}[h]
 	\centering
 	\includegraphics[width=0.9\textwidth]{../../experiments/publication_figures/vis_repeated_gradual_SE.png}
-	\caption{Minh họa tín hiệu trên dữ liệu Gradual Drift. Tín hiệu (màu đỏ - Subplot 03) không tạo thành đỉnh nhọn rõ ràng mà bị san phẳng, khiến việc xác định ngưỡng trở nên khó khăn và dễ bị nhầm lẫn với nhiễu.}
+	\caption[Minh họa tín hiệu trên dữ liệu Gradual Drift]{Minh họa tín hiệu trên dữ liệu Gradual Drift. Tín hiệu (màu đỏ - Subplot 03) không tạo thành đỉnh nhọn rõ ràng mà bị san phẳng, khiến việc xác định ngưỡng trở nên khó khăn và dễ bị nhầm lẫn với nhiễu.}
 	\label{fig:gradual_drift_vis}
 \end{figure}
 
 \begin{figure}[h]
 	\centering
 	\includegraphics[width=0.9\textwidth]{../../experiments/drift_detection_benchmark/publication_figures/figure_4_stationary_fp.png}
-	\caption{Phân tích số lượng báo động giả trên tập dữ liệu tĩnh (Stationary). KS tạo ra nhiều báo động sai nhất, trong khi các phương pháp MMD và D3 ổn định hơn.}
+	\caption[Phân tích số lượng báo động giả trên tập dữ liệu tĩnh]{Phân tích số lượng báo động giả trên tập dữ liệu tĩnh (Stationary). KS tạo ra nhiều báo động sai nhất, trong khi các phương pháp MMD và D3 ổn định hơn.}
 	\label{fig:stationary_fp}
 \end{figure}
 
@@ -160,7 +160,7 @@ Hình~\ref{fig:prequential_accuracy} minh họa quá trình suy giảm và phụ
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=0.95\textwidth]{image/prequential_accuracy_sudden.png}
-	\caption{Độ chính xác Prequential theo thời gian. Đường màu xanh (Type-Specific/Simple Retrain) cho thấy độ chính xác phục hồi nhanh chóng sau mỗi điểm drift (ký hiệu tam giác đỏ), trong khi đường màu đỏ (No Adaptation) tiếp tục suy giảm.}
+	\caption[Độ chính xác Prequential theo thời gian]{Độ chính xác Prequential theo thời gian. Đường màu xanh (Type-Specific/Simple Retrain) cho thấy độ chính xác phục hồi nhanh chóng sau mỗi điểm drift (ký hiệu tam giác đỏ), trong khi đường màu đỏ (No Adaptation) tiếp tục suy giảm.}
 	\label{fig:prequential_accuracy}
 \end{figure}
 
@@ -215,9 +215,9 @@ Phần này đánh giá hiệu quả của phương pháp SE-CDT được đề 
 		\textbf{Tiêu chí} & \textbf{CDT\_MSW} & \textbf{SE-CDT} \\
 		\hline
 		Supervised        & Có (cần labels)   & \textbf{Không}  \\
-		Category accuracy & 46.7\%            & \textbf{78.0\%}   \\
-		Signal type       & Accuracy ratio    & MMD $\sigma(t)$ \\
-		Tính toán bổ sung & Cần model         & Không           \\
+		Độ chính xác nhóm (CAT) & 40.0\%            & \textbf{78.0\%}   \\
+		Tín hiệu sử dụng  & Tỷ lệ độ chính xác & MMD $\sigma(t)$ \\
+		Tính toán bổ sung & Cần training model & Không           \\
 		\hline
 	\end{tabular}
 	\begin{flushleft}
@@ -311,10 +311,10 @@ ADW-MMD sử dụng cơ chế \textit{variance reduction weighting} ($w_{ij} \pr
 
 \textbf{Kết luận chung:}
 \begin{itemize}
-	\item \textbf{SHAPED\_CDT đạt Category Accuracy cao nhất (78.0\%)} mà không cần labels
-	\item \textbf{CDT\_MSW tốt hơn về detection accuracy} (MDR = 0.267 vs 0.678) do sử dụng model accuracy
-	\item \textbf{Trade-off chính:} SHAPED\_CDT ưu tiên classification, CDT\_MSW ưu tiên detection
-	\item \textbf{ADW-MMD phù hợp cho detection, không phù hợp cho classification}
+	\item \textbf{SHAPED\_CDT đạt độ chính xác nhóm (CAT) cao nhất (78.0\%)} mà không cần labels.
+	\item \textbf{CDT\_MSW nhạy hơn về phát hiện drift} (MDR = 0.267 vs 0.678) do có sự hỗ trợ của nhãn mô hình.
+	\item \textbf{Đánh đổi (Trade-off):} SHAPED\_CDT ưu thế về phân loại, CDT\_MSW ưu thế về phát hiện.
+	\item \textbf{ADW-MMD phù hợp cho phát hiện (detection), không phù hợp cho phân loại (classification).}
 \end{itemize}
 \subsection{So sánh công bằng: Supervised CDT\_MSW vs Unsupervised SE-CDT}
 \label{sec:supervised-comparison}
