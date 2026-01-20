@@ -139,7 +139,7 @@ Yếu tố then chốt cho các hệ thống real-time là tốc độ xử lý.
 
 \input{../../experiments/drift_detection_benchmark/publication_figures/table_III_runtime_stats.tex}
 
-\textbf{Kết quả ấn tượng:}
+\textbf{Các kết quả đáng chú ý:}
 \begin{itemize}
 	\item \textbf{Tăng tốc gấp hơn 7 lần:} ShapeDD\_ADW\_MMD đạt thông lượng $\sim 50,300$ mẫu/giây, nhanh gấp 7.2 lần so với ShapeDD gốc ($\sim 7,000$ mẫu/giây).
 	\item \textbf{Cơ sở:} Sự cải thiện này đến từ việc loại bỏ quy trình kiểm định hoán vị (Permutation Test) tốn kém ($O(N \cdot n^2)$) và thay thế bằng việc so sánh thống kê ADW-MMD với ngưỡng cố định hoặc bootstrap rút gọn, nhờ vào tính ổn định của bộ ước lượng giảm phương sai.
@@ -297,7 +297,7 @@ ADW-MMD sử dụng cơ chế \textit{variance reduction weighting} ($w_{ij} \pr
 \begin{itemize}
 	\item \textbf{ADW-MMD tốt cho detection} (phát hiện có/không có drift) với F1 = 0.562 (benchmark Chương 4.3)
 	\item \textbf{Standard MMD phù hợp hơn cho classification} vì giữ lại tất cả sự khác biệt, bao gồm cả những thay đổi nhỏ từ PCD
-	\item Đây là trade-off cơ bản: variance reduction giúp detection nhưng harm classification
+	\item Đây là sự đánh đổi cơ bản: giảm phương sai (variance reduction) hỗ trợ phát hiện nhưng ảnh hưởng đến phân loại
 \end{itemize}
 
 \subsection{Phân tích kết quả cuối cùng}

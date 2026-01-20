@@ -20,15 +20,14 @@ Các mô hình học máy được huấn luyện với giả định rằng d�
 sẽ tuân theo cùng phân phối với dữ liệu huấn luyện (giả định i.i.d.). Tuy nhiên,
 môi trường sản xuất công nghiệp hiếm khi tĩnh: thiết bị lão hóa, quy trình thay đổi,
 cảm biến xuống cấp, và hành vi người dùng biến đổi~\cite{jourdan2023process}. Kết quả là
-hiệu suất mô hình suy giảm dần theo thời gian --- đôi khi đột ngột --- gây ảnh hưởng
-đến độ tin cậy hệ thống và chi phí vận hành. Để giải quyết vấn đề này, cần có cơ chế
+hiệu suất mô hình suy giảm dần theo thời gian --- đôi khi đột ngột --- làm giảm
+độ tin cậy hệ thống và tăng chi phí vận hành. Để giải quyết vấn đề này, cần có cơ chế
 (1) phát hiện drift càng sớm càng tốt, và (2) thích ứng mô hình một cách hiệu quả
 theo các điều kiện mới.
 
 \section{Tổng quan về bài toán}
-Việc xử lý và phân tích dữ liệu đang trở thành một thách thức lớn do tính phức tạp và tính động của dữ liệu trong bối cảnh hiện nay.
-Một thách thức quan trọng là xử lý hiện tượng concept drift - một hiện tượng xảy ra khi phân phối dữ liệu đầu vào $P(X)$ hoặc mối quan hệ giữa đầu vào và đầu ra $P(y|X)$ thay đổi theo thời gian - điều này ảnh
-hưởng trực tiếp đến hiệu suất của các mô hình học máy và các hệ thống ra quyết định tự động.
+Việc xử lý và phân tích dữ liệu đang trở thành một thách thức lớn do tính phức tạp và sự biến động của dữ liệu trong bối cảnh hiện nay.
+Một trong những thách thức quan trọng là xử lý hiện tượng trôi dạt khái niệm (concept drift). Hiện tượng này xảy ra khi phân phối dữ liệu đầu vào $P(X)$ hoặc mối quan hệ $P(y|X)$ thay đổi theo thời gian, làm suy giảm hiệu suất của các mô hình học máy và hệ thống ra quyết định tự động.
 
 Đối với các ứng dụng học máy trong môi trường sản xuất công nghiệp như IoT,
 việc phát hiện drift trong thời gian thực hoặc gần thời gian thực là yêu cầu
@@ -43,7 +42,7 @@ Tuy nhiên, việc xây dựng hệ thống như vậy đặt ra nhiều thách 
 	      và không yêu cầu nhãn thật liên tục (\textit{unsupervised adaptation}).
 \end{enumerate}
 
-Từ những thách thức trên, đề tài này đặt ra những mục tiêu nghiên cứu và phát triển một hệ thống tự động phát hiện và thích ứng với hiện tượng concept drift trong môi trường dữ liệu streaming real-time.
+Từ những thách thức trên, đề tài này đặt ra những mục tiêu nghiên cứu và phát triển một hệ thống tự động phát hiện và thích ứng với hiện tượng trôi dạt khái niệm trong môi trường luồng dữ liệu thời gian thực.
 \section{Mục tiêu đề tài}
 
 \subsection{Khảo sát các phương pháp phát hiện drift}

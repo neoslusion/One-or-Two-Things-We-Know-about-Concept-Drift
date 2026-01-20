@@ -59,13 +59,13 @@ sự thay đổi của dữ liệu hơn là hiệu năng mô hình.
 
 \subsubsection{Các phương pháp dựa trên hiệu năng mô hình}
 Đây là nhóm phương pháp phổ biến trong giai đoạn giữa những năm 2000, khi các nhà nghiên cứu tập trung vào việc giám sát chất
-lượng dự đoán của mô hình học máy theo thời gian để phát hiện drift. Ý tưởng chính là nếu độ chính xác của mô học máy tại bỗng
+lượng dự đoán của mô hình học máy theo thời gian để phát hiện drift. Ý tưởng chính là nếu độ chính xác của mô hình học máy đột
 nhiên trở nên kém đi (tỉ lệ lỗi tăng lên đáng kể khi so sánh với nhãn thật) thì có khả năng dữ liệu đã có thay đổi. Phương pháp DDM
 (Drift Detection Method) được phát triển từ năm 2004~\cite{gama2004learning} đến nay, trở thành nền tảng quan trọng, đặt nền
 móng cho các phương pháp sau này.
 
 \textbf{DDM (Drift Detection Method)} theo dõi tỷ lệ lỗi $p_i$ và độ lệch chuẩn $s_i$ của mô hình trên dòng dữ liệu.
-Ý tưởng là trong quá hoạt động, nếu phân phối dữ liệu ổn định, tỷ lệ dự đoán sai sẽ giảm dần và dao động xung quanh một giá trị thấp.
+Ý tưởng là trong quá trình hoạt động, nếu phân phối dữ liệu ổn định, tỷ lệ dự đoán sai sẽ giảm dần và dao động xung quanh một giá trị thấp.
 Khi concept drift xảy ra, tỷ lệ lỗi của mô hình đột ngột tăng cao, vượt ra khỏi khoảng tin cậy.
 DDM sẽ tiến hành ghi nhận giá trị tối thiểu của $p_i + s_i$ trong quá trình học, và đặt hai ngưỡng cảnh báo:
 \begin{itemize}
@@ -80,7 +80,7 @@ vào giá trị khoảng cách giữa các lần dự đoán sai liên tiếp~\c
 khoảng cách lớn, khi drift bắt đầu xuất hiện, các lỗi xuất hiện thường xuyên hơn. EDDM tính trung bình và độ lệch chuẩn của khoảng cách giữa các lỗi,
 phát hiện drift khi khoảng cách giảm mạnh so với giá trị tối đa đã ghi nhận. Nhờ vậy, EDDM nhạy hơn với các thay đổi từ từ, báo hiệu sớm
 hơn DDM trong nhiều trường hợp~\cite{baena2006early}. Sau DDM và EDDM, hàng loạt thuật toán dựa trên theo dõi hiệu năng ra đời, cho thấy sự phát
-triển mạnh mẽ trong giai đoạn sau này.
+triển đáng kể trong giai đoạn sau này.
 
 \textbf{HDDM (Hoeffding's Drift Detection Method)}~\cite{HDDM} là một hướng cải tiến quan trọng, áp dụng các ràng buộc thống kê chặt chẽ hơn để giảm
 giả định phân phối. Thay vì giả định rằng tỷ lệ lỗi tuân theo phân phối cụ thể (như DDM giả định phân phối nhị thức), HDDM sử dụng bất đẳng thức

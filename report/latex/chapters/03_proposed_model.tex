@@ -40,13 +40,13 @@ Phương pháp này sử dụng một heuristic thích ứng để gán trọng 
 
 Cách tiếp cận này ("Density-Weighted") giúp giảm phương sai bằng cách tập trung trọng số vào các điểm dữ liệu ở vùng biên hoặc vùng thưa thớt (low-density regions). Về mặt lý thuyết, cơ chế này tương tự như importance sampling tự chuẩn hóa (self-normalized importance sampling) trong thống kê, nơi các điểm dữ liệu "quan trọng" được gán trọng số cao hơn để giảm phương sai của bộ ước lượng.
 
-Điểm đặc biệt trong implementation là việc giữ nguyên trọng số đều (uniform weights) cho thành phần chéo (cross-term) để đảm bảo tính ổn định khi so sánh hai tập mẫu, trong khi chỉ tối ưu hóa các thành phần nội bộ (self-terms) để giảm nhiễu. Công thức MMD bình phương có trọng số được định nghĩa cụ thể:
+Điểm đặc biệt trong cách cài đặt là việc giữ nguyên trọng số đều (uniform weights) cho thành phần chéo (cross-term) để đảm bảo tính ổn định khi so sánh hai tập mẫu, trong khi chỉ tối ưu hóa các thành phần nội bộ (self-terms) để giảm nhiễu. Công thức MMD bình phương có trọng số được định nghĩa cụ thể:
 \begin{equation}
 	\text{MMD}^2_{\text{ADW}} = \underbrace{\sum_{i,j} w_i w_j k(x_i, x_j)}_{\text{Weighted } XX} + \underbrace{\sum_{p,q} v_p v_q k(y_p, y_q)}_{\text{Weighted } YY} - 2\underbrace{\sum_{i,p} \frac{1}{nm} k(x_i, y_p)}_{\text{Uniform } XY}
 \end{equation}
 
 \subsubsection{Quy trình phát hiện lai (Hybrid Detection Strategy)}
-Để cân bằng giữa tốc độ và độ chính xác, báo cáo đề xuất quy trình phát hiện hai giai đoạn cho ShapeDD\_ADW\_MMD:
+Để cân bằng giữa tốc độ và độ chính xác, luận văn đề xuất quy trình phát hiện hai giai đoạn cho ShapeDD\_ADW\_MMD:
 
 \begin{algorithm}[H]
 	\caption{Adaptive Density-Weighted MMD (ADW-MMD)}
