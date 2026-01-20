@@ -1,7 +1,7 @@
 \chapter{Cơ sở lý thuyết}
 \label{chap:theoretical-foundation}
 
-\textit{Sau khi khảo sát các phương pháp phát hiện drift ở Chương~2, chương này trình bày nền tảng lý thuyết 
+\textit{Tóm tắt: Sau khi khảo sát các phương pháp phát hiện drift ở Chương~2, chương này trình bày nền tảng lý thuyết 
 của phương pháp ShapeDD --- phương pháp được lựa chọn làm cơ sở phát triển cho luận văn. 
 Chương bắt đầu với định nghĩa chi tiết về concept drift, sau đó đi sâu vào lý thuyết MMD và cơ chế phát hiện của ShapeDD.}
 
@@ -12,10 +12,10 @@ Chương bắt đầu với định nghĩa chi tiết về concept drift, sau đ
 Concept drift, hay còn gọi là sự trôi dạt khái niệm, đề cập đến những thay đổi trong phân phối dữ liệu được tạo ra, 
 đặc biệt là trong môi trường động và thay đổi theo thời gian, chẳng hạn như trong ứng dụng về IoT~\cite{ramakrishnan2014enabling} 
 hoặc trong công nghiệp nơi dữ liệu luôn được tạo ra theo thời gian và thay đổi liên tục tùy theo môi trường làm việc khác nhau. 
-Cụ thể hơn, sự concept drift là một vấn đề trong đó các mối quan hệ thống kê giữa các giá trị đầu vào và giá trị mục tiêu bị thay 
+Cụ thể hơn, concept drift là một vấn đề trong đó các mối quan hệ thống kê giữa các giá trị đầu vào và giá trị mục tiêu bị thay 
 đổi theo thời gian theo cách không thể dự đoán được~\cite{schlimmer1986incremental}.
 
-Sự concept drift có thể dẫn đến hiệu suất giảm trong quá trình vận hành thực tế của mô hình học máy, do bản 
+Concept drift có thể dẫn đến hiệu suất giảm trong quá trình vận hành thực tế của mô hình học máy, do bản 
 chất của dữ liệu đầu vào đã bị thay đổi so với khi mô hình học máy được huấn luyện, điều này trái ngược với hiệu 
 suất được đánh giá trên tập dữ liệu thử nghiệm tĩnh trong quá trình phát triển.
 \subsection{Phân loại các loại concept drift}
@@ -56,8 +56,8 @@ Những thay đổi trong dữ liệu không phải mới mà đã từng xảy 
 \end{figure}
 
 \subsection{Ảnh hưởng của concept drift}
-Sự concept drift có thể ảnh hưởng lớn đến hiệu suất của mô hình dự đoán, đặc biệt là khi mô hình học từ luồng dữ liệu. 
-Một loạt các dịch vụ/ứng dụng trong bối cảnh hệ thống và mạng truyền thông có thể bị cản trở bởi sự concept drift như~\cite{ramakrishnan2014enabling}:
+Concept drift có thể ảnh hưởng lớn đến hiệu suất của mô hình dự đoán, đặc biệt là khi mô hình học từ luồng dữ liệu. 
+Một loạt các dịch vụ/ứng dụng trong bối cảnh hệ thống và mạng truyền thông có thể bị cản trở bởi concept drift như~\cite{ramakrishnan2014enabling}:
 
 \begin{itemize}
     \item \textbf{Hệ thống phát hiện xâm nhập (IDS):} Các mẫu tấn công mạng liên tục thay đổi, đòi hỏi IDS phải thích ứng với các mối đe dọa mới
@@ -66,7 +66,7 @@ Một loạt các dịch vụ/ứng dụng trong bối cảnh hệ thống và m
     \item \textbf{Thành phố thông minh:} Dữ liệu được thu thập cho nhiều mục đích như đảm bảo an ninh mạng, dự đoán ô nhiễm không khí, dự đoán giao thông đường bộ và dự báo tải điện
 \end{itemize}
 
-Sự phân phối của dữ liệu có thể thay đổi theo thời gian do máy móc lão hóa và cần quy trình bảo trì, hoặc do các yếu tố môi trường thay đổi. Do đó, một kỹ thuật CBM không có khả năng xử lý sự concept drift sẽ hoạt động kém~\cite{jourdan2021machine}. Do đó, sự concept drift có thể ảnh hưởng đến hiệu quả và tính mạnh mẽ của phân tích luồng dữ liệu~\cite{tripathi2021ensuring}. Trong môi trường không cố định, có một số cân nhắc mà các mô hình dự đoán phải tính đến để phát hiện và tự thích ứng với sự concept drift, nếu không, hiệu suất của các mô hình này sẽ giảm sút về độ chính xác và độ mạnh mẽ. Theo thời gian, một mô hình dự đoán có thể cần cập nhật lại dữ liệu mới, hoặc thay đổi các tham số và cấu trúc của nó bằng cách kết hợp các dữ liệu huấn luyện mới hoặc thay thế hoàn toàn mô hình cũ để xử lý sự concept drift.
+Sự phân phối của dữ liệu có thể thay đổi theo thời gian do máy móc lão hóa và cần quy trình bảo trì, hoặc do các yếu tố môi trường thay đổi. Do đó, một kỹ thuật CBM không có khả năng xử lý concept drift sẽ hoạt động kém~\cite{jourdan2021machine}. Do đó, concept drift có thể ảnh hưởng đến hiệu quả và tính mạnh mẽ của phân tích luồng dữ liệu~\cite{tripathi2021ensuring}. Trong môi trường không cố định, có một số cân nhắc mà các mô hình dự đoán phải tính đến để phát hiện và tự thích ứng với concept drift, nếu không, hiệu suất của các mô hình này sẽ giảm sút về độ chính xác và độ mạnh mẽ. Theo thời gian, một mô hình dự đoán có thể cần cập nhật lại dữ liệu mới, hoặc thay đổi các tham số và cấu trúc của nó bằng cách kết hợp các dữ liệu huấn luyện mới hoặc thay thế hoàn toàn mô hình cũ để xử lý concept drift.
 
 \section{ShapeDD - Phương pháp phát hiện trôi dạt dựa trên hình dạng và khử nhiễu tín hiệu}
 
@@ -377,7 +377,9 @@ Tín hiệu shape được tính bằng convolution:
 \end{enumerate}
 
 \textbf{Tại sao permutation test hiệu quả?} Nếu không có drift thực sự, việc hoán vị nhãn không nên thay đổi nhiều $\text{MMD}^2$. Nếu có drift, $\text{MMD}^2_{\text{obs}}$ sẽ lớn hơn đáng kể so với các giá trị permutation.
+
 \textbf{Độ phức tạp tính toán:} Permutation test là bước tốn thời gian nhất: $O(N_{\text{perm}} \cdot l_1^2)$. Tuy nhiên, vì chỉ áp dụng cho các candidate (không phải mọi thời điểm), chi phí trung bình vẫn chấp nhận được.
+
 \textbf{Hạn chế về throughput và động lực cải tiến:} Với $N_{\text{perm}} = 2500$ (giá trị mặc định) và $l_1 = 50$, mỗi window cần thực hiện khoảng $2500 \times 50^2 = 6.25$ triệu phép tính kernel. Điều này giới hạn throughput của ShapeDD gốc ở mức khoảng $6{,}800$ samples/giây --- chưa đủ cho nhiều ứng dụng real-time yêu cầu xử lý hàng chục nghìn samples mỗi giây. Hạn chế này là động lực chính cho các phương pháp cải tiến ADW-MMD (Adaptive Density-Weighted MMD)~\cite{bharti2023owmmd} và MMD-Agg~\cite{schrab2023mmdagg} được trình bày trong Chương~\ref{chap:proposed-model}, giúp tăng tốc độ xử lý của phương pháp khi vẫn duy trì hoặc cải thiện độ chính xác phát hiện.
 
 \begin{algorithm}[H]
