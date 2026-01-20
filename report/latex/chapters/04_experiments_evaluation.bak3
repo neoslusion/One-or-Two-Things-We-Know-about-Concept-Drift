@@ -413,10 +413,9 @@ Hình~\ref{fig:prequential_sudden} minh họa quá trình suy giảm và phục 
 Tổng hợp lại các các kết quả thực nghiệm:
 
 \begin{enumerate}
-	\item \textbf{Về chất lượng phát hiện:} \textbf{MMD\_ADW} và \textbf{ShapeDD\_ADW\_MMD} là những phương pháp hiệu quả nhất tổng thể, đặc biệt xuất sắc với các drift mạnh và đột ngột. Tuy nhiên, cần lưu ý sự đánh đổi độ nhạy đối với các drift quá nhẹ (mild drift).
+	\item \textbf{Về chất lượng phát hiện:} \textbf{MMD_ADW} và \textbf{ShapeDD_ADW_MMD} là những phương pháp hiệu quả nhất tổng thể, đặc biệt xuất sắc với các drift mạnh và đột ngột. Tuy nhiên, cần lưu ý sự đánh đổi độ nhạy đối với các drift quá nhẹ (mild drift).
 	\item \textbf{Về hiệu năng hệ thống:} Cải tiến ADW-MMD mang lại lợi ích to lớn về mặt tính toán, tăng thông lượng xử lý lên \textbf{hơn 7 lần}, biến ShapeDD từ một thuật toán nghiên cứu thành một giải pháp khả thi cho môi trường sản xuất (production-ready).
-	\item \textbf{Về khả năng thích ứng:} Chiến lược thích ứng theo loại drift (Type-Specific Adaptation) với SE-CDT threshold = 0.15 cải thiện Prequential Accuracy trung bình \textbf{+3.0\%}, đặc biệt hiệu quả với Sudden Drift (\textbf{+5.2\%}).
-	\item \textbf{Về tính toàn vẹn:} D3 tuy nhanh nhưng hạn chế với Virtual Drift, trong khi KS tuy nhạy nhưng quá ồn (nhiều False Positive). ShapeDD\_ADW\_MMD cung cấp sự cân bằng tốt nhất: nhanh, chính xác và ít báo động giả.
+	\item \textbf{Về tính toàn vẹn:} D3 tuy nhanh nhưng hạn chế với Virtual Drift, trong khi KS tuy nhạy nhưng quá ồn (nhiều False Positive). ShapeDD_ADW_MMD cung cấp sự cân bằng tốt nhất: nhanh, chính xác và ít báo động giả.
 \end{enumerate}
 
 Kết quả này khẳng định hướng tiếp cận sử dụng MMD có trọng số tối ưu kết hợp với phân tích hình dạng là một hướng đi đúng đắn để giải quyết bài toán Concept Drift trong dữ liệu lớn.

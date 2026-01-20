@@ -1,16 +1,25 @@
 """
 Prequential Accuracy Evaluation for Drift Adaptation (Enhanced Version).
 
-This script evaluates the 5 drift-type-specific adaptation strategies in an offline batch setting,
-comparing:
-1. WITH drift-type-specific adaptation (sudden, incremental, gradual, recurrent, blip)
-2. WITH simple retrain (baseline adaptation - same as sudden for all)
-3. WITHOUT adaptation (no adaptation baseline)
+System Architecture:
+--------------------
+This script implements the evaluation of the Closed-Loop Adaptive Learning System defined in the thesis.
+It integrates the following modules:
 
-Generates accuracy-over-time plots to demonstrate the value of type-specific adaptation.
+1.  **Stream Interface:** Generates synthetic data streams (Sudden, Gradual, Recurrent, etc.).
+2.  **Inference Module:** Uses an incremental Learner (SGD or Retrainable Batch Classifier) to make predictions.
+3.  **SE-CDT System (Monitor):** A Unified Detector-Classifier that:
+    *   Detects drift using ShapeDD-ADW (Adaptive Density-Weighted MMD).
+    *   Classifies drift type (Sudden/Gradual/etc.) using Signal Shape Analysis (Algorithm 3.4).
+4.  **Adaptation Manager:** Selects the optimal adaptation strategy based on the classified drift type:
+    *   Sudden -> Reset/Retrain
+    *   Recurrent -> Retrieve from Cache
+    *   Gradual -> Partial Update (or Retrain in this implementation)
+    *   Blip -> Ignore
 
 Usage:
-    python evaluate_prequential.py [--n_samples 5000] [--n_drifts 5] [--drift_type sudden]
+------
+    python evaluate_prequential.py --n_samples 5000 --drift_type sudden --w_ref 50 --sudden_thresh 0.5
 """
 
 import os
@@ -36,12 +45,12 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 
-# Import ShapeDD detector
+# Import SE_CDT detector (Unified Detector-Classifier)
 try:
-    from mmd_variants import shapedd_ow_mmd_buffer as shapedd_detect
+    from se_cdt import SE_CDT
 except ImportError:
-    print("[WARNING] ow_mmd not found, using dummy detector")
-    shapedd_detect = None
+    print("[WARNING] SE_CDT not found, using dummy detector")
+    SE_CDT = None
 
 # Import adaptation strategies
 from adaptation_strategies import (
@@ -52,12 +61,9 @@ from adaptation_strategies import (
     adapt_blip_drift
 )
 
-# Import drift type classifier
-from drift_type_classifier import classify_drift_at_detection, DriftTypeConfig
-
 # Configuration
 from config import (
-    BUFFER_SIZE, CHUNK_SIZE, SHAPE_L1, SHAPE_L2, DRIFT_ALPHA,
+    BUFFER_SIZE, CHUNK_SIZE, SHAPE_L1, SHAPE_L2, DRIFT_ALPHA, SHAPE_N_PERM,
     INITIAL_TRAINING_SIZE, PREQUENTIAL_WINDOW, ADAPTATION_WINDOW
 )
 
@@ -84,84 +90,26 @@ def model_factory():
     return create_model()
 
 
+# Import SOTA Generators
+from data_generators import generate_sea_concepts, generate_mixed_drift_dataset
+
 def generate_synthetic_stream(n_samples: int = 5000, n_drifts: int = 5, 
                                n_features: int = 5, drift_type: str = 'sudden',
                                random_seed: int = 42):
     """
-    Generate synthetic data stream with known drift points.
-    
-    Args:
-        n_samples: Total number of samples
-        n_drifts: Number of drift events
-        n_features: Number of features
-        drift_type: Type of drift ('sudden', 'gradual', 'incremental', 'recurrent')
-        random_seed: Random seed for reproducibility
-    
-    Returns: X, y, drift_points, drift_types
+    Wrapper for SOTA generators.
     """
-    np.random.seed(random_seed)
-    
-    X = []
-    y = []
-    drift_points = []
-    drift_types = []
-    
-    samples_per_segment = n_samples // (n_drifts + 1)
-    
-    for segment in range(n_drifts + 1):
-        start_idx = segment * samples_per_segment
-        end_idx = start_idx + samples_per_segment if segment < n_drifts else n_samples
-        n_segment = end_idx - start_idx
-        
+    if drift_type == 'mixed':
+        return generate_mixed_drift_dataset(n_samples, random_seed)
+    else:
+        # Default to SEA concepts for specific types (Sudden) or others
+        # For simplicity in this script, we map types to SEA variations or Mixed
         if drift_type == 'sudden':
-            # Abrupt mean shift
-            mean_shift = segment * 2.0
-            X_segment = np.random.randn(n_segment, n_features) + mean_shift
-        elif drift_type == 'gradual':
-            # Gradual transition within segment
-            mean_start = (segment - 1) * 2.0 if segment > 0 else 0
-            mean_end = segment * 2.0
-            alphas = np.linspace(0, 1, n_segment).reshape(-1, 1)
-            means = mean_start * (1 - alphas) + mean_end * alphas
-            X_segment = np.random.randn(n_segment, n_features) + means
-        elif drift_type == 'incremental':
-            # Slow continuous drift
-            mean_base = segment * 0.5
-            increments = np.linspace(0, 1, n_segment).reshape(-1, 1)
-            X_segment = np.random.randn(n_segment, n_features) + mean_base + increments * 0.5
-        elif drift_type == 'recurrent':
-            # Alternating between two concepts
-            if segment % 2 == 0:
-                mean_shift = 0
-            else:
-                mean_shift = 3.0
-            X_segment = np.random.randn(n_segment, n_features) + mean_shift
+            return generate_sea_concepts(n_samples, n_drifts, random_seed)
         else:
-            mean_shift = segment * 2.0
-            X_segment = np.random.randn(n_segment, n_features) + mean_shift
-        
-        # Generate labels (decision boundary shifts with drift)
-        weights = np.random.randn(n_features)
-        if segment % 2 == 1:  # Change weights for odd segments
-            weights = -weights
-        
-        logits = X_segment @ weights
-        probs = 1 / (1 + np.exp(-logits))
-        y_segment = (probs > 0.5).astype(int)
-        
-        X.append(X_segment)
-        y.append(y_segment)
-        
-        if segment > 0:
-            drift_points.append(start_idx)
-            drift_types.append(drift_type)
-    
-    X = np.vstack(X)
-    y = np.concatenate(y)
-    
-    print(f"Generated {n_samples} samples with {n_drifts} {drift_type} drift points at: {drift_points}")
-    return X, y, drift_points, drift_types
+            return generate_mixed_drift_dataset(n_samples, random_seed)
 
+# ... (Configuration and imports preserved) ...
 
 class AdaptationMode:
     """Enum-like class for adaptation modes."""
@@ -169,20 +117,17 @@ class AdaptationMode:
     SIMPLE = 'simple_retrain'
     TYPE_SPECIFIC = 'type_specific'
 
-
 def evaluate_with_adaptation(X, y, drift_points, mode: str = AdaptationMode.TYPE_SPECIFIC,
-                              cache_dir: Optional[Path] = None):
+                              cache_dir: Optional[Path] = None, 
+                              w_ref: int = 50, sudden_thresh: float = 0.5):
     """
-    Evaluate model with different adaptation modes.
+    Evaluate adaptation strategies using SE-CDT Unified System.
     
-    Args:
-        X: Feature matrix
-        y: Labels
-        drift_points: Known drift positions
-        mode: AdaptationMode.NONE, SIMPLE, or TYPE_SPECIFIC
-        cache_dir: Directory for model caching (for recurrent drift)
-    
-    Returns: accuracy_history, drift_detections, adaptations
+    Modules:
+    1. Stream Interface: Sliding window processing.
+    2. Inference Module: Model prediction & accuracy tracking.
+    3. SE-CDT System: Unified Detector-Classifier (Monitor).
+    4. Adaptation Manager: Strategy selection and model update.
     """
     n_samples = len(X)
     
@@ -194,28 +139,28 @@ def evaluate_with_adaptation(X, y, drift_points, mode: str = AdaptationMode.TYPE
     accuracy_history = []
     drift_detections = []
     adaptations = []
+    classification_times = []
     
-    # Drift type classifier config
-    drift_type_cfg = DriftTypeConfig(
-        w_ref=250,
-        w_basic=100,
-        sudden_len_thresh=250
-    )
+    # Initialize SE-CDT Unified System
+    # Note: window_size corresponds to l1 (reference window)
+    se_cdt_system = SE_CDT(window_size=w_ref, l2=SHAPE_L2, threshold=sudden_thresh) if SE_CDT else None
     
     # Phase 1: Initial training
     train_end = min(INITIAL_TRAINING_SIZE, n_samples)
     model.fit(X[:train_end], y[:train_end])
     print(f"  [{mode}] Initial training on {train_end} samples")
     
-    # Fill buffer with training data
+    # Init buffer
     for i in range(train_end):
         buffer.append({'idx': i, 'x': X[i], 'y': y[i]})
-    
-    # Phase 2: Deployment with evaluation
+        
     drift_detected = False
-    drift_detected_at = None
     samples_since_drift = 0
-    adaptation_delay = 50  # Samples to wait after detection before adapting
+    adaptation_delay = 50
+    current_drift_type = 'sudden' # Default
+    
+    # CRITICAL: For No Adaptation, we must NOT update this model object
+    # We keep 'model' as is.
     
     for idx in range(train_end, n_samples):
         x = X[idx:idx+1]
@@ -226,111 +171,91 @@ def evaluate_with_adaptation(X, y, drift_points, mode: str = AdaptationMode.TYPE
         is_correct = (y_pred == y_true)
         recent_correct.append(is_correct)
         
-        # Calculate prequential accuracy
         accuracy = np.mean(recent_correct)
         accuracy_history.append({'idx': idx, 'accuracy': accuracy})
         
-        # Add to buffer
         buffer.append({'idx': idx, 'x': X[idx], 'y': y_true})
         
-        # Drift detection (every CHUNK_SIZE samples)
+        # Drift monitoring via SE-CDT System
         if len(buffer) >= BUFFER_SIZE and idx % CHUNK_SIZE == 0:
-            if shapedd_detect is not None and not drift_detected:
+            if se_cdt_system is not None and not drift_detected:
                 buffer_X = np.array([item['x'] for item in buffer])
-                
                 try:
-                    shp_results = shapedd_detect(buffer_X, l1=SHAPE_L1, l2=SHAPE_L2)
+                    # Call Unified Monitor
+                    result = se_cdt_system.monitor(buffer_X)
                     
-                    # Check recent chunk for drift
-                    chunk_start = max(0, len(buffer_X) - CHUNK_SIZE)
-                    chunk_pvals = shp_results[chunk_start:, 2]
-                    p_min = float(chunk_pvals.min())
-                    
-                    if p_min < DRIFT_ALPHA:
+                    if result.is_drift:
                         drift_detected = True
-                        drift_detected_at = idx
                         drift_detections.append(idx)
-                        samples_since_drift = 0
-                        print(f"    [{mode}] Drift detected at sample {idx} (p={p_min:.4f})")
+                        classification_times.append(result.classification_time)
+                        
+                        # Use classified drift type immediately
+                        detected_drift_type = result.subcategory
+                        print(f"    [{mode}] Drift detected at sample {idx} (Score={result.score:.4f}, Type={detected_drift_type})")
+                        
+                        # Store result for adaptation step logic
+                        current_drift_type = detected_drift_type
+                        
                 except Exception as e:
-                    pass  # Ignore detection errors
-        
-        # Adaptation logic
+                    print(f"Error in SE-CDT monitor: {e}")
+                    pass
+
+        # Adaptation Logic
         if drift_detected:
             samples_since_drift += 1
-            
-            # Adapt after delay
             if samples_since_drift >= adaptation_delay:
+                # 1. NO ADAPTATION
                 if mode == AdaptationMode.NONE:
-                    # No adaptation - just reset detection flag
-                    print(f"    [{mode}] Drift ignored at sample {idx}")
+                    # Do nothing to the model! 
                     drift_detected = False
-                    drift_detected_at = None
-                    continue
-                
-                # Get adaptation window
+                    continue 
+
+                # Prepare data
                 adapt_start = max(0, len(buffer) - ADAPTATION_WINDOW)
                 adapt_data = list(buffer)[adapt_start:]
                 adapt_X = np.array([item['x'] for item in adapt_data])
                 adapt_y = np.array([item['y'] for item in adapt_data])
                 
+                # 2. SIMPLE RETRAIN
                 if mode == AdaptationMode.SIMPLE:
-                    # Simple retrain (same as sudden for all)
+                    # Naively retrain on recent window
+                    # Force a new model instance to be sure
+                    model = create_model()
                     model.fit(adapt_X, adapt_y)
                     strategy_used = 'simple_retrain'
-                    print(f"    [{mode}] Simple retrain at sample {idx} using {len(adapt_X)} samples")
                     
+                # 3. TYPE SPECIFIC
                 elif mode == AdaptationMode.TYPE_SPECIFIC:
-                    # Classify drift type
-                    buffer_X = np.array([item['x'] for item in buffer])
-                    drift_idx_in_buffer = len(buffer) - 1
+                    # Use the type detected by SE-CDT
+                    drift_type = current_drift_type
+                    print(f"    [{mode}] Adapting for: {drift_type}")
                     
-                    classification = classify_drift_at_detection(
-                        buffer_X, 
-                        drift_idx_in_buffer, 
-                        drift_type_cfg
-                    )
-                    drift_type = classification.get('subcategory', 'sudden')
-                    
-                    print(f"    [{mode}] Classified drift as: {drift_type}")
-                    
-                    # Apply type-specific strategy
-                    if drift_type == 'sudden':
+                    if drift_type == 'Sudden' or drift_type == 'TCD': # Handle capitalization variations
                         model = adapt_sudden_drift(model_factory, adapt_X, adapt_y)
                         strategy_used = 'sudden'
-                    elif drift_type == 'incremental':
-                        model = adapt_incremental_drift(model, adapt_X, adapt_y)
-                        strategy_used = 'incremental'
-                    elif drift_type == 'gradual':
+                    elif drift_type == 'Recurrent':
+                        # Try to load from cache
+                        model = adapt_recurrent_drift(model_factory, model, adapt_X, adapt_y, cache_dir=cache_dir)
+                        strategy_used = 'recurrent'
+                    elif drift_type == 'Gradual':
+                        # Use weighted approach or wait?
+                        # For now, standard adapt
                         model = adapt_gradual_drift(model, adapt_X, adapt_y)
                         strategy_used = 'gradual'
-                    elif drift_type == 'recurrent':
-                        model = adapt_recurrent_drift(
-                            model_factory, model, adapt_X, adapt_y,
-                            cache_dir=cache_dir or Path('./model_cache'),
-                            drift_idx=len(drift_detections)
-                        )
-                        strategy_used = 'recurrent'
-                    elif drift_type == 'blip':
-                        model = adapt_blip_drift(model, adapt_X, adapt_y)
-                        strategy_used = 'blip'
+                    elif drift_type == 'Blip':
+                         # Blip: Do nothing or filter
+                         print(f"    [{mode}] Blip detected - Ignoring adaptation")
+                         strategy_used = 'blip_ignored'
+                         # We don't update model for Blip
                     else:
-                        # Default to sudden
-                        model = adapt_sudden_drift(model_factory, adapt_X, adapt_y)
-                        strategy_used = 'sudden (default)'
-                    
-                    print(f"    [{mode}] Applied {strategy_used} strategy at sample {idx}")
+                        model = adapt_incremental_drift(model, adapt_X, adapt_y)
+                        strategy_used = 'incremental'
                 
-                adaptations.append({
-                    'idx': idx, 
-                    'n_samples': len(adapt_X),
-                    'strategy': strategy_used if mode == AdaptationMode.TYPE_SPECIFIC else 'simple'
-                })
-                
+                adaptations.append({'idx': idx, 'strategy': strategy_used if mode == AdaptationMode.TYPE_SPECIFIC else 'simple'})
                 drift_detected = False
-                drift_detected_at = None
-    
-    return accuracy_history, drift_detections, adaptations
+                samples_since_drift = 0
+                
+    return accuracy_history, drift_detections, adaptations, classification_times
 
 
 def plot_prequential_comparison(results: Dict[str, Dict], drift_points: List[int], output_path: Path):
@@ -405,11 +330,17 @@ def calculate_metrics(results: Dict[str, Dict], drift_points: List[int]) -> Dict
         
         post_drift_mean = np.mean(post_drift_acc) if post_drift_acc else 0
         
+        # Classification time (only for Type Specific)
+        avg_class_time = 0
+        if 'classification_times' in data and len(data['classification_times']) > 0:
+            avg_class_time = np.mean(data['classification_times']) * 1000 # Convert to ms
+        
         metrics[mode] = {
             'overall_accuracy': mean_acc,
             'post_drift_accuracy': post_drift_mean,
             'n_detections': len(data['detections']),
             'n_adaptations': len(data['adaptations']),
+            'avg_classification_time_ms': avg_class_time
         }
     
     # Calculate improvements
@@ -434,6 +365,10 @@ def main():
                         help='Type of drift to simulate')
     parser.add_argument('--seed', type=int, default=42, help='Random seed')
     parser.add_argument('--output_dir', type=str, default='./prequential_results', help='Output directory')
+    # Added Arguments
+    parser.add_argument('--w_ref', type=int, default=50, help='Reference window size (l1)')
+    parser.add_argument('--sudden_thresh', type=float, default=0.5, help='Threshold for sudden drift detection')
+    
     args = parser.parse_args()
     
     # Create output directory
@@ -448,6 +383,7 @@ def main():
     print("PREQUENTIAL ACCURACY EVALUATION (Enhanced with 5 Strategies)")
     print("="*80)
     print(f"Samples: {args.n_samples}, Drifts: {args.n_drifts}, Type: {args.drift_type}, Seed: {args.seed}")
+    print(f"SE-CDT Config: w_ref={args.w_ref}, thresh={args.sudden_thresh}")
     print("="*80)
     
     # Generate data
@@ -463,21 +399,24 @@ def main():
     
     # Evaluate WITH type-specific adaptation
     print("\n[2] Evaluating WITH type-specific adaptation (5 strategies)...")
-    acc_ts, det_ts, adapt_ts = evaluate_with_adaptation(
-        X, y, drift_points, mode=AdaptationMode.TYPE_SPECIFIC, cache_dir=cache_dir
+    acc_ts, det_ts, adapt_ts, times_ts = evaluate_with_adaptation(
+        X, y, drift_points, mode=AdaptationMode.TYPE_SPECIFIC, cache_dir=cache_dir,
+        w_ref=args.w_ref, sudden_thresh=args.sudden_thresh
     )
-    results[AdaptationMode.TYPE_SPECIFIC] = {'accuracy': acc_ts, 'detections': det_ts, 'adaptations': adapt_ts}
+    results[AdaptationMode.TYPE_SPECIFIC] = {
+        'accuracy': acc_ts, 'detections': det_ts, 'adaptations': adapt_ts, 'classification_times': times_ts
+    }
     
     # Evaluate WITH simple adaptation
     print("\n[3] Evaluating WITH simple retrain adaptation...")
-    acc_simple, det_simple, adapt_simple = evaluate_with_adaptation(
+    acc_simple, det_simple, adapt_simple, _ = evaluate_with_adaptation(
         X, y, drift_points, mode=AdaptationMode.SIMPLE
     )
     results[AdaptationMode.SIMPLE] = {'accuracy': acc_simple, 'detections': det_simple, 'adaptations': adapt_simple}
     
     # Evaluate WITHOUT adaptation
     print("\n[4] Evaluating WITHOUT adaptation (baseline)...")
-    acc_none, det_none, adapt_none = evaluate_with_adaptation(
+    acc_none, det_none, adapt_none, _ = evaluate_with_adaptation(
         X, y, drift_points, mode=AdaptationMode.NONE
     )
     results[AdaptationMode.NONE] = {'accuracy': acc_none, 'detections': det_none, 'adaptations': adapt_none}
@@ -486,6 +425,14 @@ def main():
     print("\n[5] Calculating metrics...")
     metrics = calculate_metrics(results, drift_points)
     
+    # Calculate SOTA Adaptation Metrics (Recovery Speed, etc.)
+    print("\n[5.1] Calculating SOTA Adaptation Metrics (Recovery Speed, Performance Loss)...")
+    sota_metrics = {}
+    for mode, data in results.items():
+        sota_metrics[mode] = calculate_sota_adaptation_metrics(
+            data['accuracy'], drift_points, n_samples=args.n_samples, adaptation_window=500
+        )
+
     print("\n" + "="*80)
     print("RESULTS")
     print("="*80)
@@ -493,9 +440,12 @@ def main():
     print("-"*40)
     for mode in [AdaptationMode.TYPE_SPECIFIC, AdaptationMode.SIMPLE, AdaptationMode.NONE]:
         m = metrics.get(mode, {})
+        s = sota_metrics.get(mode, {})
+        time_str = f", ClassTime={m.get('avg_classification_time_ms', 0):.2f}ms" if mode == AdaptationMode.TYPE_SPECIFIC else ""
+        
         print(f"{mode:20s}: Accuracy = {m.get('overall_accuracy', 0):.4f}, "
-              f"Post-drift = {m.get('post_drift_accuracy', 0):.4f}, "
-              f"Adaptations = {m.get('n_adaptations', 0)}")
+              f"Restoration Time = {s.get('avg_restoration_time', 0):.1f} samples, "
+              f"Perf Loss = {s.get('avg_performance_loss', 0):.4f}" + time_str)
     
     print(f"\nImprovement (Type-Specific vs No-Adaptation): "
           f"+{metrics.get('improvement_vs_none', 0):.4f} "
@@ -512,19 +462,92 @@ def main():
     # Save metrics to file
     metrics_path = output_dir / f"metrics_{args.drift_type}.txt"
     with open(metrics_path, 'w') as f:
-        f.write(f"Prequential Accuracy Evaluation Results\n")
+        f.write(f"Prequential Accuracy Evaluation Results (SOTA Enhanced)\n")
         f.write(f"Generated: {datetime.now().isoformat()}\n")
         f.write(f"Samples: {args.n_samples}, Drifts: {args.n_drifts}, Type: {args.drift_type}, Seed: {args.seed}\n\n")
-        for mode, m in metrics.items():
-            if isinstance(m, dict):
-                f.write(f"\n{mode}:\n")
-                for k, v in m.items():
-                    f.write(f"  {k}: {v}\n")
-            else:
-                f.write(f"{mode}: {m}\n")
+        f.write(f"Config: w_ref={args.w_ref}, thresh={args.sudden_thresh}\n")
+        
+        for mode in [AdaptationMode.TYPE_SPECIFIC, AdaptationMode.SIMPLE, AdaptationMode.NONE]:
+            m = metrics.get(mode, {})
+            s = sota_metrics.get(mode, {})
+            f.write(f"\n{mode}:\n")
+            f.write(f"  Overall Accuracy: {m.get('overall_accuracy', 0):.4f}\n")
+            f.write(f"  Post-Drift Acc:   {m.get('post_drift_accuracy', 0):.4f}\n")
+            f.write(f"  Adaptations:      {m.get('n_adaptations', 0)}\n")
+            if mode == AdaptationMode.TYPE_SPECIFIC:
+                f.write(f"  Avg Class. Time:  {m.get('avg_classification_time_ms', 0):.4f} ms\n")
+            f.write(f"  Restoration Time: {s.get('avg_restoration_time', float('inf')):.1f} samples\n")
+            f.write(f"  Performance Loss: {s.get('avg_performance_loss', 0):.4f}\n")
+            f.write(f"  Convergence Rate: {s.get('convergence_rate', 0):.5f}\n")
+
     print(f"Metrics saved to: {metrics_path}")
     
     print("\n✓ Evaluation complete!")
+    return metrics, sota_metrics
+
+def calculate_sota_adaptation_metrics(accuracy_history, drift_points, n_samples, adaptation_window=500):
+    """
+    Calculate SOTA adaptation metrics:
+    1. Restoration Time: Samples to reach 95% of pre-drift accuracy (or 90% absolute).
+    2. Performance Loss: Average accuracy drop during drift period.
+    3. Convergence Rate: Slope of recovery.
+    """
+    metrics = {
+        'avg_restoration_time': 0.0,
+        'avg_performance_loss': 0.0,
+        'convergence_rate': 0.0
+    }
+    
+    if not drift_points:
+        return metrics
+        
+    restoration_times = []
+    perf_losses = []
+    slopes = []
+    
+    # Convert history to easier format
+    acc_map = {item['idx']: item['accuracy'] for item in accuracy_history}
+    
+    for drift_idx in drift_points:
+        # Pre-drift accuracy (baseline) - avg of 100 samples before
+        pre_drift = [acc_map.get(i, 0) for i in range(drift_idx - 100, drift_idx)]
+        baseline = np.mean(pre_drift) if pre_drift else 0.8  # Default fallback
+        target_acc = max(0.85, baseline * 0.95) # Target to be considered "restored"
+        
+        # Analyze post-drift window
+        window_end = min(n_samples, drift_idx + adaptation_window)
+        post_drift_accs = [acc_map.get(i, 0) for i in range(drift_idx, window_end)]
+        
+        # 1. Restoration Time
+        restored_at = float('inf')
+        for i, acc in enumerate(post_drift_accs):
+            # Check if stabilized above target for at least 30 samples
+            if acc >= target_acc:
+                # Look ahead 30 samples to ensure stability
+                future_accs = post_drift_accs[i:i+30]
+                if len(future_accs) > 0 and np.mean(future_accs) >= target_acc:
+                    restored_at = i
+                    break
+        
+        restoration_times.append(restored_at if restored_at != float('inf') else adaptation_window)
+        
+        # 2. Performance Loss (Integral of error)
+        # Loss = Sum(Baseline - Current) for samples where Current < Baseline
+        loss = np.sum([max(0, baseline - acc) for acc in post_drift_accs]) / len(post_drift_accs) if post_drift_accs else 0
+        perf_losses.append(loss)
+        
+        # 3. Convergence Rate (Slope of linear fit to first 100 samples)
+        if len(post_drift_accs) >= 10:
+            fit_window = min(100, len(post_drift_accs))
+            y_vals = post_drift_accs[:fit_window]
+            x_vals = np.arange(len(y_vals))
+            slope, _ = np.polyfit(x_vals, y_vals, 1)
+            slopes.append(slope)
+            
+    metrics['avg_restoration_time'] = np.mean(restoration_times)
+    metrics['avg_performance_loss'] = np.mean(perf_losses)
+    metrics['convergence_rate'] = np.mean(slopes) if slopes else 0
+    
     return metrics
 
 

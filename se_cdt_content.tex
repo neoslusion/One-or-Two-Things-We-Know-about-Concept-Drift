@@ -1,0 +1,172 @@
+\section{Đánh giá SE-CDT: Phân loại drift không giám sát}
+
+Phần này đánh giá hiệu quả của phương pháp SE-CDT được đề xuất ở Chương~\ref{chap:proposed-model} cho bài toán phân loại drift type.
+
+\subsection{Thiết kế thực nghiệm}
+
+\textbf{Cấu hình:} Dataset tổng hợp 8,000 mẫu với các loại drift:
+\begin{itemize}
+	\item \textbf{TCD (Transient):} Sudden (3 drift points), Blip (2 blips, duration=200)
+	\item \textbf{PCD (Progressive):} Gradual (transition width=1000), Incremental (linear shift), Recurrent (period=1600)
+\end{itemize}
+
+\textbf{Đánh giá:} 17 configurations × 10 runs = 170 test cases. Tham số: window\_size=200, stride=40.
+
+\subsection{Kết quả phân loại}
+
+\begin{table}[H]
+	\centering
+	\caption{Kết quả phân loại drift type của SE-CDT}
+	\label{tab:se-cdt-results}
+	\input{tables/se_cdt_results_table.tex}
+\end{table}
+
+\textbf{Kết quả tổng hợp và Thảo luận:}
+\begin{itemize}
+	\item \textbf{Hiệu ứng làm sắc nét của ADW-MMD:} Kết quả cho thấy tỷ lệ phân loại Gradual Drift chỉ đạt 46.2\%. Nguyên nhân chính là do cơ chế trọng số mật độ của ADW-MMD hoạt động "quá hiệu quả", phát hiện sự thay đổi nhỏ nhất ngay khi nó xuất hiện, biến "mound" rộng của Gradual thành peak sắc nét giống Sudden.
+	\item \textbf{Phân biệt Incremental và Gradual:} Mặc dù độ chính xác Subcategory của Incremental thấp (8.5\%), nhưng độ chính xác Category (nhận diện là PCD) đạt tới 80.0\%. Hệ thống thường nhầm Incremental thành Gradual do nhiễu trong tín hiệu ADW tạo ra các "pseudo-peaks" (đỉnh giả) có độ rộng lớn.
+	\item \textbf{Hạn chế với Recurrent:} Hệ thống hiện tại xử lý Recurrent drift như chuỗi các sự kiện Sudden riêng lẻ, dẫn đến việc phân loại sai thành Sudden (TCD). Điều này gợi ý cần có cơ chế "nhớ" trạng thái dài hạn hơn để nhận diện tính chu kỳ.
+\end{itemize}
+
+\subsection{So sánh với CDT\_MSW}
+
+\begin{table}[H]
+	\centering
+	\caption{So sánh SE-CDT và CDT\_MSW}
+	\label{tab:se-cdt-comparison}
+	\begin{tabular}{|l|c|c|}
+		\hline
+		\textbf{Tiêu chí} & \textbf{CDT\_MSW} & \textbf{SE-CDT} \\
+		\hline
+		Supervised        & Có (cần labels)   & \textbf{Không}  \\
+		Độ chính xác nhóm (CAT) & 40.0\%            & \textbf{78.0\%}   \\
+		Tín hiệu sử dụng  & Tỷ lệ độ chính xác & MMD $\sigma(t)$ \\
+		Tính toán bổ sung & Cần training model & Không           \\
+		\hline
+	\end{tabular}
+	\begin{flushleft}
+		\small *Dựa trên trung bình trọng số của Sudden và Incremental/Gradual trong thực nghiệm.
+	\end{flushleft}
+\end{table}
+
+\textbf{Kết luận:} SE-CDT là phương pháp thay thế \textbf{không giám sát} cho CDT\_MSW.
+
+\subsection{So sánh độc lập CDT\_MSW và SHAPED\_CDT}
+
+\textit{Lưu ý: Benchmark này sử dụng implementation độc lập của CDT\_MSW dựa trên mô tả trong paper~\cite{guo2022cdtmsw}. SE-CDT được đổi tên thành \textbf{SHAPED\_CDT} để phản ánh chính xác hơn việc sử dụng tín hiệu MMD từ ShapeDD. Mục đích chính là so sánh các approach khác nhau trong cùng điều kiện thử nghiệm.}
+
+Các phương pháp được chạy trên bộ dữ liệu theo đúng paper gốc (Sine, Circle, Gaussian) với 10,000 mẫu × 5 loại drift × 5 runs. Bảng~\ref{tab:cdt-comparison-by-type} trình bày kết quả chi tiết.
+
+\begin{table}[H]
+	\centering
+	\caption{So sánh chi tiết CDT\_MSW, SHAPED\_CDT và biến thể ADW-MMD theo loại drift}
+	\label{tab:cdt-comparison-by-type}
+	\begin{tabular}{|l|l|c|c|c|c|}
+		\hline
+		\textbf{Drift}                    & \textbf{Method} & \textbf{EDR$\downarrow$} & \textbf{MDR$\downarrow$} & \textbf{CAT}   & \textbf{SUB}  \\
+		\hline
+		\multirow{3}{*}{Sudden}           & CDT\_MSW        & 0.39                     & \textbf{0.00}            & 67\%           & 0\%           \\
+		                                  & SHAPED\_CDT     & 0.96                     & 0.67                     & \textbf{100\%} & \textbf{67\%} \\
+		                                  & SHAPED\_ADW     & \textbf{0.33}            & 1.00                     & 33\%           & 33\%          \\
+		\hline
+		\multirow{3}{*}{Circle (Gradual)} & CDT\_MSW        & 1.00                     & 1.00                     & 0\%            & 0\%           \\
+		                                  & SHAPED\_CDT     & \textbf{0.82}            & \textbf{0.56}            & 0\%            & 0\%           \\
+		                                  & SHAPED\_ADW     & 1.00                     & 1.00                     & 0\%            & 0\%           \\
+		\hline
+		\multirow{3}{*}{Gaussian (Incr.)} & CDT\_MSW        & 0.89                     & 0.33                     & 33\%           & 33\%          \\
+		                                  & SHAPED\_CDT     & \textbf{0.96}            & 0.67                     & \textbf{100\%} & 0\%           \\
+		                                  & SHAPED\_ADW     & 0.33                     & 1.00                     & 0\%            & 0\%           \\
+		\hline
+		\multirow{3}{*}{Recurrent}        & CDT\_MSW        & \textbf{0.11}            & \textbf{0.00}            & 67\%           & 33\%          \\
+		                                  & SHAPED\_CDT     & 0.87                     & 0.67                     & \textbf{100\%} & 33\%          \\
+		                                  & SHAPED\_ADW     & 0.33                     & 1.00                     & 33\%           & 0\%           \\
+		\hline
+		\multirow{3}{*}{Blip}             & CDT\_MSW        & \textbf{0.28}            & \textbf{0.00}            & 67\%           & 0\%           \\
+		                                  & SHAPED\_CDT     & 0.96                     & 0.83                     & \textbf{100\%} & 0\%           \\
+		                                  & SHAPED\_ADW     & 0.33                     & 1.00                     & 33\%           & 0\%           \\
+		\hline
+	\end{tabular}
+\end{table}
+
+\subsection{Kết quả tổng hợp}
+
+Bảng~\ref{tab:cdt-aggregate} tổng hợp kết quả benchmark (5 loại drift × 3 block sizes × 5 runs).
+
+\begin{table}[H]
+	\centering
+	\caption{So sánh tổng hợp ba phương pháp phân loại drift}
+	\label{tab:cdt-aggregate}
+	\input{tables/table_comparison_aggregate.tex}
+\end{table}
+
+\subsection{Thử nghiệm biến thể ADW-MMD}
+
+Trong quá trình nghiên cứu, luận văn cũng thử nghiệm biến thể sử dụng \textbf{Adaptive Density-Weighted MMD (ADW-MMD)} thay cho standard MMD trong SHAPED\_CDT. Mục đích ban đầu là tận dụng các ưu điểm của ADW-MMD về tốc độ và độ chính xác phát hiện để cải thiện khả năng phân loại.
+
+\textbf{Kết quả thử nghiệm:}
+\begin{itemize}
+	\item \textbf{ADW-MMD CAT Accuracy:} 20.0\% (so với 78.0\% của standard MMD)
+	\item \textbf{ADW-MMD SUB Accuracy:} 6.7\% (so với 44.2\% của standard MMD)
+	\item \textbf{MDR = 1.0:} Bỏ lỡ tất cả các điểm drift trên dataset PCD (Gradual, Incremental)
+\end{itemize}
+
+\textbf{Phân tích nguyên nhân:}
+ADW-MMD sử dụng cơ chế \textit{variance reduction weighting} ($w_{ij} \propto 1/\sqrt{d_i}$), gán trọng số thấp cho các điểm trong vùng mật độ cao. Điều này có hai hệ quả:
+\begin{enumerate}
+	\item \textbf{Hiệu quả cho TCD (Sudden, Blip):} Các thay đổi đột ngột tạo ra sự khác biệt rõ ràng giữa reference và test windows, ADW-MMD phát hiện tốt.
+	\item \textbf{Không hiệu quả cho PCD (Gradual, Incremental):} Các thay đổi diễn ra từ từ, từng bước nhỏ. ADW-MMD coi những thay đổi nhỏ này là ``noise'' và loại bỏ, dẫn đến signal = 0.
+\end{enumerate}
+
+\textbf{Kết luận từ thử nghiệm:}
+\begin{itemize}
+	\item \textbf{ADW-MMD tốt cho detection} (phát hiện có/không có drift) với F1 = 0.562 (benchmark Chương 4.3)
+	\item \textbf{Standard MMD phù hợp hơn cho classification} vì giữ lại tất cả sự khác biệt, bao gồm cả những thay đổi nhỏ từ PCD
+	\item Đây là sự đánh đổi cơ bản: giảm phương sai (variance reduction) hỗ trợ phát hiện nhưng ảnh hưởng đến phân loại
+\end{itemize}
+
+\subsection{Phân tích kết quả cuối cùng}
+
+\textbf{Chi tiết theo loại drift:}
+\begin{itemize}
+	\item \textbf{Sudden \& Blip (TCD):} SHAPED\_CDT đạt 100\% CAT accuracy, CDT\_MSW đạt 67\%
+	\item \textbf{Recurrent:} SHAPED\_CDT đạt 100\% CAT accuracy với peaks đều đặn
+	\item \textbf{Gradual \& Incremental (PCD):} Tất cả phương pháp đều gặp khó khăn (Circle CAT = 0\%)
+\end{itemize}
+
+\textbf{Kết luận chung:}
+\begin{itemize}
+	\item \textbf{SHAPED\_CDT đạt độ chính xác nhóm (CAT) cao nhất (78.0\%)} mà không cần labels.
+	\item \textbf{CDT\_MSW nhạy hơn về phát hiện drift} (MDR = 0.267 vs 0.678) do có sự hỗ trợ của nhãn mô hình.
+	\item \textbf{Đánh đổi (Trade-off):} SHAPED\_CDT ưu thế về phân loại, CDT\_MSW ưu thế về phát hiện.
+	\item \textbf{ADW-MMD phù hợp cho phát hiện (detection), không phù hợp cho phân loại (classification).}
+\end{itemize}
+\subsection{So sánh công bằng: Supervised CDT\_MSW vs Unsupervised SE-CDT}
+\label{sec:supervised-comparison}
+
+Để đánh giá công bằng giữa phương pháp có giám sát (CDT\_MSW) và không giám sát (SE-CDT), luận văn thiết kế thử nghiệm đặc biệt với \textbf{Concept-aware labels} --- labels thay đổi cùng với concept drift:
+
+\textbf{Thiết kế:} Khi concept thay đổi, decision boundary xoay 90° (từ $x_0 + x_1 > 0$ sang $x_0 - x_1 > 0$). Điều này tạo ra \textit{real concept drift} mà CDT\_MSW có thể phát hiện qua accuracy drop.
+
+\begin{table}[H]
+	\centering
+	\caption{So sánh Supervised CDT\_MSW vs Unsupervised SE-CDT (Fair Comparison)}
+	\label{tab:supervised-comparison}
+	\begin{tabular}{|l|c|c|c|c|}
+		\hline
+		\textbf{Method} & \textbf{EDR$\uparrow$} & \textbf{MDR$\downarrow$} & \textbf{FP} & \textbf{Setting} \\
+		\hline
+		CDT\_MSW & 32.0\% & 68.0\% & 24 & Supervised \\
+		\textbf{SE-CDT (Std)} & \textbf{96.0\%} & \textbf{4.0\%} & 126 & \textbf{Unsupervised} \\
+		\hline
+	\end{tabular}
+\end{table}
+
+\textbf{Kết quả và thảo luận:} Trong thử nghiệm này, SE-CDT không giám sát đạt \textbf{96\% recall} trong khi CDT\_MSW có giám sát chỉ đạt \textbf{32\% recall}. Tuy nhiên, cần lưu ý một số điểm quan trọng:
+\begin{itemize}
+	\item \textbf{Kết quả phụ thuộc setup:} CDT\_MSW yêu cầu model SVC học được concept. Với window\_size nhỏ (50 samples), model không có đủ data để học decision boundary phức tạp.
+	\item \textbf{Ưu điểm của SE-CDT:} Tận dụng trực tiếp sự thay đổi $P(X)$ qua MMD signal, không phụ thuộc vào model accuracy.
+	\item \textbf{Cần validation thêm:} Kết quả này dựa trên implementation độc lập của CDT\_MSW. So sánh với implementation chính thức của tác giả gốc là hướng nghiên cứu cần thiết để khẳng định kết luận.
+\end{itemize}
+
+\textit{Lưu ý: Kết quả trên cho thấy tiềm năng của phương pháp unsupervised trong điều kiện thử nghiệm này, nhưng không nên tổng quát hóa rằng unsupervised luôn tốt hơn supervised trong mọi trường hợp.}
+

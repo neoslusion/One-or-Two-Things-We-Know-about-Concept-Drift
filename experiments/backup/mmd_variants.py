@@ -240,24 +240,15 @@ def mmd_adw(X, s=None, gamma='auto', weight_method='variance_reduction'):
 def shapedd_adw_mmd(X, l1=50, l2=150, gamma='auto', mode='simple'):
     """
     LEGACY: ShapeDD-ADW-MMD Hybrid with heuristic pattern detection.
-    
-    NOTE: This is a fast heuristic version.
-    
-    This computes ADW-MMD values over sliding windows and analyzes geometric
-    patterns (triangles, peaks) using heuristics instead of permutation tests.
-    
-    Parameters:
-    -----------
-    X : array-like, shape (n_samples, n_features)
-        Data stream
-    l1 : int, default=50
-        Reference window size
-    l2 : int, default=150
-        Test window size
-    gamma : str or float, default='auto'
-        RBF kernel bandwidth
-    mode : str, default='simple'
-        Pattern detection mode: 'simple' or 'enhanced'
+    Wrapper that returns only (score, max) for compatibility.
+    """
+    score, mmd_max, _ = shapedd_adw_mmd_full(X, l1, l2, gamma, mode)
+    return score, mmd_max
+
+
+def shapedd_adw_mmd_full(X, l1=50, l2=150, gamma='auto', mode='simple'):
+    """
+    ShapeDD-ADW-MMD Hybrid with heuristic pattern detection.
     
     Returns:
     --------
@@ -265,6 +256,8 @@ def shapedd_adw_mmd(X, l1=50, l2=150, gamma='auto', mode='simple'):
         Geometric pattern strength (0.0 to 1.0)
     mmd_max : float
         Maximum OW-MMD value in sequence
+    mmd_trace : np.ndarray
+        The full MMD sequence for analysis
     """
     n_samples = len(X)
     
@@ -275,7 +268,7 @@ def shapedd_adw_mmd(X, l1=50, l2=150, gamma='auto', mode='simple'):
         # Fallback: single OW-MMD test
         min_required = min(l1, l2)
         if n_samples < 2 * min_required:
-            return 0.0, 0.0
+            return 0.0, 0.0, np.array([])
         
         if n_samples >= l1 + l2:
             split_point = l1
@@ -291,7 +284,7 @@ def shapedd_adw_mmd(X, l1=50, l2=150, gamma='auto', mode='simple'):
         else:
             pattern_score = 0.0
         
-        return pattern_score, mmd_val
+        return pattern_score, mmd_val, np.array([mmd_val])
     
     # Sliding window OW-MMD computation
     mmd_sequence = []
@@ -311,19 +304,20 @@ def shapedd_adw_mmd(X, l1=50, l2=150, gamma='auto', mode='simple'):
         mmd_val, _ = mmd_adw(window_combined, s=l1, gamma=gamma)
         mmd_sequence.append(mmd_val)
     
+    mmd_array = np.array(mmd_sequence)
+    
     if len(mmd_sequence) < 3:
         if mmd_sequence:
             max_mmd = max(mmd_sequence)
             pattern_score = min(max_mmd / 0.3, 1.0) if max_mmd > 0.15 else 0.0
-            return pattern_score, max_mmd
-        return 0.0, 0.0
+            return pattern_score, max_mmd, mmd_array
+        return 0.0, 0.0, np.array([])
     
-    mmd_array = np.array(mmd_sequence)
     mmd_min, mmd_max_val = mmd_array.min(), mmd_array.max()
     
     if mmd_max_val - mmd_min < 1e-10:
         pattern_score = min(mmd_max_val / 0.3, 1.0) if mmd_max_val > 0.15 else 0.0
-        return pattern_score, mmd_max_val
+        return pattern_score, mmd_max_val, mmd_array
     
     mmd_norm = (mmd_array - mmd_min) / (mmd_max_val - mmd_min)
     
@@ -334,7 +328,7 @@ def shapedd_adw_mmd(X, l1=50, l2=150, gamma='auto', mode='simple'):
     else:
         raise ValueError(f"Unknown mode: {mode}")
     
-    return pattern_score, mmd_max_val
+    return pattern_score, mmd_max_val, mmd_array
 
 
 def _simple_pattern_detection(mmd_norm):

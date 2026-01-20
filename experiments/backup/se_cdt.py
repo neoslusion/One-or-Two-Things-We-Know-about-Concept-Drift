@@ -3,22 +3,73 @@ from scipy.signal import find_peaks, peak_widths
 from scipy.ndimage import gaussian_filter1d
 from dataclasses import dataclass
 from typing import Tuple, Dict, Any, List
+import time
+
+# Import shapedd_adw_mmd_full for internal detection
+from mmd_variants import shapedd_adw_mmd_full
 
 @dataclass
 class SECDTResult:
+    is_drift: bool = False
     drift_type: str = "Unknown"  # TCD, PCD
     subcategory: str = "Unknown" # Sudden, Blip, Gradual, Incremental, Recurrent
     features: Dict[str, float] = None
-    
+    score: float = 0.0
+    mmd_trace: np.ndarray = None
+    classification_time: float = 0.0
+
 class SE_CDT:
     """
     SE-CDT (ShapeDD-Enhanced Concept Drift Type identification).
-    Algorithm 3.4 from Thesis: Unsupervised drift classification 
-    using drift magnitude signal shape.
+    Unified Detector-Classifier System.
     """
     
-    def __init__(self, window_size: int = 50):
+    def __init__(self, window_size: int = 50, l2: int = 150, threshold: float = 0.5):
         self.l1 = window_size
+        self.l2 = l2
+        self.threshold = threshold
+
+    def monitor(self, window: np.ndarray) -> SECDTResult:
+        """
+        Monitor the stream window for drift.
+        If drift is detected, automatically classify it.
+        
+        Parameters:
+        -----------
+        window : np.ndarray
+            Current data window to check.
+            
+        Returns:
+        --------
+        result : SECDTResult
+            Unified result containing detection and classification info.
+        """
+        # 1. Detection Step (ShapeDD-ADW)
+        pattern_score, mmd_max, mmd_trace = shapedd_adw_mmd_full(
+            window, l1=self.l1, l2=self.l2, gamma='auto'
+        )
+        
+        result = SECDTResult(
+            is_drift=False,
+            score=pattern_score,
+            mmd_trace=mmd_trace
+        )
+        
+        # 2. Trigger Check
+        if pattern_score > self.threshold:
+            result.is_drift = True
+            
+            # 3. Classification Step (Algorithm 3.4)
+            t0 = time.time()
+            classification_res = self.classify(mmd_trace)
+            t1 = time.time()
+            
+            result.drift_type = classification_res.drift_type
+            result.subcategory = classification_res.subcategory
+            result.features = classification_res.features
+            result.classification_time = t1 - t0
+            
+        return result
 
     def extract_features(self, sigma_signal: np.ndarray) -> Dict[str, float]:
         """

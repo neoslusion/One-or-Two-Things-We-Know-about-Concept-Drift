@@ -91,7 +91,7 @@ Hiệu suất của các phương pháp thay đổi tùy thuộc vào đặc tí
 % =============================================================================
 \input{../../experiments/drift_detection_benchmark/publication_figures/table_II_f1_by_dataset.tex}
 
-\begin{figure}[h]
+	\begin{figure}[h]
 	\centering
 	\includegraphics[width=0.9\textwidth]{../../experiments/publication_figures/vis_mixed_a_SE.png}
 	\caption[Minh họa tín hiệu phát hiện trên dữ liệu Sudden Drift]{Minh họa tín hiệu phát hiện trên dữ liệu Sudden Drift (trong kịch bản Mixed A). ShapeDD tạo ra hình dạng "tam giác cân" đặc trưng (Subplot 03) tại điểm drift, đúng như dự báo lý thuyết.}
@@ -186,12 +186,12 @@ Phần này đánh giá hiệu quả của phương pháp SE-CDT được đề 
 	\label{tab:se-cdt-comparison}
 	\begin{tabular}{|l|c|c|}
 		\hline
-		\textbf{Tiêu chí}       & \textbf{CDT\_MSW}  & \textbf{SE-CDT} \\
+		\textbf{Tiêu chí} & \textbf{CDT\_MSW} & \textbf{SE-CDT} \\
 		\hline
-		Supervised              & Có (cần labels)    & \textbf{Không}  \\
-		Độ chính xác nhóm (CAT) & 40.0\%             & \textbf{78.0\%} \\
-		Tín hiệu sử dụng        & Tỷ lệ độ chính xác & MMD $\sigma(t)$ \\
-		Tính toán bổ sung       & Cần training model & Không           \\
+		Supervised        & Có (cần labels)   & \textbf{Không}  \\
+		Độ chính xác nhóm (CAT) & 40.0\%            & \textbf{78.0\%}   \\
+		Tín hiệu sử dụng  & Tỷ lệ độ chính xác & MMD $\sigma(t)$ \\
+		Tính toán bổ sung & Cần training model & Không           \\
 		\hline
 	\end{tabular}
 	\begin{flushleft}
@@ -209,7 +209,7 @@ Các phương pháp được chạy trên bộ dữ liệu theo đúng paper g�
 
 \begin{table}[H]
 	\centering
-	\caption{So sánh chi tiết CDT\_MSW, SE-CDT và biến thể ADW-MMD theo loại drift}
+	\caption{So sánh chi tiết CDT\_MSW, SHAPED\_CDT và biến thể ADW-MMD theo loại drift}
 	\label{tab:cdt-comparison-by-type}
 	\begin{tabular}{|l|l|c|c|c|c|}
 		\hline
@@ -303,10 +303,10 @@ ADW-MMD sử dụng cơ chế \textit{variance reduction weighting} ($w_{ij} \pr
 	\label{tab:supervised-comparison}
 	\begin{tabular}{|l|c|c|c|c|}
 		\hline
-		\textbf{Method}       & \textbf{EDR$\uparrow$} & \textbf{MDR$\downarrow$} & \textbf{FP} & \textbf{Setting}      \\
+		\textbf{Method} & \textbf{EDR$\uparrow$} & \textbf{MDR$\downarrow$} & \textbf{FP} & \textbf{Setting} \\
 		\hline
-		CDT\_MSW              & 32.0\%                 & 68.0\%                   & 24          & Supervised            \\
-		\textbf{SE-CDT (Std)} & \textbf{96.0\%}        & \textbf{4.0\%}           & 126         & \textbf{Unsupervised} \\
+		CDT\_MSW & 32.0\% & 68.0\% & 24 & Supervised \\
+		\textbf{SE-CDT (Std)} & \textbf{96.0\%} & \textbf{4.0\%} & 126 & \textbf{Unsupervised} \\
 		\hline
 	\end{tabular}
 \end{table}
@@ -323,88 +323,32 @@ ADW-MMD sử dụng cơ chế \textit{variance reduction weighting} ($w_{ij} \pr
 
 Kết quả phân loại trên cho thấy độ tin cậy của module SE-CDT. Tiếp theo, hệ thống sử dụng kết quả này để kích hoạt quy trình thích ứng.
 
-\subsection{Điều chỉnh ngưỡng phát hiện SE-CDT}
-\label{sec:secdt-threshold}
-
-Trong quá trình triển khai thực tế trên hệ thống Kafka streaming, luận văn phát hiện rằng ngưỡng mặc định của SE-CDT ($\tau = 0.5$) quá cao cho các tình huống drift thực tế, dẫn đến việc bỏ lỡ nhiều điểm drift (high miss rate).
-
-\textbf{Thử nghiệm điều chỉnh ngưỡng:}
-\begin{itemize}
-	\item \textbf{Ngưỡng mặc định ($\tau = 0.5$):} Không phát hiện được drift nào trên dữ liệu streaming demo
-	\item \textbf{Ngưỡng đề xuất ($\tau = 0.15$):} Phát hiện chính xác các điểm drift với độ trễ thấp
-\end{itemize}
-
-\textbf{Lý giải lựa chọn ngưỡng 0.15:}
-\begin{enumerate}
-	\item \textbf{Cân bằng sensitivity và specificity:} Ngưỡng 0.15 đủ thấp để bắt được các tín hiệu drift vừa phải (moderate drift) nhưng đủ cao để lọc bỏ nhiễu ngẫu nhiên.
-	\item \textbf{Tương thích với ADW-MMD signal:} Cơ chế trọng số nghịch mật độ của ADW-MMD tạo ra tín hiệu có biên độ nhỏ hơn standard MMD. Ngưỡng 0.15 phù hợp với phân phối thực tế của ADW-MMD output.
-	\item \textbf{Validation qua prequential evaluation:} Kết quả thực nghiệm (Bảng~\ref{tab:prequential-results}) cho thấy ngưỡng này cho phép hệ thống cải thiện độ chính xác đáng kể so với baseline không thích ứng.
-\end{enumerate}
-
-\textbf{Khuyến nghị triển khai:} Ngưỡng tối ưu phụ thuộc vào đặc tính dữ liệu cụ thể. Trong môi trường production, nên sử dụng validation set để calibrate ngưỡng, hoặc áp dụng kỹ thuật adaptive thresholding dựa trên phân vị (quantile) của tín hiệu MMD lịch sử.
-
 \section{Đánh giá khả năng thích ứng mô hình}
 
-Sau khi phát hiện drift, hệ thống kích hoạt quy trình thích ứng. Phần này đánh giá hiệu quả của chiến lược thích ứng theo loại drift (Type-Specific Adaptation) được SE-CDT phân loại.
+Sau khi phát hiện drift, hệ thống kích hoạt quy trình thích ứng. Phần này đánh giá hiệu quả của chiến lược \textbf{"Full Model Reset"} đối với loại \textit{Sudden Drift}.
 
 \subsection{Phương pháp đánh giá}
-Sử dụng chỉ số \textbf{Prequential Accuracy} --- phương pháp đánh giá tuần tự (test-then-train) trong đó mỗi mẫu được sử dụng để kiểm tra hiệu năng mô hình trước khi đưa vào huấn luyện. Thực nghiệm được chạy trên hệ thống Kafka streaming demo với SE-CDT threshold = 0.15 (xem Section~\ref{sec:secdt-threshold}).
-
-\textbf{Cấu hình thực nghiệm:}
-\begin{itemize}
-	\item Luồng dữ liệu: 5,000 mẫu với 5 điểm drift
-	\item Các loại drift: Sudden, Gradual, Incremental, Recurrent
-	\item Chiến lược thích ứng: Full Model Reset (sudden), Incremental Update (gradual/incremental), Concept Memory (recurrent)
-\end{itemize}
+Sử dụng chỉ số \textbf{Prequential Accuracy} --- phương pháp đánh giá tuần tự (test-then-train) trong đó mỗi mẫu được sử dụng để kiểm tra hiệu năng mô hình trước khi đưa vào huấn luyện, độ chính xác tích lũy được tính trên toàn bộ quá trình --- trên luồng dữ liệu 5,000 mẫu chứa 5 điểm sudden drift.
 
 \subsection{Kết quả phục hồi (Recovery)}
 
-Bảng~\ref{tab:prequential-results} tổng hợp kết quả Prequential Accuracy trên các loại drift khác nhau.
-
-\begin{table}[H]
-	\centering
-	\caption{Kết quả Prequential Accuracy theo loại drift (SE-CDT threshold = 0.15)}
-	\label{tab:prequential-results}
-	\begin{tabular}{|l|c|c|c|}
-		\hline
-		\textbf{Loại Drift} & \textbf{Type-Specific} & \textbf{No Adaptation} & \textbf{Improvement} \\
-		\hline
-		Sudden              & \textbf{85.46\%}       & 81.26\%                & +5.2\%               \\
-		Gradual             & 80.80\%                & 79.02\%                & +2.3\%               \\
-		Incremental         & 80.80\%                & 79.02\%                & +2.3\%               \\
-		Recurrent           & 80.80\%                & 79.02\%                & +2.3\%               \\
-		\hline
-		\textbf{Trung bình} & \textbf{81.97\%}       & 79.58\%                & +3.0\%               \\
-		\hline
-	\end{tabular}
-\end{table}
-
-\textbf{Phân tích kết quả:}
-\begin{itemize}
-	\item \textbf{Sudden drift cho hiệu quả cao nhất (+5.2\%):} Chiến lược Full Model Reset hoạt động hiệu quả với drift đột ngột, cho phép mô hình nhanh chóng thích ứng với concept mới.
-	\item \textbf{Gradual/Incremental/Recurrent cải thiện vừa phải (+2.3\%):} Các loại drift từ từ khó phát hiện hơn do tín hiệu MMD không tạo peak rõ ràng, dẫn đến độ trễ thích ứng cao hơn.
-\end{itemize}
-
-Hình~\ref{fig:prequential_sudden} minh họa quá trình suy giảm và phục hồi độ chính xác trên dữ liệu Sudden Drift.
+Hình~\ref{fig:prequential_accuracy} minh họa quá trình suy giảm và phục hồi độ chính xác của mô hình theo thời gian.
 
 \begin{figure}[H]
 	\centering
-	\includegraphics[width=0.95\textwidth]{figures/kafka_demo/prequential_accuracy_sudden.png}
-	\caption[Prequential Accuracy trên Sudden Drift]{Prequential Accuracy trên Sudden Drift. Đường màu xanh (Type-Specific) cho thấy độ chính xác phục hồi nhanh chóng sau mỗi điểm drift (tam giác đỏ), trong khi đường màu đỏ (No Adaptation) suy giảm liên tục.}
-	\label{fig:prequential_sudden}
+	\includegraphics[width=0.95\textwidth]{image/prequential_accuracy_sudden.png}
+	\caption[Độ chính xác Prequential theo thời gian]{Độ chính xác Prequential theo thời gian. Đường màu xanh (Type-Specific/Simple Retrain) cho thấy độ chính xác phục hồi nhanh chóng sau mỗi điểm drift (ký hiệu tam giác đỏ), trong khi đường màu đỏ (No Adaptation) tiếp tục suy giảm.}
+	\label{fig:prequential_accuracy}
 \end{figure}
 
-\begin{figure}[H]
-	\centering
-	\includegraphics[width=0.95\textwidth]{figures/kafka_demo/prequential_accuracy_gradual.png}
-	\caption[Prequential Accuracy trên Gradual Drift]{Prequential Accuracy trên Gradual Drift. Sự cải thiện ít rõ ràng hơn do đặc tính drift từ từ khó phát hiện bằng window-based MMD.}
-	\label{fig:prequential_gradual}
-\end{figure}
-
-\textbf{Nhận xét về độ trễ phục hồi:}
+\textbf{Số liệu chi tiết:}
 \begin{itemize}
-	\item \textbf{Sudden drift:} Hệ thống mất khoảng $50-100$ mẫu để training lại mô hình đạt độ chính xác ổn định.
-	\item \textbf{Gradual drift:} Độ trễ phát hiện cao hơn do tín hiệu MMD bị ``san phẳng'', dẫn đến thời điểm trigger muộn hơn so với thời điểm drift thực sự bắt đầu.
+	\item \textbf{Không thích ứng (No Adaptation):} Độ chính xác giảm xuống dưới $60\%$ sau các đợt drift liên tiếp, mô hình trở nên vô dụng.
+	\item \textbf{Có thích ứng (With Adaptation):}
+	      \begin{itemize}
+		      \item \textbf{Tỷ lệ phục hồi (Recovery Rate):} Trung bình đạt \textbf{82.8\%}. Điều này có nghĩa là hệ thống không chỉ chặn đứng đà suy giảm mà còn khôi phục được phần lớn hiệu năng ban đầu của mô hình.
+		      \item \textbf{Độ trễ phục hồi:} Hệ thống mất khoảng $50-100$ mẫu dữ liệu mới để training lại mô hình đạt độ chính xác ổn định.
+	      \end{itemize}
 \end{itemize}
 
 
@@ -413,10 +357,9 @@ Hình~\ref{fig:prequential_sudden} minh họa quá trình suy giảm và phục 
 Tổng hợp lại các các kết quả thực nghiệm:
 
 \begin{enumerate}
-	\item \textbf{Về chất lượng phát hiện:} \textbf{MMD\_ADW} và \textbf{ShapeDD\_ADW\_MMD} là những phương pháp hiệu quả nhất tổng thể, đặc biệt xuất sắc với các drift mạnh và đột ngột. Tuy nhiên, cần lưu ý sự đánh đổi độ nhạy đối với các drift quá nhẹ (mild drift).
+	\item \textbf{Về chất lượng phát hiện:} \textbf{MMD_ADW} và \textbf{ShapeDD_ADW_MMD} là những phương pháp hiệu quả nhất tổng thể, đặc biệt xuất sắc với các drift mạnh và đột ngột. Tuy nhiên, cần lưu ý sự đánh đổi độ nhạy đối với các drift quá nhẹ (mild drift).
 	\item \textbf{Về hiệu năng hệ thống:} Cải tiến ADW-MMD mang lại lợi ích to lớn về mặt tính toán, tăng thông lượng xử lý lên \textbf{hơn 7 lần}, biến ShapeDD từ một thuật toán nghiên cứu thành một giải pháp khả thi cho môi trường sản xuất (production-ready).
-	\item \textbf{Về khả năng thích ứng:} Chiến lược thích ứng theo loại drift (Type-Specific Adaptation) với SE-CDT threshold = 0.15 cải thiện Prequential Accuracy trung bình \textbf{+3.0\%}, đặc biệt hiệu quả với Sudden Drift (\textbf{+5.2\%}).
-	\item \textbf{Về tính toàn vẹn:} D3 tuy nhanh nhưng hạn chế với Virtual Drift, trong khi KS tuy nhạy nhưng quá ồn (nhiều False Positive). ShapeDD\_ADW\_MMD cung cấp sự cân bằng tốt nhất: nhanh, chính xác và ít báo động giả.
+	\item \textbf{Về tính toàn vẹn:} D3 tuy nhanh nhưng hạn chế với Virtual Drift, trong khi KS tuy nhạy nhưng quá ồn (nhiều False Positive). ShapeDD_ADW_MMD cung cấp sự cân bằng tốt nhất: nhanh, chính xác và ít báo động giả.
 \end{enumerate}
 
 Kết quả này khẳng định hướng tiếp cận sử dụng MMD có trọng số tối ưu kết hợp với phân tích hình dạng là một hướng đi đúng đắn để giải quyết bài toán Concept Drift trong dữ liệu lớn.

@@ -78,16 +78,16 @@ Cách tiếp cận này ("Density-Weighted") giúp giảm phương sai bằng c�
 	\label{tab:complexity}
 	\begin{tabular}{|l|c|c|l|}
 		\hline
-		\textbf{Thành phần}     & \textbf{Thời gian}   & \textbf{Bộ nhớ} & \textbf{Ghi chú}    \\
+		\textbf{Thành phần} & \textbf{Thời gian} & \textbf{Bộ nhớ} & \textbf{Ghi chú} \\
 		\hline
-		Kernel Matrix           & $O(n^2)$             & $O(n^2)$        & $n$ = window size   \\
-		Density weights         & $O(n)$               & $O(n)$          & Sum over rows       \\
-		Weighted MMD            & $O(n^2)$             & $O(1)$          & Scalar output       \\
+		Kernel Matrix & $O(n^2)$ & $O(n^2)$ & $n$ = window size \\
+		Density weights & $O(n)$ & $O(n)$ & Sum over rows \\
+		Weighted MMD & $O(n^2)$ & $O(1)$ & Scalar output \\
 		\hline
-		\textbf{ADW-MMD tổng}   & $O(n^2)$             & $O(n^2)$        & Dominated by kernel \\
+		\textbf{ADW-MMD tổng} & $O(n^2)$ & $O(n^2)$ & Dominated by kernel \\
 		\hline
-		ShapeDD gốc (2500 perm) & $O(n^2 \times 2500)$ & $O(n^2)$        & Permutation test    \\
-		ADW-MMD (50 perm)       & $O(n^2 \times 50)$   & $O(n^2)$        & Giảm 50×            \\
+		ShapeDD gốc (2500 perm) & $O(n^2 \times 2500)$ & $O(n^2)$ & Permutation test \\
+		ADW-MMD (50 perm) & $O(n^2 \times 50)$ & $O(n^2)$ & Giảm 50× \\
 		\hline
 	\end{tabular}
 \end{table}
