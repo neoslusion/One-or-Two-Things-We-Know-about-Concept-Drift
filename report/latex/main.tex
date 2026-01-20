@@ -64,10 +64,16 @@
 \geometry{
     left=3cm,
     right=2cm,
-    top=2.5cm,
-    bottom=2.5cm,
+    top=2cm,
+    bottom=2cm,
+    headsep=30pt,
     footskip=1cm
 }
+
+% Figure and Table numbering by section (e.g., Hình 2.1, Bảng 3.2)
+\usepackage{chngcntr}
+\counterwithin{figure}{section}
+\counterwithin{table}{section}
 
 % Line spacing
 \onehalfspacing
@@ -82,13 +88,30 @@
 % Set default font size to 12pt for body text
 % \renewcommand{\normalsize}{\fontsize{13}{14.4}\selectfont}
 
-% Header and Footer formatting for Vietnamese thesis
+% Header and Footer formatting for Vietnamese thesis (BK standard)
 \pagestyle{fancy}
 \fancyhf{}
-\fancyfoot[C]{\thepage}
+
+% Header with university logo and department name
+\fancyhead[L]{
+    \begin{tabular}{rl}
+        \begin{picture}(15,15)(0,0)
+        \put(0,-8){\includegraphics[width=8mm, height=9mm]{image/hcmut.jpg}}
+        \end{picture}&
+        \begin{tabular}{l}
+            Đại học Bách khoa - ĐHQG TP.HCM\\
+            Khoa Khoa học \& Kỹ thuật máy tính
+        \end{tabular}
+    \end{tabular}
+}
+
+% Footer with thesis name and page number
 \renewcommand{\headrulewidth}{0pt}
-\renewcommand{\footrulewidth}{0pt}
-\setlength{\headheight}{14.5pt}
+\renewcommand{\footrulewidth}{0.4pt}
+\fancyfoot{}
+\fancyfoot[L]{Luận văn tốt nghiệp}
+\fancyfoot[R]{\thepage}
+\setlength{\headheight}{30pt}
 
 % Chapter title formatting - Vietnamese style (follow DOCX format)
 \titleformat{\chapter}[display]
