@@ -146,10 +146,88 @@ Nhờ tích hợp MMD-Agg, ShapeDD không còn phụ thuộc vào việc chọn 
 	\end{algorithmic}
 \end{algorithm}
 
+Sau khi tích hợp ADW-MMD và MMD-Agg, hệ thống có thể phát hiện drift với độ chính xác cao và chi phí tính toán thấp. Tuy nhiên, phát hiện drift chỉ là bước đầu tiên --- để chọn chiến lược thích ứng phù hợp, hệ thống cần biết \textit{loại drift} đã xảy ra. Phần tiếp theo trình bày phương pháp SHAPED\_CDT cho bài toán phân loại drift không giám sát.
+
+\section{Phương pháp phân loại drift: SHAPED\_CDT}
+\label{sec:shaped-cdt}
+
+Phương pháp CDT\_MSW gốc~\cite{guo2022cdtmsw} yêu cầu \textit{labels} để tính toán accuracy ratio, điều này không phù hợp trong môi trường streaming không giám sát. Luận văn đề xuất \textbf{SHAPED\_CDT} (ShapeDD-Enhanced Concept Drift Type --- còn gọi là SE-CDT trong một số tài liệu), một phương pháp thay thế sử dụng trực tiếp tín hiệu drift magnitude $\sigma(t)$ từ ShapeDD để phân loại drift type.
+
+\subsection{Cơ sở lý thuyết}
+Theo phân loại của CDT\_MSW, drift được chia thành:
+\begin{itemize}
+	\item \textbf{TCD (Transient Concept Drift):} Drift tạm thời với thời gian chuyển đổi ngắn --- bao gồm \textit{sudden} và \textit{blip}.
+	\item \textbf{PCD (Progressive Concept Drift):} Drift tiến triển với thời gian chuyển đổi dài --- bao gồm \textit{gradual}, \textit{incremental}, và \textit{recurrent}.
+\end{itemize}
+
+\subsection{Đặc trưng phân loại từ tín hiệu $\sigma(t)$}
+\begin{enumerate}
+	\item \textbf{Peak Width Ratio:} $\text{WR} = \frac{\text{FWHM}}{2L}$. TCD có $\text{WR} < 0.12$, PCD có $\text{WR} \geq 0.12$.
+	\item \textbf{Peak Count:} Số lượng peaks phát hiện được. Sudden có ít peaks ($\leq 4$), Recurrent có nhiều peaks đều đặn ($\geq 5$).
+	\item \textbf{Periodicity CV:} Hệ số biến thiên khoảng cách giữa peaks. Recurrent có CV $< 0.2$ (đều đặn).
+	\item \textbf{Signal-to-Noise Ratio:} $\text{SNR} = \frac{\max(\sigma)}{\text{median}(\sigma)}$ --- TCD có SNR cao (peaks sắc nét).
+\end{enumerate}
+
+\subsection{Thuật toán phân loại}
+\begin{algorithm}[H]
+	\caption{SHAPED\_CDT: Phân loại drift không giám sát}
+	\label{alg:se-cdt}
+	\begin{algorithmic}[1]
+		\REQUIRE Tín hiệu drift magnitude $\sigma(t)$ từ ShapeDD
+		\ENSURE Loại drift (TCD/PCD) và subcategory
+		\STATE Làm mịn tín hiệu: $\sigma_s \leftarrow \text{GaussianFilter}(\sigma, \sigma=4)$
+		\STATE Phát hiện peaks: $P \leftarrow \text{FindPeaks}(\sigma_s, \text{threshold}=\bar{\sigma} + 0.3\sigma_{std})$
+		\STATE Tính các đặc trưng: $n_p \leftarrow |P|$, $\text{WR}$, $\text{CV}$, $\text{SNR}$
+		\IF{$n_p \leq 4$ AND $\text{WR} < 0.12$}
+		\RETURN \textbf{SUDDEN} (TCD)
+		\ELSIF{$n_p \geq 4$ AND $\text{CV} < 0.3$}
+		\RETURN \textbf{RECURRENT} (PCD)
+		\ELSIF{$\text{WR} \geq 0.12$}
+		\RETURN \textbf{GRADUAL} (PCD)
+		\ELSIF{$n_p \geq 10$ AND $\text{SignalMean} \approx 0$}
+		\RETURN \textbf{INCREMENTAL} (PCD)
+		\ELSE
+		\RETURN \textbf{GRADUAL} (PCD) \COMMENT{Default}
+		\ENDIF
+	\end{algorithmic}
+\end{algorithm}
+
+\subsection{Ưu điểm và độ phức tạp}
+\textbf{Ưu điểm của SHAPED\_CDT:}
+\begin{itemize}
+	\item \textbf{Không giám sát:} Không cần labels, phù hợp với streaming data.
+	\item \textbf{Tích hợp:} Sử dụng cùng tín hiệu $\sigma(t)$ đã tính cho detection, không cần tính toán thêm.
+	\item \textbf{Thời gian thực:} Phân loại ngay sau khi phát hiện drift.
+	\item \textbf{Sử dụng standard MMD:} Phù hợp hơn ADW-MMD cho classification vì standard MMD giữ lại tất cả sự khác biệt bao gồm cả những thay đổi nhỏ từ PCD (Gradual, Incremental).
+\end{itemize}
+
+\textbf{Độ phức tạp tính toán:}
+\begin{itemize}
+	\item Gaussian smoothing: $O(m)$ với $m$ = độ dài tín hiệu
+	\item Peak detection: $O(m)$ sử dụng thuật toán scipy.signal.find\_peaks
+	\item Feature extraction: $O(n_p)$ với $n_p$ = số peaks
+	\item Classification: $O(1)$ - chỉ so sánh ngưỡng
+	\item \textbf{Tổng:} $O(m)$ - tuyến tính theo độ dài tín hiệu
+\end{itemize}
+
+\subsection{Giải thích lựa chọn ngưỡng}
+Các ngưỡng trong Algorithm~\ref{alg:se-cdt} được xác định dựa trên phân tích thực nghiệm trên synthetic datasets:
+\begin{itemize}
+	\item \textbf{WR $<$ 0.12 (TCD):} Sudden drift tạo peak sắc nét với FWHM $<$ 24\% window size. Ngưỡng này phân biệt peak ``nhọn'' của sudden với peak ``rộng'' của gradual.
+	\item \textbf{$n_p \geq 4$ và CV $<$ 0.3 (Recurrent):} Recurrent drift có nhiều peaks đều đặn. CV (Coefficient of Variation) thấp chỉ ra khoảng cách giữa các peaks ổn định.
+	\item \textbf{$n_p \geq 10$ (Incremental):} Incremental drift tạo nhiều peaks nhỏ liên tục do sự thay đổi từ từ trong phân phối.
+\end{itemize}
+\textit{Ghi chú: Các ngưỡng này được tối ưu trên synthetic data và có thể cần điều chỉnh cho từng domain cụ thể.}
+
+\textbf{Lưu ý về biến thể ADW-MMD:}
+Luận văn cũng thử nghiệm sử dụng ADW-MMD thay cho standard MMD trong SHAPED\_CDT. Tuy nhiên, kết quả cho thấy ADW-MMD không phù hợp cho classification do cơ chế variance reduction loại bỏ những thay đổi nhỏ (coi là noise). ADW-MMD phù hợp hơn cho drift detection, nhưng standard MMD tốt hơn cho classification. Chi tiết thử nghiệm và so sánh định lượng được trình bày ở Chương~\ref{chap:experiments}.
+
+Kết quả phân loại từ SHAPED\_CDT sẽ được sử dụng để kích hoạt chiến lược thích ứng phù hợp, được trình bày trong phần tiếp theo.
+
 \section{Khung chiến lược thích ứng mô hình}
 \label{sec:model-adaptation-framework}
 
-Việc phát hiện drift chỉ có ý nghĩa khi hệ thống có hành động cụ thể để duy trì hiệu suất mô hình. Phần này trình bày khung chiến lược thích ứng (Adaptation Framework), liên kết kết quả phân loại loại drift từ CDT\_MSW (đã trình bày ở Chương 2) với các hành động cập nhật mô hình cụ thể.
+Dựa trên kết quả phân loại drift từ SHAPED\_CDT, hệ thống có thể kích hoạt chiến lược cập nhật mô hình phù hợp. Phần này trình bày khung chiến lược thích ứng (Adaptation Framework).
 
 \subsection{Ma trận quyết định chiến lược}
 
@@ -193,77 +271,6 @@ Trong phạm vi luận văn, chiến lược cho \textit{Sudden Drift} được 
 	\item \textbf{Signature:} Vector trung bình và ma trận hiệp phương sai của đặc trưng.
 	\item \textbf{Matching:} Khi drift xảy ra, hệ thống so sánh phân phối dữ liệu mới với các signature trong kho bằng khoảng cách Kolmogorov-Smirnov (KS). Nếu độ tương đồng cao (khoảng cách nhỏ hơn ngưỡng $\epsilon$), mô hình cũ sẽ được tải lại và tinh chỉnh nhẹ.
 \end{itemize}
-
-\subsubsection{SHAPED\_CDT: Phân loại drift không giám sát}
-
-Phương pháp CDT\_MSW gốc~\cite{guo2022cdtmsw} yêu cầu \textit{labels} để tính toán accuracy ratio, điều này không phù hợp trong môi trường streaming không giám sát. Luận văn đề xuất \textbf{SHAPED\_CDT} (ShapeDD-Enhanced Concept Drift Type --- còn gọi là SE-CDT trong một số tài liệu), một phương pháp thay thế sử dụng trực tiếp tín hiệu drift magnitude $\sigma(t)$ từ ShapeDD để phân loại drift type.
-
-\textbf{Cơ sở lý thuyết:} Theo phân loại của CDT\_MSW, drift được chia thành:
-\begin{itemize}
-	\item \textbf{TCD (Transient Concept Drift):} Drift tạm thời với thời gian chuyển đổi ngắn — bao gồm \textit{sudden} và \textit{blip}.
-	\item \textbf{PCD (Progressive Concept Drift):} Drift tiến triển với thời gian chuyển đổi dài — bao gồm \textit{gradual}, \textit{incremental}, và \textit{recurrent}.
-\end{itemize}
-
-\textbf{Đặc trưng phân loại từ tín hiệu $\sigma(t)$:}
-\begin{enumerate}
-	\item \textbf{Peak Width Ratio:} $\text{WR} = \frac{\text{FWHM}}{2L}$. TCD có $\text{WR} < 0.12$, PCD có $\text{WR} \geq 0.12$.
-	\item \textbf{Peak Count:} Số lượng peaks phát hiện được. Sudden có ít peaks ($\leq 4$), Recurrent có nhiều peaks đều đặn ($\geq 5$).
-	\item \textbf{Periodicity CV:} Hệ số biến thiên khoảng cách giữa peaks. Recurrent có CV $< 0.2$ (đều đặn).
-	\item \textbf{Signal-to-Noise Ratio:} $\text{SNR} = \frac{\max(\sigma)}{\text{median}(\sigma)}$ — TCD có SNR cao (peaks sắc nét).
-\end{enumerate}
-
-\textbf{Thuật toán phân loại:}
-\begin{algorithm}[H]
-	\caption{SHAPED\_CDT: Phân loại drift không giám sát}
-	\label{alg:se-cdt}
-	\begin{algorithmic}[1]
-		\REQUIRE Tín hiệu drift magnitude $\sigma(t)$ từ ShapeDD
-		\ENSURE Loại drift (TCD/PCD) và subcategory
-		\STATE Làm mịn tín hiệu: $\sigma_s \leftarrow \text{GaussianFilter}(\sigma, \sigma=4)$
-		\STATE Phát hiện peaks: $P \leftarrow \text{FindPeaks}(\sigma_s, \text{threshold}=\bar{\sigma} + 0.3\sigma_{std})$
-		\STATE Tính các đặc trưng: $n_p \leftarrow |P|$, $\text{WR}$, $\text{CV}$, $\text{SNR}$
-		\IF{$n_p \leq 4$ AND $\text{WR} < 0.12$}
-		\RETURN \textbf{SUDDEN} (TCD)
-		\ELSIF{$n_p \geq 4$ AND $\text{CV} < 0.3$}
-		\RETURN \textbf{RECURRENT} (PCD)
-		\ELSIF{$\text{WR} \geq 0.12$}
-		\RETURN \textbf{GRADUAL} (PCD)
-		\ELSIF{$n_p \geq 10$ AND $\text{SignalMean} \approx 0$}
-		\RETURN \textbf{INCREMENTAL} (PCD)
-		\ELSE
-		\RETURN \textbf{GRADUAL} (PCD) \COMMENT{Default}
-		\ENDIF
-	\end{algorithmic}
-\end{algorithm}
-
-\textbf{Ưu điểm của SE-CDT (SHAPED\_CDT):}
-\begin{itemize}
-	\item \textbf{Không giám sát:} Không cần labels, phù hợp với streaming data.
-	\item \textbf{Tích hợp:} Sử dụng cùng tín hiệu $\sigma(t)$ đã tính cho detection, không cần tính toán thêm.
-	\item \textbf{Thời gian thực:} Phân loại ngay sau khi phát hiện drift.
-	\item \textbf{Sử dụng standard MMD:} Phù hợp hơn ADW-MMD cho classification vì standard MMD giữ lại tất cả sự khác biệt bao gồm cả những thay đổi nhỏ từ PCD (Gradual, Incremental).
-\end{itemize}
-
-\textbf{Độ phức tạp tính toán của SHAPED\_CDT:}
-\begin{itemize}
-	\item Gaussian smoothing: $O(m)$ với $m$ = độ dài tín hiệu
-	\item Peak detection: $O(m)$ sử dụng thuật toán scipy.signal.find\_peaks
-	\item Feature extraction: $O(n_p)$ với $n_p$ = số peaks
-	\item Classification: $O(1)$ - chỉ so sánh ngưỡng
-	\item \textbf{Tổng:} $O(m)$ - tuyến tính theo độ dài tín hiệu
-\end{itemize}
-
-\textbf{Giải thích lựa chọn ngưỡng:}
-Các ngưỡng trong Algorithm~\ref{alg:se-cdt} được xác định dựa trên phân tích thực nghiệm trên synthetic datasets:
-\begin{itemize}
-	\item \textbf{WR $<$ 0.12 (TCD):} Sudden drift tạo peak sắc nét với FWHM $<$ 24\% window size. Ngưỡng này phân biệt peak ``nhọn'' của sudden với peak ``rộng'' của gradual.
-	\item \textbf{$n_p \geq 4$ và CV $<$ 0.3 (Recurrent):} Recurrent drift có nhiều peaks đều đặn. CV (Coefficient of Variation) thấp chỉ ra khoảng cách giữa các peaks ổn định.
-	\item \textbf{$n_p \geq 10$ (Incremental):} Incremental drift tạo nhiều peaks nhỏ liên tục do sự thay đổi từ từ trong phân phối.
-\end{itemize}
-\textit{Ghi chú: Các ngưỡng này được tối ưu trên synthetic data và có thể cần điều chỉnh cho từng domain cụ thể.}
-
-\textbf{Lưu ý về biến thể ADW-MMD:}
-Luận văn cũng thử nghiệm sử dụng ADW-MMD thay cho standard MMD trong SHAPED\_CDT. Tuy nhiên, kết quả cho thấy ADW-MMD không phù hợp cho classification do cơ chế variance reduction loại bỏ những thay đổi nhỏ (coi là noise). ADW-MMD phù hợp hơn cho drift detection, nhưng standard MMD tốt hơn cho classification. Chi tiết thử nghiệm và so sánh định lượng được trình bày ở Chương~\ref{chap:experiments}.
 
 \subsubsection{Cơ chế Meta-Learning (Hướng phát triển)}
 Hệ thống được thiết kế để hỗ trợ Meta-Learning trong tương lai: một mô hình cấp cao (meta-learner) sẽ học cách chọn chiến lược tốt nhất dựa trên lịch sử các lần thích ứng thành công hay thất bại, thay vì chỉ dựa vào quy tắc cố định.
