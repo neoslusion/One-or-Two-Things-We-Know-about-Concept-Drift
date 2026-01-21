@@ -5,9 +5,16 @@
 # Chạy toàn bộ benchmark và cập nhật báo cáo LaTeX
 # 
 # Usage:
-#   ./run_full_pipeline.sh           # Chạy đầy đủ (30 runs, ~40 phút)
-#   ./run_full_pipeline.sh --quick   # Chạy nhanh (5 runs, ~10 phút)
+#   ./run_full_pipeline.sh           # Chạy đầy đủ (30 runs, ~50 phút)
+#   ./run_full_pipeline.sh --quick   # Chạy nhanh (5 runs, ~15 phút)
 #   ./run_full_pipeline.sh --skip-benchmark  # Chỉ build PDF
+#
+# Pipeline steps:
+#   1. benchmark  - Window-based drift detection benchmark
+#   2. compare    - SE-CDT vs CDT_MSW comparison
+#   3. monitoring - Prequential accuracy evaluation
+#   4. plot       - Generate all figures
+#   5. Build PDF
 # =============================================================================
 
 set -e  # Exit on error
@@ -80,29 +87,50 @@ print_success "Output directories ready"
 # Step 1: Run Benchmark
 # =============================================================================
 if [ "$SKIP_BENCHMARK" = false ]; then
-    print_header "Step 1: Running Benchmark"
-    
     TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-    LOG_FILE="results/logs/benchmark_${TIMESTAMP}.log"
+    LOG_FILE="results/logs/pipeline_${TIMESTAMP}.log"
+    
+    # -------------------------------------------------------------------------
+    # Step 1a: Window-based Drift Detection Benchmark
+    # -------------------------------------------------------------------------
+    print_header "Step 1a: Window-based Drift Detection Benchmark"
     
     if [ "$QUICK_MODE" = true ]; then
         echo "Mode: QUICK (5 runs)"
         python main.py benchmark --quick 2>&1 | tee "$LOG_FILE"
     else
-        echo "Mode: FULL (30 runs) - Estimated time: 30-40 minutes"
+        echo "Mode: FULL (30 runs) - Estimated time: 20-30 minutes"
         python main.py benchmark 2>&1 | tee "$LOG_FILE"
     fi
     
-    print_success "Benchmark completed. Log: $LOG_FILE"
+    print_success "Benchmark completed"
     
-    # =============================================================================
-    # Step 2: Run Monitoring Evaluation
-    # =============================================================================
-    print_header "Step 2: Running Monitoring Evaluation"
+    # -------------------------------------------------------------------------
+    # Step 1b: SE-CDT vs CDT_MSW Comparison
+    # -------------------------------------------------------------------------
+    print_header "Step 1b: SE-CDT vs CDT_MSW Comparison"
+    
+    python main.py compare 2>&1 | tee -a "$LOG_FILE"
+    
+    print_success "Comparison completed"
+    
+    # -------------------------------------------------------------------------
+    # Step 1c: Monitoring / Prequential Evaluation
+    # -------------------------------------------------------------------------
+    print_header "Step 1c: Monitoring / Prequential Evaluation"
     
     python main.py monitoring 2>&1 | tee -a "$LOG_FILE"
     
     print_success "Monitoring evaluation completed"
+    
+    # -------------------------------------------------------------------------
+    # Step 2: Generate All Figures
+    # -------------------------------------------------------------------------
+    print_header "Step 2: Generating All Figures"
+    
+    python main.py plot 2>&1 | tee -a "$LOG_FILE"
+    
+    print_success "Figures generated. Log: $LOG_FILE"
 else
     print_warning "Skipping benchmark (--skip-benchmark flag)"
 fi
