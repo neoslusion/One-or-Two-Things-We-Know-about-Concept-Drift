@@ -5,13 +5,13 @@ from scipy.spatial.distance import cdist, pdist
 try:
     import torch
 
-    HAS_TORCH = True
-    if torch.cuda.is_available():
+    HAS_TORCH = False  # Disabled for hardware consistency (CPU only)
+    if torch.cuda.is_available() and HAS_TORCH:
         DEVICE = torch.device("cuda")
         print("[MMD] Using GPU acceleration (CUDA)")
     else:
         DEVICE = torch.device("cpu")
-        print("[MMD] Using CPU (Torch available)")
+        print("[MMD] Using CPU (Torch available but disabled)")
 except ImportError:
     HAS_TORCH = False
     DEVICE = None
@@ -26,6 +26,7 @@ def rbf_kernel(X, Y, gamma="auto"):
     if gamma is None:
         gamma = "auto"
 
+    # GPU branch disabled via HAS_TORCH = False
     if HAS_TORCH and (isinstance(X, torch.Tensor) or isinstance(Y, torch.Tensor)):
         return _rbf_kernel_torch(X, Y, gamma)
 

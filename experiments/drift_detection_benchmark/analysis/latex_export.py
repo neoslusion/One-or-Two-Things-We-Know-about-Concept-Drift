@@ -50,110 +50,136 @@ def export_all_tables(all_results, stream_size, output_dir="./publication_figure
         return
 
     # Create results DataFrame
-    results_df = pd.DataFrame([{
-        'Dataset': r['dataset'],
-        'Method': r['method'],
-        'N_Features': r.get('n_features', 0),
-        'N_Drifts': len(r.get('drift_positions', [])),
-        'Intensity': r.get('intensity', 0),
-        'TP': r.get('tp', 0),
-        'FP': r.get('fp', 0),
-        'FN': r.get('fn', 0),
-        'Precision': r.get('precision', 0.0),
-        'Recall': r.get('recall', 0.0),
-        'F1': r.get('f1_score', 0.0),
-        'MTTD': r.get('mttd', np.nan) if r.get('mttd') != float('inf') else np.nan,
-        'Detection_Rate': r.get('detection_rate', 0.0),
-        'N_Detections': r.get('n_detections', 0),
-        'Runtime_s': r.get('runtime_s', 0.0)
-    } for r in all_results])
+    results_df = pd.DataFrame(
+        [
+            {
+                "Dataset": r["dataset"],
+                "Method": r["method"],
+                "N_Features": r.get("n_features", 0),
+                "N_Drifts": len(r.get("drift_positions", [])),
+                "Intensity": r.get("intensity", 0),
+                "TP": r.get("tp", 0),
+                "FP": r.get("fp", 0),
+                "FN": r.get("fn", 0),
+                "Precision": r.get("precision", 0.0),
+                "Recall": r.get("recall", 0.0),  # This is EDR in thesis
+                "F1": r.get("f1_score", 0.0),
+                "MTTD": r.get("mttd", np.nan)
+                if r.get("mttd") != float("inf")
+                else np.nan,
+                "Detection_Rate": r.get("detection_rate", 0.0),
+                "N_Detections": r.get("n_detections", 0),
+                "Runtime_s": r.get("runtime_s", 0.0),
+            }
+            for r in all_results
+        ]
+    )
 
-    drift_results_df = results_df[results_df['N_Drifts'] > 0].copy()
+    drift_results_df = results_df[results_df["N_Drifts"] > 0].copy()
 
     if len(drift_results_df) == 0:
         print("ERROR: No drift datasets found in results.")
         return
 
     print("=" * 80)
-    print("LATEX TABLE EXPORT")
+    print("LATEX TABLE EXPORT (Thesis Format)")
     print("=" * 80)
 
     # ========================================================================
-    # TABLE I: Comprehensive Performance Summary
+    # TABLE I: Comprehensive Performance Summary (Aligned with Thesis)
     # ========================================================================
+    # Thesis Format: Method | Precision | Recall (EDR) | F1 | Delay | FP
     print("\n[Table I] Comprehensive Performance Summary")
 
-    method_stats = drift_results_df.groupby('Method').agg({
-        'F1': ['mean', 'std'],
-        'Precision': 'mean',
-        'Recall': 'mean',
-        'MTTD': 'mean',
-        'TP': 'sum',
-        'FP': 'sum',
-        'FN': 'sum'
-    }).round(4)
+    method_stats = (
+        drift_results_df.groupby("Method")
+        .agg(
+            {
+                "Precision": "mean",
+                "Recall": "mean",
+                "F1": "mean",  # No std in main aggregate table in thesis usually
+                "MTTD": "mean",  # Delay
+                "FP": "mean",  # Thesis reports Avg FP per stream, not sum
+            }
+        )
+        .round(3)
+    )
 
-    pub_table = pd.DataFrame({
-        'Method': method_stats.index,
-        'F1': method_stats[('F1', 'mean')],
-        'F1_std': method_stats[('F1', 'std')],
-        'Precision': method_stats[('Precision', 'mean')],
-        'Recall': method_stats[('Recall', 'mean')],
-        'MTTD': method_stats[('MTTD', 'mean')].fillna(0).astype(int),
-        'TP': method_stats[('TP', 'sum')].astype(int),
-        'FP': method_stats[('FP', 'sum')].astype(int),
-        'FN': method_stats[('FN', 'sum')].astype(int)
-    })
+    pub_table = pd.DataFrame(
+        {
+            "Method": method_stats.index,
+            "Precision": method_stats["Precision"],
+            "Recall": method_stats["Recall"],  # EDR
+            "F1": method_stats["F1"],
+            "Delay": method_stats["MTTD"].fillna(0).astype(int),
+            "FP": method_stats["FP"].round(1),  # Avg FP
+        }
+    )
 
-    pub_table = pub_table.sort_values('F1', ascending=False).reset_index(drop=True)
-
-    # Add rank column
-    pub_table['Rank'] = range(1, len(pub_table) + 1)
+    pub_table = pub_table.sort_values("F1", ascending=False).reset_index(drop=True)
 
     # Find best values for bolding
-    best_f1 = pub_table['F1'].max()
-    best_precision = pub_table['Precision'].max()
-    best_recall = pub_table['Recall'].max()
-    best_mttd = pub_table['MTTD'].min()  # Lower is better
+    best_f1 = pub_table["F1"].max()
+    best_precision = pub_table["Precision"].max()
+    best_recall = pub_table["Recall"].max()
+    best_delay = pub_table["Delay"].min()
+    best_fp = pub_table["FP"].min()
 
-    # Format F1 with std, bold if best
-    def format_f1(row):
-        f1_str = f"{row['F1']:.3f} \\pm {row['F1_std']:.3f}"
-        if row['F1'] == best_f1:
-            return f"$\\mathbf{{{f1_str}}}$"
-        return f"${f1_str}$"
-
-    pub_table['F1_formatted'] = pub_table.apply(format_f1, axis=1)
-
-    # Format other metrics with bold for best
-    def format_metric(val, best_val, higher_is_better=True):
-        formatted = f"{val:.3f}"
-        if (higher_is_better and val == best_val) or (not higher_is_better and val == best_val):
+    # Format metrics with bold for best
+    def format_metric(val, best_val, higher_is_better=True, precision=3):
+        fmt_str = f"{{:.{precision}f}}"
+        formatted = fmt_str.format(val)
+        if (higher_is_better and val == best_val) or (
+            not higher_is_better and val == best_val
+        ):
             return f"\\textbf{{{formatted}}}"
         return formatted
 
-    pub_table['Precision_fmt'] = pub_table['Precision'].apply(lambda x: format_metric(x, best_precision))
-    pub_table['Recall_fmt'] = pub_table['Recall'].apply(lambda x: format_metric(x, best_recall))
-    pub_table['MTTD_fmt'] = pub_table['MTTD'].apply(lambda x: format_metric(x, best_mttd, higher_is_better=False) if pd.notna(x) and x > 0 else "-")
+    pub_table["Precision"] = pub_table["Precision"].apply(
+        lambda x: format_metric(x, best_precision)
+    )
+    pub_table["Recall"] = pub_table["Recall"].apply(
+        lambda x: format_metric(x, best_recall)
+    )
+    pub_table["F1"] = pub_table["F1"].apply(lambda x: format_metric(x, best_f1))
+    pub_table["Delay"] = pub_table["Delay"].apply(
+        lambda x: format_metric(x, best_delay, higher_is_better=False, precision=0)
+    )
+    pub_table["FP"] = pub_table["FP"].apply(
+        lambda x: format_metric(x, best_fp, higher_is_better=False, precision=1)
+    )
 
-    latex_table = pub_table[['Rank', 'Method', 'F1_formatted', 'Precision_fmt', 'Recall_fmt', 'MTTD_fmt', 'TP', 'FP', 'FN']].copy()
-    latex_table.columns = ['Rank', 'Method', 'F1 ($\\mu \\pm \\sigma$)', 'Precision', 'Recall', 'MTTD', 'TP', 'FP', 'FN']
+    latex_table = pub_table[
+        ["Method", "Precision", "Recall", "F1", "Delay", "FP"]
+    ].copy()
+    latex_table.columns = [
+        "Method",
+        "Precision",
+        "Recall (EDR)",
+        "F1-Score",
+        "Delay",
+        "False Pos.",
+    ]
 
     latex_output = latex_table.to_latex(
         index=False,
         escape=False,
-        column_format='c' + 'l' + 'c' * (len(latex_table.columns) - 2),
-        caption='Comprehensive drift detection performance across all datasets. F1 is reported as mean $\\pm$ standard deviation. Best values per metric are shown in \\textbf{bold}. MTTD = Mean Time To Detection (samples, lower is better). TP/FP/FN = cumulative counts across all experiments.',
-        label='tab:comprehensive_performance',
-        position='htbp'
+        column_format="l" + "c" * 5,
+        caption="Aggregate performance metrics averaged across all datasets. Best values are bolded.",
+        label="tab:comparison_aggregate",
+        position="htbp",
     )
 
-    # Replace hlines with booktabs commands
-    latex_output = latex_output.replace('\\toprule', '\\toprule')  # Already correct if using recent pandas
-    latex_output = latex_output.replace('\\hline', '\\midrule')
+    # Booktabs style
+    latex_output = latex_output.replace("\\toprule", "\\toprule")
+    latex_output = latex_output.replace("\\midrule", "\\midrule")
+    latex_output = latex_output.replace("\\bottomrule", "\\bottomrule")
 
-    latex_file = output_dir / "table_I_comprehensive_performance.tex"
-    with open(latex_file, 'w') as f:
+    # Output to correct thesis file location
+    latex_file = Path("report/latex/tables/table_comparison_aggregate.tex")
+    latex_file.parent.mkdir(exist_ok=True, parents=True)
+
+    with open(latex_file, "w") as f:
         f.write(latex_output)
     print(f"  Saved: {latex_file}")
 
@@ -161,19 +187,19 @@ def export_all_tables(all_results, stream_size, output_dir="./publication_figure
     print(latex_table.to_string(index=False))
 
     # ========================================================================
-    # TABLE II: Performance by Dataset
+    # TABLE II: Performance by Dataset (Split to avoid overflow)
     # ========================================================================
     print("\n" + "-" * 80)
-    print("[Table II] Performance by Dataset")
+    print("[Table II] Performance by Dataset (Split)")
 
     f1_by_dataset = drift_results_df.pivot_table(
-        values='F1', index='Method', columns='Dataset', aggfunc='mean'
+        values="F1", index="Method", columns="Dataset", aggfunc="mean"
     ).round(3)
 
-    f1_by_dataset['Mean'] = f1_by_dataset.mean(axis=1).round(3)
-    f1_by_dataset = f1_by_dataset.sort_values('Mean', ascending=False)
+    f1_by_dataset["Mean"] = f1_by_dataset.mean(axis=1).round(3)
+    f1_by_dataset = f1_by_dataset.sort_values("Mean", ascending=False)
 
-    # Bold best value per column
+    # Format bolding
     f1_formatted = f1_by_dataset.copy()
     for col in f1_formatted.columns:
         best_val = f1_formatted[col].max()
@@ -181,22 +207,48 @@ def export_all_tables(all_results, stream_size, output_dir="./publication_figure
             lambda x: f"\\textbf{{{x:.3f}}}" if x == best_val else f"{x:.3f}"
         )
 
-    # Add rank column
-    f1_formatted.insert(0, 'Rank', range(1, len(f1_formatted) + 1))
+    # Add rank
+    f1_formatted.insert(0, "Rank", range(1, len(f1_formatted) + 1))
 
-    latex_dataset = f1_formatted.to_latex(
+    # SPLIT LOGIC
+    datasets = [c for c in f1_formatted.columns if c not in ["Rank", "Mean"]]
+    mid = len(datasets) // 2
+
+    # Table II-A: First half + Mean
+    cols_a = ["Rank"] + datasets[:mid] + ["Mean"]
+    table_a = f1_formatted[cols_a]
+
+    # Table II-B: Second half + Mean
+    cols_b = ["Rank"] + datasets[mid:] + ["Mean"]
+    table_b = f1_formatted[cols_b]
+
+    # Generate LaTeX for Part A
+    latex_a = table_a.to_latex(
         escape=False,
-        column_format='c' + 'l' + 'c' * (len(f1_formatted.columns) - 1),
-        caption='F1-Score by method and dataset. Best scores per column are shown in \\textbf{bold}. Methods ranked by mean F1-Score.',
-        label='tab:f1_by_dataset',
-        position='htbp'
-    )
-    latex_dataset = latex_dataset.replace('\\hline', '\\midrule')
+        column_format="c" + "l" + "c" * (len(cols_a) - 1),
+        caption="F1-Score by dataset (Part 1/2).",
+        label="tab:f1_by_dataset_part1",
+        position="htbp",
+    ).replace("\\hline", "\\midrule")
+
+    # Generate LaTeX for Part B
+    latex_b = table_b.to_latex(
+        escape=False,
+        column_format="c" + "l" + "c" * (len(cols_b) - 1),
+        caption="F1-Score by dataset (Part 2/2).",
+        label="tab:f1_by_dataset_part2",
+        position="htbp",
+    ).replace("\\hline", "\\midrule")
+
+    # Save to file (concatenated or separate files, usually separate is safer for thesis import)
+    # But often thesis expects one file input. Let's write them sequentially.
 
     latex_file2 = output_dir / "table_II_f1_by_dataset.tex"
-    with open(latex_file2, 'w') as f:
-        f.write(latex_dataset)
-    print(f"  Saved: {latex_file2}")
+    with open(latex_file2, "w") as f:
+        f.write(latex_a)
+        f.write("\n\n")  # Separation
+        f.write(latex_b)
+    print(f"  Saved: {latex_file2} (Split into two tables)")
 
     print("\nTable II Preview:")
     print(f1_by_dataset.to_string())
@@ -207,28 +259,30 @@ def export_all_tables(all_results, stream_size, output_dir="./publication_figure
     print("\n" + "-" * 80)
     print("[Table III] Runtime Statistics")
 
-    runtime_stats = results_df.groupby('Method').agg({
-        'Runtime_s': ['mean', 'std', 'min', 'max']
-    }).round(4)
-    runtime_stats.columns = ['Mean (s)', 'Std (s)', 'Min (s)', 'Max (s)']
+    runtime_stats = (
+        results_df.groupby("Method")
+        .agg({"Runtime_s": ["mean", "std", "min", "max"]})
+        .round(4)
+    )
+    runtime_stats.columns = ["Mean (s)", "Std (s)", "Min (s)", "Max (s)"]
 
     # Handle NaN/inf values in throughput calculation
-    throughput = stream_size / runtime_stats['Mean (s)']
+    throughput = stream_size / runtime_stats["Mean (s)"]
     throughput = throughput.replace([np.inf, -np.inf], np.nan)
-    runtime_stats['Throughput (samples/s)'] = throughput.fillna(0).round(0).astype(int)
+    runtime_stats["Throughput (samples/s)"] = throughput.fillna(0).round(0).astype(int)
 
-    runtime_stats = runtime_stats.sort_values('Mean (s)')
+    runtime_stats = runtime_stats.sort_values("Mean (s)")
 
     latex_runtime = runtime_stats.to_latex(
         escape=False,
-        column_format='l' + 'c' * len(runtime_stats.columns),
-        caption='Runtime statistics by detection method. Throughput = samples processed per second.',
-        label='tab:runtime_stats',
-        position='htbp'
+        column_format="l" + "c" * len(runtime_stats.columns),
+        caption="Runtime statistics by detection method. Throughput = samples processed per second.",
+        label="tab:runtime_stats",
+        position="htbp",
     )
 
     latex_file3 = output_dir / "table_III_runtime_stats.tex"
-    with open(latex_file3, 'w') as f:
+    with open(latex_file3, "w") as f:
         f.write(latex_runtime)
     print(f"  Saved: {latex_file3}")
 
@@ -238,4 +292,3 @@ def export_all_tables(all_results, stream_size, output_dir="./publication_figure
     print("\n" + "=" * 80)
     print(f"All LaTeX tables saved to: {output_dir.absolute()}")
     print("=" * 80)
-

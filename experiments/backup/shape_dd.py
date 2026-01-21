@@ -13,12 +13,18 @@ import numpy as np
 from mmd import mmd
 
 # from sklearn.metrics.pairwise import pairwise_kernels as apply_kernel
-from mmd_variants import rbf_kernel as apply_kernel, HAS_TORCH, DEVICE
+# from mmd_variants import rbf_kernel as apply_kernel, HAS_TORCH, DEVICE
+from sklearn.metrics.pairwise import pairwise_kernels as apply_kernel
+
+# from mmd_variants import (
+#     HAS_TORCH,
+#     DEVICE,
+# )  # Still needed for some type hints or cleanup if any
 from sklearn.metrics.pairwise import pairwise_distances
 from scipy.ndimage import uniform_filter1d
 
-if HAS_TORCH:
-    import torch
+# if HAS_TORCH:
+#     import torch
 
 
 def shape(X, l1, l2, n_perm):
@@ -51,7 +57,10 @@ def shape(X, l1, l2, n_perm):
 
     n = X.shape[0]
     # K = apply_kernel(X, metric="rbf") # Old
-    K = apply_kernel(X, X, gamma="auto")  # New GPU-aware
+    # K = apply_kernel(X, X, gamma="auto")  # New GPU-aware
+    K = apply_kernel(
+        X, metric="rbf"
+    )  # Reverted to sklearn default (gamma=1/n_features)
     W = np.zeros((n - 2 * l1, n))
 
     for i in range(n - 2 * l1):
@@ -139,22 +148,23 @@ def shape_mmdagg(X, l1=50, l2=150, n_bandwidths=10, alpha=0.05):
 
     # Step 2: Compute shape statistic with middle bandwidth
     gamma_default = gamma_range[len(gamma_range) // 2]
-    K = apply_kernel(X, X, gamma=gamma_default)
+    # K = apply_kernel(X, X, gamma=gamma_default)
+    K = apply_kernel(X, metric="rbf", gamma=gamma_default)
 
     W = np.zeros((n - 2 * l1, n))
 
     for i in range(n - 2 * l1):
         W[i, i : i + 2 * l1] = w
 
-    # GPU Ops
-    if HAS_TORCH and isinstance(K, torch.Tensor):
-        if not isinstance(W, torch.Tensor):
-            W = torch.tensor(W, device=DEVICE, dtype=torch.float32)
-        WK = torch.matmul(W, K)
-        stat = torch.einsum("ij,ij->i", WK, W)
-        stat = stat.cpu().numpy()
-    else:
-        stat = np.einsum("ij,ij->i", np.dot(W, K), W)
+    # GPU Ops - DISABLED
+    # if HAS_TORCH and isinstance(K, torch.Tensor):
+    #     if not isinstance(W, torch.Tensor):
+    #         W = torch.tensor(W, device=DEVICE, dtype=torch.float32)
+    #     WK = torch.matmul(W, K)
+    #     stat = torch.einsum("ij,ij->i", WK, W)
+    #     stat = stat.cpu().numpy()
+    # else:
+    stat = np.einsum("ij,ij->i", np.dot(W, K), W)
 
     # Minimal smoothing to preserve drift sharpness
     stat_smooth = uniform_filter1d(stat, size=3, mode="nearest")
@@ -184,14 +194,15 @@ def shape_mmdagg(X, l1=50, l2=150, n_bandwidths=10, alpha=0.05):
             X2 = window[split_point:]
 
             # Convert to GPU if beneficial
-            if HAS_TORCH and len(window) > 200:
-                try:
-                    X1_t = torch.tensor(X1, device=DEVICE, dtype=torch.float32)
-                    X2_t = torch.tensor(X2, device=DEVICE, dtype=torch.float32)
-                except:
-                    X1_t, X2_t = None, None
-            else:
-                X1_t, X2_t = None, None
+            # if HAS_TORCH and len(window) > 200:
+            #     try:
+            #         X1_t = torch.tensor(X1, device=DEVICE, dtype=torch.float32)
+            #         X2_t = torch.tensor(X2, device=DEVICE, dtype=torch.float32)
+            #     except:
+            #         X1_t, X2_t = None, None
+            # else:
+            #     X1_t, X2_t = None, None
+            X1_t, X2_t = None, None  # Force CPU
 
             # Compute MMD for each bandwidth
             mmd_values = []
@@ -199,45 +210,24 @@ def shape_mmdagg(X, l1=50, l2=150, n_bandwidths=10, alpha=0.05):
 
             for gamma in gamma_range:
                 # Compute unbiased MMD^2 estimate
-                if X1_t is not None:
-                    # GPU
-                    K11 = apply_kernel(X1_t, X1_t, gamma=gamma)
-                    K22 = apply_kernel(X2_t, X2_t, gamma=gamma)
-                    K12 = apply_kernel(X1_t, X2_t, gamma=gamma)
+                # CPU Only
+                # K11 = apply_kernel(X1, X1, gamma=gamma)
+                K11 = apply_kernel(X1, metric="rbf", gamma=gamma)
+                K22 = apply_kernel(X2, metric="rbf", gamma=gamma)
+                K12 = apply_kernel(X1, X2, metric="rbf", gamma=gamma)
 
-                    n1, n2 = len(X1), len(X2)
+                n1, n2 = len(X1), len(X2)
 
-                    if n1 > 1 and n2 > 1:
-                        term1 = (torch.sum(K11) - torch.trace(K11)) / (n1 * (n1 - 1))
-                        term2 = (torch.sum(K22) - torch.trace(K22)) / (n2 * (n2 - 1))
-                        term3 = 2 * torch.mean(K12)
-                        mmd2 = term1 + term2 - term3
-                        mmd2 = mmd2.item()
-
-                        var_mmd = 4 * (torch.var(K12) + 1e-10).item()
-                    else:
-                        mmd2 = 0
-                        var_mmd = 1e-10
-
+                # Unbiased MMD^2 (remove diagonal terms)
+                if n1 > 1 and n2 > 1:
+                    term1 = (np.sum(K11) - np.trace(K11)) / (n1 * (n1 - 1))
+                    term2 = (np.sum(K22) - np.trace(K22)) / (n2 * (n2 - 1))
+                    term3 = 2 * np.mean(K12)
+                    mmd2 = term1 + term2 - term3
+                    var_mmd = 4 * (np.var(K12) + 1e-10)
                 else:
-                    # CPU
-                    K11 = apply_kernel(X1, X1, gamma=gamma)
-                    K22 = apply_kernel(X2, X2, gamma=gamma)
-                    K12 = apply_kernel(X1, X2, gamma=gamma)
-
-                    n1, n2 = len(X1), len(X2)
-
-                    # Unbiased MMD^2 (remove diagonal terms)
-                    if n1 > 1 and n2 > 1:
-                        mmd2 = (
-                            (np.sum(K11) - np.trace(K11)) / (n1 * (n1 - 1))
-                            + (np.sum(K22) - np.trace(K22)) / (n2 * (n2 - 1))
-                            - 2 * np.mean(K12)
-                        )
-                        var_mmd = 4 * (np.var(K12) + 1e-10)
-                    else:
-                        mmd2 = 0
-                        var_mmd = 1e-10
+                    mmd2 = 0
+                    var_mmd = 1e-10
 
                 mmd_values.append(max(0, mmd2))
 
