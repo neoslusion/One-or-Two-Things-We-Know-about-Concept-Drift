@@ -77,7 +77,16 @@ except ImportError:
     # Fallback if shared module not available
     def calculate_detection_metrics(detections, ground_truth, tolerance=250, early_tolerance=50):
         """Fallback implementation."""
-        det_pos = [d if isinstance(d, int) else d['pos'] for d in detections] if detections else []
+        # Handle both old format (int) and new format (dict with 'idx')
+        det_pos = []
+        for d in (detections if detections else []):
+            if isinstance(d, int):
+                det_pos.append(d)
+            elif isinstance(d, dict):
+                det_pos.append(d.get('idx', d.get('pos', 0)))
+            else:
+                det_pos.append(d)
+        
         gt_pos = ground_truth if ground_truth else []
         tp, fp, delays = 0, 0, []
         detected = set()
@@ -223,12 +232,18 @@ def evaluate_with_adaptation(X, y, drift_points, mode: str = AdaptationMode.TYPE
                     
                     if result.is_drift:
                         drift_detected = True
-                        drift_detections.append(idx)
                         classification_times.append(result.classification_time)
                         
                         # Use classified drift type immediately
                         detected_drift_type = result.subcategory
                         print(f"    [{mode}] Drift detected at sample {idx} (Score={result.score:.4f}, Type={detected_drift_type})")
+                        
+                        # Store BOTH detection position AND classified type
+                        drift_detections.append({
+                            'idx': idx,
+                            'score': result.score,
+                            'classified_type': detected_drift_type
+                        })
                         
                         # Store result for adaptation step logic
                         current_drift_type = detected_drift_type
@@ -497,9 +512,27 @@ def plot_prequential_comparison(results: Dict[str, Dict], drift_points: List[int
     
     # Plot detections for each mode
     y_positions = {
-        AdaptationMode.TYPE_SPECIFIC: 1,
+        AdaptationMode.TYPE_SPECIFIC: 1.5,
         AdaptationMode.SIMPLE: 0,
         AdaptationMode.NONE: -1
+    }
+    
+    # Classification type colors and markers for detected drifts
+    classify_colors = {
+        'Sudden': '#e74c3c',      # Red
+        'Gradual': '#f39c12',     # Orange
+        'Incremental': '#9b59b6', # Purple
+        'Recurrent': '#1abc9c',   # Teal
+        'TCD': '#3498db',         # Blue (generic)
+        'PCD': '#27ae60',         # Green (generic)
+    }
+    classify_markers = {
+        'Sudden': 's',        # Square
+        'Gradual': 'D',       # Diamond
+        'Incremental': '^',   # Triangle up
+        'Recurrent': 'o',     # Circle
+        'TCD': 'P',           # Plus (filled)
+        'PCD': 'X',           # X (filled)
     }
     
     for mode, data in results.items():
@@ -508,29 +541,50 @@ def plot_prequential_comparison(results: Dict[str, Dict], drift_points: List[int
         color = mode_colors.get(mode, 'gray')
         
         if detections:
-            ax_det.scatter(detections, [y_pos] * len(detections), 
-                          marker='|', color=color, s=300, linewidth=3,
-                          label=f'{mode_labels.get(mode, mode)} detections',
-                          zorder=4)
-            
-            # Draw arrows from detection to ground truth (for Type-Specific)
-            if mode == AdaptationMode.TYPE_SPECIFIC:
-                for det_idx in detections:
-                    # Find closest ground truth
-                    closest_gt = min(drift_points, key=lambda x: abs(x - det_idx))
-                    delay = det_idx - closest_gt
-                    if -100 < delay < 500:  # Reasonable detection window
-                        # Color based on delay
-                        arrow_color = '#27ae60' if delay < 100 else '#f39c12' if delay < 250 else '#e74c3c'
-                        ax_det.annotate('', xy=(closest_gt, 0), xytext=(det_idx, y_pos),
-                                       arrowprops=dict(arrowstyle='->', color=arrow_color, 
-                                                       alpha=0.5, lw=1.5))
+            # Handle both old format (int) and new format (dict)
+            for i, det in enumerate(detections):
+                if isinstance(det, dict):
+                    det_idx = det.get('idx', 0)
+                    classified_type = det.get('classified_type', 'Unknown')
+                else:
+                    det_idx = det
+                    classified_type = 'Unknown'
+                
+                # For Type-Specific mode, show classification with colored markers
+                if mode == AdaptationMode.TYPE_SPECIFIC:
+                    marker = classify_markers.get(classified_type, 'o')
+                    m_color = classify_colors.get(classified_type, color)
+                    ax_det.scatter(det_idx, y_pos, marker=marker, color=m_color, 
+                                  s=200, zorder=5, edgecolors='black', linewidth=1,
+                                  label=f'{classified_type}' if i == 0 else '_nolegend_')
+                    
+                    # Add text label above marker
+                    label_text = classified_type[:3].upper()
+                    ax_det.annotate(label_text, xy=(det_idx, y_pos + 0.35), 
+                                   ha='center', va='bottom', fontsize=7, fontweight='bold',
+                                   color=m_color,
+                                   bbox=dict(boxstyle='round,pad=0.1', facecolor='white', 
+                                             edgecolor=m_color, alpha=0.8))
+                    
+                    # Draw arrow to closest ground truth
+                    if drift_points:
+                        closest_gt = min(drift_points, key=lambda x: abs(x - det_idx))
+                        delay = det_idx - closest_gt
+                        if -100 < delay < 500:
+                            arrow_color = '#27ae60' if delay < 100 else '#f39c12' if delay < 250 else '#e74c3c'
+                            ax_det.annotate('', xy=(closest_gt, 0), xytext=(det_idx, y_pos),
+                                           arrowprops=dict(arrowstyle='->', color=arrow_color, 
+                                                           alpha=0.4, lw=1))
+                else:
+                    # Simple marker for other modes
+                    ax_det.scatter(det_idx, y_pos, marker='|', color=color, 
+                                  s=200, linewidth=2, zorder=4)
     
-    ax_det.set_ylim([-2, 2])
-    ax_det.set_yticks([1, 0, -1])
-    ax_det.set_yticklabels(['Type-Specific', 'Ground Truth', 'Simple/None'], fontsize=9)
+    ax_det.set_ylim([-1.5, 2.5])
+    ax_det.set_yticks([1.5, 0, -1])
+    ax_det.set_yticklabels(['Detected + Classified', 'Ground Truth', 'Simple/None'], fontsize=9)
     ax_det.set_xlabel('Sample Index', fontsize=12, fontweight='bold')
-    ax_det.set_ylabel('Detection\nTimeline', fontsize=10, fontweight='bold')
+    ax_det.set_ylabel('Detection &\nClassification', fontsize=10, fontweight='bold')
     ax_det.grid(True, alpha=0.3, axis='x')
     ax_det.axhline(y=0, color='#c0392b', linestyle='--', alpha=0.5)
     
@@ -556,11 +610,11 @@ def plot_prequential_comparison(results: Dict[str, Dict], drift_points: List[int
     
     summary_lines.append("-" * 60)
     
-    # Strategy legend
-    strategy_legend = "Adaptation Strategies:  "
-    for strat, marker in [('sudden', 's'), ('gradual', 'D'), ('incremental', '^'), ('recurrent', 'o')]:
-        strategy_legend += f"  {marker}={strat.title()}"
-    summary_lines.append(strategy_legend)
+    # Classification legend
+    classify_legend = "Classification Markers:  "
+    for ctype, marker in [('Sudden', 's'), ('Gradual', 'D'), ('Incremental', '^'), ('Recurrent', 'o')]:
+        classify_legend += f" {marker}={ctype[:3]}"
+    summary_lines.append(classify_legend)
     
     summary_text = "\n".join(summary_lines)
     
@@ -569,9 +623,15 @@ def plot_prequential_comparison(results: Dict[str, Dict], drift_points: List[int
                     bbox=dict(boxstyle='round,pad=0.5', facecolor='#f8f9fa', 
                               edgecolor='#dee2e6', alpha=0.95))
     
-    # Add color legend for arrows
-    arrow_legend = "Detection Delay:  Green=<100  Orange=<250  Red=>250 samples"
-    ax_summary.text(0.65, 0.5, arrow_legend, transform=ax_summary.transAxes,
+    # Add color legend for classification and arrows
+    color_legend = ("Classification Colors:\n"
+                    "  SUD=Red  GRA=Orange\n"
+                    "  INC=Purple  REC=Teal\n\n"
+                    "Arrow Delay:\n"
+                    "  Green=<100 samples\n"
+                    "  Orange=<250 samples\n"
+                    "  Red=>250 samples")
+    ax_summary.text(0.55, 0.5, color_legend, transform=ax_summary.transAxes,
                     fontsize=9, verticalalignment='center',
                     bbox=dict(boxstyle='round,pad=0.3', facecolor='#fff3cd', 
                               edgecolor='#ffc107', alpha=0.9))

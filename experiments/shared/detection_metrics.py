@@ -61,7 +61,16 @@ def calculate_detection_metrics(
         if not items:
             return []
         if isinstance(items[0], dict):
-            return sorted([item['pos'] for item in items])
+            # Support both 'pos' and 'idx' keys
+            positions = []
+            for item in items:
+                if 'pos' in item:
+                    positions.append(item['pos'])
+                elif 'idx' in item:
+                    positions.append(item['idx'])
+                else:
+                    raise KeyError(f"Dict item must have 'pos' or 'idx' key, got: {item.keys()}")
+            return sorted(positions)
         return sorted(items)
     
     det_positions = get_positions(detections)
