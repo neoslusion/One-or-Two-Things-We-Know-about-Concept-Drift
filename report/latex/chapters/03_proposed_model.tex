@@ -94,7 +94,7 @@ Luận văn cài đặt IDW-MMD như sau:
 	\end{tabular}
 \end{table}
 
-\textbf{Cải tiến chính:} Thay vì sử dụng permutation test ($O(n^2 \times N_{perm})$), luận văn sử dụng \textit{phân phối tiệm cận} (asymptotic distribution) để tính p-value, chỉ cần $O(n^2)$. Điều này giúp giảm thời gian tính toán từ ~500ms xuống ~5ms mỗi window, tăng throughput xử lý đáng kể.
+\textbf{Cải tiến chính:} Thay vì sử dụng permutation test ($O(n^2 \times N_{perm})$), luận văn sử dụng \textit{phân phối tiệm cận} (asymptotic distribution) để tính p-value, chỉ cần $O(n^2)$. Điều này giúp giảm thời gian tính toán từ $\sim$125ms xuống $\sim$7--9ms mỗi window, tăng throughput xử lý \textbf{17--20 lần} (từ 8,000 lên 111,000--131,000 mẫu/giây).
 
 
 \subsection{MMD-Agg: Tăng cường độ bền vững và tính thích nghi (Lý thuyết tham khảo)}
