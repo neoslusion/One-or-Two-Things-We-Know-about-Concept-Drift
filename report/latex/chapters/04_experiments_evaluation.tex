@@ -76,11 +76,11 @@ Bảng~\ref{tab:comprehensive_performance} tóm tắt hiệu suất trung bình.
 \begin{figure}[h]
 	\centering
 	\includegraphics[width=0.9\textwidth]{../../experiments/drift_detection_benchmark/publication_figures/critical_difference_f1.pdf}
-	\caption[Biểu đồ Critical Difference (CD)]{Biểu đồ Critical Difference (CD) với mức ý nghĩa $\alpha = 0.05$. MMD_ADW và ShapeDD_ADW_MMD nằm ở nhóm đầu (rank thấp nhất là tốt nhất).}
+	\caption[Biểu đồ Critical Difference (CD)]{Biểu đồ Critical Difference (CD) với mức ý nghĩa $\alpha = 0.05$. MMD\_ADW và ShapeDD\_ADW\_MMD nằm ở nhóm đầu (rank thấp nhất là tốt nhất).}
 	\label{fig:critical_difference}
 \end{figure}
 
-Mặc dù p-value tổng thể của kiểm định Friedman ($p \approx 0.8$) cho thấy sự khác biệt giữa các nhóm chưa đạt mức ý nghĩa thống kê cao (do phương sai lớn giữa các dataset), thứ hạng trung bình (Rank) của MMD_ADW (1.0) và ShapeDD_ADW_MMD (2.0) ổn định hơn hẳn so với các phương pháp khác.
+Mặc dù p-value tổng thể của kiểm định Friedman ($p \approx 0.8$) cho thấy sự khác biệt giữa các nhóm chưa đạt mức ý nghĩa thống kê cao (do phương sai lớn giữa các dataset), thứ hạng trung bình (Rank) của MMD\_ADW (1.0) và ShapeDD\_ADW\_MMD (2.0) ổn định hơn hẳn so với các phương pháp khác.
 
 \subsection{Đánh giá chi tiết trên từng loại dữ liệu}
 
@@ -101,11 +101,11 @@ Hiệu suất của các phương pháp thay đổi tùy thuộc vào đặc tí
 \textbf{Phân tích sâu:}
 \begin{enumerate}
 	\item \textbf{Hiệu quả vượt trội trên Drift mạnh (Severe/Sudden):}
-	      Trên các dataset như \textit{gaussian_shift}, \textit{stagger}, và \textit{gen_random_severe}, các phương pháp đề xuất (ADW-MMD, ShapeDD_MMDAgg) đạt F1 gần như tuyệt đối ($>0.99$).
+	      Trên các dataset như \textit{gaussian_shift}, \textit{stagger}, và \textit{gen_random_severe}, các phương pháp đề xuất (ADW-MMD, ShapeDD\_MMDAgg) đạt F1 gần như tuyệt đối ($>0.99$).
 	      Hình~\ref{fig:sudden_drift_vis} minh họa rõ nét cơ chế của ShapeDD: khi drift xảy ra đột ngột, tín hiệu MMD tăng dần và đạt đỉnh đúng tại thời điểm drift, tạo thành hình tam giác. Điều này xác nhận lý thuyết đã trình bày trong Chương 2.
 
 	\item \textbf{Thách thức với Drift nhẹ (Mild Drift) và Cơ chế ADW-MMD:}
-	      Trên tập \textit{gen_random_mild}, hiệu suất của MMD_ADW giảm mạnh (F1 = 0.126) so với MMD truyền thống (F1 = 0.581).
+	      Trên tập \textit{gen_random_mild}, hiệu suất của MMD\_ADW giảm mạnh (F1 = 0.126) so với MMD truyền thống (F1 = 0.581).
 	      \textit{Lý giải lý thuyết:} ADW-MMD sử dụng trọng số nghịch biến với mật độ $w_{ij} \propto 1/\sqrt{d_i}$ (xem Algorithim 3.1). Trong trường hợp drift nhẹ, sự thay đổi thường diễn ra tinh vi ngay trong vùng dữ liệu dày đặc. Cơ chế "giảm phương sai" vô tình đã gán trọng số quá thấp cho các điểm này, làm lu mờ tín hiệu drift (over-smoothing), dẫn đến tỷ lệ False Negative cao.
 
 	\item \textbf{Hạn chế trên Gradual Drift:}
@@ -116,7 +116,7 @@ Hiệu suất của các phương pháp thay đổi tùy thuộc vào đặc tí
 	      \textit{Lý giải:} Các blip là những thay đổi ngắn hạn, cục bộ. MMD đơn lẻ với bandwidth cố định ($\sigma_{median}$) thường quá lớn để bắt được các thay đổi này. Ngược lại, MMD-Agg quét qua tập hợp đa hạt nhân $\mathcal{K} = \{k_{\sigma_1}, \dots, k_{\sigma_M}\}$ (Algorithm 3.2), tự động chọn ra kernel có $\sigma$ nhỏ phù hợp để "bắt" dính các dị biệt cục bộ này.
 
 	\item \textbf{Phân tích Báo động giả (False Positives):}
-	      Hình~\ref{fig:stationary_fp} so sánh số lượng báo động giả trên tập dữ liệu tĩnh (\textit{stagger_none}). KS-Test tạo ra lượng báo động sai lớn nhất, khẳng định tính nhạy cảm quá mức với nhiễu ngẫu nhiên. Ngược lại, ShapeDD_ADW_MMD và D3 duy trì được độ ổn định (0 False Positives), nhờ vào cơ chế kiểm định chặt chẽ hơn (trọng số tối ưu và mô hình phân loại tương ứng).
+	      Hình~\ref{fig:stationary_fp} so sánh số lượng báo động giả trên tập dữ liệu tĩnh (\textit{stagger_none}). KS-Test tạo ra lượng báo động sai lớn nhất, khẳng định tính nhạy cảm quá mức với nhiễu ngẫu nhiên. Ngược lại, ShapeDD\_ADW\_MMD và D3 duy trì được độ ổn định (0 False Positives), nhờ vào cơ chế kiểm định chặt chẽ hơn (trọng số tối ưu và mô hình phân loại tương ứng).
 \end{enumerate}
 
 \begin{figure}[h]
@@ -195,7 +195,7 @@ Phần này đánh giá hiệu quả của phương pháp SE-CDT được đề 
 		\hline
 	\end{tabular}
 	\begin{flushleft}
-		\small *Dựa trên trung bình trọng số của Sudden và Incremental/Gradual trong thực nghiệm.
+		\small *Dựa trên trung bình trọng số của Sudden và Incremental/Gradual trong thực nghiệm. (Lưu ý: Kết quả này cao hơn mức trung bình 74.6\% của benchmark tổng hợp do tập trung vào các trường hợp drift điển hình).
 	\end{flushleft}
 \end{table}
 
@@ -203,7 +203,7 @@ Phần này đánh giá hiệu quả của phương pháp SE-CDT được đề 
 
 \subsection{So sánh độc lập CDT\_MSW và SE-CDT}
 
-\textit{Lưu ý: Benchmark này sử dụng implementation độc lập của CDT\_MSW dựa trên mô tả trong paper~\cite{guo2022cdtmsw}. Trong code benchmark, SE-CDT được gọi là \textbf{SHAPED\_CDT} để phản ánh việc sử dụng tín hiệu MMD từ ShapeDD. Mục đích chính là so sánh các approach khác nhau trong cùng điều kiện thử nghiệm.}
+\textit{Lưu ý: Benchmark này sử dụng implementation độc lập của CDT\_MSW dựa trên mô tả trong paper~\cite{guo2022cdtmsw}. Mục đích chính là so sánh các approach khác nhau trong cùng điều kiện thử nghiệm.}
 
 Các phương pháp được chạy trên bộ dữ liệu theo đúng paper gốc (Sine, Circle, Gaussian) với 10,000 mẫu × 5 loại drift × 5 runs. Bảng~\ref{tab:cdt-comparison-by-type} trình bày kết quả chi tiết.
 
@@ -216,23 +216,23 @@ Các phương pháp được chạy trên bộ dữ liệu theo đúng paper g�
 		\textbf{Drift}                    & \textbf{Method} & \textbf{EDR$\downarrow$} & \textbf{MDR$\downarrow$} & \textbf{CAT}   & \textbf{SUB}  \\
 		\hline
 		\multirow{3}{*}{Sudden}           & CDT\_MSW        & 0.39                     & \textbf{0.00}            & 67\%           & 0\%           \\
-		                                  & SHAPED\_CDT     & 0.96                     & 0.67                     & \textbf{100\%} & \textbf{67\%} \\
+		                                  & SE-CDT          & 0.96                     & 0.67                     & \textbf{100\%} & \textbf{67\%} \\
 		                                  & SHAPED\_ADW     & \textbf{0.33}            & 1.00                     & 33\%           & 33\%          \\
 		\hline
 		\multirow{3}{*}{Circle (Gradual)} & CDT\_MSW        & 1.00                     & 1.00                     & 0\%            & 0\%           \\
-		                                  & SHAPED\_CDT     & \textbf{0.82}            & \textbf{0.56}            & 0\%            & 0\%           \\
+		                                  & SE-CDT          & \textbf{0.82}            & \textbf{0.56}            & 0\%            & 0\%           \\
 		                                  & SHAPED\_ADW     & 1.00                     & 1.00                     & 0\%            & 0\%           \\
 		\hline
 		\multirow{3}{*}{Gaussian (Incr.)} & CDT\_MSW        & 0.89                     & 0.33                     & 33\%           & 33\%          \\
-		                                  & SHAPED\_CDT     & \textbf{0.96}            & 0.67                     & \textbf{100\%} & 0\%           \\
+		                                  & SE-CDT          & \textbf{0.96}            & 0.67                     & \textbf{100\%} & 0\%           \\
 		                                  & SHAPED\_ADW     & 0.33                     & 1.00                     & 0\%            & 0\%           \\
 		\hline
 		\multirow{3}{*}{Recurrent}        & CDT\_MSW        & \textbf{0.11}            & \textbf{0.00}            & 67\%           & 33\%          \\
-		                                  & SHAPED\_CDT     & 0.87                     & 0.67                     & \textbf{100\%} & 33\%          \\
+		                                  & SE-CDT          & 0.87                     & 0.67                     & \textbf{100\%} & 33\%          \\
 		                                  & SHAPED\_ADW     & 0.33                     & 1.00                     & 33\%           & 0\%           \\
 		\hline
 		\multirow{3}{*}{Blip}             & CDT\_MSW        & \textbf{0.28}            & \textbf{0.00}            & 67\%           & 0\%           \\
-		                                  & SHAPED\_CDT     & 0.96                     & 0.83                     & \textbf{100\%} & 0\%           \\
+		                                  & SE-CDT          & 0.96                     & 0.83                     & \textbf{100\%} & 0\%           \\
 		                                  & SHAPED\_ADW     & 0.33                     & 1.00                     & 33\%           & 0\%           \\
 		\hline
 	\end{tabular}
@@ -247,11 +247,14 @@ Bảng~\ref{tab:cdt-aggregate} tổng hợp kết quả benchmark (5 loại drif
 	\caption{So sánh tổng hợp ba phương pháp phân loại drift}
 	\label{tab:cdt-aggregate}
 	\input{tables/table_comparison_aggregate.tex}
+	\begin{flushleft}
+		\small \textit{Lưu ý: Độ chính xác CAT 74.6\% ở đây khác với 78.0\% trong Bảng~\ref{tab:se-cdt-comparison} do sự khác biệt về phạm vi đánh giá. Bảng tổng hợp này tính trung bình trên toàn bộ 10 datasets, trong khi Bảng~\ref{tab:se-cdt-comparison} tập trung vào các kịch bản so sánh trực tiếp với CDT\_MSW.}
+	\end{flushleft}
 \end{table}
 
 \subsection{Thử nghiệm biến thể ADW-MMD}
 
-Trong quá trình nghiên cứu, luận văn cũng thử nghiệm biến thể sử dụng \textbf{Adaptive Density-Weighted MMD (ADW-MMD)} thay cho standard MMD trong SHAPED\_CDT. Mục đích ban đầu là tận dụng các ưu điểm của ADW-MMD về tốc độ và độ chính xác phát hiện để cải thiện khả năng phân loại.
+Trong quá trình nghiên cứu, luận văn cũng thử nghiệm biến thể sử dụng \textbf{Adaptive Density-Weighted MMD (ADW-MMD)} thay cho standard MMD trong SE-CDT. Mục đích ban đầu là tận dụng các ưu điểm của ADW-MMD về tốc độ và độ chính xác phát hiện để cải thiện khả năng phân loại.
 
 \textbf{Kết quả thử nghiệm:}
 \begin{itemize}
@@ -278,16 +281,16 @@ ADW-MMD sử dụng cơ chế \textit{variance reduction weighting} ($w_{ij} \pr
 
 \textbf{Chi tiết theo loại drift:}
 \begin{itemize}
-	\item \textbf{Sudden \& Blip (TCD):} SHAPED\_CDT đạt 100\% CAT accuracy, CDT\_MSW đạt 67\%
-	\item \textbf{Recurrent:} SHAPED\_CDT đạt 100\% CAT accuracy với peaks đều đặn
+	\item \textbf{Sudden \& Blip (TCD):} SE-CDT đạt 100\% CAT accuracy, CDT\_MSW đạt 67\%
+	\item \textbf{Recurrent:} SE-CDT đạt 100\% CAT accuracy với peaks đều đặn
 	\item \textbf{Gradual \& Incremental (PCD):} Tất cả phương pháp đều gặp khó khăn (Circle CAT = 0\%)
 \end{itemize}
 
 \textbf{Kết luận chung:}
 \begin{itemize}
-	\item \textbf{SHAPED\_CDT đạt độ chính xác nhóm (CAT) cao nhất (78.0\%)} mà không cần labels.
+	\item \textbf{SE-CDT đạt độ chính xác nhóm (CAT) cao nhất (78.0\%)} mà không cần labels.
 	\item \textbf{CDT\_MSW nhạy hơn về phát hiện drift} (MDR = 0.267 vs 0.678) do có sự hỗ trợ của nhãn mô hình.
-	\item \textbf{Đánh đổi (Trade-off):} SHAPED\_CDT ưu thế về phân loại, CDT\_MSW ưu thế về phát hiện.
+	\item \textbf{Đánh đổi (Trade-off):} SE-CDT ưu thế về phân loại, CDT\_MSW ưu thế về phát hiện.
 	\item \textbf{ADW-MMD phù hợp cho phát hiện (detection), không phù hợp cho phân loại (classification).}
 \end{itemize}
 \subsection{So sánh công bằng: Supervised CDT\_MSW vs Unsupervised SE-CDT}

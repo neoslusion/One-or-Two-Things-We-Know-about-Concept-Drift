@@ -8,7 +8,7 @@ Luận văn này đã giải quyết bài toán phát hiện và thích ứng v�
 \subsection{Đóng góp về Phương pháp luận (Methodological)}
 \begin{itemize}
 	\item \textbf{Tích hợp ShapeDD\_ADW\_MMD:} Tích hợp thành công phương pháp ADW-MMD (Adaptive Density-Weighted MMD), lấy cảm hứng từ~\cite{bharti2023owmmd}, vào ShapeDD detector. Kết quả cho thấy phương pháp này cải thiện thông lượng xử lý gấp \textbf{7 lần} (đạt $\approx$ 50,300 mẫu/giây) so với ShapeDD gốc, trong khi vẫn duy trì độ chính xác phát hiện ổn định (F1 $\approx$ 0.56).
-	\item \textbf{Đề xuất SHAPED\_CDT:} Xây dựng phương pháp phân loại drift không giám sát \textbf{SHAPED\_CDT}, tận dụng khả năng định vị chính xác thời điểm drift của ShapeDD để trích xuất cửa sổ dữ liệu cho CDT\_MSW. Phương pháp đạt độ chính xác \textbf{78.0\%} trong việc phân loại nhóm drift (TCD vs PCD), tạo tiền đề cho chiến lược thích ứng thông minh.
+	\item \textbf{Đề xuất SE-CDT:} Xây dựng phương pháp phân loại drift không giám sát \textbf{SE-CDT}, tận dụng khả năng định vị chính xác thời điểm drift của ShapeDD để trích xuất cửa sổ dữ liệu cho CDT\_MSW. Phương pháp đạt độ chính xác \textbf{78.0\%} trong việc phân loại nhóm drift (TCD vs PCD), tạo tiền đề cho chiến lược thích ứng thông minh.
 \end{itemize}
 
 \subsection{Đóng góp về Thực nghiệm (Empirical)}
@@ -42,7 +42,7 @@ Từ quá trình nghiên cứu và thực nghiệm, luận văn rút ra các bà
 Mặc dù đạt được những kết quả khả quan, nghiên cứu vẫn tồn tại một số hạn chế cần được xem xét:
 
 \subsection{False Positives cao}
-Phương pháp SHAPED\_CDT (Standard MMD) đạt recall 98\% nhưng có số lượng False Positives cao (FP = 1513 trong tổng benchmark). Điều này dẫn đến Precision chỉ đạt 25\%. Trong môi trường production, số lượng báo động giả cao có thể gây quá tải cho hệ thống thích ứng và làm giảm độ tin cậy. Việc phát triển cơ chế post-filtering hoặc adaptive threshold là hướng cải thiện cần thiết.
+Phương pháp SE-CDT (Standard MMD) đạt recall 98\% nhưng có số lượng False Positives cao (FP = 1513 trong tổng benchmark). Điều này dẫn đến Precision chỉ đạt 25\%. Trong môi trường production, số lượng báo động giả cao có thể gây quá tải cho hệ thống thích ứng và làm giảm độ tin cậy. Việc phát triển cơ chế post-filtering hoặc adaptive threshold là hướng cải thiện cần thiết.
 
 \subsection{Subcategory Accuracy còn hạn chế}
 Mặc dù Category Accuracy (TCD vs PCD) đạt 74.6\%, Subcategory Accuracy chỉ đạt 42\%. Cụ thể:
@@ -75,6 +75,6 @@ Dựa trên nền tảng của luận văn, các hướng phát triển tiếp t
 
 \section{Kết luận}
 
-Hành trình giải quyết bài toán concept drift là một quá trình liên tục. Luận văn này đã đóng góp một bước tiến cụ thể thông qua việc (1) tích hợp các tiến bộ lý thuyết mới nhất (ADW-MMD) để giải quyết bài toán hiệu năng, và (2) đề xuất hướng tiếp cận phân loại drift không giám sát (SHAPED\_CDT) để định hướng thích ứng.
+Hành trình giải quyết bài toán concept drift là một quá trình liên tục. Luận văn này đã đóng góp một bước tiến cụ thể thông qua việc (1) tích hợp các tiến bộ lý thuyết mới nhất (ADW-MMD) để giải quyết bài toán hiệu năng, và (2) đề xuất hướng tiếp cận phân loại drift không giám sát (SE-CDT) để định hướng thích ứng.
 
 Kết quả nghiên cứu khẳng định rằng việc chuyển dịch từ các mô hình tĩnh sang các hệ thống thích ứng (adaptive systems) là xu hướng tất yếu. Với kiến trúc đề xuất và những hiểu biết thu được, hệ thống hoàn toàn có khả năng mở rộng để đối mặt với những thách thức phức tạp hơn của dữ liệu luồng trong tương lai, hướng tới các ứng dụng AI vận hành bền vững và tin cậy.

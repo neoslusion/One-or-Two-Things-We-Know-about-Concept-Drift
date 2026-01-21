@@ -1,7 +1,7 @@
 \chapter{Mô hình đề xuất}
 \label{chap:proposed-model}
 
-\textit{Tóm tắt: Trên cơ sở lý thuyết về ShapeDD và các phương pháp phát hiện concept drift đã trình bày ở Chương~\ref{chap:theoretical-foundation}, chương này trình bày việc tích hợp các phương pháp MMD cải tiến gần đây (ADW-MMD, MMD-Agg) vào framework ShapeDD nhằm cải thiện hiệu suất tính toán, đồng thời đề xuất phương pháp mới SHAPED\_CDT cho phân loại drift không giám sát. Báo cáo cũng trình bày kiến trúc hệ thống xử lý luồng dữ liệu thời gian thực dựa trên Apache Kafka. Các đóng góp chính bao gồm: (1) Tích hợp Adaptive Density-Weighted MMD (ADW-MMD) để tăng tốc độ xử lý, (2) Xây dựng khung chiến lược thích ứng đa dạng dựa trên loại drift, và (3) Thiết kế kiến trúc hệ thống có khả năng mở rộng và chịu lỗi cao.}
+\textit{Tóm tắt: Trên cơ sở lý thuyết về ShapeDD và các phương pháp phát hiện concept drift đã trình bày ở Chương~\ref{chap:theoretical-foundation}, chương này trình bày việc tích hợp các phương pháp MMD cải tiến gần đây (ADW-MMD, MMD-Agg) vào framework ShapeDD nhằm cải thiện hiệu suất tính toán, đồng thời đề xuất phương pháp mới SE-CDT cho phân loại drift không giám sát. Báo cáo cũng trình bày kiến trúc hệ thống xử lý luồng dữ liệu thời gian thực dựa trên Apache Kafka. Các đóng góp chính bao gồm: (1) Tích hợp Adaptive Density-Weighted MMD (ADW-MMD) để tăng tốc độ xử lý, (2) Xây dựng khung chiến lược thích ứng đa dạng dựa trên loại drift, và (3) Thiết kế kiến trúc hệ thống có khả năng mở rộng và chịu lỗi cao.}
 
 \section{Động lực và tổng quan cách tiếp cận}
 
@@ -170,7 +170,7 @@ Theo phân loại của CDT\_MSW, drift được chia thành:
 
 \subsection{Thuật toán phân loại}
 \begin{algorithm}[H]
-	\caption{SHAPED\_CDT: Phân loại drift không giám sát}
+	\caption{SE-CDT: Phân loại drift không giám sát}
 	\label{alg:se-cdt}
 	\begin{algorithmic}[1]
 		\REQUIRE Tín hiệu drift magnitude $\sigma(t)$ từ ShapeDD
@@ -193,7 +193,7 @@ Theo phân loại của CDT\_MSW, drift được chia thành:
 \end{algorithm}
 
 \subsection{Ưu điểm và độ phức tạp}
-\textbf{Ưu điểm của SHAPED\_CDT:}
+\textbf{Ưu điểm của SE-CDT:}
 \begin{itemize}
 	\item \textbf{Không giám sát:} Không cần labels, phù hợp với streaming data.
 	\item \textbf{Tích hợp:} Sử dụng cùng tín hiệu $\sigma(t)$ đã tính cho detection, không cần tính toán thêm.
@@ -220,14 +220,14 @@ Các ngưỡng trong Algorithm~\ref{alg:se-cdt} được xác định dựa trê
 \textit{Ghi chú: Các ngưỡng này được tối ưu trên synthetic data và có thể cần điều chỉnh cho từng domain cụ thể.}
 
 \textbf{Lưu ý về biến thể ADW-MMD:}
-Luận văn cũng thử nghiệm sử dụng ADW-MMD thay cho standard MMD trong SHAPED\_CDT. Tuy nhiên, kết quả cho thấy ADW-MMD không phù hợp cho classification do cơ chế variance reduction loại bỏ những thay đổi nhỏ (coi là noise). ADW-MMD phù hợp hơn cho drift detection, nhưng standard MMD tốt hơn cho classification. Chi tiết thử nghiệm và so sánh định lượng được trình bày ở Chương~\ref{chap:experiments}.
+Luận văn cũng thử nghiệm sử dụng ADW-MMD thay cho standard MMD trong SE-CDT. Tuy nhiên, kết quả cho thấy ADW-MMD không phù hợp cho classification do cơ chế variance reduction loại bỏ những thay đổi nhỏ (coi là noise). ADW-MMD phù hợp hơn cho drift detection, nhưng standard MMD tốt hơn cho classification. Chi tiết thử nghiệm và so sánh định lượng được trình bày ở Chương~\ref{chap:experiments}.
 
-Kết quả phân loại từ SHAPED\_CDT sẽ được sử dụng để kích hoạt chiến lược thích ứng phù hợp, được trình bày trong phần tiếp theo.
+Kết quả phân loại từ SE-CDT sẽ được sử dụng để kích hoạt chiến lược thích ứng phù hợp, được trình bày trong phần tiếp theo.
 
 \section{Khung chiến lược thích ứng mô hình}
 \label{sec:model-adaptation-framework}
 
-Dựa trên kết quả phân loại drift từ SHAPED\_CDT, hệ thống có thể kích hoạt chiến lược cập nhật mô hình phù hợp. Phần này trình bày khung chiến lược thích ứng (Adaptation Framework).
+Dựa trên kết quả phân loại drift từ SE-CDT, hệ thống có thể kích hoạt chiến lược cập nhật mô hình phù hợp. Phần này trình bày khung chiến lược thích ứng (Adaptation Framework).
 
 \subsection{Ma trận quyết định chiến lược}
 

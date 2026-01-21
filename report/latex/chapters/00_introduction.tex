@@ -52,7 +52,7 @@ Nghiên cứu sẽ so sánh hiệu năng, phân tích ưu nhược điểm,
 từ đó xác định hướng cải tiến phù hợp.
 
 \subsection{Tích hợp các cải tiến cho ShapeDD}
-Dựa trên cơ sở lý thuyết và kết quả đánh giá hiệu năng, nghiên cứu sẽ tích hợp các kỹ thuật tiên tiến gần đây như ADW-MMD (Adaptive Density-Weighted MMD) và MMD-Agg (MMD Aggregated) vào framework ShapeDD. Mục tiêu là giải quyết các hạn chế về chi phí tính toán và độ nhạy của phương pháp gốc.
+Dựa trên cơ sở lý thuyết và kết quả đánh giá hiệu năng, nghiên cứu sẽ tích hợp các kỹ thuật tiên tiến gần đây như ADW-MMD (Adaptive Density-Weighted MMD) và MMD-Agg (MMD Aggregated) vào framework ShapeDD. Mục tiêu là giải quyết các hạn chế về chi phí tính toán và độ nhạy của phương pháp gốc. Cụ thể, ADW-MMD sử dụng cơ chế trọng số dựa trên mật độ để giảm phương sai ước lượng, cho phép đạt độ chính xác cao với số lượng mẫu ít hơn.
 
 \subsection{Đề xuất phương pháp phân loại drift SHAPED\_CDT}
 Kết hợp khả năng định vị chính xác thời điểm drift của ShapeDD với mô hình phân loại \textit{drift} CDT\_MSW (Concept Drift Type identification based on Multi-Sliding Windows --- phương pháp phân loại loại drift dựa trên phân tích cửa sổ trượt đa kích thước~\cite{guo2022cdtmsw}, sẽ được trình bày chi tiết ở Mục~\ref{sec:cdt-msw-theory}) để đề xuất phương pháp mới \textbf{SHAPED\_CDT} (ShapeDD-Enhanced Concept Drift Type Identification).
@@ -63,9 +63,7 @@ Tiến hành thử nghiệm và tùy chỉnh các tham số của phương pháp
 để đảm bảo hiệu quả với các kiểu dữ liệu và loại \textit{drift} khác nhau.
 
 \subsection{Triển khai và đánh giá}
-Triển khai hệ thống trên môi trường dữ liệu \textit{streaming real-time}
-sử dụng Apache Kafka. Đánh giá hiệu năng trong các kịch bản thực tế
-để kiểm chứng tính khả thi của giải pháp đề xuất.
+Thiết kế kiến trúc hệ thống trên môi trường dữ liệu \textit{streaming real-time} sử dụng Apache Kafka. Thực hiện mô phỏng và đánh giá hiệu năng trong các kịch bản thử nghiệm để kiểm chứng tính khả thi của giải pháp đề xuất. (Lưu ý: Việc triển khai production thực tế và đánh giá hiệu năng chịu tải quy mô lớn là hướng phát triển tương lai).
 
 \section{Phạm vi đề tài và đối tượng nghiên cứu}
 \subsection{Phạm vi đề tài}
@@ -95,7 +93,7 @@ Cách tiếp cận đánh giá bao gồm:
 	      với nhiều lần chạy độc lập để đảm bảo độ tin cậy thống kê.
 
 	\item \textbf{Phân tích đa tầng:} Đánh giá cả khả năng \textit{phát hiện}
-	      lẫn khả năng \textit{phân loại} của hệ thống, bao gồm phân loại 
+	      lẫn khả năng \textit{phân loại} của hệ thống, bao gồm phân loại
 	      theo nhóm (TCD vs PCD) và theo loại cụ thể.
 
 	\item \textbf{So sánh công bằng:} Đánh giá phương pháp đề xuất (SHAPED\_CDT không giám sát)
