@@ -62,22 +62,21 @@ python3 -c "import numpy, pandas, sklearn, scipy" 2>/dev/null || {
     exit 1
 }
 
-# Add backup directory to Python path (for shape_dd, ow_mmd, etc.)
-export PYTHONPATH="${BACKUP_DIR}:${SCRIPT_DIR}:${PYTHONPATH}"
+# Add project root to Python path
+export PYTHONPATH="${SCRIPT_DIR}:${PYTHONPATH}"
 
 # Run the benchmark
 echo -e "${GREEN}============================================${NC}"
 echo -e "${GREEN}Starting Drift Detection Benchmark${NC}"
 echo -e "${GREEN}============================================${NC}"
-echo -e "Main file: ${BENCHMARK_DIR}/main.py"
-echo -e "Config: ${BENCHMARK_DIR}/config.py"
+echo -e "Unified entry point: main.py benchmark"
 echo ""
 
 START_TIME=$(date +%s)
 
-# Run main.py
+# Run main.py dispatcher
 cd "${SCRIPT_DIR}"
-python3 -m experiments.drift_detection_benchmark.main
+python3 main.py benchmark
 
 END_TIME=$(date +%s)
 ELAPSED=$((END_TIME - START_TIME))
@@ -87,8 +86,9 @@ echo -e "${GREEN}============================================${NC}"
 echo -e "${GREEN}Main Benchmark Complete!${NC}"
 echo -e "${GREEN}============================================${NC}"
 echo -e "Duration: ${ELAPSED} seconds ($(echo "scale=1; ${ELAPSED}/60" | bc) minutes)"
-echo -e "Results: ${BENCHMARK_DIR}/publication_figures/"
+echo -e "Results: results/"
 echo ""
+
 
 # Deactivate virtual environment
 deactivate
