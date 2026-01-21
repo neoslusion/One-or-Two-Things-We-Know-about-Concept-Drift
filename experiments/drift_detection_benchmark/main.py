@@ -72,6 +72,8 @@ if __name__ == "__main__" and __package__ is None:
         print_results_summary,
         generate_statistical_report,
     )
+    # Import unified output configuration
+    from experiments.output_config import DETECTION_BENCHMARK_OUTPUTS
 else:
     # Running as module: python -m experiments.drift_detection_benchmark.main
     from .config import (
@@ -94,6 +96,8 @@ else:
         export_all_tables,
     )
     from .analysis.statistics import print_results_summary, generate_statistical_report
+    # Import unified output configuration
+    from ..output_config import DETECTION_BENCHMARK_OUTPUTS
 
 # Suppress warnings
 warnings.filterwarnings('ignore')
@@ -113,7 +117,11 @@ def run_benchmark():
     
     # Reset and get fresh logger
     reset_logger()
-    logger = get_logger(output_dir="./experiments/drift_detection_benchmark/publication_figures", log_to_file=True, verbose=True)
+    logger = get_logger(
+        output_dir=str(DETECTION_BENCHMARK_OUTPUTS["log_file"].parent),
+        log_to_file=True,
+        verbose=True
+    )
     
     enabled_datasets = get_enabled_datasets()
 
@@ -286,7 +294,7 @@ def main():
     df_results = pd.DataFrame(all_results)
     statistical_report = generate_statistical_report(
         df_results,
-        output_dir='./experiments/drift_detection_benchmark/publication_figures'
+        output_dir=str(DETECTION_BENCHMARK_OUTPUTS["statistical_tests"].parent)
     )
 
     # ========================================================================
@@ -295,7 +303,10 @@ def main():
     print("\n" + "="*80)
     print("GENERATING VISUALIZATIONS")
     print("="*80)
-    generate_all_figures(all_results, output_dir='./experiments/drift_detection_benchmark/publication_figures')
+    generate_all_figures(
+        all_results,
+        output_dir=str(DETECTION_BENCHMARK_OUTPUTS["f1_comparison"].parent)
+    )
 
     # ========================================================================
     # EXPORT LATEX TABLES
@@ -303,7 +314,11 @@ def main():
     print("\n" + "="*80)
     print("EXPORTING LATEX TABLES")
     print("="*80)
-    export_all_tables(all_results, STREAM_SIZE, output_dir='./experiments/drift_detection_benchmark/publication_figures')
+    export_all_tables(
+        all_results,
+        STREAM_SIZE,
+        output_dir=str(DETECTION_BENCHMARK_OUTPUTS["methods_comparison"].parent)
+    )
 
     # ========================================================================
     # FINAL SUMMARY
@@ -312,7 +327,9 @@ def main():
     print("BENCHMARK COMPLETE!")
     print("="*80)
     print(f"  Total experiments: {len(all_results)}")
-    print(f"  Results saved to: ./experiments/drift_detection_benchmark/publication_figures/")
+    print(f"  Results saved to: {DETECTION_BENCHMARK_OUTPUTS['results_pkl'].parent}")
+    print(f"  LaTeX tables: {DETECTION_BENCHMARK_OUTPUTS['methods_comparison'].parent}")
+    print(f"  Figures: {DETECTION_BENCHMARK_OUTPUTS['f1_comparison'].parent}")
     print("="*80 + "\n")
 
 

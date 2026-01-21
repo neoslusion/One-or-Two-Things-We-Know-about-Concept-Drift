@@ -16,7 +16,7 @@ import random
 import time
 
 ## Use gen data with different default parameters
-import gen_data 
+from . import gen_data 
 def gen_random(number=1, dims=5, intens=0.5, dist="unif", alt=False, length=750, min_dist=10, min_dist_border=100):
     return gen_data.gen_random(number, dims, intens, dist, alt, length, min_dist, min_dist_border)
     

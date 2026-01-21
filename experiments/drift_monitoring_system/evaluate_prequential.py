@@ -35,18 +35,25 @@ from typing import Callable, Optional, Dict, List
 # Add parent directory for imports
 SCRIPT_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPT_DIR.parent.parent
+EXPERIMENTS_DIR = REPO_ROOT / "experiments"
 SHAPE_DD_DIR = REPO_ROOT / "experiments" / "backup"
 SHARED_DIR = REPO_ROOT / "experiments" / "shared"
+
 if str(SHAPE_DD_DIR) not in sys.path:
     sys.path.insert(0, str(SHAPE_DD_DIR))
 if str(SHARED_DIR) not in sys.path:
     sys.path.insert(0, str(SHARED_DIR))
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
+if str(EXPERIMENTS_DIR) not in sys.path:
+    sys.path.insert(0, str(EXPERIMENTS_DIR))
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
+
+# Import unified output configuration
+from output_config import PREQUENTIAL_OUTPUTS, escape_latex
 
 # Import SE_CDT detector (Unified Detector-Classifier)
 try:
@@ -998,8 +1005,8 @@ def main():
     parser.add_argument(
         "--output_dir",
         type=str,
-        default="./prequential_results",
-        help="Output directory",
+        default=None,
+        help="Output directory (default: use unified config path)",
     )
     # Added Arguments
     parser.add_argument(
@@ -1014,8 +1021,12 @@ def main():
 
     args = parser.parse_args()
 
-    # Create output directory
-    output_dir = Path(args.output_dir)
+    # Create output directory - use unified config if not specified
+    if args.output_dir is None:
+        output_dir = PREQUENTIAL_OUTPUTS["results_pkl"].parent
+    else:
+        output_dir = Path(args.output_dir)
+    
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Create cache directory for recurrent drift
@@ -1150,7 +1161,17 @@ def main():
 
     # Generate plot
     print("\n[6] Generating plot...")
-    plot_path = output_dir / f"prequential_accuracy_{args.drift_type}.png"
+    # Use drift type to determine output filename from unified config
+    drift_type_map = {
+        "sudden": "sudden_accuracy",
+        "gradual": "gradual_accuracy",
+        "incremental": "incremental_accuracy",
+        "recurrent": "recurrent_accuracy",
+        "mixed": "mixed_accuracy",
+    }
+    plot_key = drift_type_map.get(args.drift_type, "mixed_accuracy")
+    plot_path = PREQUENTIAL_OUTPUTS.get(plot_key, output_dir / f"prequential_accuracy_{args.drift_type}.pdf")
+    
     plot_prequential_comparison(
         results,
         drift_points,

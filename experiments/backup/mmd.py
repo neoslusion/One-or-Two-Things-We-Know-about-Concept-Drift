@@ -3,7 +3,7 @@ import numpy as np
 # from sklearn.metrics.pairwise import pairwise_kernels as apply_kernel
 # from mmd_variants import rbf_kernel as apply_kernel, HAS_TORCH, DEVICE
 from sklearn.metrics.pairwise import pairwise_kernels as apply_kernel
-from mmd_variants import HAS_TORCH, DEVICE
+from .mmd_variants import HAS_TORCH, DEVICE
 
 # if HAS_TORCH:
 #     import torch

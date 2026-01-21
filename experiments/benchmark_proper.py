@@ -9,13 +9,24 @@ import logging
 import argparse
 from datetime import datetime
 
-# Ensure imports work
-sys.path.append(os.path.abspath("experiments"))
+# Ensure imports work - add the experiments directory to path
+script_dir = os.path.dirname(os.path.abspath(__file__))
+if script_dir not in sys.path:
+    sys.path.insert(0, script_dir)
+    
 from backup.cdt_msw import CDT_MSW
 from backup.se_cdt import SE_CDT
 from backup.mmd_variants import mmd_adw
 from backup.mmd import mmd as mmd_standard  # Standard MMD for detection
 from scipy.signal import find_peaks, peak_widths
+
+# Import unified output configuration
+from output_config import (
+    BENCHMARK_PROPER_OUTPUTS,
+    escape_latex,
+    format_metric,
+    LATEX_TABLE_CONFIG,
+)
 
 # === CONFIGURATION ===
 WINDOW_SIZE = 50
@@ -32,17 +43,19 @@ SHAPE_PROMINENCE_STD = 0.012
 DETECTION_TOLERANCE = 250   # Standard tolerance for TP matching
 USE_STANDARD_MMD = False    # Use ADW-MMD (faster but suppresses weak signals)
 
-OUTPUT_DIR = "experiments/drift_detection_benchmark/publication_figures"
-OUTPUT_FILE = os.path.join(OUTPUT_DIR, "benchmark_proper_detailed.pkl")
-
-# Ensure output directory exists
-os.makedirs(OUTPUT_DIR, exist_ok=True)
+# Use unified output paths
+OUTPUT_FILE = str(BENCHMARK_PROPER_OUTPUTS["results_pkl"])
+LOG_FILE = str(BENCHMARK_PROPER_OUTPUTS["log_file"])
 
 # Logging Setup
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s | %(levelname)s | %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
+    datefmt='%Y-%m-%d %H:%M:%S',
+    handlers=[
+        logging.FileHandler(LOG_FILE),
+        logging.StreamHandler(sys.stdout)
+    ]
 )
 logger = logging.getLogger("SE_CDT_Benchmark")
 
@@ -810,30 +823,30 @@ def generate_latex_table(results):
     # Table Content - All 3 methods with computed metrics
     data = [
         {
-            "Method": "CDT\\_MSW",
-            "CAT Acc": f"{cat_acc_cdt:.1f}\\%",
-            "SUB Acc": f"{sub_acc_cdt:.1f}\\%",
-            "EDR": f"{det_res['CDT']['EDR']:.3f}", 
-            "MDR": f"{det_res['CDT']['MDR']:.3f}",
-            "FP": f"{det_res['CDT']['FP']}",
+            "Method": escape_latex("CDT_MSW"),
+            "CAT Acc": format_metric(cat_acc_cdt / 100, "percentage"),
+            "SUB Acc": format_metric(sub_acc_cdt / 100, "percentage"),
+            "EDR": format_metric(det_res['CDT']['EDR'], "float"), 
+            "MDR": format_metric(det_res['CDT']['MDR'], "float"),
+            "FP": format_metric(det_res['CDT']['FP'], "integer"),
             "Supervised": "Yes"
         },
         {
-            "Method": "\\textbf{SE-CDT (Std)}",
-            "CAT Acc": f"\\textbf{{{cat_acc_se:.1f}\\%}}",
-            "SUB Acc": f"\\textbf{{{sub_acc_se:.1f}\\%}}", 
-            "EDR": f"\\textbf{{{det_res['SE_STD']['EDR']:.3f}}}",
-            "MDR": f"\\textbf{{{det_res['SE_STD']['MDR']:.3f}}}",
-            "FP": f"{det_res['SE_STD']['FP']}",
+            "Method": "\\textbf{" + escape_latex("SE-CDT (Std)") + "}",
+            "CAT Acc": "\\textbf{" + format_metric(cat_acc_se / 100, "percentage") + "}",
+            "SUB Acc": "\\textbf{" + format_metric(sub_acc_se / 100, "percentage") + "}", 
+            "EDR": "\\textbf{" + format_metric(det_res['SE_STD']['EDR'], "float") + "}",
+            "MDR": "\\textbf{" + format_metric(det_res['SE_STD']['MDR'], "float") + "}",
+            "FP": format_metric(det_res['SE_STD']['FP'], "integer"),
             "Supervised": "No"
         },
         {
-            "Method": "SE-CDT (ADW)",
-            "CAT Acc": f"{cat_acc_se:.1f}\\%",  # Same Oracle Acc
-            "SUB Acc": f"{sub_acc_se:.1f}\\%",  # Same Oracle Acc
-            "EDR": f"{det_res['SE_ADW']['EDR']:.3f}",
-            "MDR": f"{det_res['SE_ADW']['MDR']:.3f}",
-            "FP": f"{det_res['SE_ADW']['FP']}",
+            "Method": escape_latex("SE-CDT (ADW)"),
+            "CAT Acc": format_metric(cat_acc_se / 100, "percentage"),  # Same Oracle Acc
+            "SUB Acc": format_metric(sub_acc_se / 100, "percentage"),  # Same Oracle Acc
+            "EDR": format_metric(det_res['SE_ADW']['EDR'], "float"),
+            "MDR": format_metric(det_res['SE_ADW']['MDR'], "float"),
+            "FP": format_metric(det_res['SE_ADW']['FP'], "integer"),
             "Supervised": "No"
         }
     ]
@@ -851,13 +864,13 @@ def generate_latex_table(results):
     latex_lines.append("\\hline")
     latex_lines.append("\\end{tabular}")
     
-    output_path = "report/latex/tables/table_comparison_aggregate.tex"
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    # Use unified output path
+    output_path = str(BENCHMARK_PROPER_OUTPUTS["aggregate_table"])
     
     with open(output_path, "w", encoding="utf-8") as f:
         f.write("\n".join(latex_lines))
         
-    print(f"\nAggregate Table generated at: {output_path}")
+    logger.info(f"Aggregate Table generated at: {output_path}")
 
 if __name__ == "__main__":
     run_benchmark_proper()

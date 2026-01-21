@@ -6,7 +6,7 @@ from typing import Tuple, Dict, Any, List
 import time
 
 # Import shapedd_adw_mmd_full for internal detection
-from mmd_variants import shapedd_adw_mmd_full
+from .mmd_variants import shapedd_adw_mmd_full
 
 @dataclass
 class SECDTResult:

@@ -10,7 +10,7 @@ Functions:
 """
 
 import numpy as np
-from mmd import mmd
+from .mmd import mmd
 
 # from sklearn.metrics.pairwise import pairwise_kernels as apply_kernel
 # from mmd_variants import rbf_kernel as apply_kernel, HAS_TORCH, DEVICE

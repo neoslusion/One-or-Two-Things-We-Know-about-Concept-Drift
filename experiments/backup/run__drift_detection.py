@@ -18,14 +18,14 @@ import random
 import time
 
 
-from gen_data import gen_random
+from .gen_data import *
 
-from mmd import mmd
-from ks import ks
-from dawidd import dawidd
-from shape_dd import shape
-from kernel_dd import kernel_dd
-from d3 import d3
+from .mmd import mmd
+from .ks import ks
+from .dawidd import dawidd
+from .shape_dd import shape
+from .kernel_dd import kernel_dd
+from .d3 import d3
 
 
 def batch(X, chunk_size, overlap=100):
