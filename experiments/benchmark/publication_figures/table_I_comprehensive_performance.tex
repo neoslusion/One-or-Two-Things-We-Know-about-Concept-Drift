@@ -1,18 +1,11 @@
-\begin{table}[htbp]
-	\caption[Kết quả phát hiện drift toàn diện]{Hiệu suất phát hiện drift toàn diện trên tất cả các tập dữ liệu. F1 được báo cáo dưới dạng trung bình $\pm$ độ lệch chuẩn. Giá trị tốt nhất mỗi cột được in đậm. MTTD = Độ trễ trung bình (mẫu, thấp hơn là tốt hơn). TP/FP/FN = tổng số đếm tích lũy qua tất cả các thử nghiệm.}
-	\label{tab:comprehensive_performance}
-	\begin{tabular}{clccccccc}
-		\toprule
-		Rank & Method           & F1 ($\mu \pm \sigma$)      & Precision      & Recall         & MTTD            & TP   & FP   & FN   \\
-		\midrule
-		1    & MMD\_OW          & $\mathbf{0.576 \pm 0.442}$ & \textbf{0.627} & 0.578          & 23.000          & 1735 & 222  & 1265 \\
-		2    & ShapeDD\_OW\_MMD & $0.562 \pm 0.436$          & 0.620          & 0.555          & 20.000          & 1666 & 216  & 1334 \\
-		3    & D3               & $0.517 \pm 0.475$          & 0.590          & 0.500          & \textbf{14.000} & 1501 & 0    & 1499 \\
-		4    & ShapeDD\_MMDAgg  & $0.509 \pm 0.472$          & 0.562          & 0.504          & 19.000          & 1513 & 106  & 1487 \\
-		5    & MMD              & $0.475 \pm 0.229$          & 0.368          & 0.713          & 32.000          & 2139 & 3226 & 861  \\
-		6    & DAWIDD           & $0.460 \pm 0.222$          & 0.352          & 0.710          & 34.000          & 2130 & 3421 & 870  \\
-		7    & ShapeDD          & $0.440 \pm 0.196$          & 0.322          & 0.731          & 31.000          & 2193 & 4195 & 807  \\
-		8    & KS               & $0.299 \pm 0.114$          & 0.197          & \textbf{0.775} & 29.000          & 2326 & 9397 & 674  \\
-		\bottomrule
-	\end{tabular}
-\end{table}
+\begin{tabular}{|l|c|c|c|c|c|}
+\hline
+\textbf{Method} & \textbf{Precision} & \textbf{Recall (EDR)} & \textbf{F1-Score} & \textbf{Delay} & \textbf{False Pos.} \\
+\hline
+SE\_CDT & 0.539 & 0.465 & \textbf{0.481} & 18 & 0.0 \\
+ShapeDD\_WMMD\_PROPER & 0.539 & 0.465 & \textbf{0.481} & 18 & 0.0 \\
+MMD & 0.348 & 0.722 & 0.455 & 32 & 14.3 \\
+ShapeDD & 0.306 & 0.737 & 0.421 & 31 & 17.9 \\
+KS & 0.188 & 0.796 & 0.289 & 29 & 36.6 \\
+\hline
+\end{tabular}

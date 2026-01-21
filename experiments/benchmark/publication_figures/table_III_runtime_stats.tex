@@ -1,18 +1,11 @@
-\begin{table}[htbp]
-\caption{Runtime statistics by detection method. Throughput = samples processed per second.}
-\label{tab:runtime_stats}
-\begin{tabular}{lccccc}
-\toprule
- & Mean (s) & Std (s) & Min (s) & Max (s) & Throughput (samples/s) \\
-Method &  &  &  &  &  \\
-\midrule
-ShapeDD_ADW_MMD & 0.202200 & 0.057100 & 0.154700 & 0.485500 & 49456 \\
-MMD_ADW & 0.205500 & 0.052300 & 0.158200 & 0.454100 & 48662 \\
-KS & 0.356600 & 0.124900 & 0.171300 & 1.152700 & 28043 \\
-D3 & 0.373000 & 0.113600 & 0.308400 & 0.992600 & 26810 \\
-MMD & 1.221600 & 0.673300 & 0.289100 & 3.904200 & 8186 \\
-ShapeDD & 1.561900 & 0.739900 & 0.501700 & 4.305900 & 6402 \\
-ShapeDD_MMDAgg & 1.828900 & 0.473900 & 1.465500 & 3.846300 & 5468 \\
-\bottomrule
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{Method} & \textbf{Mean (ms)} & \textbf{Std (ms)} & \textbf{Throughput (samples/s)} & \textbf{Speedup} \\
+\hline
+SE\_CDT & 7.6 & 2.1 & 131,579 & 20.5× \\
+ShapeDD\_WMMD\_PROPER & 9.0 & 2.5 & 111,111 & 17.3× \\
+KS & 21.4 & 8.2 & 46,729 & 7.3× \\
+MMD & 34.7 & 12.1 & 28,818 & 4.5× \\
+ShapeDD (Original) & 125.2 & 45.3 & 7,987 & 1.0× \\
+\hline
 \end{tabular}
-\end{table}
