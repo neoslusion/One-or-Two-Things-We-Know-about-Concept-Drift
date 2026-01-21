@@ -73,6 +73,10 @@ WINDOW_METHODS = [
     # === BASELINES ===
     'MMD',             # Standard MMD with permutation test (Gretton et al., 2012)
     'KS',              # Kolmogorov-Smirnov test (classical)
+    # === LEGACY METHODS ===
+    'D3',              # Deep learning-based (different paradigm)
+    'DAWIDD',          # Distance-aware windowed
+    'MMD_ADW',         # Just IDW-MMD without ShapeDD (ablation)
     
     # === SHAPEDD VARIANTS ===
     'ShapeDD',                # Original ShapeDD with permutation test (baseline)
