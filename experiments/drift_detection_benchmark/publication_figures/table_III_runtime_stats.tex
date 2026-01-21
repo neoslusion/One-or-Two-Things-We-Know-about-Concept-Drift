@@ -1,19 +1,18 @@
 \begin{table}[htbp]
-	\caption[Thống kê thời gian và thông lượng]{Thống kê thời gian thực thi và thông lượng (mẫu/giây) của các phương pháp.}
-	\label{tab:runtime_stats}
-	\begin{tabular}{lccccc}
-		\toprule
-		                 & Mean (s) & Std (s)  & Min (s)  & Max (s)  & Throughput (samples/s) \\
-		Method           &          &          &          &          &                        \\
-		\midrule
-		ShapeDD\_OW\_MMD & 0.198500 & 0.042600 & 0.159600 & 0.387400 & 50378                  \\
-		MMD\_OW          & 0.203100 & 0.038700 & 0.161400 & 0.388200 & 49237                  \\
-		KS               & 0.359700 & 0.122700 & 0.176700 & 0.929700 & 27801                  \\
-		D3               & 0.372800 & 0.075200 & 0.316500 & 0.767900 & 26824                  \\
-		MMD              & 1.296800 & 0.441000 & 0.410500 & 3.963500 & 7711                   \\
-		ShapeDD          & 1.430500 & 0.658700 & 0.609300 & 5.932500 & 6991                   \\
-		ShapeDD\_MMDAgg  & 1.675100 & 0.306400 & 1.371000 & 3.112300 & 5970                   \\
-		DAWIDD           & 2.715000 & 0.449600 & 2.079400 & 5.805600 & 3683                   \\
-		\bottomrule
-	\end{tabular}
+\caption{Runtime statistics by detection method. Throughput = samples processed per second.}
+\label{tab:runtime_stats}
+\begin{tabular}{lccccc}
+\toprule
+ & Mean (s) & Std (s) & Min (s) & Max (s) & Throughput (samples/s) \\
+Method &  &  &  &  &  \\
+\midrule
+ShapeDD_ADW_MMD & 0.202200 & 0.057100 & 0.154700 & 0.485500 & 49456 \\
+MMD_ADW & 0.205500 & 0.052300 & 0.158200 & 0.454100 & 48662 \\
+KS & 0.356600 & 0.124900 & 0.171300 & 1.152700 & 28043 \\
+D3 & 0.373000 & 0.113600 & 0.308400 & 0.992600 & 26810 \\
+MMD & 1.221600 & 0.673300 & 0.289100 & 3.904200 & 8186 \\
+ShapeDD & 1.561900 & 0.739900 & 0.501700 & 4.305900 & 6402 \\
+ShapeDD_MMDAgg & 1.828900 & 0.473900 & 1.465500 & 3.846300 & 5468 \\
+\bottomrule
+\end{tabular}
 \end{table}

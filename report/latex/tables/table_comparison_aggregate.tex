@@ -1,9 +1,17 @@
-\begin{tabular}{|l|c|c|c|c|c|c|}
-	\hline
-	\textbf{Method}       & \textbf{CAT Acc} & \textbf{SUB Acc} & \textbf{EDR$\uparrow$} & \textbf{MDR$\downarrow$} & \textbf{FP} & \textbf{Supervised} \\
-	\hline
-	CDT\_MSW              & 40.0\%           & 16.0\%           & 0.058                  & 0.942                    & 91          & Yes                 \\
-	\textbf{SE-CDT (Std)} & \textbf{74.6\%}  & \textbf{42.0\%}  & \textbf{0.928}         & \textbf{0.072}           & 1419        & No                  \\
-	SE-CDT (ADW)          & 74.6\%           & 42.0\%           & 0.532                  & 0.468                    & 302         & No                  \\
-	\hline
+\begin{table}[htbp]
+\caption{Aggregate performance metrics averaged across all datasets. Best values are bolded.}
+\label{tab:comparison_aggregate}
+\begin{tabular}{lccccc}
+\toprule
+Method & Precision & Recall (EDR) & F1-Score & Delay & False Pos. \\
+\midrule
+MMD_ADW & \textbf{0.589} & 0.567 & \textbf{0.548} & 24 & 2.5 \\
+ShapeDD_ADW_MMD & 0.587 & 0.557 & 0.540 & 22 & 2.6 \\
+D3 & 0.553 & 0.474 & 0.488 & \textbf{16} & 0.9 \\
+ShapeDD_MMDAgg & 0.534 & 0.468 & 0.476 & 22 & \textbf{0.6} \\
+MMD & 0.349 & 0.721 & 0.455 & 32 & 14.3 \\
+ShapeDD & 0.305 & 0.736 & 0.420 & 31 & 18.0 \\
+KS & 0.188 & \textbf{0.796} & 0.289 & 29 & 36.6 \\
+\bottomrule
 \end{tabular}
+\end{table}
