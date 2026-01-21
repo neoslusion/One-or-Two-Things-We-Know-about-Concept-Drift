@@ -60,13 +60,13 @@ Bảng~\ref{tab:comprehensive_performance} tóm tắt hiệu suất trung bình.
 % =============================================================================
 % Bảng tổng hợp hiệu suất
 % =============================================================================
-\input{../../experiments/benchmark/publication_figures/table_I_comprehensive_performance.tex}
+\input{../../results/tables/table_I_comprehensive_performance.tex}
 
 \textbf{Phân tích kết quả:}
 \begin{itemize}
-	\item \textbf{MMD\_IDW dẫn đầu về F1 ($0.576 \pm 0.442$):} Phương pháp sử dụng trọng số nghịch mật độ (Inverse Density-Weighted MMD) đạt kết quả tốt nhất, cân bằng tốt giữa Precision (0.627) và Recall (0.578).
-	\item \textbf{ShapeDD\_WMMD\_PROPER xếp hạng 2 (F1 = $0.562 \pm 0.436$):} Biến thể kết hợp IDW-MMD với đặc trưng hình dạng (shape feature) và asymptotic p-value duy trì hiệu suất cao và có độ trễ phát hiện thấp (Mean Time To Detection = 20 mẫu), cải thiện đáng kể so với ShapeDD gốc (MTTD = 31 mẫu).
-	\item \textbf{Sự đánh đổi của KS-Test (F1 = $0.299$):} Phương pháp Kolmogorov-Smirnov đạt Recall cao nhất (0.775) nhưng lại có Precision thấp nhất (0.197) với số lượng báo động giả kỷ lục (9,397 False Positives tích lũy qua 30 lần chạy). Điều này cho thấy KS quá nhạy cảm với nhiễu, không phù hợp cho các hệ thống giám sát tự động yêu cầu độ tin cậy cao.
+	\item \textbf{SE\_CDT và ShapeDD\_WMMD\_PROPER dẫn đầu về F1 (0.481):} Cả hai phương pháp đề xuất đạt F1-score cao nhất với Precision tốt (0.539) và không có báo động giả (False Positives = 0). Độ trễ phát hiện thấp (Mean Delay = 18 mẫu) cho thấy khả năng phản ứng nhanh với drift.
+	\item \textbf{MMD baseline xếp thứ 3 (F1 = 0.455):} Phương pháp MMD chuẩn đạt Recall cao hơn (0.722) nhưng Precision thấp hơn (0.348), dẫn đến 14.3 báo động giả trung bình mỗi lần chạy.
+	\item \textbf{Sự đánh đổi của KS-Test (F1 = 0.289):} Phương pháp Kolmogorov-Smirnov đạt Recall cao nhất (0.796) nhưng lại có Precision thấp nhất (0.188) với số lượng báo động giả lớn (36.6 FP/run). Điều này cho thấy KS quá nhạy cảm với nhiễu, không phù hợp cho các hệ thống giám sát tự động yêu cầu độ tin cậy cao.
 \end{itemize}
 
 \subsection{Phân tích ý nghĩa thống kê}
@@ -76,11 +76,11 @@ Bảng~\ref{tab:comprehensive_performance} tóm tắt hiệu suất trung bình.
 \begin{figure}[h]
 	\centering
 	\includegraphics[width=0.9\textwidth]{../../results/plots/critical_difference_f1.png}
-	\caption[Biểu đồ Critical Difference (CD)]{Biểu đồ Critical Difference (CD) với mức ý nghĩa $\alpha = 0.05$. MMD\_ADW và ShapeDD\_ADW\_MMD nằm ở nhóm đầu (rank thấp nhất là tốt nhất).}
+	\caption[Biểu đồ Critical Difference (CD)]{Biểu đồ Critical Difference (CD) với mức ý nghĩa $\alpha = 0.05$. SE\_CDT và ShapeDD\_WMMD\_PROPER nằm ở nhóm đầu (rank thấp nhất là tốt nhất).}
 	\label{fig:critical_difference}
 \end{figure}
 
-Mặc dù p-value tổng thể của kiểm định Friedman ($p \approx 0.8$) cho thấy sự khác biệt giữa các nhóm chưa đạt mức ý nghĩa thống kê cao (do phương sai lớn giữa các dataset), thứ hạng trung bình (Rank) của MMD\_ADW (1.0) và ShapeDD\_ADW\_MMD (2.0) ổn định hơn hẳn so với các phương pháp khác.
+Mặc dù p-value tổng thể của kiểm định Friedman có thể cho thấy sự khác biệt giữa các nhóm chưa đạt mức ý nghĩa thống kê cao (do phương sai lớn giữa các dataset), thứ hạng trung bình (Rank) của SE\_CDT và ShapeDD\_WMMD\_PROPER ổn định hơn hẳn so với các phương pháp khác, đặc biệt khi xét đến số lượng báo động giả thấp.
 
 \subsection{Đánh giá chi tiết trên từng loại dữ liệu}
 
@@ -137,7 +137,7 @@ Hiệu suất của các phương pháp thay đổi tùy thuộc vào đặc tí
 
 Yếu tố then chốt cho các hệ thống real-time là tốc độ xử lý. Bảng~\ref{tab:runtime_stats} so sánh thời gian và thông lượng.
 
-\input{../../experiments/benchmark/publication_figures/table_III_runtime_stats.tex}
+\input{../../results/tables/table_III_runtime_stats.tex}
 
 \textbf{Các kết quả đáng chú ý:}
 \begin{itemize}
@@ -209,7 +209,7 @@ Các phương pháp được chạy trên bộ dữ liệu theo đúng paper g�
 
 \begin{table}[H]
 	\centering
-	\caption{So sánh chi tiết CDT\_MSW, SE-CDT và biến thể ADW-MMD theo loại drift}
+	\caption{So sánh chi tiết CDT\_MSW, SE-CDT và biến thể IDW-MMD theo loại drift}
 	\label{tab:cdt-comparison-by-type}
 	\begin{tabular}{|l|l|c|c|c|c|}
 		\hline
@@ -246,7 +246,7 @@ Bảng~\ref{tab:cdt-aggregate} tổng hợp kết quả benchmark (5 loại drif
 	\centering
 	\caption{So sánh tổng hợp ba phương pháp phân loại drift}
 	\label{tab:cdt-aggregate}
-	\input{../../report/latex/tables/table_comparison_aggregate.tex}
+	\input{../../results/tables/table_comparison_aggregate.tex}
 	\begin{flushleft}
 		\small \textit{Lưu ý: Độ chính xác CAT 74.6\% ở đây khác với 78.0\% trong Bảng~\ref{tab:se-cdt-comparison} do sự khác biệt về phạm vi đánh giá. Bảng tổng hợp này tính trung bình trên toàn bộ 10 datasets, trong khi Bảng~\ref{tab:se-cdt-comparison} tập trung vào các kịch bản so sánh trực tiếp với CDT\_MSW.}
 	\end{flushleft}
