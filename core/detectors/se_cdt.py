@@ -1,50 +1,152 @@
 import numpy as np
 from scipy.signal import find_peaks, peak_widths
 from scipy.ndimage import gaussian_filter1d
-from dataclasses import dataclass
-from typing import Tuple, Dict, Any, List
+from dataclasses import dataclass, field
+from typing import Tuple, Dict, Any, List, Optional
 import time
 
-# Import shapedd_adw_mmd_full for internal detection
-from .mmd_variants import shapedd_adw_mmd_full
+# Import PROPER ShapeDD + ADW-MMD implementation
+from .mmd_variants import shapedd_adw_mmd_proper, shapedd_adw_mmd_full
 
 @dataclass
 class SECDTResult:
+    """Result from SE-CDT unified detection and classification."""
     is_drift: bool = False
-    drift_type: str = "Unknown"  # TCD, PCD
+    drift_type: str = "Unknown"  # TCD (Temporary), PCD (Permanent)
     subcategory: str = "Unknown" # Sudden, Blip, Gradual, Incremental, Recurrent
     features: Dict[str, float] = None
     score: float = 0.0
+    p_value: float = 1.0  # NEW: Statistical p-value for drift detection
     mmd_trace: np.ndarray = None
+    drift_positions: List[int] = field(default_factory=list)  # NEW: Detected positions
     classification_time: float = 0.0
 
 class SE_CDT:
     """
     SE-CDT (ShapeDD-Enhanced Concept Drift Type identification).
     Unified Detector-Classifier System.
+    
+    This implementation PROPERLY combines:
+    1. ShapeDD shape statistic for drift DETECTION (candidate identification)
+    2. ADW-MMD with asymptotic p-value for VALIDATION
+    3. Signal shape analysis for drift TYPE CLASSIFICATION
+    
+    Attributes:
+    -----------
+    l1 : int
+        Reference window size (half-window for shape statistic)
+    l2 : int
+        Test window size for MMD validation
+    alpha : float
+        Significance level for drift detection (default 0.05)
+    use_proper : bool
+        If True, use PROPER ShapeDD+ADW-MMD (fast, with p-value)
+        If False, use heuristic version (for backward compatibility)
     """
     
-    def __init__(self, window_size: int = 50, l2: int = 150, threshold: float = 0.5):
+    def __init__(self, window_size: int = 50, l2: int = 150, 
+                 threshold: float = 0.15, alpha: float = 0.05,
+                 use_proper: bool = True):
+        """
+        Initialize SE-CDT detector.
+        
+        Parameters:
+        -----------
+        window_size : int
+            Reference window size (l1). Default 50.
+        l2 : int
+            Test window size for MMD. Default 150.
+        threshold : float
+            Score threshold for heuristic mode. Default 0.15.
+            (Ignored when use_proper=True)
+        alpha : float
+            Significance level for proper mode. Default 0.05.
+        use_proper : bool
+            Use PROPER ShapeDD+ADW-MMD implementation. Default True.
+        """
         self.l1 = window_size
         self.l2 = l2
         self.threshold = threshold
+        self.alpha = alpha
+        self.use_proper = use_proper
 
     def monitor(self, window: np.ndarray) -> SECDTResult:
         """
         Monitor the stream window for drift.
         If drift is detected, automatically classify it.
         
+        Uses PROPER ShapeDD + ADW-MMD design:
+        1. ShapeDD shape statistic detects candidate drift points
+        2. ADW-MMD with asymptotic p-value validates candidates
+        3. MMD signal shape classifies drift type
+        
         Parameters:
         -----------
         window : np.ndarray
-            Current data window to check.
+            Current data window to check (buffer).
             
         Returns:
         --------
         result : SECDTResult
-            Unified result containing detection and classification info.
+            Unified result containing:
+            - is_drift: Whether drift was detected
+            - p_value: Statistical significance (only in proper mode)
+            - drift_type: TCD or PCD
+            - subcategory: Sudden, Blip, Gradual, Incremental, Recurrent
+            - mmd_trace: MMD signal for analysis
+            - features: Extracted geometric features
         """
-        # 1. Detection Step (ShapeDD-ADW)
+        if self.use_proper:
+            return self._monitor_proper(window)
+        else:
+            return self._monitor_heuristic(window)
+    
+    def _monitor_proper(self, window: np.ndarray) -> SECDTResult:
+        """
+        PROPER implementation using ShapeDD + ADW-MMD with p-value.
+        """
+        # 1. Detection Step (PROPER ShapeDD + ADW-MMD)
+        is_drift, drift_positions, mmd_trace, p_values = shapedd_adw_mmd_proper(
+            window, l1=self.l1, l2=self.l2, alpha=self.alpha
+        )
+        
+        # Compute aggregate score from p-values
+        if p_values:
+            min_p = min(p_values)
+            # Convert p-value to score for backward compatibility
+            # score = 1 - p_value (high score = more confident drift)
+            score = 1.0 - min_p
+        else:
+            min_p = 1.0
+            score = 0.0
+        
+        result = SECDTResult(
+            is_drift=is_drift,
+            score=score,
+            p_value=min_p,
+            mmd_trace=mmd_trace,
+            drift_positions=drift_positions
+        )
+        
+        # 2. Classification Step (if drift detected)
+        if is_drift and len(mmd_trace) > 0:
+            t0 = time.time()
+            classification_res = self.classify(mmd_trace)
+            t1 = time.time()
+            
+            result.drift_type = classification_res.drift_type
+            result.subcategory = classification_res.subcategory
+            result.features = classification_res.features
+            result.classification_time = t1 - t0
+            
+        return result
+    
+    def _monitor_heuristic(self, window: np.ndarray) -> SECDTResult:
+        """
+        Heuristic implementation (backward compatible).
+        Uses pattern score threshold instead of p-value.
+        """
+        # 1. Detection Step (Heuristic ShapeDD-ADW)
         pattern_score, mmd_max, mmd_trace = shapedd_adw_mmd_full(
             window, l1=self.l1, l2=self.l2, gamma='auto'
         )
@@ -52,10 +154,11 @@ class SE_CDT:
         result = SECDTResult(
             is_drift=False,
             score=pattern_score,
+            p_value=1.0,  # No p-value in heuristic mode
             mmd_trace=mmd_trace
         )
         
-        # 2. Trigger Check
+        # 2. Trigger Check (threshold-based)
         if pattern_score > self.threshold:
             result.is_drift = True
             

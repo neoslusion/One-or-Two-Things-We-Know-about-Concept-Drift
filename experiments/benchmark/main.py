@@ -111,7 +111,7 @@ def run_benchmark():
     Returns:
         tuple: (all_results, dataset_summaries) containing all experiment results
     """
-    from .utils.logging import get_logger, reset_logger
+    from experiments.benchmark.utils.logging import get_logger, reset_logger
     
     # Reset and get fresh logger
     reset_logger()

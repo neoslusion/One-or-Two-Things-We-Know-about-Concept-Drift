@@ -63,9 +63,25 @@ logging.basicConfig(
 logger = logging.getLogger("SE_CDT_Benchmark")
 
 # === DATA GENERATION ===
+# Import mathematically rigorous generators
+try:
+    from data.generators.drift_generators import generate_mixed_stream_rigorous
+    USE_RIGOROUS_GENERATOR = True
+except ImportError:
+    USE_RIGOROUS_GENERATOR = False
+    logger.warning("Rigorous generator not available, using legacy generator")
+
+
 def generate_mixed_stream(events, length=None, seed=42, supervised_mode=False):
     """
     Generate a stream with multiple drift events.
+    
+    Uses mathematically rigorous drift definitions following standard literature:
+    - Sudden: Instant distribution shift at t₀
+    - Gradual: Probabilistic mixture during transition [t₀, t₀+w]
+    - Incremental: Continuous parameter evolution
+    - Recurrent: Alternating between concepts
+    - Blip: Temporary shift then return
     
     Args:
         events: List of drift events with type, pos, width
@@ -74,7 +90,21 @@ def generate_mixed_stream(events, length=None, seed=42, supervised_mode=False):
         supervised_mode: If True, generate concept-aware labels (changes P(Y|X))
                         for supervised methods like CDT_MSW.
                         If False, only changes P(X) (normal unsupervised mode).
+                        
+    Note:
+        - SE-CDT (unsupervised): Works with supervised_mode=False (detects P(X) change)
+        - CDT_MSW (supervised): Requires supervised_mode=True (needs P(Y|X) change)
+        
+        For FAIR COMPARISON, run CDT_MSW with supervised_mode=True.
     """
+    # Use rigorous generator if available
+    if USE_RIGOROUS_GENERATOR:
+        X, y, _ = generate_mixed_stream_rigorous(
+            events, length, n_features=5, seed=seed, supervised_mode=supervised_mode
+        )
+        return X, y
+    
+    # Legacy generator (fallback)
     rng = np.random.RandomState(seed)
     
     if length is None:
@@ -101,9 +131,10 @@ def generate_mixed_stream(events, length=None, seed=42, supervised_mode=False):
             concept_id[pos:] = current_concept
             
         elif dtype == "Gradual":
+            # Probabilistic mixture (correct mathematical definition)
             for i in range(width):
                 if pos + i >= length: break
-                alpha = i / width
+                alpha = i / width  # Linear interpolation
                 if rng.random() < alpha:
                     X[pos + i] += 2.0 
                     concept_id[pos + i] = current_concept + 1
@@ -114,6 +145,7 @@ def generate_mixed_stream(events, length=None, seed=42, supervised_mode=False):
                 concept_id[end_pos:] = current_concept
                 
         elif dtype == "Incremental":
+            # Continuous shift (not mixture)
             step = 2.0 / max(1, (width // 10))
             for i in range(width):
                 if pos + i >= length: break
@@ -127,6 +159,7 @@ def generate_mixed_stream(events, length=None, seed=42, supervised_mode=False):
                 concept_id[end_pos:] = current_concept
 
         elif dtype == "Recurrent":
+            # Alternating pattern
             period = max(1, width // 2)
             for i in range(pos, length, period): 
                 sub_end = min(i + period, length)
@@ -138,6 +171,7 @@ def generate_mixed_stream(events, length=None, seed=42, supervised_mode=False):
                     concept_id[i:sub_end] = current_concept
                     
         elif dtype == "Blip":
+            # Temporary shift
             blip_width = max(1, width // 5)
             end_blip = min(pos + blip_width, length)
             X[pos:end_blip] += 2.0
@@ -157,7 +191,8 @@ def generate_mixed_stream(events, length=None, seed=42, supervised_mode=False):
                 y[i] = 1 if (X[i, 0] - X[i, 1]) > 0 else 0
     else:
         # Unsupervised mode: Labels just follow a fixed formula
-        # (CDT_MSW won't work well, but SE-CDT will)
+        # SE-CDT detects P(X) change, works well here
+        # CDT_MSW needs P(Y|X) change, won't work well here
         y = (np.sum(X[:, :2], axis=1) > 0).astype(int)
             
     return X, y

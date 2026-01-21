@@ -68,17 +68,27 @@ PREQUENTIAL_WINDOW = 100       # Window for prequential accuracy
 # METHOD LISTS
 # ============================================================================
 
-# Window-based methods
+# Window-based methods (RECOMMENDED for thesis benchmark)
 WINDOW_METHODS = [
-    'D3',              # Margin density drift detector
-    'DAWIDD',          # Distance-aware windowed drift detector
-    'MMD',             # Maximum Mean Discrepancy (permutation test)
-    'KS',              # Kolmogorov-Smirnov test
-    'ShapeDD',         # Original ShapeDD (MMD + convolution pattern detection)
-    'ShapeDD_MMDAgg',  # ShapeDD with Aggregated MMD (JMLR 2023)
-    'MMD_ADW',         # Adaptive Density-Weighted MMD (fixed threshold, fast)
-    'ShapeDD_ADW_MMD', # ShapeDD + ADW-MMD Hybrid (heuristic pattern detection)
-    # 'ShapeDD_WMMD',    # ShapeDD + WMMD Hybrid (heuristic pattern detection)
+    # === BASELINES ===
+    'MMD',             # Standard MMD with permutation test (Gretton et al., 2012)
+    'KS',              # Kolmogorov-Smirnov test (classical)
+    
+    # === SHAPEDD VARIANTS ===
+    'ShapeDD',                # Original ShapeDD with permutation test (baseline)
+    'ShapeDD_WMMD_PROPER',    # RECOMMENDED: ShapeDD + IDW-MMD + asymptotic p-value (FAST)
+    
+    # === UNIFIED SYSTEM ===
+    'SE_CDT',                 # Detection + Classification (most complete)
+]
+
+# Legacy methods (not recommended, kept for backwards compatibility)
+WINDOW_METHODS_LEGACY = [
+    'D3',              # Deep learning-based (different paradigm)
+    'DAWIDD',          # Distance-aware windowed
+    'MMD_ADW',         # Just IDW-MMD without ShapeDD (ablation)
+    'ShapeDD_ADW_MMD', # Old heuristic version (superseded)
+    # 'ShapeDD_MMDAgg',  # REMOVED: Too slow (~500ms/window)
 ]
 
 

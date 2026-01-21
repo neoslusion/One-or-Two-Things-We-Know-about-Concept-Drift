@@ -263,8 +263,15 @@ def evaluate_with_adaptation(
 
     # Initialize SE-CDT Unified System
     # Note: window_size corresponds to l1 (reference window)
+    # Using PROPER mode (default) with statistical p-value for detection
     se_cdt_system = (
-        SE_CDT(window_size=w_ref, l2=SHAPE_L2, threshold=sudden_thresh)
+        SE_CDT(
+            window_size=w_ref, 
+            l2=SHAPE_L2, 
+            threshold=sudden_thresh,  # For heuristic fallback
+            alpha=0.05,               # Significance level for PROPER mode
+            use_proper=True           # Use PROPER ShapeDD + ADW-MMD design
+        )
         if SE_CDT
         else None
     )
@@ -940,9 +947,14 @@ def calculate_metrics(results: Dict[str, Dict], drift_points: List[int]) -> Dict
             )  # Convert to ms
 
         # NEW: Calculate detection metrics (TP, FP, EDR, MDR, etc.)
-        detections = data.get("detections", [])
+        # Detections may be dicts with 'idx' key or plain integers
+        raw_detections = data.get("detections", [])
+        if raw_detections and isinstance(raw_detections[0], dict):
+            detections = [d["idx"] for d in raw_detections]
+        else:
+            detections = raw_detections
         det_metrics = calculate_detection_metrics(
-            detections, drift_points, tolerance=250
+            detections, drift_points, tolerance=400  # Increased for gradual drift
         )
 
         metrics[mode] = {
@@ -1006,8 +1018,8 @@ def main():
     parser.add_argument(
         "--sudden_thresh",
         type=float,
-        default=0.5,
-        help="Threshold for sudden drift detection",
+        default=0.15,  # FIXED: Lowered from 0.5 - pattern_score typically 0.0-0.4
+        help="Threshold for drift detection (pattern_score typically 0.0-0.4, default 0.15)",
     )
 
     args = parser.parse_args()

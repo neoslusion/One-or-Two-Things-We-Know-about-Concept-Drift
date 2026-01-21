@@ -119,72 +119,130 @@ def generate_rotating_hyperplane(n_samples=5000, n_drifts=3, n_features=5,
             
     return X, y, drift_points, [drift_type] * len(drift_points)
 
-def generate_mixed_drift_dataset(n_samples=6000, random_seed=42):
+def generate_mixed_drift_dataset(n_samples=6000, random_seed=42, n_features=5, drift_magnitude=2.0):
     """
     Generate a dataset with mixed drift types for comprehensive evaluation.
-    1. Sudden (SEA)
-    2. Gradual (Rot. Hyperplane)
-    3. Recurrent (ABBA)
+    
+    CRITICAL: For unsupervised drift detection (SE-CDT), we must change
+    FEATURE DISTRIBUTIONS (X), not just decision boundaries (y).
+    
+    Drift types:
+    1. Sudden: Abrupt mean shift in X
+    2. Gradual: Smooth transition in X over a window
+    3. Recurrent: Return to a previous X distribution
+    
+    Parameters:
+    -----------
+    n_samples : int
+        Total number of samples (will be slightly adjusted for segments)
+    random_seed : int
+        Random seed for reproducibility
+    n_features : int
+        Number of features in X
+    drift_magnitude : float
+        Base magnitude of drift (mean shift). Higher = easier to detect.
+        
+    Returns:
+    --------
+    X : np.ndarray, shape (n_samples, n_features)
+    y : np.ndarray, shape (n_samples,)
+    drift_points : list of int
+    drift_types : list of str
     """
     np.random.seed(random_seed)
-    X = []
-    y = []
+    
+    segment_len = n_samples // 4
+    total_samples = segment_len * 4
+    
+    X = np.zeros((total_samples, n_features))
+    y = np.zeros(total_samples, dtype=int)
     drift_points = []
     drift_types = []
     
-    segment_len = 1500
+    # Define base distributions (means for each concept)
+    mean_A = np.zeros(n_features)  # Concept A: centered at origin
+    mean_B = np.ones(n_features) * drift_magnitude  # Concept B: shifted
+    mean_C = np.array([drift_magnitude if i % 2 == 0 else -drift_magnitude 
+                       for i in range(n_features)])  # Concept C: alternating
     
-    # Segment 1: Base Concept (SEA theta=8)
-    X1, y1, _, _ = generate_sea_concepts(segment_len, n_drifts=0, random_seed=random_seed)
-    X.append(X1); y.append(y1)
+    # Decision boundaries for labels (separate from X distribution)
+    def label_concept_A(x):
+        return int(np.sum(x[:2]) > 0)
     
-    # Drift 1: Sudden (SEA theta=8 -> 5)
+    def label_concept_B(x):
+        return int(x[0] > drift_magnitude / 2)
+    
+    def label_concept_C(x):
+        return int(np.dot(x, np.ones(n_features)) > 0)
+    
+    # ============================================
+    # Segment 1: Base Concept A (0 to segment_len)
+    # ============================================
+    X[:segment_len] = np.random.randn(segment_len, n_features) + mean_A
+    for i in range(segment_len):
+        y[i] = label_concept_A(X[i])
+    
+    # ============================================
+    # Drift 1: SUDDEN (at segment_len)
+    # Abrupt change from Concept A to Concept B
+    # ============================================
     drift_points.append(segment_len)
     drift_types.append('sudden')
     
-    # Segment 2: New Concept (SEA theta=5)
-    X2 = np.random.rand(segment_len, 3) * 10
-    y2 = np.array([1 if (x[0]+x[1] <= 5.0) else 0 for x in X2])
-    X.append(X2); y.append(y2)
+    # Segment 2: Concept B
+    start_2 = segment_len
+    end_2 = segment_len * 2
+    X[start_2:end_2] = np.random.randn(segment_len, n_features) + mean_B
+    for i in range(start_2, end_2):
+        y[i] = label_concept_B(X[i])
     
-    # Drift 2: Gradual (Transition to Hyperplane)
+    # ============================================
+    # Drift 2: GRADUAL (at segment_len * 2)
+    # Smooth transition from B to C over 500 samples
+    # ============================================
     drift_points.append(segment_len * 2)
     drift_types.append('gradual')
     
-    # Segment 3: Gradual Transition
-    # Use Interleaved chunks to simulate gradual
-    X3 = np.random.rand(segment_len, 3) * 10
-    y3 = np.zeros(segment_len, dtype=int)
-    
-    # Concept A (SEA 5) vs Concept B (Hyperplane)
-    w_hyper = np.array([0.5, 0.5, -0.5])
+    # Segment 3: Gradual transition B -> C
+    start_3 = segment_len * 2
+    end_3 = segment_len * 3
+    transition_window = min(500, segment_len // 3)
     
     for i in range(segment_len):
-        # Probability of B increases from 0 to 1 (Sigmoid-like)
-        prob_b = 1 / (1 + np.exp(-10 * (i/segment_len - 0.5)))
+        idx = start_3 + i
         
-        if np.random.rand() < prob_b:
-            # Concept B
-            y3[i] = 1 if np.dot(X3[i], w_hyper) > 0 else 0
-        else:
-            # Concept A
-            y3[i] = 1 if (X3[i,0]+X3[i,1] <= 5.0) else 0
+        if i < transition_window:
+            # Gradual transition: interpolate between B and C
+            alpha = i / transition_window  # 0 -> 1
+            current_mean = (1 - alpha) * mean_B + alpha * mean_C
+            X[idx] = np.random.randn(n_features) + current_mean
             
-    X.append(X3); y.append(y3)
+            # Labels: probabilistic mix
+            if np.random.rand() < alpha:
+                y[idx] = label_concept_C(X[idx])
+            else:
+                y[idx] = label_concept_B(X[idx])
+        else:
+            # Post-transition: pure Concept C
+            X[idx] = np.random.randn(n_features) + mean_C
+            y[idx] = label_concept_C(X[idx])
     
-    # Drift 3: Recurrent (Back to SEA theta=8)
+    # ============================================
+    # Drift 3: RECURRENT (at segment_len * 3)
+    # Return to Concept A (same distribution as start)
+    # ============================================
     drift_points.append(segment_len * 3)
     drift_types.append('recurrent')
     
-    # Segment 4: Back to Start
-    X4, y4, _, _ = generate_sea_concepts(segment_len, n_drifts=0, random_seed=random_seed+1)
-    # Ensure exact same concept as Seg 1 (theta=8)
-    # X4 is new data, but logic is same
-    y4 = np.array([1 if (x[0]+x[1] <= 8.0) else 0 for x in X4])
+    # Segment 4: Back to Concept A
+    start_4 = segment_len * 3
+    end_4 = segment_len * 4
+    X[start_4:end_4] = np.random.randn(segment_len, n_features) + mean_A
+    for i in range(start_4, end_4):
+        y[i] = label_concept_A(X[i])
     
-    X.append(X4); y.append(y4)
-    
-    X = np.vstack(X)
-    y = np.concatenate(y)
+    # Add small noise to avoid perfectly separable data
+    noise_mask = np.random.rand(total_samples) < 0.05
+    y[noise_mask] = 1 - y[noise_mask]
     
     return X, y, drift_points, drift_types

@@ -23,14 +23,19 @@ SHAPE_N_PERM = 2500  # Number of permutations for statistical test
 DRIFT_PVALUE = 0.05  # P-value threshold (alpha)
 DRIFT_ALPHA = 0.05   # Significance level
 
-# SE-CDT Detection Thresholds (synced with benchmark_proper.py)
-# These values are tuned for balanced precision/recall
-SE_CDT_THRESHOLD = 0.15       # For SE_CDT.monitor() - tuned from default 0.5
+# SE-CDT Detection Thresholds
+# CRITICAL: pattern_score from shapedd_adw_mmd_full typically returns 0.0-0.4
+# Default threshold of 0.5 is TOO HIGH and causes zero detections!
+# Tuned threshold based on empirical testing:
+SE_CDT_THRESHOLD = 0.15       # For SE_CDT.monitor() - LOWERED from default 0.5
 SHAPE_HEIGHT = 0.015          # For peak detection in MMD signal
 SHAPE_PROMINENCE = 0.008      # Peak prominence requirement
 SHAPE_HEIGHT_STD = 0.012      # For Standard MMD (slightly lower)
 SHAPE_PROMINENCE_STD = 0.006  # For Standard MMD
-DETECTION_TOLERANCE = 250     # Max delay for TP matching (samples)
+# Detection tolerance: How far a detection can be from ground truth and still count as TP
+# For gradual drift, detection often occurs AFTER the transition window ends
+# Transition window is typically 500 samples, so we need larger tolerance
+DETECTION_TOLERANCE = 400     # Max delay for TP matching (samples) - increased for gradual drift
 
 # Model evaluation parameters
 PREQUENTIAL_WINDOW = 100  # Sliding window for accuracy calculation

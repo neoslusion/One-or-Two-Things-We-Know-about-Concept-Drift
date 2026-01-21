@@ -1,7 +1,7 @@
 \chapter{Mô hình đề xuất}
 \label{chap:proposed-model}
 
-\textit{Tóm tắt: Trên cơ sở lý thuyết về ShapeDD và các phương pháp phát hiện concept drift đã trình bày ở Chương~\ref{chap:theoretical-foundation}, chương này trình bày việc tích hợp các phương pháp MMD cải tiến gần đây (ADW-MMD, MMD-Agg) vào framework ShapeDD nhằm cải thiện hiệu suất tính toán, đồng thời đề xuất phương pháp mới SE-CDT cho phân loại drift không giám sát. Báo cáo cũng trình bày kiến trúc hệ thống xử lý luồng dữ liệu thời gian thực dựa trên Apache Kafka. Các đóng góp chính bao gồm: (1) Tích hợp Adaptive Density-Weighted MMD (ADW-MMD) để tăng tốc độ xử lý, (2) Xây dựng khung chiến lược thích ứng đa dạng dựa trên loại drift, và (3) Thiết kế kiến trúc hệ thống có khả năng mở rộng và chịu lỗi cao.}
+\textit{Tóm tắt: Trên cơ sở lý thuyết về ShapeDD và các phương pháp phát hiện concept drift đã trình bày ở Chương~\ref{chap:theoretical-foundation}, chương này trình bày việc tích hợp \textbf{Weighted MMD với phân phối tiệm cận} vào framework ShapeDD nhằm cải thiện hiệu suất tính toán, đồng thời đề xuất phương pháp mới SE-CDT cho phân loại drift không giám sát. Báo cáo cũng trình bày kiến trúc hệ thống xử lý luồng dữ liệu thời gian thực dựa trên Apache Kafka. Các đóng góp chính bao gồm: (1) Tích hợp Inverse Density-Weighted MMD (IDW-MMD) với asymptotic p-value để tăng tốc độ xử lý, (2) Xây dựng khung chiến lược thích ứng đa dạng dựa trên loại drift, và (3) Thiết kế kiến trúc hệ thống có khả năng mở rộng và chịu lỗi cao.}
 
 \section{Động lực và tổng quan cách tiếp cận}
 
@@ -15,14 +15,14 @@ Mặc dù ShapeDD gốc thể hiện nhiều ưu điểm về độ chính xác 
 
 Để giải quyết các thách thức trên, luận văn xây dựng hệ thống \textbf{ShapeDD-Stream} --- một framework tích hợp kết hợp các phương pháp MMD tiên tiến với kiến trúc streaming, bao gồm ba tầng xử lý chính:
 \begin{itemize}
-	\item \textbf{Tầng thuật toán:} Cải tiến ShapeDD bằng cách tích hợp \textit{Adaptive Density-Weighted MMD (ADW-MMD)} để giảm phương sai và chi phí tính toán, cùng với \textit{MMD-Agg} để tăng độ bền vững (robustness).
+	\item \textbf{Tầng thuật toán:} Cải tiến ShapeDD bằng cách tích hợp \textit{Inverse Density-Weighted MMD (IDW-MMD)} với phân phối tiệm cận để giảm phương sai và chi phí tính toán, loại bỏ nhu cầu permutation test tốn kém.
 	\item \textbf{Tầng chiến lược:} Xây dựng khung thích ứng thông minh, sử dụng kết quả phân loại từ \textit{CDT\_MSW} để kích hoạt chiến lược cập nhật mô hình tối ưu (Reset, Incremental, hoặc Reuse).
 	\item \textbf{Tầng kiến trúc:} Triển khai hệ thống trên nền tảng \textit{Apache Kafka}, đảm bảo khả năng xử lý luồng dữ liệu phân tán, độ trễ thấp và khả năng chịu lỗi.
 \end{itemize}
 
 \section{Cải tiến thuật toán phát hiện concept drift}
 
-\subsection{Adaptive Density-Weighted MMD (ADW-MMD): Tối ưu hóa hiệu suất và độ chính xác}
+\subsection{Inverse Density-Weighted MMD (IDW-MMD): Tối ưu hóa hiệu suất và độ chính xác}
 \label{sec:adw-mmd}
 
 Trong các hệ thống học máy dòng dữ liệu (data stream), concept drift xảy ra khi các đặc tính thống kê của biến mục tiêu thay đổi đột ngột hoặc từ từ theo thời gian. Các phương pháp MMD truyền thống thường gặp khó khăn về chi phí tính toán khi áp dụng cho dữ liệu lớn.
@@ -30,51 +30,53 @@ Trong các hệ thống học máy dòng dữ liệu (data stream), concept drif
 \subsubsection{Vấn đề của ước lượng MMD truyền thống}
 Trong ShapeDD gốc, thống kê MMD được tính toán dựa trên trọng số đều (uniform weights), coi vai trò của mọi điểm dữ liệu trong cửa sổ là như nhau. Để đạt được độ mạnh thống kê (statistical power --- khả năng phát hiện sự khác biệt khi có) mong muốn, phương pháp này yêu cầu kích thước mẫu lớn hoặc quy trình kiểm định hoán vị tốn kém ($O(N_{perm} \cdot n^2)$). Điều này không phù hợp với các ứng dụng yêu cầu phản hồi tức thì.
 
-\subsubsection{Giải pháp: Trọng số mật độ thích ứng giảm phương sai}
-Nghiên cứu tích hợp phương pháp \textbf{ADW-MMD} (Adaptive Density-Weighted MMD), lấy cảm hứng từ bộ ước lượng "Optimally-Weighted MMD" được đề xuất bởi Bharti et al.~\cite{bharti2023owmmd} và phương pháp reweighting trong domain adaptation của Yan et al.~\cite{yan2017mind}.
+\subsubsection{Giải pháp: Trọng số nghịch biến mật độ (Inverse Density Weighting)}
+Luận văn đề xuất sử dụng phương pháp \textbf{IDW-MMD} (Inverse Density-Weighted MMD), một heuristic đơn giản lấy cảm hứng từ ý tưởng ``Optimally-Weighted MMD'' của Bharti et al.~\cite{bharti2023owmmd}.
 
-Phương pháp này sử dụng một heuristic thích ứng để gán trọng số dựa trên mật độ cục bộ của dữ liệu. Cụ thể, các trọng số vector $w \in \mathbb{R}^n$ được tính tỷ lệ nghịch với căn bậc hai của tổng kernel (proxy cho mật độ cục bộ), và ma trận trọng số $W$ được tạo thành từ tích ngoài (outer product):
+\textbf{Lưu ý quan trọng:} Phương pháp của Bharti et al. (2023) được thiết kế cho \textit{likelihood-free inference} và đề xuất trọng số tối ưu phức tạp. Implementation trong luận văn này sử dụng một \textbf{heuristic đơn giản hơn} --- trọng số nghịch biến với căn bậc hai của mật độ kernel --- để phù hợp với bài toán drift detection trong streaming.
+
+Cụ thể, các trọng số vector $w \in \mathbb{R}^n$ được tính tỷ lệ nghịch với căn bậc hai của tổng kernel (proxy cho mật độ cục bộ):
 \begin{equation}
-	w_i \propto \frac{1}{\sqrt{\sum_{j} k(x_i, x_j)}} \quad \text{và} \quad W^{XX} = w \otimes w^T
+	w_i \propto \frac{1}{\sqrt{\sum_{j} k(x_i, x_j)}} \quad \text{(Inverse Density Weighting)}
 \end{equation}
 
-Cách tiếp cận này ("Density-Weighted") giúp giảm phương sai bằng cách tập trung trọng số vào các điểm dữ liệu ở vùng biên hoặc vùng thưa thớt (low-density regions). Về mặt lý thuyết, cơ chế này tương tự như importance sampling tự chuẩn hóa (self-normalized importance sampling) trong thống kê, nơi các điểm dữ liệu "quan trọng" được gán trọng số cao hơn để giảm phương sai của bộ ước lượng.
+\textbf{Trực giác:} Điểm dữ liệu ở vùng thưa thớt (biên phân phối) có $\sum_{j} k(x_i, x_j)$ nhỏ $\Rightarrow$ trọng số $w_i$ lớn. Điểm ở vùng dày đặc (trung tâm phân phối) có $\sum_{j} k(x_i, x_j)$ lớn $\Rightarrow$ trọng số $w_i$ nhỏ. Cơ chế này giúp phát hiện nhạy hơn các thay đổi ở biên phân phối, nơi drift thường xuất hiện đầu tiên.
 
-Điểm đặc biệt trong cách cài đặt là việc giữ nguyên trọng số đều (uniform weights) cho thành phần chéo (cross-term) để đảm bảo tính ổn định khi so sánh hai tập mẫu, trong khi chỉ tối ưu hóa các thành phần nội bộ (self-terms) để giảm nhiễu. Công thức MMD bình phương có trọng số được định nghĩa cụ thể:
+Công thức MMD bình phương có trọng số được định nghĩa cụ thể:
 \begin{equation}
-	\text{MMD}^2_{\text{ADW}} = \underbrace{\sum_{i,j} w_i w_j k(x_i, x_j)}_{\text{Weighted } XX} + \underbrace{\sum_{p,q} v_p v_q k(y_p, y_q)}_{\text{Weighted } YY} - 2\underbrace{\sum_{i,p} \frac{1}{nm} k(x_i, y_p)}_{\text{Uniform } XY}
+	\text{MMD}^2_{\text{IDW}} = \underbrace{\sum_{i,j} w_i w_j k(x_i, x_j)}_{\text{Weighted } XX} + \underbrace{\sum_{p,q} v_p v_q k(y_p, y_q)}_{\text{Weighted } YY} - 2\underbrace{\sum_{i,p} \frac{1}{nm} k(x_i, y_p)}_{\text{Uniform } XY}
 \end{equation}
 
-\subsubsection{Quy trình phát hiện lai (Hybrid Detection Strategy)}
-Để cân bằng giữa tốc độ và độ chính xác, luận văn đề xuất quy trình phát hiện hai giai đoạn cho ShapeDD\_ADW\_MMD:
+\subsubsection{Quy trình tính toán}
+Luận văn cài đặt IDW-MMD như sau:
 
 \begin{algorithm}[H]
-	\caption{Adaptive Density-Weighted MMD (ADW-MMD)}
+	\caption{Inverse Density-Weighted MMD (IDW-MMD)}
 	\label{alg:adw_mmd}
 	\begin{algorithmic}[1]
 		\REQUIRE Reference window $X_{ref}$, test window $X_{test}$, kernel $k(\cdot, \cdot)$
-		\ENSURE ADW-MMD Statistic $\widehat{\text{MMD}}^2_{ADW}$
+		\ENSURE IDW-MMD Statistic $\widehat{\text{MMD}}^2_{\text{IDW}}$
 		\STATE Combine samples: $Z = X_{ref} \cup X_{test}$
 		\STATE Compute Kernel Matrix $K$ on $Z$
-		\STATE \textbf{1. Compute Optimal Weights (Variance Reduction)}
+		\STATE \textbf{1. Compute Inverse Density Weights}
 		\FOR{each sample $z_i \in Z$}
 		\STATE Calculate local density: $d_i = \sum_{j} K_{ij}$
-		\STATE Assign inverse-sqrt weight: $w_i \propto \frac{1}{\sqrt{d_i}}$
+		\STATE Assign inverse-sqrt weight: $w_i \propto \frac{1}{\sqrt{d_i} + \epsilon}$ \COMMENT{$\epsilon=0.5$ for stability}
 		\ENDFOR
 		\STATE Normalize weights: $\sum_{i \in X_{ref}} w_i = 1$, $\sum_{j \in X_{test}} w_j = 1$
 		\STATE \textbf{2. Compute Weighted Statistic}
-		\STATE $\widehat{\text{MMD}}^2_{ADW} = \sum_{i,j} w_i w_j k(x_i, x_j) + \sum_{p,q} w_p w_q k(y_p, y_q) - 2 \sum_{i,p} w_i w_p k(x_i, y_p)$
-		\RETURN $\widehat{\text{MMD}}^2_{ADW}$
+		\STATE $\widehat{\text{MMD}}^2_{\text{IDW}} = \sum_{i,j} w_i w_j k(x_i, x_j) + \sum_{p,q} w_p w_q k(y_p, y_q) - 2 \sum_{i,p} w_i w_p k(x_i, y_p)$
+		\RETURN $\widehat{\text{MMD}}^2_{\text{IDW}}$
 	\end{algorithmic}
 \end{algorithm}
 
 \subsubsection{Phân tích độ phức tạp tính toán}
 
-Độ phức tạp của ADW-MMD được phân tích như sau:
+Độ phức tạp của IDW-MMD được phân tích như sau:
 
 \begin{table}[H]
 	\centering
-	\caption{Độ phức tạp tính toán của ADW-MMD và các phương pháp liên quan}
+	\caption{Độ phức tạp tính toán của IDW-MMD và các phương pháp liên quan}
 	\label{tab:complexity}
 	\begin{tabular}{|l|c|c|l|}
 		\hline
@@ -83,24 +85,26 @@ Cách tiếp cận này ("Density-Weighted") giúp giảm phương sai bằng c�
 		Kernel Matrix           & $O(n^2)$             & $O(n^2)$        & $n$ = window size   \\
 		Density weights         & $O(n)$               & $O(n)$          & Sum over rows       \\
 		Weighted MMD            & $O(n^2)$             & $O(1)$          & Scalar output       \\
+		Asymptotic p-value      & $O(n^2)$             & $O(n^2)$        & Eigenvalue decomposition \\
 		\hline
-		\textbf{ADW-MMD tổng}   & $O(n^2)$             & $O(n^2)$        & Dominated by kernel \\
+		\textbf{IDW-MMD + Asymptotic} & $O(n^2)$        & $O(n^2)$        & Không cần permutation \\
 		\hline
 		ShapeDD gốc (2500 perm) & $O(n^2 \times 2500)$ & $O(n^2)$        & Permutation test    \\
-		ADW-MMD (50 perm)       & $O(n^2 \times 50)$   & $O(n^2)$        & Giảm 50×            \\
 		\hline
 	\end{tabular}
 \end{table}
 
-Với window size $n = 100$, ADW-MMD xử lý khoảng $\approx 50,000$ kernel evaluations mỗi step, so với $\approx 2,500,000$ của ShapeDD gốc. Về lý thuyết, việc giảm số lần permutation từ 2500 xuống 50 có thể mang lại tốc độ tăng đáng kể.
+\textbf{Cải tiến chính:} Thay vì sử dụng permutation test ($O(n^2 \times N_{perm})$), luận văn sử dụng \textit{phân phối tiệm cận} (asymptotic distribution) để tính p-value, chỉ cần $O(n^2)$. Điều này giúp giảm thời gian tính toán từ ~500ms xuống ~5ms mỗi window, tăng throughput xử lý đáng kể.
 
 
-\subsection{MMD-Agg: Tăng cường độ bền vững và tính thích nghi}
+\subsection{MMD-Agg: Tăng cường độ bền vững và tính thích nghi (Lý thuyết tham khảo)}
 \label{sec:mmdagg}
+
+\textbf{Ghi chú:} Phần này trình bày lý thuyết của MMD-Agg để tham khảo. Trong quá trình thực nghiệm, MMD-Agg được loại khỏi benchmark vì thời gian tính toán quá cao (~500ms/window) và không mang lại cải thiện đáng kể so với IDW-MMD với median heuristic trong bài toán concept drift detection.
 
 Một hạn chế cốt yếu của các phương pháp MMD truyền thống là sự phụ thuộc nhạy cảm vào việc lựa chọn tham số độ rộng hạt nhân (kernel bandwidth, $\sigma$). Trong thực tế, sự trôi dạt khái niệm có thể diễn ra ở nhiều quy mô khác nhau: sự thay đổi nhỏ cục bộ (yêu cầu $\sigma$ nhỏ) hoặc sự dịch chuyển phân phối toàn cục (yêu cầu $\sigma$ lớn). Việc cố định một giá trị $\sigma$ (thường dùng median heuristic) thường dẫn đến việc mất mát thông tin quan trọng, làm giảm độ mạnh (power) của kiểm định.
 
-Để khắc phục vấn đề này, luận văn tích hợp phương pháp \textbf{MMD-Agg} (MMD Aggregated) được đề xuất bởi Schrab et al.~\cite{schrab2023mmdagg}. Đây là một bước tiến quan trọng về mặt lý thuyết so với các phương pháp lựa chọn kernel heuristic.
+Để khắc phục vấn đề này, Schrab et al.~\cite{schrab2023mmdagg} đề xuất phương pháp \textbf{MMD-Agg} (MMD Aggregated). Đây là một bước tiến quan trọng về mặt lý thuyết so với các phương pháp lựa chọn kernel heuristic.
 
 \subsubsection{Cơ chế thích nghi đa hạt nhân (Adaptive Multi-Kernel Strategy)}
 Thay vì chọn một kernel đơn lẻ $k_{\sigma}$, MMD-Agg thực hiện kiểm định trên một tập hợp các kernel $\mathcal{K} = \{k_{\sigma_1}, k_{\sigma_2}, \dots, k_{\sigma_M}\}$ với các độ rộng băng thông trải dài trên nhiều quy mô khác nhau.
@@ -146,7 +150,7 @@ Nhờ tích hợp MMD-Agg, ShapeDD không còn phụ thuộc vào việc chọn 
 	\end{algorithmic}
 \end{algorithm}
 
-Sau khi tích hợp ADW-MMD và MMD-Agg, hệ thống có thể phát hiện drift với độ chính xác cao và chi phí tính toán thấp. Tuy nhiên, phát hiện drift chỉ là bước đầu tiên --- để chọn chiến lược thích ứng phù hợp, hệ thống cần biết \textit{loại drift} đã xảy ra. Phần tiếp theo trình bày phương pháp SE-CDT cho bài toán phân loại drift không giám sát.
+Sau khi tích hợp IDW-MMD với phân phối tiệm cận, hệ thống có thể phát hiện drift với độ chính xác cao và chi phí tính toán thấp. Tuy nhiên, phát hiện drift chỉ là bước đầu tiên --- để chọn chiến lược thích ứng phù hợp, hệ thống cần biết \textit{loại drift} đã xảy ra. Phần tiếp theo trình bày phương pháp SE-CDT cho bài toán phân loại drift không giám sát.
 
 \section{Phương pháp phân loại drift: SE-CDT}
 \label{sec:shaped-cdt}
@@ -219,8 +223,8 @@ Các ngưỡng trong Algorithm~\ref{alg:se-cdt} được xác định dựa trê
 \end{itemize}
 \textit{Ghi chú: Các ngưỡng này được tối ưu trên synthetic data và có thể cần điều chỉnh cho từng domain cụ thể.}
 
-\textbf{Lưu ý về biến thể ADW-MMD:}
-Luận văn cũng thử nghiệm sử dụng ADW-MMD thay cho standard MMD trong SE-CDT. Tuy nhiên, kết quả cho thấy ADW-MMD không phù hợp cho classification do cơ chế variance reduction loại bỏ những thay đổi nhỏ (coi là noise). ADW-MMD phù hợp hơn cho drift detection, nhưng standard MMD tốt hơn cho classification. Chi tiết thử nghiệm và so sánh định lượng được trình bày ở Chương~\ref{chap:experiments}.
+\textbf{Lưu ý về biến thể IDW-MMD:}
+Luận văn cũng thử nghiệm sử dụng IDW-MMD (trọng số nghịch mật độ) thay cho standard MMD trong SE-CDT. Tuy nhiên, kết quả cho thấy IDW-MMD không phù hợp cho classification do cơ chế giảm phương sai có xu hướng loại bỏ những thay đổi nhỏ (coi là noise). IDW-MMD phù hợp hơn cho drift \textit{detection} (nhị phân: có/không có drift), nhưng standard MMD tốt hơn cho \textit{classification} (phân loại loại drift). Chi tiết thử nghiệm và so sánh định lượng được trình bày ở Chương~\ref{chap:experiments}.
 
 Kết quả phân loại từ SE-CDT sẽ được sử dụng để kích hoạt chiến lược thích ứng phù hợp, được trình bày trong phần tiếp theo.
 
@@ -361,4 +365,4 @@ Trong môi trường phân tán, các sự cố là không thể tránh khỏi. 
 \end{itemize}
 
 \section{Kết luận chương}
-Chương này đã trình bày chi tiết mô hình đề xuất \textbf{ShapeDD-Stream}, bao gồm các cải tiến thuật toán (ADW-MMD, MMD-Agg), chiến lược thích ứng thông minh, và kiến trúc hệ thống dựa trên Kafka. Các cải tiến thuật toán được đánh giá thực nghiệm chi tiết trong Chương~\ref{chap:experiments}, trong khi kiến trúc Kafka được trình bày như một thiết kế đề xuất cho triển khai production trong tương lai.
+Chương này đã trình bày chi tiết mô hình đề xuất \textbf{ShapeDD-Stream}, bao gồm cải tiến thuật toán (IDW-MMD với phân phối tiệm cận), chiến lược thích ứng thông minh, và kiến trúc hệ thống dựa trên Kafka. Cải tiến thuật toán được đánh giá thực nghiệm chi tiết trong Chương~\ref{chap:experiments}, trong khi kiến trúc Kafka được trình bày như một thiết kế đề xuất cho triển khai production trong tương lai.

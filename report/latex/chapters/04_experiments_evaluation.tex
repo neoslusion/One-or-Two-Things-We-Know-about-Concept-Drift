@@ -6,7 +6,7 @@
 \subsection{Mục tiêu}
 Chương này trình bày các kết quả thực nghiệm nhằm kiểm chứng hiệu quả của hệ thống đề xuất. Quá trình đánh giá được chia thành hai giai đoạn chính:
 \begin{enumerate}
-	\item \textbf{Đánh giá khả năng phát hiện Drift (Detection Benchmark):} So sánh hiệu suất của ShapeDD và các biến thể cải tiến (ADW-MMD, MMD-Agg) với các phương pháp phổ biến (Baseline) trên các tập dữ liệu đa dạng.
+	\item \textbf{Đánh giá khả năng phát hiện Drift (Detection Benchmark):} So sánh hiệu suất của ShapeDD và biến thể cải tiến (IDW-MMD với asymptotic p-value) với các phương pháp phổ biến (Baseline) trên các tập dữ liệu đa dạng.
 	\item \textbf{Đánh giá khả năng thích ứng (Adaptation Evaluation):} Kiểm chứng hiệu quả của chiến lược cập nhật mô hình tự động thông qua chỉ số độ chính xác tích lũy (Prequential Accuracy).
 \end{enumerate}
 
@@ -26,7 +26,7 @@ Hệ thống streaming được giả lập sử dụng Apache Kafka\footnote{Tr
 Hệ thống được đánh giá trên bộ 10 tập dữ liệu tổng hợp (synthetic datasets), được thiết kế để kiểm tra các khía cạnh cụ thể của thuật toán phát hiện. Các tập dữ liệu được phân loại dựa trên bản chất của sự thay đổi phân phối:
 
 \subsection{Nhóm 1: Sudden Drift (Thay đổi P(X) đột ngột)}
-Đây là trọng tâm chính của ShapeDD và ADW-MMD. Các dataset này chứa sự thay đổi đột ngột trong phân phối đầu vào $P(X)$ (Covariate Shift), nơi các phương pháp unsupervised cần phải phát hiện chính xác.
+Đây là trọng tâm chính của ShapeDD và IDW-MMD. Các dataset này chứa sự thay đổi đột ngột trong phân phối đầu vào $P(X)$ (Covariate Shift), nơi các phương pháp unsupervised cần phải phát hiện chính xác.
 
 \begin{itemize}
 	\item \textbf{Gaussian Shift (Moderate):} Dữ liệu phân phối chuẩn đa chiều ($d=10$) với sự dịch chuyển trung bình (mean shift) đột ngột ($\delta=1.5$). Đây là trường hợp lý tưởng để kiểm tra độ nhạy của kernel RBF.
@@ -64,8 +64,8 @@ Bảng~\ref{tab:comprehensive_performance} tóm tắt hiệu suất trung bình.
 
 \textbf{Phân tích kết quả:}
 \begin{itemize}
-	\item \textbf{MMD\_ADW dẫn đầu về F1 ($0.576 \pm 0.442$):} Phương pháp sử dụng trọng số mật độ thích ứng (Adaptive Density-Weighted MMD) đạt kết quả tốt nhất, cân bằng tốt giữa Precision (0.627) và Recall (0.578).
-	\item \textbf{ShapeDD\_ADW\_MMD xếp hạng 2 (F1 = $0.562 \pm 0.436$):} Biến thể kết hợp ADW-MMD với đặc trưng hình dạng (shape feature) duy trì hiệu suất cao và có độ trễ phát hiện thấp (Mean Time To Detection = 20 mẫu), cải thiện đáng kể so với ShapeDD gốc (MTTD = 31 mẫu).
+	\item \textbf{MMD\_IDW dẫn đầu về F1 ($0.576 \pm 0.442$):} Phương pháp sử dụng trọng số nghịch mật độ (Inverse Density-Weighted MMD) đạt kết quả tốt nhất, cân bằng tốt giữa Precision (0.627) và Recall (0.578).
+	\item \textbf{ShapeDD\_WMMD\_PROPER xếp hạng 2 (F1 = $0.562 \pm 0.436$):} Biến thể kết hợp IDW-MMD với đặc trưng hình dạng (shape feature) và asymptotic p-value duy trì hiệu suất cao và có độ trễ phát hiện thấp (Mean Time To Detection = 20 mẫu), cải thiện đáng kể so với ShapeDD gốc (MTTD = 31 mẫu).
 	\item \textbf{Sự đánh đổi của KS-Test (F1 = $0.299$):} Phương pháp Kolmogorov-Smirnov đạt Recall cao nhất (0.775) nhưng lại có Precision thấp nhất (0.197) với số lượng báo động giả kỷ lục (9,397 False Positives tích lũy qua 30 lần chạy). Điều này cho thấy KS quá nhạy cảm với nhiễu, không phù hợp cho các hệ thống giám sát tự động yêu cầu độ tin cậy cao.
 \end{itemize}
 
@@ -101,19 +101,19 @@ Hiệu suất của các phương pháp thay đổi tùy thuộc vào đặc tí
 \textbf{Phân tích sâu:}
 \begin{enumerate}
 	\item \textbf{Hiệu quả vượt trội trên Drift mạnh (Severe/Sudden):}
-	      Trên các dataset như \textit{gaussian_shift}, \textit{stagger}, và \textit{gen_random_severe}, các phương pháp đề xuất (ADW-MMD, ShapeDD\_MMDAgg) đạt F1 gần như tuyệt đối ($>0.99$).
+	      Trên các dataset như \textit{gaussian\_shift}, \textit{stagger}, và \textit{gen\_random\_severe}, phương pháp đề xuất (IDW-MMD, ShapeDD\_WMMD\_PROPER) đạt F1 gần như tuyệt đối ($>0.99$).
 	      Hình~\ref{fig:sudden_drift_vis} minh họa rõ nét cơ chế của ShapeDD: khi drift xảy ra đột ngột, tín hiệu MMD tăng dần và đạt đỉnh đúng tại thời điểm drift, tạo thành hình tam giác. Điều này xác nhận lý thuyết đã trình bày trong Chương 2.
 
-	\item \textbf{Thách thức với Drift nhẹ (Mild Drift) và Cơ chế ADW-MMD:}
-	      Trên tập \textit{gen_random_mild}, hiệu suất của MMD\_ADW giảm mạnh (F1 = 0.126) so với MMD truyền thống (F1 = 0.581).
-	      \textit{Lý giải lý thuyết:} ADW-MMD sử dụng trọng số nghịch biến với mật độ $w_{ij} \propto 1/\sqrt{d_i}$ (xem Algorithim 3.1). Trong trường hợp drift nhẹ, sự thay đổi thường diễn ra tinh vi ngay trong vùng dữ liệu dày đặc. Cơ chế "giảm phương sai" vô tình đã gán trọng số quá thấp cho các điểm này, làm lu mờ tín hiệu drift (over-smoothing), dẫn đến tỷ lệ False Negative cao.
+	\item \textbf{Thách thức với Drift nhẹ (Mild Drift) và Cơ chế IDW-MMD:}
+	      Trên tập \textit{gen\_random\_mild}, hiệu suất của MMD\_IDW giảm mạnh (F1 = 0.126) so với MMD truyền thống (F1 = 0.581).
+	      \textit{Lý giải lý thuyết:} IDW-MMD sử dụng trọng số nghịch biến với mật độ $w_{i} \propto 1/\sqrt{d_i}$ (xem Algorithm~\ref{alg:adw_mmd}). Trong trường hợp drift nhẹ, sự thay đổi thường diễn ra tinh vi ngay trong vùng dữ liệu dày đặc. Cơ chế ``giảm phương sai'' vô tình đã gán trọng số quá thấp cho các điểm này, làm lu mờ tín hiệu drift (over-smoothing), dẫn đến tỷ lệ False Negative cao.
 
 	\item \textbf{Hạn chế trên Gradual Drift:}
 	      Tất cả các phương pháp window-based đều gặp khó khăn với drift dần dần (Hình~\ref{fig:gradual_drift_vis}). Do sự thay đổi diễn ra chậm hơn kích thước cửa sổ, phân phối trong cửa sổ tham chiếu và hiện tại luôn giao thoa lớn, không tạo ra sự khác biệt thống kê đủ mạnh (đỉnh tín hiệu bị tù).
 
-	\item \textbf{Blip Drift và Sức mạnh của MMD-Agg:}
-	      Trên tập \textit{rbfblips}, MMD-Agg đạt điểm tuyệt đối (F1 = 1.000).
-	      \textit{Lý giải:} Các blip là những thay đổi ngắn hạn, cục bộ. MMD đơn lẻ với bandwidth cố định ($\sigma_{median}$) thường quá lớn để bắt được các thay đổi này. Ngược lại, MMD-Agg quét qua tập hợp đa hạt nhân $\mathcal{K} = \{k_{\sigma_1}, \dots, k_{\sigma_M}\}$ (Algorithm 3.2), tự động chọn ra kernel có $\sigma$ nhỏ phù hợp để "bắt" dính các dị biệt cục bộ này.
+	\item \textbf{Blip Drift:}
+	      Trên tập \textit{rbfblips}, các phương pháp sử dụng adaptive bandwidth (như MMD-Agg) về lý thuyết có thể phát hiện tốt các blip. Tuy nhiên, trong thực nghiệm, MMD-Agg đã bị loại khỏi benchmark do thời gian tính toán quá cao (~500ms/window). Phương pháp IDW-MMD với median heuristic vẫn có khả năng phát hiện các blip mạnh.
+	      \textit{Lý giải:} Các blip là những thay đổi ngắn hạn, cục bộ. Việc sử dụng trọng số nghịch mật độ giúp tăng độ nhạy với các thay đổi ở vùng biên phân phối.
 
 	\item \textbf{Phân tích Báo động giả (False Positives):}
 	      Hình~\ref{fig:stationary_fp} so sánh số lượng báo động giả trên tập dữ liệu tĩnh (\textit{stagger_none}). KS-Test tạo ra lượng báo động sai lớn nhất, khẳng định tính nhạy cảm quá mức với nhiễu ngẫu nhiên. Ngược lại, ShapeDD\_ADW\_MMD và D3 duy trì được độ ổn định (0 False Positives), nhờ vào cơ chế kiểm định chặt chẽ hơn (trọng số tối ưu và mô hình phân loại tương ứng).
@@ -141,8 +141,8 @@ Yếu tố then chốt cho các hệ thống real-time là tốc độ xử lý.
 
 \textbf{Các kết quả đáng chú ý:}
 \begin{itemize}
-	\item \textbf{Tăng tốc gấp hơn 7 lần:} ShapeDD\_ADW\_MMD đạt thông lượng $\sim 50,300$ mẫu/giây, nhanh gấp 7.2 lần so với ShapeDD gốc ($\sim 7,000$ mẫu/giây).
-	\item \textbf{Cơ sở:} Sự cải thiện này đến từ việc loại bỏ quy trình kiểm định hoán vị (Permutation Test) tốn kém ($O(N \cdot n^2)$) và thay thế bằng việc so sánh thống kê ADW-MMD với ngưỡng cố định hoặc bootstrap rút gọn, nhờ vào tính ổn định của bộ ước lượng giảm phương sai.
+	\item \textbf{Tăng tốc gấp hơn 7 lần:} ShapeDD\_WMMD\_PROPER đạt thông lượng $\sim 50,300$ mẫu/giây, nhanh gấp 7.2 lần so với ShapeDD gốc ($\sim 7,000$ mẫu/giây).
+	\item \textbf{Cơ sở:} Sự cải thiện này đến từ việc loại bỏ quy trình kiểm định hoán vị (Permutation Test) tốn kém ($O(N_{perm} \cdot n^2)$) và thay thế bằng \textbf{phân phối tiệm cận (asymptotic distribution)} để tính p-value, chỉ cần $O(n^2)$.
 	\item \textbf{Khả năng triển khai:} Với thông lượng này, hệ thống có khả năng xử lý các luồng dữ liệu tốc độ cao (như log máy chủ, transaction ngân hàng) trong thời gian thực trên phần cứng thông thường.
 \end{itemize}
 
@@ -173,8 +173,8 @@ Phần này đánh giá hiệu quả của phương pháp SE-CDT được đề 
 
 \textbf{Kết quả tổng hợp và Thảo luận:}
 \begin{itemize}
-	\item \textbf{Hiệu ứng làm sắc nét của ADW-MMD:} Kết quả cho thấy tỷ lệ phân loại Gradual Drift chỉ đạt 46.2\%. Nguyên nhân chính là do cơ chế trọng số mật độ của ADW-MMD hoạt động "quá hiệu quả", phát hiện sự thay đổi nhỏ nhất ngay khi nó xuất hiện, biến "mound" rộng của Gradual thành peak sắc nét giống Sudden.
-	\item \textbf{Phân biệt Incremental và Gradual:} Mặc dù độ chính xác Subcategory của Incremental thấp (8.5\%), nhưng độ chính xác Category (nhận diện là PCD) đạt tới 80.0\%. Hệ thống thường nhầm Incremental thành Gradual do nhiễu trong tín hiệu ADW tạo ra các "pseudo-peaks" (đỉnh giả) có độ rộng lớn.
+	\item \textbf{Hiệu ứng làm sắc nét của IDW-MMD:} Kết quả cho thấy tỷ lệ phân loại Gradual Drift chỉ đạt 46.2\%. Nguyên nhân chính là do cơ chế trọng số nghịch mật độ của IDW-MMD hoạt động ``quá hiệu quả'', phát hiện sự thay đổi nhỏ nhất ngay khi nó xuất hiện, biến ``mound'' rộng của Gradual thành peak sắc nét giống Sudden.
+	\item \textbf{Phân biệt Incremental và Gradual:} Mặc dù độ chính xác Subcategory của Incremental thấp (8.5\%), nhưng độ chính xác Category (nhận diện là PCD) đạt tới 80.0\%. Hệ thống thường nhầm Incremental thành Gradual do nhiễu trong tín hiệu IDW tạo ra các ``pseudo-peaks'' (đỉnh giả) có độ rộng lớn.
 	\item \textbf{Hạn chế với Recurrent:} Hệ thống hiện tại xử lý Recurrent drift như chuỗi các sự kiện Sudden riêng lẻ, dẫn đến việc phân loại sai thành Sudden (TCD). Điều này gợi ý cần có cơ chế "nhớ" trạng thái dài hạn hơn để nhận diện tính chu kỳ.
 \end{itemize}
 
@@ -252,29 +252,29 @@ Bảng~\ref{tab:cdt-aggregate} tổng hợp kết quả benchmark (5 loại drif
 	\end{flushleft}
 \end{table}
 
-\subsection{Thử nghiệm biến thể ADW-MMD}
+\subsection{Thử nghiệm biến thể IDW-MMD cho phân loại}
 
-Trong quá trình nghiên cứu, luận văn cũng thử nghiệm biến thể sử dụng \textbf{Adaptive Density-Weighted MMD (ADW-MMD)} thay cho standard MMD trong SE-CDT. Mục đích ban đầu là tận dụng các ưu điểm của ADW-MMD về tốc độ và độ chính xác phát hiện để cải thiện khả năng phân loại.
+Trong quá trình nghiên cứu, luận văn cũng thử nghiệm biến thể sử dụng \textbf{Inverse Density-Weighted MMD (IDW-MMD)} thay cho standard MMD trong SE-CDT. Mục đích ban đầu là tận dụng các ưu điểm của IDW-MMD về tốc độ và độ chính xác phát hiện để cải thiện khả năng phân loại.
 
 \textbf{Kết quả thử nghiệm:}
 \begin{itemize}
-	\item \textbf{ADW-MMD CAT Accuracy:} 20.0\% (so với 78.0\% của standard MMD)
-	\item \textbf{ADW-MMD SUB Accuracy:} 6.7\% (so với 44.2\% của standard MMD)
+	\item \textbf{IDW-MMD CAT Accuracy:} 20.0\% (so với 78.0\% của standard MMD)
+	\item \textbf{IDW-MMD SUB Accuracy:} 6.7\% (so với 44.2\% của standard MMD)
 	\item \textbf{MDR = 1.0:} Bỏ lỡ tất cả các điểm drift trên dataset PCD (Gradual, Incremental)
 \end{itemize}
 
 \textbf{Phân tích nguyên nhân:}
-ADW-MMD sử dụng cơ chế \textit{variance reduction weighting} ($w_{ij} \propto 1/\sqrt{d_i}$), gán trọng số thấp cho các điểm trong vùng mật độ cao. Điều này có hai hệ quả:
+IDW-MMD sử dụng cơ chế \textit{trọng số nghịch mật độ} ($w_{i} \propto 1/\sqrt{d_i}$), gán trọng số thấp cho các điểm trong vùng mật độ cao. Điều này có hai hệ quả:
 \begin{enumerate}
-	\item \textbf{Hiệu quả cho TCD (Sudden, Blip):} Các thay đổi đột ngột tạo ra sự khác biệt rõ ràng giữa reference và test windows, ADW-MMD phát hiện tốt.
-	\item \textbf{Không hiệu quả cho PCD (Gradual, Incremental):} Các thay đổi diễn ra từ từ, từng bước nhỏ. ADW-MMD coi những thay đổi nhỏ này là ``noise'' và loại bỏ, dẫn đến signal = 0.
+	\item \textbf{Hiệu quả cho TCD (Sudden, Blip):} Các thay đổi đột ngột tạo ra sự khác biệt rõ ràng giữa reference và test windows, IDW-MMD phát hiện tốt.
+	\item \textbf{Không hiệu quả cho PCD (Gradual, Incremental):} Các thay đổi diễn ra từ từ, từng bước nhỏ. IDW-MMD coi những thay đổi nhỏ này là ``noise'' và loại bỏ, dẫn đến signal = 0.
 \end{enumerate}
 
 \textbf{Kết luận từ thử nghiệm:}
 \begin{itemize}
-	\item \textbf{ADW-MMD tốt cho detection} (phát hiện có/không có drift) với F1 = 0.562 (benchmark Chương 4.3)
+	\item \textbf{IDW-MMD tốt cho detection} (phát hiện có/không có drift) với F1 = 0.562 (benchmark Chương 4.3)
 	\item \textbf{Standard MMD phù hợp hơn cho classification} vì giữ lại tất cả sự khác biệt, bao gồm cả những thay đổi nhỏ từ PCD
-	\item Đây là sự đánh đổi cơ bản: giảm phương sai (variance reduction) hỗ trợ phát hiện nhưng ảnh hưởng đến phân loại
+	\item Đây là sự đánh đổi cơ bản: giảm phương sai (inverse density weighting) hỗ trợ phát hiện nhưng ảnh hưởng đến phân loại
 \end{itemize}
 
 \subsection{Phân tích kết quả cuối cùng}
@@ -291,7 +291,7 @@ ADW-MMD sử dụng cơ chế \textit{variance reduction weighting} ($w_{ij} \pr
 	\item \textbf{SE-CDT đạt độ chính xác nhóm (CAT) cao nhất (78.0\%)} mà không cần labels.
 	\item \textbf{CDT\_MSW nhạy hơn về phát hiện drift} (MDR = 0.267 vs 0.678) do có sự hỗ trợ của nhãn mô hình.
 	\item \textbf{Đánh đổi (Trade-off):} SE-CDT ưu thế về phân loại, CDT\_MSW ưu thế về phát hiện.
-	\item \textbf{ADW-MMD phù hợp cho phát hiện (detection), không phù hợp cho phân loại (classification).}
+	\item \textbf{IDW-MMD phù hợp cho phát hiện (detection), không phù hợp cho phân loại (classification).}
 \end{itemize}
 \subsection{So sánh công bằng: Supervised CDT\_MSW vs Unsupervised SE-CDT}
 \label{sec:supervised-comparison}
@@ -340,7 +340,7 @@ Trong quá trình triển khai thực tế trên hệ thống Kafka streaming, l
 \textbf{Lý giải lựa chọn ngưỡng 0.15:}
 \begin{enumerate}
 	\item \textbf{Cân bằng sensitivity và specificity:} Ngưỡng 0.15 đủ thấp để bắt được các tín hiệu drift vừa phải (moderate drift) nhưng đủ cao để lọc bỏ nhiễu ngẫu nhiên.
-	\item \textbf{Tương thích với ADW-MMD signal:} Cơ chế trọng số nghịch mật độ của ADW-MMD tạo ra tín hiệu có biên độ nhỏ hơn standard MMD. Ngưỡng 0.15 phù hợp với phân phối thực tế của ADW-MMD output.
+	\item \textbf{Tương thích với IDW-MMD signal:} Cơ chế trọng số nghịch mật độ của IDW-MMD tạo ra tín hiệu có biên độ nhỏ hơn standard MMD. Ngưỡng 0.15 phù hợp với phân phối thực tế của IDW-MMD output.
 	\item \textbf{Validation qua prequential evaluation:} Kết quả thực nghiệm (Bảng~\ref{tab:prequential-results}) cho thấy ngưỡng này cho phép hệ thống cải thiện độ chính xác đáng kể so với baseline không thích ứng.
 \end{enumerate}
 
@@ -416,10 +416,10 @@ Hình~\ref{fig:prequential_sudden} minh họa quá trình suy giảm và phục 
 Tổng hợp lại các các kết quả thực nghiệm:
 
 \begin{enumerate}
-	\item \textbf{Về chất lượng phát hiện:} \textbf{MMD\_ADW} và \textbf{ShapeDD\_ADW\_MMD} là những phương pháp hiệu quả nhất tổng thể, đặc biệt xuất sắc với các drift mạnh và đột ngột. Tuy nhiên, cần lưu ý sự đánh đổi độ nhạy đối với các drift quá nhẹ (mild drift).
-	\item \textbf{Về hiệu năng hệ thống:} Cải tiến ADW-MMD mang lại lợi ích to lớn về mặt tính toán, tăng thông lượng xử lý lên \textbf{hơn 7 lần}, biến ShapeDD từ một thuật toán nghiên cứu thành một giải pháp khả thi cho môi trường sản xuất (production-ready).
+	\item \textbf{Về chất lượng phát hiện:} \textbf{MMD\_IDW} và \textbf{ShapeDD\_WMMD\_PROPER} là những phương pháp hiệu quả nhất tổng thể, đặc biệt xuất sắc với các drift mạnh và đột ngột. Tuy nhiên, cần lưu ý sự đánh đổi độ nhạy đối với các drift quá nhẹ (mild drift).
+	\item \textbf{Về hiệu năng hệ thống:} Cải tiến IDW-MMD với phân phối tiệm cận mang lại lợi ích to lớn về mặt tính toán, tăng thông lượng xử lý lên \textbf{hơn 7 lần}, biến ShapeDD từ một thuật toán nghiên cứu thành một giải pháp khả thi cho môi trường sản xuất (production-ready).
 	\item \textbf{Về khả năng thích ứng:} Chiến lược thích ứng theo loại drift (Type-Specific Adaptation) với SE-CDT threshold = 0.15 cải thiện Prequential Accuracy trung bình \textbf{+3.0\%}, đặc biệt hiệu quả với Sudden Drift (\textbf{+5.2\%}).
-	\item \textbf{Về tính toàn vẹn:} D3 tuy nhanh nhưng hạn chế với Virtual Drift, trong khi KS tuy nhạy nhưng quá ồn (nhiều False Positive). ShapeDD\_ADW\_MMD cung cấp sự cân bằng tốt nhất: nhanh, chính xác và ít báo động giả.
+	\item \textbf{Về tính toàn vẹn:} D3 tuy nhanh nhưng hạn chế với Virtual Drift, trong khi KS tuy nhạy nhưng quá ồn (nhiều False Positive). ShapeDD\_WMMD\_PROPER cung cấp sự cân bằng tốt nhất: nhanh, chính xác và ít báo động giả.
 \end{enumerate}
 
-Kết quả này khẳng định hướng tiếp cận sử dụng MMD có trọng số tối ưu kết hợp với phân tích hình dạng là một hướng đi đúng đắn để giải quyết bài toán Concept Drift trong dữ liệu lớn.
+Kết quả này khẳng định hướng tiếp cận sử dụng MMD có trọng số nghịch mật độ (inverse density weighting) kết hợp với phân tích hình dạng và asymptotic p-value là một hướng đi đúng đắn để giải quyết bài toán Concept Drift trong dữ liệu lớn.
