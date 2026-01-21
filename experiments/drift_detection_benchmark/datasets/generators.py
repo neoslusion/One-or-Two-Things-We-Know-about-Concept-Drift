@@ -15,13 +15,17 @@ from river.datasets import synth
 # Import gen_random from backup module
 import sys
 import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../backup')))
+
+sys.path.insert(
+    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../backup"))
+)
 from gen_data import gen_random
 
 
 # ============================================================================
 # SUDDEN DRIFT DATASET GENERATORS
 # ============================================================================
+
 
 def generate_standard_sea_stream(total_size, n_drift_events, seed=42):
     """
@@ -53,9 +57,13 @@ def generate_standard_sea_stream(total_size, n_drift_events, seed=42):
     return X, y, drift_positions
 
 
-def generate_enhanced_sea_stream(total_size, n_drift_events, seed=42,
-                                  scale_factors=(1.8, 1.5, 2.0),
-                                  shift_amounts=(5.0, 4.0, 8.0)):
+def generate_enhanced_sea_stream(
+    total_size,
+    n_drift_events,
+    seed=42,
+    scale_factors=(1.8, 1.5, 2.0),
+    shift_amounts=(5.0, 4.0, 8.0),
+):
     """Enhanced SEA with multiple drifts and transformations."""
     np.random.seed(seed)
 
@@ -78,8 +86,10 @@ def generate_enhanced_sea_stream(total_size, n_drift_events, seed=42,
 
             # Apply transformations to alternate segments
             if seg_idx % 2 == 1:
-                x_vals = [x_vals[j] * scale_factors[j] + shift_amounts[j]
-                         for j in range(len(x_vals))]
+                x_vals = [
+                    x_vals[j] * scale_factors[j] + shift_amounts[j]
+                    for j in range(len(x_vals))
+                ]
 
             X_list.append(x_vals)
             y_list.append(y)
@@ -125,27 +135,28 @@ def generate_stagger_stream(total_size, n_drift_events, seed=42):
 
     return X, y, drift_positions
 
+
 def generate_gaussian_shift_stream(
     total_size: int,
     n_drift_events: int,
     seed: int = 42,
     n_features: int = 10,
     shift_magnitude: float = 2.0,
-    noise_percentage: float = 0.05
+    noise_percentage: float = 0.05,
 ):
     """
     Gaussian data with ABRUPT mean shift at drift points.
-    
+
     This creates clean, controllable P(X) drift:
     - Segment 0: X ~ N(0, I)
     - Segment 1: X ~ N(μ, I) where μ = [shift, shift, ..., 0, 0, ...]
     - Segment 2: X ~ N(0, I)  (back to original)
     - Segment 3: X ~ N(μ, I)  (shifted again)
     - ... (alternating pattern)
-    
+
     The shift affects the first half of features, creating clear P(X) change
     while maintaining some stable features for reference.
-    
+
     Parameters
 
     total_size : int
@@ -164,7 +175,7 @@ def generate_gaussian_shift_stream(
         - 3.0 = strong drift (easy to detect)
     noise_percentage : float, default=0.05
         Probability of flipping labels (label noise).
-    
+
     Returns
 
     X : np.ndarray of shape (total_size, n_features)
@@ -173,7 +184,7 @@ def generate_gaussian_shift_stream(
         Binary labels.
     drift_positions : list of int
         Indices where drifts occur.
-    
+
     Example
 
     >>> X, y, drifts = generate_gaussian_shift_stream(10000, 3, shift_magnitude=2.0)
@@ -183,50 +194,51 @@ def generate_gaussian_shift_stream(
     >>> print(f"Segment 1 mean: {X[2500:5000, :5].mean(axis=0)}")  # ≈ [2, 2, 2, 2, 2]
     """
     np.random.seed(seed)
-    
+
     # Calculate segment boundaries
     segment_size = total_size // (n_drift_events + 1)
     drift_positions = [(i + 1) * segment_size for i in range(n_drift_events)]
     segments = [0] + drift_positions + [total_size]
-    
+
     X_list, y_list = [], []
-    
+
     # Number of features to shift (first half)
     n_shift_features = n_features // 2
-    
+
     for seg_idx in range(len(segments) - 1):
         size = segments[seg_idx + 1] - segments[seg_idx]
-        
+
         # Generate base Gaussian data: X ~ N(0, I)
         X_seg = np.random.randn(size, n_features)
-        
+
         # Apply shift to first half of features at ODD segments
         # This creates alternating pattern: no shift → shift → no shift → shift
         if seg_idx % 2 == 1:
             X_seg[:, :n_shift_features] += shift_magnitude
-        
+
         # Generate labels using a hyperplane decision boundary
         # Different weights for each segment (P(Y|X) also changes)
         rng_weights = np.random.RandomState(seed + seg_idx * 1000)
         weights = rng_weights.randn(n_features)
         weights = weights / np.linalg.norm(weights)  # Normalize
-        
+
         # Decision boundary: w^T x >= 0
         scores = X_seg @ weights
         y_seg = (scores >= 0).astype(int)
-        
+
         # Add label noise
         if noise_percentage > 0:
             noise_mask = np.random.random(size) < noise_percentage
             y_seg[noise_mask] = 1 - y_seg[noise_mask]
-        
+
         X_list.append(X_seg)
         y_list.append(y_seg)
-    
+
     X = np.vstack(X_list)
     y = np.hstack(y_list)
-    
+
     return X, y, drift_positions
+
 
 def generate_hyperplane_stream(
     total_size: int,
@@ -234,21 +246,21 @@ def generate_hyperplane_stream(
     seed: int = 42,
     n_features: int = 10,
     noise_percentage: float = 0.05,
-    mag_change: float = 0.001
+    mag_change: float = 0.001,
 ):
     """
     Generate Rotating Hyperplane stream (STANDARD LITERATURE BENCHMARK).
-    
+
     This is the standard benchmark used in D3, DAWIDD, MMD, and other
     unsupervised drift detection papers. The hyperplane continuously
     rotates, creating gradual/incremental drift that changes P(X).
-    
+
     References:
         - Hulten et al. (2001) "Mining time-changing data streams"
         - MOA framework standard configuration
         - Gözüaçık et al. (2019) D3 paper
         - Hinder et al. (2020) DAWIDD paper
-    
+
     Parameters
     ----------
     total_size : int
@@ -264,7 +276,7 @@ def generate_hyperplane_stream(
     mag_change : float, default=0.001
         Magnitude of rotation per sample (MOA standard: 0.001).
         Higher = faster drift. Range: 0.0001 (slow) to 0.01 (fast).
-    
+
     Returns
     -------
     X : np.ndarray of shape (total_size, n_features)
@@ -275,31 +287,33 @@ def generate_hyperplane_stream(
         Evenly spaced drift markers for evaluation.
     """
     X_list, y_list = [], []
-    
+
     # Standard rotating hyperplane configuration (matches MOA/literature)
     stream = synth.Hyperplane(
         seed=seed,
         n_features=n_features,
         n_drift_features=n_features // 2,  # Half features drift (standard)
-        mag_change=mag_change,              # Continuous rotation!
-        sigma=0.1,                          # Direction change probability
-        noise_percentage=noise_percentage
+        mag_change=mag_change,  # Continuous rotation!
+        sigma=0.1,  # Direction change probability
+        noise_percentage=noise_percentage,
     )
-    
+
     # Generate continuous stream
     for x, y in stream.take(total_size):
         X_list.append(list(x.values()))
         y_list.append(y)
-    
+
     # Drift positions are evenly spaced (for evaluation purposes)
     # In rotating hyperplane, drift is continuous, but we mark evaluation points
     segment_size = total_size // (n_drift_events + 1)
     drift_positions = [(i + 1) * segment_size for i in range(n_drift_events)]
-    
+
     return np.array(X_list), np.array(y_list), drift_positions
 
-def generate_genrandom_stream(total_size, n_drift_events, seed=42,
-                               dims=5, intens=0.125, dist="unif", alt=False):
+
+def generate_genrandom_stream(
+    total_size, n_drift_events, seed=42, dims=5, intens=0.125, dist="unif", alt=False
+):
     """Custom synthetic data using gen_random with multiple drifts."""
     np.random.seed(seed)
 
@@ -309,7 +323,7 @@ def generate_genrandom_stream(total_size, n_drift_events, seed=42,
         intens=intens,
         dist=dist,
         alt=alt,
-        length=total_size
+        length=total_size,
     )
 
     # Find actual drift positions
@@ -327,7 +341,10 @@ def generate_genrandom_stream(total_size, n_drift_events, seed=42,
 # GRADUAL DRIFT DATASET GENERATORS
 # ============================================================================
 
-def generate_sea_gradual_stream(total_size, n_drift_events, seed=42, transition_width=1000):
+
+def generate_sea_gradual_stream(
+    total_size, n_drift_events, seed=42, transition_width=1000
+):
     """
     SEA benchmark with GRADUAL drifts (smooth transitions between variants).
 
@@ -402,7 +419,9 @@ def generate_sea_gradual_stream(total_size, n_drift_events, seed=42, transition_
     return X, y, drift_positions
 
 
-def generate_hyperplane_gradual_stream(total_size, n_drift_events, seed=42, n_features=10):
+def generate_hyperplane_gradual_stream(
+    total_size, n_drift_events, seed=42, n_features=10
+):
     """
     Rotating Hyperplane with CONTINUOUS gradual drift.
 
@@ -419,9 +438,9 @@ def generate_hyperplane_gradual_stream(total_size, n_drift_events, seed=42, n_fe
         seed=seed,
         n_features=n_features,
         n_drift_features=5,  # More features drifting for observable change
-        mag_change=0.0001,   # VERY small = gradual
-        sigma=0.1,           # Small noise
-        noise_percentage=0.05
+        mag_change=0.0001,  # VERY small = gradual
+        sigma=0.1,  # Small noise
+        noise_percentage=0.05,
     )
 
     # Generate full stream (drift happens continuously)
@@ -439,7 +458,9 @@ def generate_hyperplane_gradual_stream(total_size, n_drift_events, seed=42, n_fe
     return X, y, drift_positions
 
 
-def generate_agrawal_gradual_stream(total_size, n_drift_events, seed=42, transition_width=1000):
+def generate_agrawal_gradual_stream(
+    total_size, n_drift_events, seed=42, transition_width=1000
+):
     """
     Agrawal generator with GRADUAL transitions between classification functions.
 
@@ -460,14 +481,20 @@ def generate_agrawal_gradual_stream(total_size, n_drift_events, seed=42, transit
 
         if seg_idx == 0:
             # First segment - no transition
-            stream = synth.Agrawal(seed=seed + seg_idx * 100, classification_function=old_func)
+            stream = synth.Agrawal(
+                seed=seed + seg_idx * 100, classification_function=old_func
+            )
             for i, (x, y) in enumerate(stream.take(segment_size)):
                 X_list.append(list(x.values()))
                 y_list.append(y)
         else:
             # Gradual transition segment
-            stream_old = synth.Agrawal(seed=seed + seg_idx * 100, classification_function=old_func)
-            stream_new = synth.Agrawal(seed=seed + (seg_idx + 1) * 100, classification_function=new_func)
+            stream_old = synth.Agrawal(
+                seed=seed + seg_idx * 100, classification_function=old_func
+            )
+            stream_new = synth.Agrawal(
+                seed=seed + (seg_idx + 1) * 100, classification_function=new_func
+            )
 
             samples_old = list(stream_old.take(segment_size))
             samples_new = list(stream_new.take(segment_size))
@@ -501,7 +528,9 @@ def generate_agrawal_gradual_stream(total_size, n_drift_events, seed=42, transit
     return X, y, drift_positions
 
 
-def generate_circles_gradual_stream(total_size, n_drift_events, seed=42, transition_width=500):
+def generate_circles_gradual_stream(
+    total_size, n_drift_events, seed=42, transition_width=500
+):
     """
     Circles dataset with GRADUAL drifts (circles move/resize smoothly).
 
@@ -548,7 +577,7 @@ def generate_circles_gradual_stream(total_size, n_drift_events, seed=42, transit
                 r = (1 - alpha) * old_circle[2] + alpha * new_circle[2]
 
             # Classification: inside circle = class 1, outside = class 0
-            distance = np.sqrt((x - cx)**2 + (y - cy)**2)
+            distance = np.sqrt((x - cx) ** 2 + (y - cy) ** 2)
             label = 1 if distance <= r else 0
 
             X_list.append([x, y])
@@ -564,7 +593,10 @@ def generate_circles_gradual_stream(total_size, n_drift_events, seed=42, transit
 # INCREMENTAL DRIFT DATASET GENERATORS (MOA/River Standards)
 # ============================================================================
 
-def generate_rbf_stream(total_size, n_drift_events, seed=42, n_centroids=50, speed=0.0001):
+
+def generate_rbf_stream(
+    total_size, n_drift_events, seed=42, n_centroids=50, speed=0.0001
+):
     """
     Random RBF with moving centroids (INCREMENTAL/CONTINUOUS drift).
 
@@ -595,11 +627,11 @@ def generate_rbf_stream(total_size, n_drift_events, seed=42, n_centroids=50, spe
     stream = synth.RandomRBFDrift(
         seed_model=seed,
         seed_sample=seed + 1000,
-        n_classes=2,                    # Binary classification (standard)
-        n_features=10,                  # 10 features (MOA standard)
-        n_centroids=n_centroids,        # 50 centroids (standard)
-        change_speed=speed,             # Drift speed parameter
-        n_drift_centroids=n_centroids   # ALL centroids drift (maximum drift)
+        n_classes=2,  # Binary classification (standard)
+        n_features=10,  # 10 features (MOA standard)
+        n_centroids=n_centroids,  # 50 centroids (standard)
+        change_speed=speed,  # Drift speed parameter
+        n_drift_centroids=n_centroids,  # ALL centroids drift (maximum drift)
     )
 
     # Generate stream
@@ -620,6 +652,7 @@ def generate_rbf_stream(total_size, n_drift_events, seed=42, n_centroids=50, spe
 # ============================================================================
 # REAL-WORLD DATASET GENERATORS
 # ============================================================================
+
 
 def generate_electricity_stream(total_size, n_drift_events, seed=42):
     """
@@ -661,7 +694,7 @@ def generate_electricity_stream(total_size, n_drift_events, seed=42):
         if i >= total_size:
             break
         X_list.append(list(x.values()))
-        y_list.append(1 if y == 'UP' else 0)  # Convert UP/DOWN to 1/0
+        y_list.append(1 if y == "UP" else 0)  # Convert UP/DOWN to 1/0
 
     X = np.array(X_list)
     y = np.array(y_list)
@@ -674,7 +707,9 @@ def generate_electricity_stream(total_size, n_drift_events, seed=42):
     return X, y, drift_positions
 
 
-def generate_electricity_sorted_stream(total_size, n_drift_events, seed=42, sort_feature="nswdemand"):
+def generate_electricity_sorted_stream(
+    total_size, n_drift_events, seed=42, sort_feature="nswdemand"
+):
     """
     Electricity (Elec2) - SEMI-REAL dataset with CONTROLLED drift.
 
@@ -701,7 +736,15 @@ def generate_electricity_sorted_stream(total_size, n_drift_events, seed=42, sort
     np.random.seed(seed)
 
     # Feature name mapping for Elec2
-    feature_names = ['day', 'period', 'nswprice', 'nswdemand', 'vicprice', 'vicdemand', 'transfer']
+    feature_names = [
+        "day",
+        "period",
+        "nswprice",
+        "nswdemand",
+        "vicprice",
+        "vicdemand",
+        "transfer",
+    ]
 
     # Load Elec2
     data = []
@@ -710,9 +753,11 @@ def generate_electricity_sorted_stream(total_size, n_drift_events, seed=42, sort
             break
         row = list(x.values())
         # Get sort feature value
-        sort_idx = feature_names.index(sort_feature) if sort_feature in feature_names else 3  # default to nswdemand
+        sort_idx = (
+            feature_names.index(sort_feature) if sort_feature in feature_names else 3
+        )  # default to nswdemand
         sort_val = row[sort_idx]
-        label = 1 if y == 'UP' else 0
+        label = 1 if y == "UP" else 0
         data.append((sort_val, row, label))
 
     # Sort by the chosen feature to create controlled drift
@@ -735,7 +780,9 @@ def generate_electricity_sorted_stream(total_size, n_drift_events, seed=42, sort
     return X, y, drift_positions
 
 
-def generate_covertype_sorted_stream(total_size, n_drift_events, seed=42, sort_feature="Elevation"):
+def generate_covertype_sorted_stream(
+    total_size, n_drift_events, seed=42, sort_feature="Elevation"
+):
     """
     Forest Covertype - SEMI-REAL dataset with CONTROLLED drift.
 
@@ -807,6 +854,7 @@ def generate_covertype_sorted_stream(total_size, n_drift_events, seed=42, sort_f
 # ============================================================================
 # SINE FAMILY: Classification Reversal + Noise Robustness Tests
 # ============================================================================
+
 
 def generate_sine1_stream(total_size, n_drift_events, seed=42):
     """
@@ -944,7 +992,9 @@ def generate_sinirrel1_stream(total_size, n_drift_events, seed=42):
         drift_positions: List of drift positions
     """
     # Generate Sine1 first
-    X_sine1, y, drift_positions = generate_sine1_stream(total_size, n_drift_events, seed)
+    X_sine1, y, drift_positions = generate_sine1_stream(
+        total_size, n_drift_events, seed
+    )
 
     # Add 2 irrelevant random features
     np.random.seed(seed + 999)
@@ -952,7 +1002,9 @@ def generate_sinirrel1_stream(total_size, n_drift_events, seed=42):
 
     X = np.hstack([X_sine1, noise_features])
 
-    print(f"  SINIRREL1 (SUDDEN + NOISE): {X.shape[0]} samples, {X.shape[1]} features (2 relevant + 2 irrelevant)")
+    print(
+        f"  SINIRREL1 (SUDDEN + NOISE): {X.shape[0]} samples, {X.shape[1]} features (2 relevant + 2 irrelevant)"
+    )
     print(f"    {len(drift_positions)} drifts, Noise: 50% of features")
     return X, y, drift_positions
 
@@ -976,7 +1028,9 @@ def generate_sinirrel2_stream(total_size, n_drift_events, seed=42):
         drift_positions: List of drift positions
     """
     # Generate Sine2 first
-    X_sine2, y, drift_positions = generate_sine2_stream(total_size, n_drift_events, seed)
+    X_sine2, y, drift_positions = generate_sine2_stream(
+        total_size, n_drift_events, seed
+    )
 
     # Add 2 irrelevant random features
     np.random.seed(seed + 999)
@@ -991,7 +1045,10 @@ def generate_sinirrel2_stream(total_size, n_drift_events, seed=42):
 # RBF AND LED: Complex Distributions
 # ============================================================================
 
-def generate_rbfblips_stream(total_size, n_drift_events, seed=42, n_centroids=50, n_features=10):
+
+def generate_rbfblips_stream(
+    total_size, n_drift_events, seed=42, n_centroids=50, n_features=10
+):
     """
     RBFblips: Random RBF clusters with SUDDEN drift (blips).
 
@@ -1034,19 +1091,19 @@ def generate_rbfblips_stream(total_size, n_drift_events, seed=42, n_centroids=50
             seed_sample=seed + seg_idx * 100,
             n_classes=2,
             n_features=n_features,
-            n_centroids=n_centroids
+            n_centroids=n_centroids,
         )
 
         # Generate samples from this RBF configuration
         for i, (x, y) in enumerate(stream.take(size)):
             x_vals = list(x.values())
-            
+
             # Add feature transformation at alternating segments
             # This creates STRONG P(X) changes that detectors can detect
             if seg_idx % 2 == 1:
                 # Scale and shift features to create clear distribution change
                 x_vals = [v * 1.5 + 0.3 for v in x_vals]
-            
+
             X_list.append(x_vals)
             y_list.append(y)
 
@@ -1096,7 +1153,7 @@ def generate_led_abrupt_stream(total_size, n_drift_events, seed=42, has_noise=Fa
         stream = synth.LED(
             seed=seed + seg_idx * 100,
             noise_percentage=0.1 if has_noise else 0.0,
-            irrelevant_features=has_noise  # Add irrelevant features if noise=True
+            irrelevant_features=has_noise,  # Add irrelevant features if noise=True
         )
 
         # Generate samples
@@ -1124,6 +1181,7 @@ def generate_led_abrupt_stream(total_size, n_drift_events, seed=42, has_noise=Fa
 # UNIFIED DATASET GENERATOR
 # ============================================================================
 
+
 def generate_drift_stream(dataset_config, total_size=10000, seed=42):
     """
     Generate drift stream for specified dataset type.
@@ -1135,90 +1193,98 @@ def generate_drift_stream(dataset_config, total_size=10000, seed=42):
         info: Dataset metadata (ALWAYS includes: name, type, n_samples, n_features,
               n_drifts, drift_positions, dims, intens, dist)
     """
-    dataset_type = dataset_config['type']
-    n_drift_events = dataset_config['n_drift_events']
-    params = dataset_config.get('params', {})
+    dataset_type = dataset_config["type"]
+    n_drift_events = dataset_config["n_drift_events"]
+    params = dataset_config.get("params", {})
 
     print(f"  Generating {dataset_type} with {n_drift_events} drift events...")
 
     if dataset_type == "standard_sea":
-        X, y, drift_positions = generate_standard_sea_stream(total_size, n_drift_events, seed)
+        X, y, drift_positions = generate_standard_sea_stream(
+            total_size, n_drift_events, seed
+        )
         info = {
-            'name': 'Standard SEA',
-            'features': 3,
-            'dims': 3,
-            'intens': 'N/A',
-            'dist': 'N/A',
-            'drift_type': 'sudden'
+            "name": "Standard SEA",
+            "features": 3,
+            "dims": 3,
+            "intens": "N/A",
+            "dist": "N/A",
+            "drift_type": "sudden",
         }
 
     elif dataset_type == "enhanced_sea":
-        scale_factors = params.get('scale_factors', (1.8, 1.5, 2.0))
-        shift_amounts = params.get('shift_amounts', (5.0, 4.0, 8.0))
-        X, y, drift_positions = generate_enhanced_sea_stream(total_size, n_drift_events, seed,
-                                                              scale_factors, shift_amounts)
+        scale_factors = params.get("scale_factors", (1.8, 1.5, 2.0))
+        shift_amounts = params.get("shift_amounts", (5.0, 4.0, 8.0))
+        X, y, drift_positions = generate_enhanced_sea_stream(
+            total_size, n_drift_events, seed, scale_factors, shift_amounts
+        )
         info = {
-            'name': 'Enhanced SEA',
-            'features': 3,
-            'dims': 3,
-            'intens': 'N/A',
-            'dist': 'N/A',
-            'drift_type': 'sudden'
+            "name": "Enhanced SEA",
+            "features": 3,
+            "dims": 3,
+            "intens": "N/A",
+            "dist": "N/A",
+            "drift_type": "sudden",
         }
 
     elif dataset_type == "stagger":
-        X, y, drift_positions = generate_stagger_stream(total_size, n_drift_events, seed)
+        X, y, drift_positions = generate_stagger_stream(
+            total_size, n_drift_events, seed
+        )
         info = {
-            'name': 'STAGGER',
-            'features': 5,
-            'dims': 5,
-            'intens': 'N/A',
-            'dist': 'N/A',
-            'drift_type': 'sudden'
+            "name": "STAGGER",
+            "features": 5,
+            "dims": 5,
+            "intens": "N/A",
+            "dist": "N/A",
+            "drift_type": "sudden",
         }
 
     elif dataset_type == "hyperplane":
-        n_features = params.get('n_features', 10)
-        X, y, drift_positions = generate_hyperplane_stream(total_size, n_drift_events, seed, n_features)
+        n_features = params.get("n_features", 10)
+        X, y, drift_positions = generate_hyperplane_stream(
+            total_size, n_drift_events, seed, n_features
+        )
         info = {
-            'name': 'Hyperplane',
-            'features': n_features,
-            'dims': n_features,
-            'intens': 'N/A',
-            'dist': 'N/A',
-            'drift_type': 'sudden'
+            "name": "Hyperplane",
+            "features": n_features,
+            "dims": n_features,
+            "intens": "N/A",
+            "dist": "N/A",
+            "drift_type": "sudden",
         }
 
     elif dataset_type == "gaussian_shift":
-        n_features = params.get('n_features', 10)
-        shift_magnitude = params.get('shift_magnitude', 2.0)
+        n_features = params.get("n_features", 10)
+        shift_magnitude = params.get("shift_magnitude", 2.0)
         X, y, drift_positions = generate_gaussian_shift_stream(
             total_size, n_drift_events, seed, n_features, shift_magnitude
         )
         info = {
-            'name': f'Gaussian Shift (δ={shift_magnitude}, d={n_features})',
-            'features': n_features,
-            'dims': n_features,
-            'intens': f'shift={shift_magnitude}',
-            'dist': 'Gaussian',
-            'drift_type': 'sudden',
-            'px_drift': True,
+            "name": f"Gaussian Shift (δ={shift_magnitude}, d={n_features})",
+            "features": n_features,
+            "dims": n_features,
+            "intens": f"shift={shift_magnitude}",
+            "dist": "Gaussian",
+            "drift_type": "sudden",
+            "px_drift": True,
         }
 
     elif dataset_type == "gen_random":
-        dims = params.get('dims', 5)
-        intens = params.get('intens', 0.125)
-        dist = params.get('dist', 'unif')
-        alt = params.get('alt', False)
-        X, y, drift_positions = generate_genrandom_stream(total_size, n_drift_events, seed,
-                                                          dims, intens, dist, alt)
+        dims = params.get("dims", 5)
+        intens = params.get("intens", 0.125)
+        dist = params.get("dist", "unif")
+        alt = params.get("alt", False)
+        X, y, drift_positions = generate_genrandom_stream(
+            total_size, n_drift_events, seed, dims, intens, dist, alt
+        )
         info = {
-            'name': 'gen_random',
-            'features': dims,
-            'dims': dims,
-            'intens': intens,
-            'dist': dist,
-            'drift_type': 'sudden'
+            "name": "gen_random",
+            "features": dims,
+            "dims": dims,
+            "intens": intens,
+            "dist": dist,
+            "drift_type": "sudden",
         }
 
     # ========================================================================
@@ -1226,55 +1292,63 @@ def generate_drift_stream(dataset_config, total_size=10000, seed=42):
     # ========================================================================
 
     elif dataset_type == "sea_gradual":
-        transition_width = params.get('transition_width', 1000)
-        X, y, drift_positions = generate_sea_gradual_stream(total_size, n_drift_events, seed, transition_width)
+        transition_width = params.get("transition_width", 1000)
+        X, y, drift_positions = generate_sea_gradual_stream(
+            total_size, n_drift_events, seed, transition_width
+        )
         info = {
-            'name': 'SEA Gradual',
-            'features': 3,
-            'dims': 3,
-            'intens': 'N/A',
-            'dist': 'N/A',
-            'drift_type': 'gradual',
-            'transition_width': transition_width
+            "name": "SEA Gradual",
+            "features": 3,
+            "dims": 3,
+            "intens": "N/A",
+            "dist": "N/A",
+            "drift_type": "gradual",
+            "transition_width": transition_width,
         }
 
     elif dataset_type == "hyperplane_gradual":
-        n_features = params.get('n_features', 10)
-        X, y, drift_positions = generate_hyperplane_gradual_stream(total_size, n_drift_events, seed, n_features)
+        n_features = params.get("n_features", 10)
+        X, y, drift_positions = generate_hyperplane_gradual_stream(
+            total_size, n_drift_events, seed, n_features
+        )
         info = {
-            'name': 'Hyperplane Gradual',
-            'features': n_features,
-            'dims': n_features,
-            'intens': 'N/A',
-            'dist': 'N/A',
-            'drift_type': 'gradual',
-            'transition_width': 'continuous'
+            "name": "Hyperplane Gradual",
+            "features": n_features,
+            "dims": n_features,
+            "intens": "N/A",
+            "dist": "N/A",
+            "drift_type": "gradual",
+            "transition_width": "continuous",
         }
 
     elif dataset_type == "agrawal_gradual":
-        transition_width = params.get('transition_width', 1000)
-        X, y, drift_positions = generate_agrawal_gradual_stream(total_size, n_drift_events, seed, transition_width)
+        transition_width = params.get("transition_width", 1000)
+        X, y, drift_positions = generate_agrawal_gradual_stream(
+            total_size, n_drift_events, seed, transition_width
+        )
         info = {
-            'name': 'Agrawal Gradual',
-            'features': 9,
-            'dims': 9,
-            'intens': 'N/A',
-            'dist': 'N/A',
-            'drift_type': 'gradual',
-            'transition_width': transition_width
+            "name": "Agrawal Gradual",
+            "features": 9,
+            "dims": 9,
+            "intens": "N/A",
+            "dist": "N/A",
+            "drift_type": "gradual",
+            "transition_width": transition_width,
         }
 
     elif dataset_type == "circles_gradual":
-        transition_width = params.get('transition_width', 500)
-        X, y, drift_positions = generate_circles_gradual_stream(total_size, n_drift_events, seed, transition_width)
+        transition_width = params.get("transition_width", 500)
+        X, y, drift_positions = generate_circles_gradual_stream(
+            total_size, n_drift_events, seed, transition_width
+        )
         info = {
-            'name': 'Circles Gradual',
-            'features': 2,
-            'dims': 2,
-            'intens': 'N/A',
-            'dist': 'N/A',
-            'drift_type': 'gradual',
-            'transition_width': transition_width
+            "name": "Circles Gradual",
+            "features": 2,
+            "dims": 2,
+            "intens": "N/A",
+            "dist": "N/A",
+            "drift_type": "gradual",
+            "transition_width": transition_width,
         }
 
     # ========================================================================
@@ -1282,46 +1356,67 @@ def generate_drift_stream(dataset_config, total_size=10000, seed=42):
     # ========================================================================
 
     elif dataset_type == "rbf":
-        n_centroids = params.get('n_centroids', 50)
-        speed = params.get('speed', 0.0001)
-        X, y, drift_positions = generate_rbf_stream(total_size, n_drift_events, seed, n_centroids, speed)
+        n_centroids = params.get("n_centroids", 50)
+        speed = params.get("speed", 0.0001)
+        X, y, drift_positions = generate_rbf_stream(
+            total_size, n_drift_events, seed, n_centroids, speed
+        )
         info = {
-            'name': f'RBF (speed={speed})',
-            'features': 10,
-            'dims': 10,
-            'intens': f'speed={speed}',
-            'dist': 'RBF',
-            'drift_type': 'incremental',
-            'speed': speed,
-            'n_centroids': n_centroids
+            "name": f"RBF (speed={speed})",
+            "features": 10,
+            "dims": 10,
+            "intens": f"speed={speed}",
+            "dist": "RBF",
+            "drift_type": "incremental",
+            "speed": speed,
+            "n_centroids": n_centroids,
         }
 
     elif dataset_type == "electricity":
-        X, y, drift_positions = generate_electricity_stream(total_size, n_drift_events, seed)
+        X, y, drift_positions = generate_electricity_stream(
+            total_size, n_drift_events, seed
+        )
         info = {
-            'name': 'Electricity (Elec2)',
-            'features': 7,
-            'dims': 7,
-            'intens': 'N/A (real-world)',
-            'dist': 'Real-world',
-            'drift_type': 'real-world',
-            'has_ground_truth': False
+            "name": "Electricity (Elec2)",
+            "features": 7,
+            "dims": 7,
+            "intens": "N/A (real-world)",
+            "dist": "Real-world",
+            "drift_type": "real-world",
+            "has_ground_truth": False,
         }
 
     elif dataset_type == "electricity_sorted":
-        sort_feature = params.get('sort_feature', 'nswdemand')
+        sort_feature = params.get("sort_feature", "nswdemand")
         X, y, drift_positions = generate_electricity_sorted_stream(
             total_size, n_drift_events, seed, sort_feature
         )
         info = {
-            'name': 'Electricity (Sorted)',
-            'features': 7,
-            'dims': 7,
-            'intens': 'N/A (semi-real)',
-            'dist': 'Real-world sorted',
-            'drift_type': 'semi-real',
-            'has_ground_truth': True,
-            'sort_feature': sort_feature
+            "name": "Electricity (Sorted)",
+            "features": 7,
+            "dims": 7,
+            "intens": "N/A (semi-real)",
+            "dist": "Real-world sorted",
+            "drift_type": "semi-real",
+            "has_ground_truth": True,
+            "sort_feature": sort_feature,
+        }
+
+    elif dataset_type == "electricity_semisynthetic":
+        # Same as sorted, but explicitly named for benchmark consistency
+        sort_feature = params.get("sort_feature", "nswdemand")
+        X, y, drift_positions = generate_electricity_sorted_stream(
+            total_size, n_drift_events, seed, sort_feature
+        )
+        info = {
+            "name": "Electricity Semi-Synthetic",
+            "features": 7,
+            "dims": 7,
+            "intens": "N/A (semi-real)",
+            "dist": "Real-world sorted",
+            "drift_type": "semi-real",
+            "has_ground_truth": True,
+            "sort_feature": sort_feature,
         }
 
     # ========================================================================
@@ -1329,19 +1424,19 @@ def generate_drift_stream(dataset_config, total_size=10000, seed=42):
     # ========================================================================
 
     elif dataset_type == "covertype_sorted":
-        sort_feature = params.get('sort_feature', 'Elevation')
+        sort_feature = params.get("sort_feature", "Elevation")
         X, y, drift_positions = generate_covertype_sorted_stream(
             total_size, n_drift_events, seed, sort_feature
         )
         info = {
-            'name': 'Covertype (Sorted)',
-            'features': 54,
-            'dims': 54,
-            'intens': 'N/A (semi-real)',
-            'dist': 'Real-world sorted',
-            'drift_type': 'semi-real',
-            'has_ground_truth': True,
-            'sort_feature': sort_feature
+            "name": "Covertype (Sorted)",
+            "features": 54,
+            "dims": 54,
+            "intens": "N/A (semi-real)",
+            "dist": "Real-world sorted",
+            "drift_type": "semi-real",
+            "has_ground_truth": True,
+            "sort_feature": sort_feature,
         }
 
     # ========================================================================
@@ -1351,49 +1446,53 @@ def generate_drift_stream(dataset_config, total_size=10000, seed=42):
     elif dataset_type == "sine1":
         X, y, drift_positions = generate_sine1_stream(total_size, n_drift_events, seed)
         info = {
-            'name': 'Sine1',
-            'features': 2,
-            'dims': 2,
-            'intens': 'N/A',
-            'dist': 'Uniform',
-            'drift_type': 'sudden',
-            'has_ground_truth': True
+            "name": "Sine1",
+            "features": 2,
+            "dims": 2,
+            "intens": "N/A",
+            "dist": "Uniform",
+            "drift_type": "sudden",
+            "has_ground_truth": True,
         }
 
     elif dataset_type == "sine2":
         X, y, drift_positions = generate_sine2_stream(total_size, n_drift_events, seed)
         info = {
-            'name': 'Sine2',
-            'features': 2,
-            'dims': 2,
-            'intens': 'N/A',
-            'dist': 'Uniform',
-            'drift_type': 'sudden',
-            'has_ground_truth': True
+            "name": "Sine2",
+            "features": 2,
+            "dims": 2,
+            "intens": "N/A",
+            "dist": "Uniform",
+            "drift_type": "sudden",
+            "has_ground_truth": True,
         }
 
     elif dataset_type == "sinirrel1":
-        X, y, drift_positions = generate_sinirrel1_stream(total_size, n_drift_events, seed)
+        X, y, drift_positions = generate_sinirrel1_stream(
+            total_size, n_drift_events, seed
+        )
         info = {
-            'name': 'SINIRREL1',
-            'features': 4,
-            'dims': 4,
-            'intens': 'N/A (50% noise)',
-            'dist': 'Uniform',
-            'drift_type': 'sudden',
-            'has_ground_truth': True
+            "name": "SINIRREL1",
+            "features": 4,
+            "dims": 4,
+            "intens": "N/A (50% noise)",
+            "dist": "Uniform",
+            "drift_type": "sudden",
+            "has_ground_truth": True,
         }
 
     elif dataset_type == "sinirrel2":
-        X, y, drift_positions = generate_sinirrel2_stream(total_size, n_drift_events, seed)
+        X, y, drift_positions = generate_sinirrel2_stream(
+            total_size, n_drift_events, seed
+        )
         info = {
-            'name': 'SINIRREL2',
-            'features': 4,
-            'dims': 4,
-            'intens': 'N/A (50% noise)',
-            'dist': 'Uniform',
-            'drift_type': 'sudden',
-            'has_ground_truth': True
+            "name": "SINIRREL2",
+            "features": 4,
+            "dims": 4,
+            "intens": "N/A (50% noise)",
+            "dist": "Uniform",
+            "drift_type": "sudden",
+            "has_ground_truth": True,
         }
 
     # ========================================================================
@@ -1401,41 +1500,44 @@ def generate_drift_stream(dataset_config, total_size=10000, seed=42):
     # ========================================================================
 
     elif dataset_type == "rbfblips":
-        n_centroids = params.get('n_centroids', 50)
-        n_features = params.get('n_features', 10)
-        X, y, drift_positions = generate_rbfblips_stream(total_size, n_drift_events, seed, n_centroids, n_features)
+        n_centroids = params.get("n_centroids", 50)
+        n_features = params.get("n_features", 10)
+        X, y, drift_positions = generate_rbfblips_stream(
+            total_size, n_drift_events, seed, n_centroids, n_features
+        )
         info = {
-            'name': f'RBFblips (c={n_centroids})',
-            'features': n_features,
-            'dims': n_features,
-            'intens': f'{n_centroids} centroids',
-            'dist': 'RBF',
-            'drift_type': 'sudden',
-            'has_ground_truth': True
+            "name": f"RBFblips (c={n_centroids})",
+            "features": n_features,
+            "dims": n_features,
+            "intens": f"{n_centroids} centroids",
+            "dist": "RBF",
+            "drift_type": "sudden",
+            "has_ground_truth": True,
         }
 
     elif dataset_type == "led_abrupt":
-        has_noise = params.get('has_noise', False)
-        X, y, drift_positions = generate_led_abrupt_stream(total_size, n_drift_events, seed, has_noise)
+        has_noise = params.get("has_noise", False)
+        X, y, drift_positions = generate_led_abrupt_stream(
+            total_size, n_drift_events, seed, has_noise
+        )
         info = {
-            'name': 'LED_abrupt' + (' (noisy)' if has_noise else ''),
-            'features': 7,
-            'dims': 7,
-            'intens': 'N/A',
-            'dist': 'Binary',
-            'drift_type': 'sudden',
-            'has_ground_truth': True
+            "name": "LED_abrupt" + (" (noisy)" if has_noise else ""),
+            "features": 7,
+            "dims": 7,
+            "intens": "N/A",
+            "dist": "Binary",
+            "drift_type": "sudden",
+            "has_ground_truth": True,
         }
 
     else:
         raise ValueError(f"Unknown dataset_type: {dataset_type}")
 
     # Add common fields
-    info['type'] = dataset_type
-    info['n_samples'] = len(X)
-    info['n_features'] = X.shape[1]
-    info['n_drifts'] = len(drift_positions)
-    info['drift_positions'] = drift_positions
+    info["type"] = dataset_type
+    info["n_samples"] = len(X)
+    info["n_features"] = X.shape[1]
+    info["n_drifts"] = len(drift_positions)
+    info["drift_positions"] = drift_positions
 
     return X, y, drift_positions, info
-

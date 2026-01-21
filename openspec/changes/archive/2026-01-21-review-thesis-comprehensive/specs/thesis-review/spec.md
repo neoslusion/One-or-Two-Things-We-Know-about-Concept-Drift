@@ -32,8 +32,6 @@ The thesis SHALL either:
 - **THEN** Chapter 0 objectives are updated to reflect this
 - **AND** Chapter 3 clearly states "design proposal, not implemented"
 
-## MODIFIED Requirements
-
 ### Requirement: Technical Accuracy
 The thesis methodology and implementation MUST be technically accurate and consistent with source papers.
 

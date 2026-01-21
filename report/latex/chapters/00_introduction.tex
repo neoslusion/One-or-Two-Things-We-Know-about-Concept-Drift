@@ -54,8 +54,8 @@ từ đó xác định hướng cải tiến phù hợp.
 \subsection{Tích hợp các cải tiến cho ShapeDD}
 Dựa trên cơ sở lý thuyết và kết quả đánh giá hiệu năng, nghiên cứu sẽ tích hợp các kỹ thuật tiên tiến gần đây như ADW-MMD (Adaptive Density-Weighted MMD) và MMD-Agg (MMD Aggregated) vào framework ShapeDD. Mục tiêu là giải quyết các hạn chế về chi phí tính toán và độ nhạy của phương pháp gốc. Cụ thể, ADW-MMD sử dụng cơ chế trọng số dựa trên mật độ để giảm phương sai ước lượng, cho phép đạt độ chính xác cao với số lượng mẫu ít hơn.
 
-\subsection{Đề xuất phương pháp phân loại drift SHAPED\_CDT}
-Kết hợp khả năng định vị chính xác thời điểm drift của ShapeDD với mô hình phân loại \textit{drift} CDT\_MSW (Concept Drift Type identification based on Multi-Sliding Windows --- phương pháp phân loại loại drift dựa trên phân tích cửa sổ trượt đa kích thước~\cite{guo2022cdtmsw}, sẽ được trình bày chi tiết ở Mục~\ref{sec:cdt-msw-theory}) để đề xuất phương pháp mới \textbf{SHAPED\_CDT} (ShapeDD-Enhanced Concept Drift Type Identification).
+\subsection{Đề xuất phương pháp phân loại drift SE-CDT}
+Kết hợp khả năng định vị chính xác thời điểm drift của ShapeDD với mô hình phân loại \textit{drift} CDT\_MSW (Concept Drift Type identification based on Multi-Sliding Windows --- phương pháp phân loại loại drift dựa trên phân tích cửa sổ trượt đa kích thước~\cite{guo2022cdtmsw}, sẽ được trình bày chi tiết ở Mục~\ref{sec:cdt-msw-theory}) để đề xuất phương pháp mới \textbf{SE-CDT} (ShapeDD-Enhanced Concept Drift Type Identification).
 Hệ thống này có khả năng: (1) phát hiện chính xác thời điểm xảy ra \textit{drift} nhờ ShapeDD, và (2) sử dụng thông tin đó để trích xuất cửa sổ dữ liệu chính xác cho việc phân loại loại \textit{drift}, từ đó đưa ra chiến lược thích ứng tối ưu.
 
 \subsection{Tối ưu hóa tham số}
@@ -96,7 +96,7 @@ Cách tiếp cận đánh giá bao gồm:
 	      lẫn khả năng \textit{phân loại} của hệ thống, bao gồm phân loại
 	      theo nhóm (TCD vs PCD) và theo loại cụ thể.
 
-	\item \textbf{So sánh công bằng:} Đánh giá phương pháp đề xuất (SHAPED\_CDT không giám sát)
+	\item \textbf{So sánh công bằng:} Đánh giá phương pháp đề xuất (SE-CDT không giám sát)
 	      so với baseline CDT\_MSW có giám sát trong cùng điều kiện thử nghiệm.
 \end{enumerate}
 

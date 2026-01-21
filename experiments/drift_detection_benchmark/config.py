@@ -78,7 +78,7 @@ WINDOW_METHODS = [
     'ShapeDD_MMDAgg',  # ShapeDD with Aggregated MMD (JMLR 2023)
     'MMD_ADW',         # Adaptive Density-Weighted MMD (fixed threshold, fast)
     'ShapeDD_ADW_MMD', # ShapeDD + ADW-MMD Hybrid (heuristic pattern detection)
-    'ShapeDD_WMMD',    # ShapeDD + WMMD Hybrid (heuristic pattern detection)
+    # 'ShapeDD_WMMD',    # ShapeDD + WMMD Hybrid (heuristic pattern detection)
 ]
 
 # Streaming methods (require model for accuracy signal)
