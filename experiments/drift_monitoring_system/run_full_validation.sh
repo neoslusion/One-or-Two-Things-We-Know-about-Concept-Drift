@@ -3,6 +3,13 @@
 # Runs a comprehensive statistical validation of the SE-CDT Adaptive System.
 # Target: 30 independent runs on 'mixed' drift streams to prove stability.
 
+# Get the project root directory (go up two levels from this script)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+# Change to project root
+cd "$PROJECT_ROOT"
+
 # Configuration
 N_RUNS=3
 N_SAMPLES=10000
@@ -15,12 +22,13 @@ mkdir -p "$BASE_OUT_DIR"
 
 echo "========================================================"
 echo "STARTING FULL SYSTEM VALIDATION"
+echo "Working Directory: $(pwd)"
 echo "Target: $N_RUNS runs | Stream: $DRIFT_TYPE | Samples: $N_SAMPLES"
 echo "Output: $BASE_OUT_DIR"
 echo "========================================================"
 
 # Ensure PYTHONPATH is set
-export PYTHONPATH=$PYTHONPATH:$(pwd)/experiments/backup:$(pwd)/experiments/shared:$(pwd)
+export PYTHONPATH=$PYTHONPATH:$PROJECT_ROOT/experiments/backup:$PROJECT_ROOT/experiments/shared:$PROJECT_ROOT
 
 start_time=$(date +%s)
 
