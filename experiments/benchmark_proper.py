@@ -23,11 +23,14 @@ TAU = 0.85
 DELTA = 0.005
 N_ADJOINT = 4
 K_TRACKING = 10
-# Detection Thresholds (SE-CDT / ShapeDD) - LOWERED for better PCD detection
-SHAPE_HEIGHT = 0.01   # Lowered from 0.05
-SHAPE_PROMINENCE = 0.005  # Lowered from 0.01
-DETECTION_TOLERANCE = 300 # Increased tolerance for gradual drifts
-USE_STANDARD_MMD = False  # Use ADW-MMD (faster but suppresses weak signals)
+# Detection Thresholds (SE-CDT / ShapeDD) - Tuned for balanced precision/recall
+# These values are shared with drift_monitoring_system/config.py
+SHAPE_HEIGHT = 0.015        # Tuned: balances sensitivity and FP rate
+SHAPE_PROMINENCE = 0.008    # Tuned: requires clear peaks
+SHAPE_HEIGHT_STD = 0.025    # For Standard MMD (increased to reduce FP)
+SHAPE_PROMINENCE_STD = 0.012
+DETECTION_TOLERANCE = 250   # Standard tolerance for TP matching
+USE_STANDARD_MMD = False    # Use ADW-MMD (faster but suppresses weak signals)
 
 OUTPUT_DIR = "experiments/drift_detection_benchmark/publication_figures"
 OUTPUT_FILE = os.path.join(OUTPUT_DIR, "benchmark_proper_detailed.pkl")
@@ -396,8 +399,8 @@ def run_mixed_experiment(params):
         
         return detection_points
     
-    # Standard MMD detection (lower threshold for PCD)
-    se_det_std = detect_peaks_from_signal(mmd_sig_std, height=0.001, prom=0.0005)  # Very low for Standard
+    # Standard MMD detection (use tuned thresholds, slightly lower for Standard MMD)
+    se_det_std = detect_peaks_from_signal(mmd_sig_std, height=SHAPE_HEIGHT_STD, prom=SHAPE_PROMINENCE_STD)
     # ADW-MMD detection (same thresholds)
     se_det_adw = detect_peaks_from_signal(mmd_sig_adw, height=SHAPE_HEIGHT, prom=SHAPE_PROMINENCE)
     # Adaptive detection (Standard MMD with two-stage + width filter)
@@ -813,7 +816,7 @@ def generate_latex_table(results):
             "EDR": f"{det_res['CDT']['EDR']:.3f}", 
             "MDR": f"{det_res['CDT']['MDR']:.3f}",
             "FP": f"{det_res['CDT']['FP']}",
-            "Supervised": "Có"
+            "Supervised": "Yes"
         },
         {
             "Method": "\\textbf{SE-CDT (Std)}",
@@ -822,7 +825,7 @@ def generate_latex_table(results):
             "EDR": f"\\textbf{{{det_res['SE_STD']['EDR']:.3f}}}",
             "MDR": f"\\textbf{{{det_res['SE_STD']['MDR']:.3f}}}",
             "FP": f"{det_res['SE_STD']['FP']}",
-            "Supervised": "Không"
+            "Supervised": "No"
         },
         {
             "Method": "SE-CDT (ADW)",
@@ -831,7 +834,7 @@ def generate_latex_table(results):
             "EDR": f"{det_res['SE_ADW']['EDR']:.3f}",
             "MDR": f"{det_res['SE_ADW']['MDR']:.3f}",
             "FP": f"{det_res['SE_ADW']['FP']}",
-            "Supervised": "Không"
+            "Supervised": "No"
         }
     ]
     

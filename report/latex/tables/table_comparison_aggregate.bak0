@@ -1,0 +1,9 @@
+\begin{tabular}{|l|c|c|c|c|c|c|}
+\hline
+\textbf{Method} & \textbf{CAT Acc} & \textbf{SUB Acc} & \textbf{EDR$\uparrow$} & \textbf{MDR$\downarrow$} & \textbf{FP} & \textbf{Supervised} \\
+\hline
+CDT\_MSW & 40.0\% & 16.0\% & 0.058 & 0.942 & 91 & Yes \\
+\textbf{SE-CDT (Std)} & \textbf{74.6\%} & \textbf{42.0\%} & \textbf{0.928} & \textbf{0.072} & 1419 & No \\
+SE-CDT (ADW) & 74.6\% & 42.0\% & 0.532 & 0.468 & 302 & No \\
+\hline
+\end{tabular}

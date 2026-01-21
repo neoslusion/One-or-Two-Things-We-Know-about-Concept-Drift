@@ -36,8 +36,11 @@ from typing import Callable, Optional, Dict, List
 SCRIPT_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPT_DIR.parent.parent
 SHAPE_DD_DIR = REPO_ROOT / "experiments" / "backup"
+SHARED_DIR = REPO_ROOT / "experiments" / "shared"
 if str(SHAPE_DD_DIR) not in sys.path:
     sys.path.insert(0, str(SHAPE_DD_DIR))
+if str(SHARED_DIR) not in sys.path:
+    sys.path.insert(0, str(SHARED_DIR))
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
@@ -66,6 +69,40 @@ from config import (
     BUFFER_SIZE, CHUNK_SIZE, SHAPE_L1, SHAPE_L2, DRIFT_ALPHA, SHAPE_N_PERM,
     INITIAL_TRAINING_SIZE, PREQUENTIAL_WINDOW, ADAPTATION_WINDOW
 )
+
+# Import shared detection metrics
+try:
+    from detection_metrics import calculate_detection_metrics, format_detection_metrics
+except ImportError:
+    # Fallback if shared module not available
+    def calculate_detection_metrics(detections, ground_truth, tolerance=250, early_tolerance=50):
+        """Fallback implementation."""
+        det_pos = [d if isinstance(d, int) else d['pos'] for d in detections] if detections else []
+        gt_pos = ground_truth if ground_truth else []
+        tp, fp, delays = 0, 0, []
+        detected = set()
+        for d in det_pos:
+            matched = False
+            for i, g in enumerate(gt_pos):
+                if i not in detected and g - early_tolerance <= d <= g + tolerance:
+                    tp += 1
+                    delays.append(d - g)
+                    detected.add(i)
+                    matched = True
+                    break
+            if not matched:
+                fp += 1
+        fn = len(gt_pos) - tp
+        return {
+            "TP": tp, "FP": fp, "FN": fn,
+            "EDR": tp / len(gt_pos) if gt_pos else 0,
+            "MDR": fn / len(gt_pos) if gt_pos else 0,
+            "Precision": tp / (tp + fp) if (tp + fp) > 0 else 0,
+            "Mean_Delay": float(np.mean(delays)) if delays else 0,
+            "delays": delays
+        }
+    def format_detection_metrics(m, compact=False):
+        return f"EDR={m['EDR']:.3f}, MDR={m['MDR']:.3f}, FP={m['FP']}"
 
 # Strategy mapping
 STRATEGY_MAP = {
@@ -258,52 +295,294 @@ def evaluate_with_adaptation(X, y, drift_points, mode: str = AdaptationMode.TYPE
     return accuracy_history, drift_detections, adaptations, classification_times
 
 
-def plot_prequential_comparison(results: Dict[str, Dict], drift_points: List[int], output_path: Path):
+def plot_prequential_comparison(results: Dict[str, Dict], drift_points: List[int], output_path: Path,
+                                 drift_types: List[str] = None, metrics: Dict = None,
+                                 X: np.ndarray = None, y: np.ndarray = None):
     """
-    Plot prequential accuracy comparison for all modes.
+    Plot comprehensive prequential accuracy comparison with clear annotations.
+    
+    Features:
+    - Data stream panel: Shows feature distribution and class labels over time
+    - Main plot: Accuracy curves for all adaptation modes
+    - Ground truth drift points with vertical bands and labels
+    - Detection markers showing when SE-CDT detected drift
+    - Adaptation markers showing strategy used
+    - Summary statistics panel
     """
-    fig, ax = plt.subplots(1, 1, figsize=(14, 6))
+    # Determine if we have data stream to show
+    has_data_stream = X is not None and y is not None
     
-    colors = {
-        AdaptationMode.TYPE_SPECIFIC: 'green',
-        AdaptationMode.SIMPLE: 'blue',
-        AdaptationMode.NONE: 'red'
+    # Create figure with 4 subplots if data stream available, else 3
+    if has_data_stream:
+        fig = plt.figure(figsize=(16, 14))
+        gs = fig.add_gridspec(4, 1, height_ratios=[1.5, 2.5, 0.8, 0.6], hspace=0.25)
+        ax_stream = fig.add_subplot(gs[0])  # Data stream visualization
+        ax_main = fig.add_subplot(gs[1], sharex=ax_stream)  # Main accuracy plot
+        ax_det = fig.add_subplot(gs[2], sharex=ax_stream)  # Detection timeline
+        ax_summary = fig.add_subplot(gs[3])  # Summary panel
+    else:
+        fig = plt.figure(figsize=(16, 10))
+        gs = fig.add_gridspec(3, 1, height_ratios=[3, 1, 0.8], hspace=0.25)
+        ax_stream = None
+        ax_main = fig.add_subplot(gs[0])  # Main accuracy plot
+        ax_det = fig.add_subplot(gs[1], sharex=ax_main)  # Detection timeline
+        ax_summary = fig.add_subplot(gs[2])  # Summary panel
+    
+    ax_summary.axis('off')
+    
+    # Color schemes
+    mode_colors = {
+        AdaptationMode.TYPE_SPECIFIC: '#2ecc71',  # Green
+        AdaptationMode.SIMPLE: '#3498db',          # Blue
+        AdaptationMode.NONE: '#e74c3c'             # Red
     }
-    labels = {
-        AdaptationMode.TYPE_SPECIFIC: 'Type-Specific Adaptation (5 strategies)',
-        AdaptationMode.SIMPLE: 'Simple Retrain (baseline)',
-        AdaptationMode.NONE: 'No Adaptation'
+    mode_labels = {
+        AdaptationMode.TYPE_SPECIFIC: 'Type-Specific Adaptation',
+        AdaptationMode.SIMPLE: 'Simple Retrain',
+        AdaptationMode.NONE: 'No Adaptation (Baseline)'
     }
     
+    strategy_colors = {
+        'sudden': '#e74c3c',      # Red
+        'gradual': '#f39c12',     # Orange
+        'incremental': '#9b59b6', # Purple
+        'recurrent': '#1abc9c',   # Teal
+        'blip_ignored': '#95a5a6', # Gray
+        'simple_retrain': '#3498db', # Blue
+        'simple': '#3498db'       # Blue
+    }
+    strategy_markers = {
+        'sudden': 's',        # Square
+        'gradual': 'D',       # Diamond
+        'incremental': '^',   # Triangle up
+        'recurrent': 'o',     # Circle
+        'blip_ignored': 'x',  # X
+        'simple_retrain': 'v', # Triangle down
+        'simple': 'v'
+    }
+    
+    # =========================================================================
+    # DATA STREAM PANEL: Shows feature distribution and labels over time
+    # =========================================================================
+    
+    if ax_stream is not None and X is not None and y is not None:
+        n_samples = len(X)
+        sample_indices = np.arange(n_samples)
+        
+        # Calculate rolling statistics for visualization
+        window = 100
+        n_features = X.shape[1]
+        
+        # Use first principal component or feature mean for visualization
+        if n_features > 1:
+            # Simple: use mean of first 2 features as "signal"
+            feature_signal = (X[:, 0] + X[:, 1]) / 2
+        else:
+            feature_signal = X[:, 0]
+        
+        # Rolling mean and std to show distribution changes
+        from scipy.ndimage import uniform_filter1d
+        rolling_mean = uniform_filter1d(feature_signal, size=window, mode='nearest')
+        rolling_std = np.sqrt(uniform_filter1d((feature_signal - rolling_mean)**2, size=window, mode='nearest'))
+        
+        # Plot feature distribution band
+        ax_stream.fill_between(sample_indices, rolling_mean - rolling_std, rolling_mean + rolling_std,
+                               alpha=0.3, color='#3498db', label='Feature Distribution (±1σ)')
+        ax_stream.plot(sample_indices, rolling_mean, color='#2980b9', linewidth=1.5, label='Feature Mean')
+        
+        # Scatter plot for class labels (subsample for performance)
+        subsample = max(1, n_samples // 500)  # Show at most 500 points
+        class_0_mask = y[::subsample] == 0
+        class_1_mask = y[::subsample] == 1
+        scatter_indices = sample_indices[::subsample]
+        
+        # Create a y-position based on feature value for scatter
+        scatter_y = feature_signal[::subsample]
+        
+        ax_stream.scatter(scatter_indices[class_0_mask], scatter_y[class_0_mask], 
+                         c='#e74c3c', s=15, alpha=0.5, label='Class 0', marker='o')
+        ax_stream.scatter(scatter_indices[class_1_mask], scatter_y[class_1_mask], 
+                         c='#27ae60', s=15, alpha=0.5, label='Class 1', marker='s')
+        
+        # Mark drift points with vertical lines
+        for i, dp in enumerate(drift_points):
+            ax_stream.axvline(x=dp, color='#c0392b', linestyle='-', linewidth=2, alpha=0.8)
+            # Add drift type label at top
+            if drift_types and i < len(drift_types):
+                dtype = drift_types[i]
+                dtype_colors = {'sudden': '#e74c3c', 'gradual': '#f39c12', 
+                               'incremental': '#9b59b6', 'recurrent': '#1abc9c'}
+                ax_stream.annotate(dtype.upper()[:3], xy=(dp, 1.05), xycoords=('data', 'axes fraction'),
+                                  ha='center', fontsize=8, fontweight='bold',
+                                  color=dtype_colors.get(dtype, '#c0392b'),
+                                  bbox=dict(boxstyle='round,pad=0.2', facecolor='white', alpha=0.9))
+        
+        ax_stream.set_ylabel('Feature\nValues', fontsize=10, fontweight='bold')
+        ax_stream.set_title('Data Stream: Feature Distribution and Class Labels Over Time', 
+                           fontsize=12, fontweight='bold')
+        ax_stream.legend(loc='upper right', fontsize=8, ncol=4, framealpha=0.9)
+        ax_stream.grid(True, alpha=0.3)
+        plt.setp(ax_stream.get_xticklabels(), visible=False)
+    
+    # =========================================================================
+    # MAIN PLOT: Accuracy Curves
+    # =========================================================================
+    
+    # First, draw ground truth drift regions (shaded bands)
+    for i, dp in enumerate(drift_points):
+        # Shaded region around drift point (drift impact zone: ±200 samples)
+        ax_main.axvspan(dp - 50, dp + 300, alpha=0.15, color='red', 
+                        label='Drift Impact Zone' if i == 0 else '_nolegend_')
+        # Vertical line at exact drift point
+        ax_main.axvline(x=dp, color='#c0392b', linestyle='-', linewidth=2, alpha=0.8,
+                        label='True Drift Point' if i == 0 else '_nolegend_')
+        # Label the drift point
+        drift_label = f"D{i+1}"
+        if drift_types and i < len(drift_types):
+            drift_label = f"D{i+1}\n({drift_types[i][:3]})"
+        ax_main.annotate(drift_label, xy=(dp, 1.02), xycoords=('data', 'axes fraction'),
+                        ha='center', va='bottom', fontsize=9, fontweight='bold',
+                        color='#c0392b',
+                        bbox=dict(boxstyle='round,pad=0.2', facecolor='white', 
+                                  edgecolor='#c0392b', alpha=0.9))
+    
+    # Plot accuracy curves
     for mode, data in results.items():
         idx_list = [r['idx'] for r in data['accuracy']]
         acc_list = [r['accuracy'] for r in data['accuracy']]
-        ax.plot(idx_list, acc_list, color=colors.get(mode, 'gray'), 
-                linewidth=1.5, label=labels.get(mode, mode), alpha=0.8)
         
-        # Mark adaptations for type-specific
-        if mode == AdaptationMode.TYPE_SPECIFIC:
-            for adapt in data['adaptations']:
-                ax.scatter(adapt['idx'], 0.95, marker='^', color='purple', s=100, zorder=5)
+        ax_main.plot(idx_list, acc_list, 
+                     color=mode_colors.get(mode, 'gray'),
+                     linewidth=2 if mode == AdaptationMode.TYPE_SPECIFIC else 1.5,
+                     label=mode_labels.get(mode, mode),
+                     alpha=0.9 if mode == AdaptationMode.TYPE_SPECIFIC else 0.7,
+                     zorder=3 if mode == AdaptationMode.TYPE_SPECIFIC else 2)
     
-    # Mark true drift points
+    # Mark adaptation events on the accuracy curve (Type-Specific only)
+    ts_data = results.get(AdaptationMode.TYPE_SPECIFIC, {})
+    if ts_data.get('adaptations'):
+        acc_map = {r['idx']: r['accuracy'] for r in ts_data.get('accuracy', [])}
+        
+        for adapt in ts_data['adaptations']:
+            adapt_idx = adapt['idx']
+            strategy = adapt.get('strategy', 'unknown')
+            acc_at_adapt = acc_map.get(adapt_idx, 0.85)
+            
+            # Plot marker at adaptation point
+            marker = strategy_markers.get(strategy, 'o')
+            color = strategy_colors.get(strategy, 'purple')
+            ax_main.scatter(adapt_idx, acc_at_adapt, marker=marker, 
+                           color=color, s=150, zorder=5, edgecolors='black', linewidth=1.5)
+    
+    ax_main.set_ylabel('Prequential Accuracy', fontsize=12, fontweight='bold')
+    ax_main.set_ylim([0.35, 1.08])
+    ax_main.set_xlim([0, max(idx_list) if idx_list else 5000])
+    ax_main.grid(True, alpha=0.3, linestyle='-')
+    ax_main.legend(loc='lower left', fontsize=10, framealpha=0.95)
+    ax_main.set_title('Prequential Accuracy: Adaptive Learning with Drift Detection & Classification',
+                      fontsize=14, fontweight='bold', pad=15)
+    
+    # Hide x-axis labels for main plot (shared with detection timeline)
+    plt.setp(ax_main.get_xticklabels(), visible=False)
+    
+    # =========================================================================
+    # DETECTION TIMELINE: Shows when detections occurred
+    # =========================================================================
+    
+    # Draw ground truth markers on timeline
     for i, dp in enumerate(drift_points):
-        ax.axvline(x=dp, color='gray', linestyle='--', alpha=0.5, 
-                   label='True Drift' if i == 0 else '_nolegend_')
+        ax_det.axvline(x=dp, color='#c0392b', linestyle='-', linewidth=2, alpha=0.8)
+        ax_det.scatter(dp, 0, marker='v', color='#c0392b', s=200, zorder=5,
+                       label='Ground Truth' if i == 0 else '_nolegend_')
     
-    ax.set_xlabel('Sample Index', fontsize=12)
-    ax.set_ylabel('Prequential Accuracy', fontsize=12)
-    ax.set_title('Prequential Accuracy: Type-Specific vs Simple vs No Adaptation', fontsize=14)
-    ax.legend(loc='lower left')
-    ax.set_ylim([0.3, 1.05])
-    ax.grid(True, alpha=0.3)
+    # Plot detections for each mode
+    y_positions = {
+        AdaptationMode.TYPE_SPECIFIC: 1,
+        AdaptationMode.SIMPLE: 0,
+        AdaptationMode.NONE: -1
+    }
     
-    # Add annotations
-    ax.annotate('↑ Adaptation events', xy=(0.02, 0.96), xycoords='axes fraction', 
-                fontsize=10, color='purple')
+    for mode, data in results.items():
+        detections = data.get('detections', [])
+        y_pos = y_positions.get(mode, 0)
+        color = mode_colors.get(mode, 'gray')
+        
+        if detections:
+            ax_det.scatter(detections, [y_pos] * len(detections), 
+                          marker='|', color=color, s=300, linewidth=3,
+                          label=f'{mode_labels.get(mode, mode)} detections',
+                          zorder=4)
+            
+            # Draw arrows from detection to ground truth (for Type-Specific)
+            if mode == AdaptationMode.TYPE_SPECIFIC:
+                for det_idx in detections:
+                    # Find closest ground truth
+                    closest_gt = min(drift_points, key=lambda x: abs(x - det_idx))
+                    delay = det_idx - closest_gt
+                    if -100 < delay < 500:  # Reasonable detection window
+                        # Color based on delay
+                        arrow_color = '#27ae60' if delay < 100 else '#f39c12' if delay < 250 else '#e74c3c'
+                        ax_det.annotate('', xy=(closest_gt, 0), xytext=(det_idx, y_pos),
+                                       arrowprops=dict(arrowstyle='->', color=arrow_color, 
+                                                       alpha=0.5, lw=1.5))
     
-    plt.tight_layout()
-    plt.savefig(output_path, dpi=150, bbox_inches='tight')
+    ax_det.set_ylim([-2, 2])
+    ax_det.set_yticks([1, 0, -1])
+    ax_det.set_yticklabels(['Type-Specific', 'Ground Truth', 'Simple/None'], fontsize=9)
+    ax_det.set_xlabel('Sample Index', fontsize=12, fontweight='bold')
+    ax_det.set_ylabel('Detection\nTimeline', fontsize=10, fontweight='bold')
+    ax_det.grid(True, alpha=0.3, axis='x')
+    ax_det.axhline(y=0, color='#c0392b', linestyle='--', alpha=0.5)
+    
+    # =========================================================================
+    # SUMMARY PANEL: Key metrics and legend
+    # =========================================================================
+    
+    # Create summary text
+    summary_lines = []
+    summary_lines.append("SUMMARY")
+    summary_lines.append("-" * 60)
+    summary_lines.append(f"Ground Truth: {len(drift_points)} drift points")
+    
+    # Add metrics if available
+    if metrics:
+        for mode in [AdaptationMode.TYPE_SPECIFIC, AdaptationMode.SIMPLE, AdaptationMode.NONE]:
+            m = metrics.get(mode, {})
+            mode_name = mode_labels.get(mode, mode)[:20]
+            edr = m.get('EDR', 0)
+            fp = m.get('FP', 0)
+            acc = m.get('overall_accuracy', 0)
+            summary_lines.append(f"{mode_name:<20}: Acc={acc:.1%}  EDR={edr:.0%}  FP={fp}")
+    
+    summary_lines.append("-" * 60)
+    
+    # Strategy legend
+    strategy_legend = "Adaptation Strategies:  "
+    for strat, marker in [('sudden', 's'), ('gradual', 'D'), ('incremental', '^'), ('recurrent', 'o')]:
+        strategy_legend += f"  {marker}={strat.title()}"
+    summary_lines.append(strategy_legend)
+    
+    summary_text = "\n".join(summary_lines)
+    
+    ax_summary.text(0.02, 0.5, summary_text, transform=ax_summary.transAxes,
+                    fontsize=10, fontfamily='monospace', verticalalignment='center',
+                    bbox=dict(boxstyle='round,pad=0.5', facecolor='#f8f9fa', 
+                              edgecolor='#dee2e6', alpha=0.95))
+    
+    # Add color legend for arrows
+    arrow_legend = "Detection Delay:  Green=<100  Orange=<250  Red=>250 samples"
+    ax_summary.text(0.65, 0.5, arrow_legend, transform=ax_summary.transAxes,
+                    fontsize=9, verticalalignment='center',
+                    bbox=dict(boxstyle='round,pad=0.3', facecolor='#fff3cd', 
+                              edgecolor='#ffc107', alpha=0.9))
+    
+    # =========================================================================
+    # Save figure
+    # =========================================================================
+    
+    # Use subplots_adjust instead of tight_layout for better control with GridSpec
+    plt.subplots_adjust(left=0.08, right=0.95, top=0.93, bottom=0.08)
+    plt.savefig(output_path, dpi=150, bbox_inches='tight', facecolor='white')
     plt.close()
     print(f"\nPlot saved to: {output_path}")
 
@@ -311,6 +590,7 @@ def plot_prequential_comparison(results: Dict[str, Dict], drift_points: List[int
 def calculate_metrics(results: Dict[str, Dict], drift_points: List[int]) -> Dict:
     """
     Calculate comparison metrics for all modes.
+    Now includes BOTH adaptation metrics AND detection metrics.
     """
     metrics = {}
     
@@ -335,12 +615,25 @@ def calculate_metrics(results: Dict[str, Dict], drift_points: List[int]) -> Dict
         if 'classification_times' in data and len(data['classification_times']) > 0:
             avg_class_time = np.mean(data['classification_times']) * 1000 # Convert to ms
         
+        # NEW: Calculate detection metrics (TP, FP, EDR, MDR, etc.)
+        detections = data.get('detections', [])
+        det_metrics = calculate_detection_metrics(detections, drift_points, tolerance=250)
+        
         metrics[mode] = {
+            # Adaptation metrics
             'overall_accuracy': mean_acc,
             'post_drift_accuracy': post_drift_mean,
-            'n_detections': len(data['detections']),
+            'n_detections': len(detections),
             'n_adaptations': len(data['adaptations']),
-            'avg_classification_time_ms': avg_class_time
+            'avg_classification_time_ms': avg_class_time,
+            # Detection metrics
+            'TP': det_metrics['TP'],
+            'FP': det_metrics['FP'],
+            'FN': det_metrics['FN'],
+            'EDR': det_metrics['EDR'],
+            'MDR': det_metrics['MDR'],
+            'Precision': det_metrics['Precision'],
+            'Mean_Delay': det_metrics['Mean_Delay'],
         }
     
     # Calculate improvements
@@ -360,9 +653,9 @@ def main():
     parser = argparse.ArgumentParser(description='Prequential Accuracy Evaluation (Enhanced)')
     parser.add_argument('--n_samples', type=int, default=5000, help='Number of samples')
     parser.add_argument('--n_drifts', type=int, default=5, help='Number of drift points')
-    parser.add_argument('--drift_type', type=str, default='sudden', 
-                        choices=['sudden', 'gradual', 'incremental', 'recurrent'],
-                        help='Type of drift to simulate')
+    parser.add_argument('--drift_type', type=str, default='mixed', 
+                        choices=['sudden', 'gradual', 'incremental', 'recurrent', 'mixed'],
+                        help='Type of drift to simulate (use "mixed" for realistic scenario with multiple drift types)')
     parser.add_argument('--seed', type=int, default=42, help='Random seed')
     parser.add_argument('--output_dir', type=str, default='./prequential_results', help='Output directory')
     # Added Arguments
@@ -433,44 +726,70 @@ def main():
             data['accuracy'], drift_points, n_samples=args.n_samples, adaptation_window=500
         )
 
-    print("\n" + "="*80)
-    print("RESULTS")
-    print("="*80)
+    print("\n" + "="*90)
+    print("RESULTS - COMPREHENSIVE EVALUATION")
+    print("="*90)
     print(f"\nDrift Type: {args.drift_type.upper()}")
-    print("-"*40)
+    print(f"Ground Truth: {len(drift_points)} drift points")
+    print("-"*90)
+    
+    # Header
+    print(f"{'Mode':<20} | {'Detection':<30} | {'Adaptation':<25}")
+    print(f"{'':20} | {'EDR':>6} {'MDR':>6} {'Prec':>6} {'FP':>4} | {'Acc':>8} {'Restore':>10}")
+    print("-"*90)
+    
     for mode in [AdaptationMode.TYPE_SPECIFIC, AdaptationMode.SIMPLE, AdaptationMode.NONE]:
         m = metrics.get(mode, {})
         s = sota_metrics.get(mode, {})
-        time_str = f", ClassTime={m.get('avg_classification_time_ms', 0):.2f}ms" if mode == AdaptationMode.TYPE_SPECIFIC else ""
         
-        print(f"{mode:20s}: Accuracy = {m.get('overall_accuracy', 0):.4f}, "
-              f"Restoration Time = {s.get('avg_restoration_time', 0):.1f} samples, "
-              f"Perf Loss = {s.get('avg_performance_loss', 0):.4f}" + time_str)
+        # Detection metrics
+        edr = m.get('EDR', 0)
+        mdr = m.get('MDR', 0)
+        prec = m.get('Precision', 0)
+        fp = m.get('FP', 0)
+        
+        # Adaptation metrics
+        acc = m.get('overall_accuracy', 0)
+        restore = s.get('avg_restoration_time', float('inf'))
+        restore_str = f"{restore:.0f}" if restore < 1000 else "N/A"
+        
+        print(f"{mode:<20} | {edr:>6.3f} {mdr:>6.3f} {prec:>6.3f} {fp:>4} | {acc:>7.2%} {restore_str:>10}")
     
+    print("-"*90)
     print(f"\nImprovement (Type-Specific vs No-Adaptation): "
           f"+{metrics.get('improvement_vs_none', 0):.4f} "
           f"(+{metrics.get('improvement_pct_vs_none', 0):.1f}%)")
     print(f"Improvement (Type-Specific vs Simple):        "
           f"+{metrics.get('improvement_vs_simple', 0):.4f}")
-    print("="*80)
+    print("="*90)
     
     # Generate plot
     print("\n[6] Generating plot...")
     plot_path = output_dir / f"prequential_accuracy_{args.drift_type}.png"
-    plot_prequential_comparison(results, drift_points, plot_path)
+    plot_prequential_comparison(results, drift_points, plot_path, 
+                                 drift_types=drift_types, metrics=metrics,
+                                 X=X, y=y)
     
     # Save metrics to file
     metrics_path = output_dir / f"metrics_{args.drift_type}.txt"
     with open(metrics_path, 'w') as f:
-        f.write(f"Prequential Accuracy Evaluation Results (SOTA Enhanced)\n")
+        f.write(f"Prequential Accuracy Evaluation Results (Comprehensive)\n")
         f.write(f"Generated: {datetime.now().isoformat()}\n")
         f.write(f"Samples: {args.n_samples}, Drifts: {args.n_drifts}, Type: {args.drift_type}, Seed: {args.seed}\n\n")
         f.write(f"Config: w_ref={args.w_ref}, thresh={args.sudden_thresh}\n")
+        f.write(f"Ground Truth: {len(drift_points)} drift points at {drift_points}\n")
         
         for mode in [AdaptationMode.TYPE_SPECIFIC, AdaptationMode.SIMPLE, AdaptationMode.NONE]:
             m = metrics.get(mode, {})
             s = sota_metrics.get(mode, {})
             f.write(f"\n{mode}:\n")
+            f.write(f"  --- Detection Metrics ---\n")
+            f.write(f"  EDR (Recall):     {m.get('EDR', 0):.4f}\n")
+            f.write(f"  MDR (Miss Rate):  {m.get('MDR', 0):.4f}\n")
+            f.write(f"  Precision:        {m.get('Precision', 0):.4f}\n")
+            f.write(f"  TP: {m.get('TP', 0)}, FP: {m.get('FP', 0)}, FN: {m.get('FN', 0)}\n")
+            f.write(f"  Mean Delay:       {m.get('Mean_Delay', 0):.1f} samples\n")
+            f.write(f"  --- Adaptation Metrics ---\n")
             f.write(f"  Overall Accuracy: {m.get('overall_accuracy', 0):.4f}\n")
             f.write(f"  Post-Drift Acc:   {m.get('post_drift_accuracy', 0):.4f}\n")
             f.write(f"  Adaptations:      {m.get('n_adaptations', 0)}\n")

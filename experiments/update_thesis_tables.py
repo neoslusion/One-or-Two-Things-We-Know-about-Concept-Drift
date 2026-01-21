@@ -205,9 +205,9 @@ def generate_aggregate_table(df):
     
     # Generate LaTeX
     rows = [
-        ["CDT\\_MSW", f"{cdt_cat:.1f}\\%", f"{cdt_sub:.1f}\\%", f"{cdt_edr:.3f}", f"{cdt_mdr:.3f}", f"{int(cdt_fp)}", "Có"],
-        ["\\textbf{SE-CDT (Std)}", f"\\textbf{{{se_cat:.1f}\\%}}", f"\\textbf{{{se_sub:.1f}\\%}}", f"\\textbf{{{se_edr:.3f}}}", f"\\textbf{{{se_mdr:.3f}}}", f"{int(se_fp)}", "Không"],
-        ["SE-CDT (ADW)", f"{adw_cat:.1f}\\%", f"{adw_sub:.1f}\\%", f"{adw_edr:.3f}", f"{adw_mdr:.3f}", f"{int(adw_fp)}", "Không"]
+        ["CDT\\_MSW", f"{cdt_cat:.1f}\\%", f"{cdt_sub:.1f}\\%", f"{cdt_edr:.3f}", f"{cdt_mdr:.3f}", f"{int(cdt_fp)}", "Yes"],
+        ["\\textbf{SE-CDT (Std)}", f"\\textbf{{{se_cat:.1f}\\%}}", f"\\textbf{{{se_sub:.1f}\\%}}", f"\\textbf{{{se_edr:.3f}}}", f"\\textbf{{{se_mdr:.3f}}}", f"{int(se_fp)}", "No"],
+        ["SE-CDT (ADW)", f"{adw_cat:.1f}\\%", f"{adw_sub:.1f}\\%", f"{adw_edr:.3f}", f"{adw_mdr:.3f}", f"{int(adw_fp)}", "No"]
     ]
     
     lines = []
