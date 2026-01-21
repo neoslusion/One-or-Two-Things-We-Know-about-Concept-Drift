@@ -71,7 +71,7 @@ PREQUENTIAL_WINDOW = 100       # Window for prequential accuracy
 # Window-based methods
 WINDOW_METHODS = [
     'D3',              # Margin density drift detector
-    # 'DAWIDD',          # Distance-aware windowed drift detector
+    'DAWIDD',          # Distance-aware windowed drift detector
     'MMD',             # Maximum Mean Discrepancy (permutation test)
     'KS',              # Kolmogorov-Smirnov test
     'ShapeDD',         # Original ShapeDD (MMD + convolution pattern detection)
