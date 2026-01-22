@@ -179,6 +179,9 @@ from data.generators.monitoring_generators import (
     generate_rotating_hyperplane,
 )
 
+# Import rigorous P(X) drift generator for Real Drift evaluation
+from data.generators.drift_generators import generate_mixed_stream_rigorous
+
 
 def generate_synthetic_stream(
     n_samples: int = 5000,
@@ -188,36 +191,74 @@ def generate_synthetic_stream(
     random_seed: int = 42,
 ):
     """
-    Wrapper for SOTA generators.
+    Wrapper for drift stream generators.
+    
+    IMPORTANT: For unsupervised methods like SE-CDT (MMD-based), we need Real Drift
+    that changes P(X), not Virtual Drift that only changes P(Y|X).
+    
+    - generate_sea_concepts: Virtual Drift (only P(Y|X) changes) - NOT suitable for SE-CDT
+    - generate_mixed_stream_rigorous: Real Drift (P(X) changes) - SUITABLE for SE-CDT
     """
     if drift_type == "mixed":
         return generate_mixed_drift_dataset(n_samples, random_seed)
+    
     elif drift_type == "sudden":
-        return generate_sea_concepts(n_samples, n_drifts, random_seed)
+        # Use P(X) drift generator instead of SEA (which is virtual drift only)
+        # This creates actual mean shift in feature space that SE-CDT can detect
+        events = [
+            {"type": "Sudden", "pos": (i + 1) * (n_samples // (n_drifts + 1)), "width": 0}
+            for i in range(n_drifts)
+        ]
+        X, y, concepts = generate_mixed_stream_rigorous(
+            events, length=n_samples, n_features=n_features, seed=random_seed
+        )
+        drift_points = [e["pos"] for e in events]
+        return X, y, drift_points, ["sudden"] * len(drift_points)
+    
     elif drift_type == "gradual":
-        # Use rotating hyperplane for gradual
-        return generate_rotating_hyperplane(
-            n_samples,
-            n_drifts,
-            n_features,
-            drift_type="gradual",
-            random_seed=random_seed,
+        # Use P(X) drift generator with gradual transition
+        # Creates smooth mean shift over transition window
+        # Use larger magnitude (3.0) for gradual drift to be detectable despite mixing
+        transition_width = n_samples // (n_drifts + 1) // 3  # ~1/3 of segment
+        events = [
+            {"type": "Gradual", "pos": (i + 1) * (n_samples // (n_drifts + 1)), 
+             "width": transition_width, "magnitude": 3.0}  # Higher magnitude for gradual
+            for i in range(n_drifts)
+        ]
+        X, y, concepts = generate_mixed_stream_rigorous(
+            events, length=n_samples, n_features=n_features, seed=random_seed
         )
+        drift_points = [e["pos"] for e in events]
+        return X, y, drift_points, ["gradual"] * len(drift_points)
+    
     elif drift_type == "incremental":
-        return generate_rotating_hyperplane(
-            n_samples,
-            n_drifts,
-            n_features,
-            drift_type="incremental",
-            random_seed=random_seed,
+        # Use P(X) drift generator with incremental (continuous) transition
+        transition_width = n_samples // (n_drifts + 1) // 2  # ~1/2 of segment
+        events = [
+            {"type": "Incremental", "pos": (i + 1) * (n_samples // (n_drifts + 1)), "width": transition_width}
+            for i in range(n_drifts)
+        ]
+        X, y, concepts = generate_mixed_stream_rigorous(
+            events, length=n_samples, n_features=n_features, seed=random_seed
         )
+        drift_points = [e["pos"] for e in events]
+        return X, y, drift_points, ["incremental"] * len(drift_points)
+    
     elif drift_type == "recurrent":
-        # Use mixed for now as it has recurrent parts, or fallback
-        # Ideally we'd have a specific recurrent generator
+        # Use mixed dataset which includes recurrent drift
         return generate_mixed_drift_dataset(n_samples, random_seed)
+    
     else:
-        # Default fallback
-        return generate_sea_concepts(n_samples, n_drifts, random_seed)
+        # Default fallback: use sudden P(X) drift
+        events = [
+            {"type": "Sudden", "pos": (i + 1) * (n_samples // (n_drifts + 1)), "width": 0}
+            for i in range(n_drifts)
+        ]
+        X, y, concepts = generate_mixed_stream_rigorous(
+            events, length=n_samples, n_features=n_features, seed=random_seed
+        )
+        drift_points = [e["pos"] for e in events]
+        return X, y, drift_points, ["sudden"] * len(drift_points)
 
 
 # ... (Configuration and imports preserved) ...

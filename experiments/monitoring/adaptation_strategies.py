@@ -35,6 +35,12 @@ def adapt_sudden_drift(model_factory: Callable, X: np.ndarray, y: Optional[np.nd
     new_model = model_factory()
 
     if y is not None:
+        # Check for single-class issue
+        unique_classes = np.unique(y)
+        if len(unique_classes) < 2:
+            log(f"  WARNING: Only {len(unique_classes)} class in data, skipping retrain")
+            return model_factory()  # Return fresh untrained model
+        
         # Batch training with sklearn
         new_model.fit(X, y)
         log(f"  Retrained on {len(X)} samples using sklearn .fit()")
@@ -56,6 +62,12 @@ def adapt_incremental_drift(model, X: np.ndarray, y: Optional[np.ndarray],
     log("INCREMENTAL drift → Retrain on drift window")
     
     if y is not None:
+        # Check for single-class issue
+        unique_classes = np.unique(y)
+        if len(unique_classes) < 2:
+            log(f"  WARNING: Only {len(unique_classes)} class in data, skipping retrain")
+            return model
+        
         # Batch retrain on drift window
         model.fit(X, y)
         log(f"  Retrained model on {len(X)} recent samples")
@@ -85,6 +97,17 @@ def adapt_gradual_drift(model, X: np.ndarray, y: Optional[np.ndarray],
     cutoff = n // 2
     X_recent = X[cutoff:]
     y_recent = y[cutoff:]
+
+    # Check for single-class issue (common with drift data)
+    unique_classes = np.unique(y_recent)
+    if len(unique_classes) < 2:
+        log(f"  WARNING: Only {len(unique_classes)} class in recent samples, using full window")
+        X_recent = X
+        y_recent = y
+        unique_classes = np.unique(y_recent)
+        if len(unique_classes) < 2:
+            log(f"  WARNING: Still single class, skipping retrain")
+            return model
 
     # Batch retrain on recent samples
     model.fit(X_recent, y_recent)
