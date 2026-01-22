@@ -65,7 +65,8 @@ Luận văn cài đặt IDW-MMD như sau:
 		\ENDFOR
 		\STATE Normalize weights: $\sum_{i \in X_{ref}} w_i = 1$, $\sum_{j \in X_{test}} w_j = 1$
 		\STATE \textbf{2. Compute Weighted Statistic}
-		\STATE $\widehat{\text{MMD}}^2_{\text{IDW}} = \sum_{i,j} w_i w_j k(x_i, x_j) + \sum_{p,q} w_p w_q k(y_p, y_q) - 2 \sum_{i,p} w_i w_p k(x_i, y_p)$
+		\STATE $\widehat{\text{MMD}}^2_{\text{IDW}} = \sum_{i,j} w_i w_j k(x_i, x_j) + \sum_{p,q} w_p w_q k(y_p, y_q) - \frac{2}{mn} \sum_{i,p} k(x_i, y_p)$
+		\COMMENT{Cross-term sử dụng uniform weights $(1/mn)$ để ổn định ước lượng}
 		\RETURN $\widehat{\text{MMD}}^2_{\text{IDW}}$
 	\end{algorithmic}
 \end{algorithm}
@@ -202,7 +203,7 @@ Theo phân loại của CDT\_MSW, drift được chia thành:
 	\item \textbf{Không giám sát:} Không cần labels, phù hợp với streaming data.
 	\item \textbf{Tích hợp:} Sử dụng cùng tín hiệu $\sigma(t)$ đã tính cho detection, không cần tính toán thêm.
 	\item \textbf{Thời gian thực:} Phân loại ngay sau khi phát hiện drift.
-	\item \textbf{Sử dụng standard MMD:} Phù hợp hơn ADW-MMD cho classification vì standard MMD giữ lại tất cả sự khác biệt bao gồm cả những thay đổi nhỏ từ PCD (Gradual, Incremental).
+	\item \textbf{Sử dụng standard MMD:} Phù hợp hơn IDW-MMD cho classification vì standard MMD giữ lại tất cả sự khác biệt bao gồm cả những thay đổi nhỏ từ PCD (Gradual, Incremental).
 \end{itemize}
 
 \textbf{Độ phức tạp tính toán:}
@@ -281,7 +282,16 @@ Hệ thống được thiết kế để hỗ trợ Meta-Learning trong tương 
 
 \section{Kiến trúc đề xuất cho hệ thống Streaming Real-time với Apache Kafka}
 
-Để hiện thực hóa các phương pháp trên trong môi trường thực tế, luận văn đề xuất một kiến trúc xử lý luồng dữ liệu phân tán dựa trên Apache Kafka. Kiến trúc này được thiết kế để đảm bảo tính tách biệt (decoupling), khả năng mở rộng (scalability) và độ tin cậy (reliability). \textit{Lưu ý: Phần này trình bày thiết kế kiến trúc; đánh giá hiệu năng hệ thống (latency, throughput dưới tải cao) là hướng phát triển trong tương lai.}
+Để hiện thực hóa các phương pháp trên trong môi trường thực tế, luận văn đề xuất một kiến trúc xử lý luồng dữ liệu phân tán dựa trên Apache Kafka. Kiến trúc này được thiết kế để đảm bảo tính tách biệt (decoupling), khả năng mở rộng (scalability) và độ tin cậy (reliability).
+
+\begin{quotation}
+\textbf{Lưu ý về phạm vi triển khai:} Phần này trình bày \textbf{thiết kế kiến trúc đề xuất}, không phải triển khai production hoàn chỉnh. Cụ thể:
+\begin{itemize}
+	\item \textbf{Đã triển khai:} Mô phỏng streaming qua Kafka-compatible API (Redpanda) với các thuật toán detection và classification.
+	\item \textbf{Chưa đánh giá:} Hiệu năng hệ thống phân tán (latency dưới tải cao, throughput với nhiều partitions, fault recovery time).
+\end{itemize}
+Đánh giá benchmark trong Chương~\ref{chap:experiments} tập trung vào hiệu năng thuật toán (detection accuracy, runtime), không phải infrastructure performance.
+\end{quotation}
 
 \subsection{Tổng quan kiến trúc}
 

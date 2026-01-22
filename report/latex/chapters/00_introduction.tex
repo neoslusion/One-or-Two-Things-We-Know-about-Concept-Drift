@@ -52,7 +52,7 @@ Nghiên cứu sẽ so sánh hiệu năng, phân tích ưu nhược điểm,
 từ đó xác định hướng cải tiến phù hợp.
 
 \subsection{Tích hợp các cải tiến cho ShapeDD}
-Dựa trên cơ sở lý thuyết và kết quả đánh giá hiệu năng, nghiên cứu sẽ tích hợp các kỹ thuật tiên tiến gần đây như ADW-MMD (Adaptive Density-Weighted MMD) và MMD-Agg (MMD Aggregated) vào framework ShapeDD. Mục tiêu là giải quyết các hạn chế về chi phí tính toán và độ nhạy của phương pháp gốc. Cụ thể, ADW-MMD sử dụng cơ chế trọng số dựa trên mật độ để giảm phương sai ước lượng, cho phép đạt độ chính xác cao với số lượng mẫu ít hơn.
+Dựa trên cơ sở lý thuyết và kết quả đánh giá hiệu năng, nghiên cứu tích hợp kỹ thuật \textbf{IDW-MMD (Inverse Density-Weighted MMD)} vào framework ShapeDD. Mục tiêu là giải quyết các hạn chế về chi phí tính toán và độ nhạy của phương pháp gốc. IDW-MMD sử dụng cơ chế trọng số nghịch biến với mật độ để giảm phương sai ước lượng, cho phép đạt độ chính xác cao với số lượng mẫu ít hơn. Phương pháp MMD-Agg (MMD Aggregated) cũng được khảo sát về mặt lý thuyết nhưng không đưa vào benchmark thực nghiệm do chi phí tính toán quá cao ($\sim$500ms/window).
 
 \subsection{Đề xuất phương pháp phân loại drift SE-CDT}
 Kết hợp khả năng định vị chính xác thời điểm drift của ShapeDD với mô hình phân loại \textit{drift} CDT\_MSW (Concept Drift Type identification based on Multi-Sliding Windows --- phương pháp phân loại loại drift dựa trên phân tích cửa sổ trượt đa kích thước~\cite{guo2022cdtmsw}, sẽ được trình bày chi tiết ở Mục~\ref{sec:cdt-msw-theory}) để đề xuất phương pháp mới \textbf{SE-CDT} (ShapeDD-Enhanced Concept Drift Type Identification).

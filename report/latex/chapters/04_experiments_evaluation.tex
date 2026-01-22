@@ -21,6 +21,13 @@ Hệ thống streaming được giả lập sử dụng Apache Kafka\footnote{Tr
 	\item Số lần chạy lặp lại (Runs): $30$ lần với các random seed khác nhau để đảm bảo độ tin cậy thống kê ($\alpha = 0.05$).
 \end{itemize}
 
+\textbf{Quy ước ký hiệu trong các bảng:}
+\begin{itemize}
+	\item \textbf{MMD\_ADW / MMD\_IDW}: Inverse Density-Weighted MMD (IDW-MMD), sử dụng trọng số nghịch mật độ
+	\item \textbf{ShapeDD\_WMMD\_PROPER}: ShapeDD với IDW-MMD và asymptotic p-value
+	\item \textbf{SE\_CDT}: SE-CDT unified detector-classifier system
+\end{itemize}
+
 \section{Tập dữ liệu thực nghiệm}
 
 Hệ thống được đánh giá trên bộ 10 tập dữ liệu tổng hợp (synthetic datasets), được thiết kế để kiểm tra các khía cạnh cụ thể của thuật toán phát hiện. Các tập dữ liệu được phân loại dựa trên bản chất của sự thay đổi phân phối:
@@ -65,7 +72,7 @@ Bảng~\ref{tab:comprehensive_performance} tóm tắt hiệu suất trung bình.
 \textbf{Phân tích kết quả:}
 \begin{itemize}
 	\item \textbf{MMD\_ADW dẫn đầu về F1 (0.548):} Phương pháp IDW-MMD đạt F1-score cao nhất nhờ sự cân bằng giữa Precision (0.589) và Recall (0.567), với số báo động giả thấp (2.5 FP/run). Điều này xác nhận hiệu quả của cơ chế trọng số nghịch mật độ trong việc giảm phương sai ước lượng.
-	\item \textbf{SE\_CDT và ShapeDD\_WMMD\_PROPER (F1 = 0.481):} Hai phương pháp đề xuất đạt Precision cao (0.539) với \textbf{không có báo động giả} (FP = 0). Đây là điểm mạnh quan trọng cho các hệ thống yêu cầu độ tin cậy cao, nơi chi phí của False Alarm cao. Độ trễ phát hiện thấp nhất (18 mẫu) cho thấy khả năng phản ứng nhanh.
+	\item \textbf{SE\_CDT và ShapeDD\_WMMD\_PROPER (F1 = 0.481):} Hai phương pháp đề xuất đạt Precision cao (0.539) với \textbf{không có báo động giả} (FP = 0) trên benchmark detection. Đây là điểm mạnh quan trọng cho các hệ thống yêu cầu độ tin cậy cao. Độ trễ phát hiện thấp nhất (18 mẫu) cho thấy khả năng phản ứng nhanh. \textit{Lưu ý:} FP = 0 một phần do phương pháp không phát hiện drift trên các dataset virtual drift (hyperplane, led\_abrupt, standard\_sea) nơi $P(X)$ không đổi --- đây là hành vi mong đợi của phương pháp unsupervised.
 	\item \textbf{D3 xếp thứ 2 (F1 = 0.488):} Phương pháp discriminative này hoạt động tốt với Precision cao (0.553) và FP thấp (0.9), nhưng Recall hạn chế (0.474) do phụ thuộc vào khả năng học của classifier.
 	\item \textbf{MMD baseline (F1 = 0.455):} Phương pháp MMD chuẩn đạt Recall cao (0.722) nhưng Precision thấp (0.348), dẫn đến 14.3 báo động giả trung bình mỗi lần chạy.
 	\item \textbf{Sự đánh đổi của KS-Test (F1 = 0.289):} Phương pháp Kolmogorov-Smirnov đạt Recall cao nhất (0.796) nhưng lại có Precision thấp nhất (0.188) với số lượng báo động giả lớn (36.6 FP/run). Điều này cho thấy KS quá nhạy cảm với nhiễu, không phù hợp cho các hệ thống giám sát tự động yêu cầu độ tin cậy cao.
@@ -102,7 +109,7 @@ Hiệu suất của các phương pháp thay đổi tùy thuộc vào đặc tí
 
 \textbf{Phân tích sâu:}
 \begin{enumerate}
-	\item \textbf{Hiệu quả vượt trội trên Drift mạnh (Severe/Sudden):}
+	\item \textbf{Hiệu quả cao trên Drift mạnh (Severe/Sudden):}
 	      Trên các dataset như \textit{gaussian\_shift\_moderate}, \textit{stagger}, và \textit{gen\_random\_severe/ultra\_severe}, phương pháp ShapeDD\_WMMD\_PROPER và SE\_CDT đạt F1 gần như tuyệt đối ($\geq 0.97$, với 1.0 hoàn hảo trên gaussian\_shift và stagger).
 	      Hình~\ref{fig:sudden_drift_vis} minh họa rõ nét cơ chế của ShapeDD: khi drift xảy ra đột ngột, tín hiệu MMD tăng dần và đạt đỉnh đúng tại thời điểm drift, tạo thành hình tam giác. Điều này xác nhận lý thuyết đã trình bày trong Chương 2.
 
@@ -121,7 +128,7 @@ Hiệu suất của các phương pháp thay đổi tùy thuộc vào đặc tí
 	      \textit{Lý giải:} Các blip tạo ra sự thay đổi rõ ràng trong $P(X)$, và trọng số nghịch mật độ giúp tăng độ nhạy với các thay đổi ở vùng biên phân phối.
 
 	\item \textbf{Phân tích Báo động giả (False Positives):}
-	      Hình~\ref{fig:stationary_fp} so sánh số lượng báo động giả. KS-Test tạo ra lượng báo động sai lớn nhất (36.6 FP/run), khẳng định tính nhạy cảm quá mức với nhiễu ngẫu nhiên. Ngược lại, SE\_CDT và ShapeDD\_WMMD\_PROPER duy trì được \textbf{0 False Positives} trên toàn bộ benchmark, nhờ vào cơ chế shape detection chặt chẽ.
+	      Hình~\ref{fig:stationary_fp} so sánh số lượng báo động giả. KS-Test tạo ra lượng báo động sai lớn nhất (36.6 FP/run), khẳng định tính nhạy cảm quá mức với nhiễu ngẫu nhiên. Ngược lại, SE\_CDT và ShapeDD\_WMMD\_PROPER duy trì được \textbf{0 False Positives} trên benchmark, nhờ vào cơ chế shape detection chặt chẽ yêu cầu tín hiệu tam giác rõ ràng trong chuỗi MMD.
 \end{enumerate}
 
 \begin{figure}[h]
@@ -148,7 +155,7 @@ Yếu tố then chốt cho các hệ thống real-time là tốc độ xử lý.
 \begin{itemize}
 	\item \textbf{Tăng tốc gấp 17--20 lần:} SE\_CDT đạt thông lượng $\sim 131,500$ mẫu/giây (7.6ms/window), nhanh gấp \textbf{20.5 lần} so với ShapeDD gốc ($\sim 7,987$ mẫu/giây, 125.2ms/window). ShapeDD\_WMMD\_PROPER đạt $\sim 111,000$ mẫu/giây (\textbf{17.3× speedup}).
 	\item \textbf{Cơ sở:} Sự cải thiện này đến từ việc loại bỏ quy trình kiểm định hoán vị (Permutation Test) tốn kém ($O(N_{perm} \cdot n^2)$) và thay thế bằng \textbf{phân phối tiệm cận (asymptotic distribution)} để tính p-value, chỉ cần $O(n^2)$.
-	\item \textbf{So sánh với baseline:} MMD chuẩn đạt 28,818 mẫu/giây (4.5× speedup), KS đạt 46,729 mẫu/giây (7.3× speedup). SE\_CDT vượt trội cả hai về tốc độ.
+	\item \textbf{So sánh với baseline:} MMD chuẩn đạt 28,818 mẫu/giây (4.5× speedup), KS đạt 46,729 mẫu/giây (7.3× speedup). SE\_CDT đạt throughput cao hơn cả hai phương pháp này.
 	\item \textbf{Khả năng triển khai:} Với thông lượng $>100,000$ mẫu/giây, hệ thống có khả năng xử lý các luồng dữ liệu tốc độ cao (như log máy chủ, transaction ngân hàng) trong thời gian thực trên phần cứng thông thường.
 \end{itemize}
 
@@ -258,7 +265,7 @@ Bảng~\ref{tab:cdt-aggregate} tổng hợp kết quả benchmark (5 loại drif
 	\label{tab:cdt-aggregate}
 	\input{../../results/tables/table_comparison_aggregate.tex}
 	\begin{flushleft}
-		\small \textit{Lưu ý: Độ chính xác CAT 74.6\% ở đây khác với 78.0\% trong Bảng~\ref{tab:se-cdt-comparison} do sự khác biệt về phạm vi đánh giá. Bảng tổng hợp này tính trung bình trên toàn bộ 10 datasets, trong khi Bảng~\ref{tab:se-cdt-comparison} tập trung vào các kịch bản so sánh trực tiếp với CDT\_MSW.}
+		\small \textit{Lưu ý: Các số liệu trong bảng này được tính từ kết quả benchmark mới nhất (17 configurations × 10 runs).}
 	\end{flushleft}
 \end{table}
 
@@ -268,8 +275,8 @@ Trong quá trình nghiên cứu, luận văn cũng thử nghiệm biến thể s
 
 \textbf{Kết quả thử nghiệm:}
 \begin{itemize}
-	\item \textbf{IDW-MMD CAT Accuracy:} 20.0\% (so với 78.0\% của standard MMD)
-	\item \textbf{IDW-MMD SUB Accuracy:} 6.7\% (so với 44.2\% của standard MMD)
+	\item \textbf{IDW-MMD CAT Accuracy:} 20.0\% (so với 85.8\% của standard MMD)
+	\item \textbf{IDW-MMD SUB Accuracy:} 6.7\% (so với 46.6\% của standard MMD)
 	\item \textbf{MDR = 1.0:} Bỏ lỡ tất cả các điểm drift trên dataset PCD (Gradual, Incremental)
 \end{itemize}
 
@@ -291,7 +298,7 @@ IDW-MMD sử dụng cơ chế \textit{trọng số nghịch mật độ} ($w_{i}
 
 \textbf{Chi tiết theo loại drift:}
 \begin{itemize}
-	\item \textbf{Sudden \& Blip (TCD):} SE-CDT (Std) đạt EDR = 94.4\%, vượt trội so với CDT\_MSW (14.4\%)
+	\item \textbf{Sudden \& Blip (TCD):} SE-CDT (Std) đạt EDR = 94.4\%, cao hơn đáng kể so với CDT\_MSW (14.4\%)
 	\item \textbf{Gradual \& Incremental (PCD):} SE-CDT (ADW) có khả năng lọc nhiễu tốt hơn (FP = 171 vs 1394), nhưng EDR thấp hơn (50.6\%)
 \end{itemize}
 
@@ -427,8 +434,8 @@ Tổng hợp lại các kết quả thực nghiệm:
 
 \begin{enumerate}
 	\item \textbf{Về chất lượng phát hiện:} \textbf{MMD\_ADW} dẫn đầu về F1-score (0.548), tiếp theo là D3 (0.488) và \textbf{SE\_CDT/ShapeDD\_WMMD\_PROPER} (0.481). Điểm nổi bật của phương pháp đề xuất là \textbf{0 False Positives} trên toàn bộ benchmark, cho thấy tính ổn định cao phù hợp với môi trường production.
-	\item \textbf{Về hiệu năng hệ thống:} Cải tiến IDW-MMD với phân phối tiệm cận mang lại lợi ích to lớn về mặt tính toán, tăng thông lượng xử lý lên \textbf{17--20 lần} (từ $\sim$8,000 lên $\sim$131,000 mẫu/giây), biến ShapeDD từ một thuật toán nghiên cứu thành một giải pháp khả thi cho môi trường sản xuất (production-ready).
-	\item \textbf{Về phân loại drift:} SE-CDT (Std) đạt \textbf{CAT = 85.8\%} và \textbf{SUB = 46.6\%} mà không cần labels, vượt trội so với CDT\_MSW supervised (CAT = 38.7\%). SE-CDT (ADW) cung cấp trade-off với FP thấp hơn (171 vs 1394) nhưng EDR giảm (50.6\% vs 94.4\%).
+	\item \textbf{Về hiệu năng hệ thống:} Cải tiến IDW-MMD với phân phối tiệm cận mang lại lợi ích đáng kể về mặt tính toán, tăng thông lượng xử lý lên \textbf{17--20 lần} (từ $\sim$8,000 lên $\sim$131,000 mẫu/giây), cho thấy tiềm năng triển khai trong môi trường sản xuất.
+	\item \textbf{Về phân loại drift:} SE-CDT (Std) đạt \textbf{CAT = 85.8\%} và \textbf{SUB = 46.6\%} mà không cần labels, cao hơn đáng kể so với CDT\_MSW supervised (CAT = 38.7\%) trong điều kiện thử nghiệm (window\_size = 50). SE-CDT (ADW) cung cấp trade-off với FP thấp hơn (171 vs 1394) nhưng EDR giảm (50.6\% vs 94.4\%).
 	\item \textbf{Về khả năng thích ứng:} Chiến lược thích ứng theo loại drift (Type-Specific Adaptation) với SE-CDT threshold = 0.15 cải thiện Prequential Accuracy trung bình \textbf{+3.0\%}, đặc biệt hiệu quả với Sudden Drift (\textbf{+5.2\%}).
 	\item \textbf{Về hành vi đúng trên Virtual Drift:} SE\_CDT/WMMD\_PROPER đạt F1 = 0.0 trên các dataset virtual drift (hyperplane, led\_abrupt, sea) --- đây là hành vi \textit{mong đợi} vì $P(X)$ không đổi. Các phương pháp khác (MMD, KS) vẫn báo động giả trên các tập này.
 \end{enumerate}

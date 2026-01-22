@@ -7,8 +7,8 @@ Luận văn này đã giải quyết bài toán phát hiện và thích ứng v�
 
 \subsection{Đóng góp về Phương pháp luận (Methodological)}
 \begin{itemize}
-	\item \textbf{Tích hợp ShapeDD\_WMMD\_PROPER:} Tích hợp thành công phương pháp IDW-MMD (Inverse Density-Weighted MMD) với asymptotic p-value, lấy cảm hứng từ~\cite{bharti2023owmmd}, vào ShapeDD detector. Kết quả cho thấy phương pháp này cải thiện thông lượng xử lý gấp \textbf{17--20 lần} (đạt $\approx$ 111,000--131,000 mẫu/giây) so với ShapeDD gốc ($\approx$ 8,000 mẫu/giây), trong khi đạt F1-score = 0.481 với \textbf{0 False Positives}.
-	\item \textbf{Đề xuất SE-CDT:} Xây dựng phương pháp phân loại drift không giám sát \textbf{SE-CDT}, tận dụng khả năng định vị chính xác thời điểm drift của ShapeDD để phân loại loại drift. Phương pháp đạt độ chính xác \textbf{85.8\%} trong việc phân loại nhóm drift (TCD vs PCD), vượt trội so với CDT\_MSW supervised (38.7\%), tạo tiền đề cho chiến lược thích ứng thông minh.
+	\item \textbf{Tích hợp ShapeDD\_WMMD\_PROPER:} Tích hợp thành công phương pháp IDW-MMD (Inverse Density-Weighted MMD) với asymptotic p-value, lấy cảm hứng từ~\cite{bharti2023owmmd}, vào ShapeDD detector. Kết quả cho thấy phương pháp này cải thiện thông lượng xử lý gấp \textbf{17--20 lần} (đạt $\approx$ 111,000--131,000 mẫu/giây) so với ShapeDD gốc ($\approx$ 8,000 mẫu/giây), trong khi đạt F1-score = 0.481 với \textbf{0 False Positives} trên detection benchmark. \textit{Lưu ý:} Phương pháp có giới hạn là không phát hiện được virtual drift (chỉ thay đổi $P(Y|X)$ mà không thay đổi $P(X)$), phản ánh đúng bản chất unsupervised của thuật toán.
+	\item \textbf{Đề xuất SE-CDT:} Xây dựng phương pháp phân loại drift không giám sát \textbf{SE-CDT}, tận dụng khả năng định vị chính xác thời điểm drift của ShapeDD để phân loại loại drift. Phương pháp đạt độ chính xác \textbf{85.8\%} trong việc phân loại nhóm drift (TCD vs PCD), cao hơn đáng kể so với CDT\_MSW supervised (38.7\%) trong điều kiện thử nghiệm, tạo tiền đề cho chiến lược thích ứng thông minh.
 \end{itemize}
 
 \subsection{Đóng góp về Thực nghiệm (Empirical)}
@@ -29,7 +29,7 @@ Luận văn này đã giải quyết bài toán phát hiện và thích ứng v�
 Từ quá trình nghiên cứu và thực nghiệm, luận văn rút ra các bài học quan trọng:
 
 \begin{enumerate}
-	\item \textbf{Adaptive Window là yếu tố then chốt:} ShapeDD với kích thước cửa sổ thích ứng (adaptive sizing) vượt trội hoàn toàn so với cửa sổ cố định. Khả năng tự điều chỉnh theo độ lớn drift giúp giảm báo động giả (False Positives) và tăng độ nhạy.
+	\item \textbf{Adaptive Window là yếu tố then chốt:} ShapeDD với kích thước cửa sổ thích ứng (adaptive sizing) cho thấy cải thiện đáng kể so với cửa sổ cố định trong điều kiện thử nghiệm. Khả năng tự điều chỉnh theo độ lớn drift giúp giảm báo động giả (False Positives) và tăng độ nhạy.
 
 	\item \textbf{Trade-off giữa Tốc độ và Độ chính xác:} Các phương pháp cửa sổ trượt truyền thống chính xác nhưng chậm. Việc tích hợp IDW-MMD với asymptotic p-value đã giải quyết nút thắt này, đưa throughput từ $\sim$8,000 lên $\sim$131,000 mẫu/giây --- vượt qua cả KS-Test về tốc độ trong khi duy trì độ chính xác cao hơn (F1 = 0.481 vs 0.289).
 
@@ -82,9 +82,9 @@ Dựa trên nền tảng của luận văn, các hướng phát triển tiếp t
 
 Hành trình giải quyết bài toán concept drift là một quá trình liên tục. Luận văn này đã đóng góp một bước tiến cụ thể thông qua:
 \begin{enumerate}
-	\item \textbf{Cải thiện hiệu năng:} Tích hợp IDW-MMD với asymptotic p-value giúp tăng throughput \textbf{17--20 lần} (từ 8,000 lên 131,000 mẫu/giây), biến ShapeDD thành giải pháp production-ready.
-	\item \textbf{Đảm bảo độ tin cậy:} ShapeDD\_WMMD\_PROPER và SE\_CDT đạt \textbf{0 False Positives} trong detection benchmark, quan trọng cho môi trường production.
-	\item \textbf{Phân loại không giám sát:} SE-CDT đạt \textbf{CAT = 85.8\%} mà không cần labels, vượt trội CDT\_MSW supervised (38.7\%).
+	\item \textbf{Cải thiện hiệu năng:} Tích hợp IDW-MMD với asymptotic p-value giúp tăng throughput \textbf{17--20 lần} (từ 8,000 lên 131,000 mẫu/giây), cho thấy tiềm năng áp dụng trong môi trường production.
+	\item \textbf{Đảm bảo độ tin cậy:} ShapeDD\_WMMD\_PROPER và SE\_CDT đạt \textbf{0 False Positives} trong detection benchmark (trên các dataset có thay đổi $P(X)$), quan trọng cho môi trường production.
+	\item \textbf{Phân loại không giám sát:} SE-CDT đạt \textbf{CAT = 85.8\%} mà không cần labels, cao hơn đáng kể so với CDT\_MSW supervised (38.7\%) trong điều kiện thử nghiệm cụ thể (window\_size = 50).
 \end{enumerate}
 
 Kết quả nghiên cứu khẳng định rằng việc chuyển dịch từ các mô hình tĩnh sang các hệ thống thích ứng (adaptive systems) là xu hướng tất yếu. Với kiến trúc đề xuất và những hiểu biết thu được, hệ thống hoàn toàn có khả năng mở rộng để đối mặt với những thách thức phức tạp hơn của dữ liệu luồng trong tương lai, hướng tới các ứng dụng AI vận hành bền vững và tin cậy.
