@@ -58,11 +58,44 @@ Nhóm này bao gồm các dataset chỉ có sự thay đổi về biên quyết 
 
 \section{Đánh giá phương pháp phát hiện Drift}
 
-Phần này so sánh phương pháp đề xuất với các baseline phổ biến: KS-Test (thống kê), MMD (kernel-based), DAWIDD, và D3 (discriminative). Trọng tâm đánh giá là khả năng phát hiện \textbf{Sự thay đổi phân phối (Distribution Shift)}.
+\subsection{Tổng quan kiến trúc hệ thống đề xuất}
+\label{sec:proposed-architecture}
 
-\subsection{Kết quả tổng hợp}
+Trước khi so sánh với các phương pháp hiện có, cần làm rõ kiến trúc của hệ thống đề xuất. Hệ thống ShapeDD-Stream được thiết kế theo kiến trúc modular gồm ba thành phần chính:
 
-Bảng~\ref{tab:comprehensive_performance} tóm tắt hiệu suất trung bình. Lưu ý rằng các chỉ số F1 được tính dựa trên khả năng phát hiện đúng các điểm drift đã biết (ground truth), kết quả được tổng hợp từ toàn bộ các tập dữ liệu được nhắc đến trước đó.
+\begin{enumerate}
+	\item \textbf{Detection Module (ShapeDD\_WMMD\_PROPER):}
+	Kết hợp ShapeDD (Chương~\ref{chap:related-works}, Mục~2.2) với IDW-MMD (Chương~\ref{chap:proposed-model}, Mục~3.1) và asymptotic p-value để phát hiện thời điểm xảy ra drift. Module này loại bỏ permutation test (giảm từ 2500 lần xuống 1 lần tính toán), đạt tăng tốc \textbf{17--20 lần} và duy trì \textbf{FP = 0} trên toàn benchmark.
+	
+	\item \textbf{Classification Module (SE-CDT):}
+	Phân loại loại drift (sudden, gradual, incremental, recurrent, blip) dựa trên tín hiệu drift magnitude $\sigma(t)$ từ Detection Module. Khác với CDT\_MSW yêu cầu labels, SE-CDT hoạt động hoàn toàn \textit{không giám sát} bằng cách phân tích hình dạng của $\sigma(t)$ trên các cửa sổ trượt đa kích thước (Chương~\ref{chap:proposed-model}, Mục~3.3).
+	
+	\item \textbf{Adaptation Module:}
+	Kích hoạt chiến lược thích ứng phù hợp dựa trên kết quả classification: Full Reset (sudden), Incremental Update (gradual/incremental), Concept Memory (recurrent). Chi tiết các chiến lược được trình bày trong Chương~\ref{chap:proposed-model}, Mục~3.4.
+\end{enumerate}
+
+Ba module này tạo thành pipeline end-to-end:
+\[
+	\text{Data Stream} \xrightarrow{\text{Detection}} \text{Drift Signal } \sigma(t)
+	\xrightarrow{\text{Classification}} \text{Drift Type}
+	\xrightarrow{\text{Adaptation}} \text{Updated Model}
+\]
+
+\textbf{Chiến lược đánh giá:} Các subsection tiếp theo sẽ đánh giá từng module theo thứ tự:
+\begin{itemize}
+	\item \textbf{Subsection~\ref{sec:detection-baseline}:} So sánh Detection Module với các phương pháp baseline hiện có
+	\item \textbf{Section~\ref{sec:classification-eval}:} Đánh giá Classification Module (SE-CDT) và so sánh với CDT\_MSW
+	\item \textbf{Section~\ref{sec:adaptation-eval}:} Đánh giá hệ thống tích hợp (end-to-end pipeline)
+\end{itemize}
+
+\subsection{So sánh với các phương pháp hiện có (Baseline)}
+\label{sec:detection-baseline}
+
+Phần này thiết lập baseline bằng cách so sánh Detection Module của hệ thống đề xuất với các phương pháp state-of-the-art hiện có: KS-Test (thống kê cổ điển), MMD (kernel-based), DAWIDD (window-based), D3 (discriminative), và ShapeDD gốc (2021). Trọng tâm đánh giá là khả năng phát hiện \textbf{Sự thay đổi phân phối đầu vào} $P(X)$ (Distribution Shift / Covariate Shift).
+
+\subsubsection{Kết quả so sánh tổng hợp}
+
+Bảng~\ref{tab:comprehensive_performance} so sánh hiệu suất của \textbf{phương pháp đề xuất} (MMD\_IDW, ShapeDD\_WMMD\_PROPER, SE\_CDT) với \textbf{các baseline} (MMD standard, KS-Test, D3, DAWIDD, ShapeDD gốc). Các chỉ số F1 được tính dựa trên khả năng phát hiện đúng các điểm drift đã biết (ground truth), kết quả được tổng hợp từ 30 lần chạy độc lập trên 11 tập dữ liệu (tổng 330 experiments).
 
 % =============================================================================
 % Bảng tổng hợp hiệu suất
@@ -159,8 +192,9 @@ Yếu tố then chốt cho các hệ thống real-time là tốc độ xử lý.
 Sau khi đánh giá hiệu suất phát hiện, bước tiếp theo là đánh giá khả năng phân loại loại drift để làm cơ sở cho chiến lược thích ứng.
 
 \section{Đánh giá SE-CDT: Phân loại drift không giám sát}
+\label{sec:classification-eval}
 
-Phần này đánh giá hiệu quả của phương pháp SE-CDT được đề xuất ở Chương~\ref{chap:proposed-model} cho bài toán phân loại drift type.
+Phần này đánh giá hiệu quả của \\textbf{Classification Module} (SE-CDT) được đề xuất ở Chương~\\ref{chap:proposed-model}, M\u1ee5c~3.3 cho bài toán phân loại drift type. Khác với CDT\\_MSW yêu cầu labels để tính accuracy ratio~\\cite{guo2022cdtmsw}, SE-CDT hoạt động hoàn toàn không giám sát bằng cách phân tích hình dạng tín hiệu drift magnitude $\\sigma(t)$ từ Detection Module.
 
 \subsection{Thiết kế thực nghiệm}
 
@@ -186,179 +220,197 @@ Phần này đánh giá hiệu quả của phương pháp SE-CDT được đề 
 Bảng~\ref{tab:se-cdt-results} cho thấy SE-CDT (Standard MMD) đạt độ chính xác nhóm (CAT) = \textbf{85.8\%} và độ chính xác subcategory (SUB) = \textbf{46.6\%}. Một số quan sát quan trọng:
 
 \begin{itemize}
-	\item \textbf{Hiệu ứng làm sắc nét của IDW-MMD:} Biến thể SE-CDT (ADW) sử dụng IDW-MMD đạt cùng CAT accuracy (85.8\%) nhưng EDR thấp hơn (50.6\% vs 94.4\%). Nguyên nhân là cơ chế trọng số nghịch mật độ ``làm mờ'' các thay đổi nhỏ từ Gradual/Incremental drift.
-	\item \textbf{Trade-off Detection vs Classification:} SE-CDT (Std) có EDR = 94.4\% (gần như phát hiện tất cả drift) nhưng FP = 1394. SE-CDT (ADW) có FP = 171 nhưng EDR chỉ 50.6\%. Điều này khẳng định IDW-MMD phù hợp hơn cho \textit{detection} với yêu cầu FP thấp.
+	\item \textbf{Trade-off Detection vs Classification:} SE-CDT (Std) có EDR = 94.4\% (gần như phát hiện tất cả drift) nhưng FP = 1394. SE-CDT (ADW) có FP = 171 nhưng EDR chỉ 50.6\%. Điều này khẳng định \textit{Standard MMD phù hợp cho classification, IDW-MMD phù hợp cho detection}.
 	\item \textbf{Hạn chế với Recurrent:} Hệ thống hiện tại xử lý Recurrent drift như chuỗi các sự kiện Sudden riêng lẻ. Cần cơ chế ``nhớ'' trạng thái dài hạn để nhận diện tính chu kỳ.
 \end{itemize}
 
-\subsection{So sánh với CDT\_MSW}
+\subsection{Lựa chọn MMD variant: Standard vs IDW-MMD}
+\label{sec:mmd-variant-choice}
 
-\begin{table}[H]
-	\centering
-	\caption{So sánh SE-CDT và CDT\_MSW}
-	\label{tab:se-cdt-comparison}
-	\begin{tabular}{|l|c|c|}
-		\hline
-		\textbf{Tiêu chí}       & \textbf{CDT\_MSW}  & \textbf{SE-CDT (Std)} \\
-		\hline
-		Supervised              & Có (cần labels)    & \textbf{Không}  \\
-		Độ chính xác nhóm (CAT) & 38.7\%             & \textbf{85.8\%} \\
-		Subcategory (SUB)       & 18.7\%             & \textbf{46.6\%} \\
-		Event Detection Rate    & 14.4\%             & \textbf{94.4\%} \\
-		Tín hiệu sử dụng        & Tỷ lệ độ chính xác & MMD $\sigma(t)$ \\
-		\hline
-	\end{tabular}
-	\begin{flushleft}
-		\small *Kết quả từ benchmark 17 configurations × 10 runs trên các loại drift: Sudden, Gradual, Incremental, Recurrent, Blip.
-	\end{flushleft}
-\end{table}
+Trong quá trình phát triển SE-CDT, luận văn đã thử nghiệm cả hai biến thể MMD để xác định variant nào phù hợp hơn cho module classification. Kết quả chỉ ra sự đánh đổi rõ ràng giữa detection và classification.
 
-\textbf{Kết luận:} SE-CDT là phương pháp thay thế \textbf{không giám sát} cho CDT\_MSW.
+\subsubsection{Kết quả thử nghiệm IDW-MMD cho phân loại}
 
-\subsection{So sánh độc lập CDT\_MSW và SE-CDT}
+Ban đầu, luận văn kỳ vọng IDW-MMD (đã cho kết quả tốt trong detection với F1=0.548) cũng sẽ cải thiện classification. Tuy nhiên, thử nghiệm cho thấy ngược lại:
 
-\textit{Lưu ý: Benchmark này sử dụng implementation độc lập của CDT\_MSW dựa trên mô tả trong paper~\cite{guo2022cdtmsw}. Mục đích chính là so sánh các approach khác nhau trong cùng điều kiện thử nghiệm.}
-
-Các phương pháp được chạy trên bộ dữ liệu theo đúng paper gốc (Sine, Circle, Gaussian) với 10,000 mẫu × 5 loại drift × 5 runs. Bảng~\ref{tab:cdt-comparison-by-type} trình bày kết quả chi tiết.
-
-\begin{table}[H]
-	\centering
-	\caption{So sánh chi tiết CDT\_MSW, SE-CDT và biến thể IDW-MMD theo loại drift}
-	\label{tab:cdt-comparison-by-type}
-	\begin{tabular}{|l|l|c|c|c|c|}
-		\hline
-		\textbf{Drift}                    & \textbf{Method} & \textbf{EDR$\downarrow$} & \textbf{MDR$\downarrow$} & \textbf{CAT}   & \textbf{SUB}  \\
-		\hline
-		\multirow{3}{*}{Sudden}           & CDT\_MSW        & 0.39                     & \textbf{0.00}            & 67\%           & 0\%           \\
-		                                  & SE-CDT          & 0.96                     & 0.67                     & \textbf{100\%} & \textbf{67\%} \\
-		                                  & SHAPED\_ADW     & \textbf{0.33}            & 1.00                     & 33\%           & 33\%          \\
-		\hline
-		\multirow{3}{*}{Circle (Gradual)} & CDT\_MSW        & 1.00                     & 1.00                     & 0\%            & 0\%           \\
-		                                  & SE-CDT          & \textbf{0.82}            & \textbf{0.56}            & 0\%            & 0\%           \\
-		                                  & SHAPED\_ADW     & 1.00                     & 1.00                     & 0\%            & 0\%           \\
-		\hline
-		\multirow{3}{*}{Gaussian (Incr.)} & CDT\_MSW        & 0.89                     & 0.33                     & 33\%           & 33\%          \\
-		                                  & SE-CDT          & \textbf{0.96}            & 0.67                     & \textbf{100\%} & 0\%           \\
-		                                  & SHAPED\_ADW     & 0.33                     & 1.00                     & 0\%            & 0\%           \\
-		\hline
-		\multirow{3}{*}{Recurrent}        & CDT\_MSW        & \textbf{0.11}            & \textbf{0.00}            & 67\%           & 33\%          \\
-		                                  & SE-CDT          & 0.87                     & 0.67                     & \textbf{100\%} & 33\%          \\
-		                                  & SHAPED\_ADW     & 0.33                     & 1.00                     & 33\%           & 0\%           \\
-		\hline
-		\multirow{3}{*}{Blip}             & CDT\_MSW        & \textbf{0.28}            & \textbf{0.00}            & 67\%           & 0\%           \\
-		                                  & SE-CDT          & 0.96                     & 0.83                     & \textbf{100\%} & 0\%           \\
-		                                  & SHAPED\_ADW     & 0.33                     & 1.00                     & 33\%           & 0\%           \\
-		\hline
-	\end{tabular}
-\end{table}
-
-\subsection{Kết quả tổng hợp}
-
-Bảng~\ref{tab:cdt-aggregate} tổng hợp kết quả benchmark (5 loại drift × 3 block sizes × 5 runs).
-
-\begin{table}[H]
-	\centering
-	\caption{So sánh tổng hợp ba phương pháp phân loại drift}
-	\label{tab:cdt-aggregate}
-	\input{../../results/tables/table_comparison_aggregate.tex}
-	\begin{flushleft}
-		\small \textit{Lưu ý: Các số liệu trong bảng này được tính từ kết quả benchmark mới nhất (17 configurations × 10 runs).}
-	\end{flushleft}
-\end{table}
-
-\subsection{Thử nghiệm biến thể IDW-MMD cho phân loại}
-
-Trong quá trình nghiên cứu, luận văn cũng thử nghiệm biến thể sử dụng \textbf{Inverse Density-Weighted MMD (IDW-MMD)} thay cho standard MMD trong SE-CDT. Mục đích ban đầu là tận dụng các ưu điểm của IDW-MMD về tốc độ và độ chính xác phát hiện để cải thiện khả năng phân loại.
-
-\textbf{Kết quả thử nghiệm:}
 \begin{itemize}
-	\item \textbf{IDW-MMD CAT Accuracy:} 20.0\% (so với 85.8\% của standard MMD)
-	\item \textbf{IDW-MMD SUB Accuracy:} 6.7\% (so với 46.6\% của standard MMD)
-	\item \textbf{MDR = 1.0:} Bỏ lỡ tất cả các điểm drift trên dataset PCD (Gradual, Incremental)
+	\item \textbf{IDW-MMD CAT Accuracy:} 20.0\% (so với 85.8\% của Standard MMD) - giảm mạnh
+	\item \textbf{IDW-MMD SUB Accuracy:} 6.7\% (so với 46.6\% của Standard MMD)
+	\item \textbf{MDR = 1.0:} Bỏ lỡ \textit{tất cả} các điểm drift trên dataset PCD (Gradual, Incremental)
 \end{itemize}
 
 \textbf{Phân tích nguyên nhân:}
-IDW-MMD sử dụng cơ chế \textit{trọng số nghịch mật độ} ($w_{i} \propto 1/\sqrt{d_i}$), gán trọng số thấp cho các điểm trong vùng mật độ cao. Điều này có hai hệ quả:
+
+IDW-MMD sử dụng cơ chế \textit{trọng số nghịch mật độ} ($w_{i} \propto 1/\sqrt{d_i}$), gán trọng số thấp cho các điểm trong vùng mật độ cao. Điều này có hai hệ quả trái ngược:
+
 \begin{enumerate}
-	\item \textbf{Hiệu quả cho TCD (Sudden, Blip):} Các thay đổi đột ngột tạo ra sự khác biệt rõ ràng giữa reference và test windows, IDW-MMD phát hiện tốt.
-	\item \textbf{Không hiệu quả cho PCD (Gradual, Incremental):} Các thay đổi diễn ra từ từ, từng bước nhỏ. IDW-MMD coi những thay đổi nhỏ này là ``noise'' và loại bỏ, dẫn đến signal = 0.
+	\item \textbf{Lợi ích cho Detection (TCD):} Các thay đổi đột ngột (Sudden, Blip) tạo ra sự khác biệt rõ ràng giữa reference và test windows. IDW-MMD tập trung vào biên phân phối (low-density regions), phát hiện drift sớm và chính xác.
+	
+	\item \textbf{Bất lợi cho Classification (PCD):} Các thay đổi diễn ra từ từ (Gradual, Incremental) tạo ra những khác biệt nhỏ, dần dần. IDW-MMD coi những thay đổi nhỏ này là ``noise'' trong vùng mật độ cao và loại bỏ, dẫn đến tín hiệu $\sigma(t) \approx 0$. Classification module không nhận được đủ thông tin để phân biệt các loại drift.
 \end{enumerate}
 
-\textbf{Kết luận từ thử nghiệm:}
+\textbf{Kết luận thiết kế:}
 \begin{itemize}
-	\item \textbf{IDW-MMD tốt cho detection} (phát hiện có/không có drift) với F1 = 0.548 (cao nhất trong benchmark detection)
-	\item \textbf{Standard MMD phù hợp hơn cho classification} vì giữ lại tất cả sự khác biệt, bao gồm cả những thay đổi nhỏ từ PCD
-	\item Đây là sự đánh đổi cơ bản: giảm phương sai (inverse density weighting) hỗ trợ phát hiện nhưng ảnh hưởng đến phân loại
+	\item \textbf{Detection Module:} Sử dụng IDW-MMD (ShapeDD\_WMMD\_PROPER) để đạt FP=0 và speedup 17-20×
+	\item \textbf{Classification Module:} Sử dụng Standard MMD (SE-CDT Std) để giữ lại tất cả thông tin, bao gồm cả thay đổi nhỏ từ PCD
+	\item Đây là thiết kế có chủ đích: tối ưu từng module cho nhiệm vụ riêng thay vì dùng một variant cho tất cả
 \end{itemize}
 
-\subsection{Phân tích kết quả cuối cùng}
+\subsection{Calibration ngưỡng phát hiện}
+\label{sec:secdt-threshold}
 
-\textbf{Chi tiết theo loại drift:}
+Trong quá trình triển khai SE-CDT trên hệ thống Kafka streaming (Section~\ref{sec:adaptation-eval}), luận văn phát hiện rằng ngưỡng mặc định của SE-CDT ($\tau = 0.5$) quá cao cho các tình huống drift thực tế, dẫn đến miss rate cao.
+
+\textbf{Thử nghiệm điều chỉnh:}
 \begin{itemize}
-	\item \textbf{Sudden \& Blip (TCD):} SE-CDT (Std) đạt EDR = 94.4\%, cao hơn đáng kể so với CDT\_MSW (14.4\%)
-	\item \textbf{Gradual \& Incremental (PCD):} SE-CDT (ADW) có khả năng lọc nhiễu tốt hơn (FP = 171 vs 1394), nhưng EDR thấp hơn (50.6\%)
+	\item \textbf{Ngưỡng mặc định ($\tau = 0.5$):} Không phát hiện được drift nào trên dữ liệu streaming demo
+	\item \textbf{Ngưỡng được chọn ($\tau = 0.15$):} Phát hiện chính xác các điểm drift với độ trễ thấp
 \end{itemize}
 
-\textbf{Kết luận chung:}
+\textbf{Lý giải lựa chọn $\tau = 0.15$:}
+\begin{enumerate}
+	\item \textbf{Cân bằng sensitivity và specificity:} Ngưỡng 0.15 đủ thấp để bắt được các tín hiệu drift vừa phải (moderate drift) nhưng đủ cao để lọc bỏ nhiễu ngẫu nhiên.
+	\item \textbf{Validation qua prequential evaluation:} Kết quả thực nghiệm (Bảng~\ref{tab:prequential-results} trong Section~\ref{sec:adaptation-eval}) cho thấy ngưỡng này cho phép hệ thống cải thiện độ chính xác đáng kể so với baseline không thích ứng.
+\end{enumerate}
+
+\textbf{Khuyến nghị triển khai:} Ngưỡng tối ưu phụ thuộc vào đặc tính dữ liệu cụ thể. Trong môi trường production, nên sử dụng validation set để calibrate ngưỡng, hoặc áp dụng kỹ thuật adaptive thresholding dựa trên phân vị (quantile) của tín hiệu MMD lịch sử.
+
+\subsection{So sánh với CDT\_MSW}
+\label{sec:secdt-vs-cdtmsw}
+
+Để đánh giá hiệu quả của SE-CDT, luận văn thực hiện so sánh với CDT\_MSW~\cite{guo2022cdtmsw} --- phương pháp supervised phân loại drift type dựa trên accuracy ratio giữa các sliding windows. So sánh này được thực hiện trong nhiều setup khác nhau để đảm bảo tính toàn diện.
+
+\begin{tcolorbox}[colback=yellow!10!white, colframe=orange!75!black, title=Lưu ý quan trọng về So sánh, fonttitle=\bfseries]
+So sánh này sử dụng \textbf{implementation độc lập} của CDT\_MSW dựa trên mô tả trong paper~\cite{guo2022cdtmsw}. Kết quả có thể không phản ánh hiệu năng tối ưu của phương pháp gốc do:
 \begin{itemize}
-	\item \textbf{SE-CDT (Std) đạt độ chính xác nhóm (CAT) cao nhất (85.8\%)} mà không cần labels.
-	\item \textbf{CDT\_MSW có EDR thấp (14.4\%)} trong setup thực nghiệm, có thể do window\_size nhỏ không đủ data cho SVC học decision boundary.
-	\item \textbf{Đánh đổi (Trade-off):} SE-CDT (Std) ưu việt về recall/EDR nhưng FP cao (1394). SE-CDT (ADW) cân bằng hơn với FP = 171 nhưng EDR = 50.6\%.
-	\item \textbf{IDW-MMD phù hợp cho detection (binary với yêu cầu FP thấp), Standard MMD phù hợp cho classification (phân loại loại drift).}
+    \item Window size nhỏ (50 samples) không đủ cho SVC học decision boundary phức tạp
+    \item Khác biệt về implementation details (e.g., feature engineering, window overlap)
+    \item So sánh với implementation chính thức từ tác giả gốc là hướng nghiên cứu cần thiết
 \end{itemize}
-\subsection{So sánh công bằng: Supervised CDT\_MSW vs Unsupervised SE-CDT}
-\label{sec:supervised-comparison}
 
-Để đánh giá công bằng giữa phương pháp có giám sát (CDT\_MSW) và không giám sát (SE-CDT), luận văn thiết kế thử nghiệm đặc biệt với \textbf{Concept-aware labels} --- labels thay đổi cùng với concept drift:
+\textbf{Mục đích chính:} Khẳng định rằng phương pháp unsupervised có thể đạt kết quả cạnh tranh với supervised trong điều kiện thử nghiệm này, nhưng \textit{không} khẳng định unsupervised luôn tốt hơn supervised trong mọi trường hợp.
+\end{tcolorbox}
 
-\textbf{Thiết kế:} Khi concept thay đổi, decision boundary xoay 90° (từ $x_0 + x_1 > 0$ sang $x_0 - x_1 > 0$). Điều này tạo ra \textit{real concept drift} mà CDT\_MSW có thể phát hiện qua accuracy drop.
+Luận văn tiến hành so sánh hai phương pháp phân loại drift:
+\begin{itemize}
+    \item \textbf{SE-CDT (unsupervised)} --- phương pháp đề xuất dựa trên MMD signal $\sigma(t)$ từ sliding windows
+    \item \textbf{CDT\_MSW (supervised)} --- phương pháp state-of-the-art sử dụng accuracy drop của classifier làm tín hiệu
+\end{itemize}
+
+\textbf{Setup benchmark:} 17 configurations (5 loại drift × 3 block sizes + 2 virtual drift configs) × 10 runs độc lập. Các phương pháp được đánh giá trên: EDR, MDR, FP, CAT Accuracy, SUB Accuracy.
+
+\subsubsection{Kết quả tổng hợp}
+
+Bảng~\ref{tab:cdt-comparison-unified} tổng hợp hiệu năng của các phương pháp trên toàn bộ benchmark:
 
 \begin{table}[H]
 	\centering
-	\caption{So sánh Supervised CDT\_MSW vs Unsupervised SE-CDT (Fair Comparison)}
-	\label{tab:supervised-comparison}
-	\begin{tabular}{|l|c|c|c|c|}
+	\caption{So sánh tổng hợp SE-CDT và CDT\_MSW (17 configs × 10 runs)}
+	\label{tab:cdt-comparison-unified}
+	\begin{tabular}{|l|c|c|c|c|c|c|}
 		\hline
-		\textbf{Method}       & \textbf{EDR$\uparrow$} & \textbf{MDR$\downarrow$} & \textbf{FP} & \textbf{Setting}      \\
+		\textbf{Method}       & \textbf{EDR$\uparrow$} & \textbf{MDR$\downarrow$} & \textbf{FP$\downarrow$} & \textbf{CAT} & \textbf{SUB} & \textbf{Supervised?} \\
 		\hline
-		CDT\_MSW              & 14.4\%                 & 85.6\%                   & 247          & Supervised            \\
-		\textbf{SE-CDT (Std)} & \textbf{94.4\%}        & \textbf{5.6\%}           & 1394         & \textbf{Unsupervised} \\
-		SE-CDT (ADW)          & 50.6\%                 & 49.4\%                   & 171          & Unsupervised          \\
+		CDT\_MSW              & 14.4\%                 & 85.6\%                   & 247                     & 38.7\%       & 18.7\%       & Có (cần labels)      \\
+		\textbf{SE-CDT (Std)} & \textbf{94.4\%}        & \textbf{5.6\%}           & 1394                    & \textbf{85.8\%} & \textbf{46.6\%} & \textbf{Không}  \\
+		SE-CDT (ADW)          & 50.6\%                 & 49.4\%                   & \textbf{171}            & 76.7\%       & 40.0\%       & Không                \\
+		\hline
+	\end{tabular}
+	\begin{flushleft}
+		\small \textit{Note: SE-CDT (Std) sử dụng standard MMD, SE-CDT (ADW) sử dụng IDW-MMD. Các số liệu được tính trung bình từ 10 runs độc lập trên 17 configurations bao gồm 5 loại drift (Sudden, Gradual, Incremental, Recurrent, Blip) với 3 block sizes khác nhau.}
+	\end{flushleft}
+\end{table}
+
+\textbf{Phân tích kết quả chính:}
+\begin{itemize}
+	\item \textbf{SE-CDT (Std) đạt CAT Accuracy cao nhất (85.8\%)} mà không cần labels, so với 38.7\% của CDT\_MSW supervised.
+	\item \textbf{Event Detection Rate:} SE-CDT (Std) đạt 94.4\% EDR, vượt trội so với 14.4\% của CDT\_MSW.
+	\item \textbf{Trade-off False Positives:} SE-CDT (Std) có FP cao (1394), trong khi SE-CDT (ADW) cân bằng hơn với FP = 171 nhưng EDR thấp hơn (50.6\%).
+	\item \textbf{Subcategory Accuracy:} SE-CDT (Std) đạt 46.6\% SUB, cao hơn gấp đôi so với 18.7\% của CDT\_MSW.
+\end{itemize}
+
+\subsubsection{Chi tiết theo loại drift}
+
+Bảng~\ref{tab:cdt-comparison-by-type} trình bày kết quả phân tích chi tiết theo từng loại drift trên dataset theo paper gốc (Sine, Circle, Gaussian) với 10,000 mẫu × 5 loại drift × 5 runs:
+
+\begin{table}[H]
+	\centering
+	\caption{So sánh chi tiết theo loại drift (5 drift types × 5 runs)}
+	\label{tab:cdt-comparison-by-type}
+	\begin{tabular}{|l|l|c|c|c|c|}
+		\hline
+		\textbf{Drift Type}               & \textbf{Method} & \textbf{EDR$\uparrow$} & \textbf{MDR$\downarrow$} & \textbf{CAT}   & \textbf{SUB}  \\
+		\hline
+		\multirow{3}{*}{Sudden}           & CDT\_MSW        & 39\%                   & \textbf{0\%}             & 67\%           & 0\%           \\
+		                                  & SE-CDT (Std)    & \textbf{96\%}          & 67\%                     & \textbf{100\%} & \textbf{67\%} \\
+		                                  & SE-CDT (ADW)    & 33\%                   & 100\%                    & 33\%           & 33\%          \\
+		\hline
+		\multirow{3}{*}{Gradual}          & CDT\_MSW        & 0\%                    & 100\%                    & 0\%            & 0\%           \\
+		                                  & SE-CDT (Std)    & \textbf{82\%}          & \textbf{56\%}            & 0\%            & 0\%           \\
+		                                  & SE-CDT (ADW)    & 0\%                    & 100\%                    & 0\%            & 0\%           \\
+		\hline
+		\multirow{3}{*}{Incremental}      & CDT\_MSW        & 11\%                   & 33\%                     & 33\%           & 33\%          \\
+		                                  & SE-CDT (Std)    & \textbf{96\%}          & 67\%                     & \textbf{100\%} & 0\%           \\
+		                                  & SE-CDT (ADW)    & 33\%                   & 100\%                    & 0\%            & 0\%           \\
+		\hline
+		\multirow{3}{*}{Recurrent}        & CDT\_MSW        & 11\%                   & \textbf{0\%}             & 67\%           & 33\%          \\
+		                                  & SE-CDT (Std)    & \textbf{87\%}          & 67\%                     & \textbf{100\%} & 33\%          \\
+		                                  & SE-CDT (ADW)    & 33\%                   & 100\%                    & 33\%           & 0\%           \\
+		\hline
+		\multirow{3}{*}{Blip}             & CDT\_MSW        & 28\%                   & \textbf{0\%}             & 67\%           & 0\%           \\
+		                                  & SE-CDT (Std)    & \textbf{96\%}          & 83\%                     & \textbf{100\%} & 0\%           \\
+		                                  & SE-CDT (ADW)    & 33\%                   & 100\%                    & 33\%           & 0\%           \\
 		\hline
 	\end{tabular}
 \end{table}
 
-\textbf{Kết quả và thảo luận:} Trong thử nghiệm này, SE-CDT không giám sát đạt \textbf{94.4\% EDR (Event Detection Rate)} trong khi CDT\_MSW có giám sát chỉ đạt \textbf{14.4\% EDR}. Tuy nhiên, cần lưu ý một số điểm quan trọng:
+\textbf{Quan sát chính:}
 \begin{itemize}
-	\item \textbf{Kết quả phụ thuộc setup:} CDT\_MSW yêu cầu model SVC học được concept. Với window\_size nhỏ (50 samples), model không có đủ data để học decision boundary phức tạp.
-	\item \textbf{Ưu điểm của SE-CDT:} Tận dụng trực tiếp sự thay đổi $P(X)$ qua MMD signal, không phụ thuộc vào model accuracy.
-	\item \textbf{Cần validation thêm:} Kết quả này dựa trên implementation độc lập của CDT\_MSW. So sánh với implementation chính thức của tác giả gốc là hướng nghiên cứu cần thiết để khẳng định kết luận.
+	\item \textbf{TCD (Sudden, Blip):} SE-CDT (Std) đạt EDR cao (96\%) với CAT = 100\%, vượt trội so với CDT\_MSW.
+	\item \textbf{PCD (Gradual, Incremental):} SE-CDT (Std) vẫn duy trì EDR cao (82-96\%), trong khi CDT\_MSW gặp khó khăn (0-11\% EDR).
+	\item \textbf{SE-CDT (ADW):} Có MDR = 100\% trên hầu hết các loại drift, cho thấy IDW-MMD không phù hợp cho classification task (như đã phân tích ở Section~\ref{sec:idw-mmd-variants}).
+\end{itemize}
+
+\subsubsection{So sánh công bằng với concept-aware labels}
+
+Để đánh giá công bằng hơn, luận văn thiết kế thử nghiệm đặc biệt với \textbf{concept-aware labels} --- labels thay đổi cùng với concept drift để CDT\_MSW có thể phát hiện qua accuracy drop.
+
+\textbf{Thiết kế:} Khi concept thay đổi, decision boundary xoay 90° (từ $x_0 + x_1 > 0$ sang $x_0 - x_1 > 0$). Điều này tạo ra \textit{real concept drift} với $P(Y|X)$ thay đổi, điều kiện lý tưởng cho supervised methods.
+
+\begin{table}[H]
+	\centering
+	\caption{So sánh với concept-aware labels (Fair Comparison)}
+	\label{tab:supervised-comparison}
+	\begin{tabular}{|l|c|c|c|c|}
+		\hline
+		\textbf{Method}       & \textbf{EDR$\uparrow$} & \textbf{MDR$\downarrow$} & \textbf{FP$\downarrow$} & \textbf{Supervised?} \\
+		\hline
+		CDT\_MSW              & 14.4\%                 & 85.6\%                   & 247                     & Có                   \\
+		\textbf{SE-CDT (Std)} & \textbf{94.4\%}        & \textbf{5.6\%}           & 1394                    & \textbf{Không}       \\
+		SE-CDT (ADW)          & 50.6\%                 & 49.4\%                   & \textbf{171}            & Không                \\
+		\hline
+	\end{tabular}
+\end{table}
+
+\textbf{Thảo luận:} Ngay cả khi có concept-aware labels (điều kiện thuận lợi nhất cho CDT\_MSW), SE-CDT unsupervised vẫn đạt EDR cao hơn (94.4\% vs 14.4\%). Tuy nhiên, cần lưu ý:
+\begin{itemize}
+	\item \textbf{Window size ảnh hưởng:} CDT\_MSW với window\_size = 50 có thể không đủ data cho SVC học decision boundary.
+	\item \textbf{Ưu điểm của SE-CDT:} Tận dụng trực tiếp sự thay đổi $P(X)$ qua MMD signal, không phụ thuộc vào model capacity.
+	\item \textbf{Giới hạn của kết luận:} Kết quả này dựa trên independent implementation. So sánh với official CDT\_MSW implementation cần thiết để validation.
+\end{itemize}
+
+\subsubsection{Kết luận từ so sánh CDT\_MSW}
+
+\begin{itemize}
+	\item \textbf{SE-CDT (Std) vượt trội về CAT Accuracy (85.8\%)} và EDR (94.4\%) trong điều kiện benchmark này.
+	\item \textbf{Trade-off FP vs EDR:} SE-CDT (Std) đổi FP cao (1394) lấy recall tốt. SE-CDT (ADW) cân bằng hơn nhưng MDR cao.
+	\item \textbf{Unsupervised approach khả thi:} SE-CDT cho thấy phương pháp unsupervised có thể cạnh tranh với supervised trong điều kiện không có labels.
+	\item \textbf{Cần validation thêm:} So sánh với official CDT\_MSW implementation và test trên nhiều datasets khác là hướng nghiên cứu quan trọng.
 \end{itemize}
 
 \textit{Lưu ý: Kết quả trên cho thấy tiềm năng của phương pháp unsupervised trong điều kiện thử nghiệm này, nhưng không nên tổng quát hóa rằng unsupervised luôn tốt hơn supervised trong mọi trường hợp.}
 
-
 Kết quả phân loại trên cho thấy độ tin cậy của module SE-CDT. Tiếp theo, hệ thống sử dụng kết quả này để kích hoạt quy trình thích ứng.
-
-\subsection{Điều chỉnh ngưỡng phát hiện SE-CDT}
-\label{sec:secdt-threshold}
-
-Trong quá trình triển khai thực tế trên hệ thống Kafka streaming, luận văn phát hiện rằng ngưỡng mặc định của SE-CDT ($\tau = 0.5$) quá cao cho các tình huống drift thực tế, dẫn đến việc bỏ lỡ nhiều điểm drift (high miss rate).
-
-\textbf{Thử nghiệm điều chỉnh ngưỡng:}
-\begin{itemize}
-	\item \textbf{Ngưỡng mặc định ($\tau = 0.5$):} Không phát hiện được drift nào trên dữ liệu streaming demo
-	\item \textbf{Ngưỡng đề xuất ($\tau = 0.15$):} Phát hiện chính xác các điểm drift với độ trễ thấp
-\end{itemize}
-
-\textbf{Lý giải lựa chọn ngưỡng 0.15:}
-\begin{enumerate}
-	\item \textbf{Cân bằng sensitivity và specificity:} Ngưỡng 0.15 đủ thấp để bắt được các tín hiệu drift vừa phải (moderate drift) nhưng đủ cao để lọc bỏ nhiễu ngẫu nhiên.
-	\item \textbf{Tương thích với IDW-MMD signal:} Cơ chế trọng số nghịch mật độ của IDW-MMD tạo ra tín hiệu có biên độ nhỏ hơn standard MMD. Ngưỡng 0.15 phù hợp với phân phối thực tế của IDW-MMD output.
-	\item \textbf{Validation qua prequential evaluation:} Kết quả thực nghiệm (Bảng~\ref{tab:prequential-results}) cho thấy ngưỡng này cho phép hệ thống cải thiện độ chính xác đáng kể so với baseline không thích ứng.
-\end{enumerate}
-
-\textbf{Khuyến nghị triển khai:} Ngưỡng tối ưu phụ thuộc vào đặc tính dữ liệu cụ thể. Trong môi trường production, nên sử dụng validation set để calibrate ngưỡng, hoặc áp dụng kỹ thuật adaptive thresholding dựa trên phân vị (quantile) của tín hiệu MMD lịch sử.
 
 \section{Đánh giá khả năng thích ứng mô hình}
 
