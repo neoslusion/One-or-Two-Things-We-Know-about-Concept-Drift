@@ -13,7 +13,7 @@ Luận văn này đã giải quyết bài toán phát hiện và thích ứng v�
 
 \subsection{Đóng góp về Thực nghiệm (Empirical)}
 \begin{itemize}
-	\item \textbf{Benchmark toàn diện:} Thực hiện đánh giá có hệ thống 8 phương pháp phát hiện drift (MMD, MMD\_ADW, KS, ShapeDD, ShapeDD\_WMMD\_PROPER, SE\_CDT, D3, DAWIDD) trên 11 tập dữ liệu tổng hợp đa dạng. Kết quả được kiểm chứng thống kê bằng kiểm định Friedman và Nemenyi (với 30 lần chạy độc lập, $\alpha = 0.05$), cung cấp cái nhìn khách quan về hiệu năng của các thuật toán hiện đại.
+	\item \textbf{Benchmark toàn diện:} Thực hiện đánh giá có hệ thống 8 phương pháp phát hiện drift (MMD, MMD\_IDW, KS, ShapeDD, ShapeDD\_WMMD\_PROPER, SE\_CDT, D3, DAWIDD) trên 11 tập dữ liệu tổng hợp đa dạng. Kết quả được kiểm chứng thống kê bằng kiểm định Friedman và Nemenyi (với 30 lần chạy độc lập, $\alpha = 0.05$), cung cấp cái nhìn khách quan về hiệu năng của các thuật toán hiện đại.
 	\item \textbf{Phân tích độ trễ và chi phí:} Chứng minh hiệu quả của việc loại bỏ permutation test và thay bằng asymptotic p-value nhờ IDW-MMD, giúp giảm độ trễ phát hiện trung bình xuống còn 18 mẫu và tăng throughput 17--20 lần.
 	\item \textbf{Xác nhận hành vi đúng:} Benchmark xác nhận SE\_CDT/WMMD\_PROPER không phát hiện ``drift'' trên các dataset virtual drift (hyperplane, led\_abrupt, sea) --- hành vi mong đợi vì $P(X)$ không đổi.
 \end{itemize}

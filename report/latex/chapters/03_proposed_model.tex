@@ -16,7 +16,7 @@ Mặc dù ShapeDD gốc thể hiện nhiều ưu điểm về độ chính xác 
 Để giải quyết các thách thức trên, luận văn xây dựng hệ thống \textbf{ShapeDD-Stream} --- một framework tích hợp kết hợp các phương pháp MMD tiên tiến với kiến trúc streaming, bao gồm ba tầng xử lý chính:
 \begin{itemize}
 	\item \textbf{Tầng thuật toán:} Cải tiến ShapeDD bằng cách tích hợp \textit{Inverse Density-Weighted MMD (IDW-MMD)} với phân phối tiệm cận để giảm phương sai và chi phí tính toán, loại bỏ nhu cầu permutation test tốn kém.
-	\item \textbf{Tầng chiến lược:} Xây dựng khung thích ứng thông minh, sử dụng kết quả phân loại từ \textit{CDT\_MSW} để kích hoạt chiến lược cập nhật mô hình tối ưu (Reset, Incremental, hoặc Reuse).
+	\item \textbf{Tầng chiến lược:} Xây dựng khung thích ứng thông minh, sử dụng kết quả phân loại từ \textit{SE-CDT} để kích hoạt chiến lược cập nhật mô hình tối ưu (Reset, Incremental, hoặc Reuse).
 	\item \textbf{Tầng kiến trúc:} Triển khai hệ thống trên nền tảng \textit{Apache Kafka}, đảm bảo khả năng xử lý luồng dữ liệu phân tán, độ trễ thấp và khả năng chịu lỗi.
 \end{itemize}
 
