@@ -84,7 +84,7 @@ Phần này so sánh Detection Module của hệ thống đề xuất với các
 
 \subsection{Kết quả so sánh tổng hợp}
 
-Bảng~\ref{tab:comprehensive_performance} so sánh hiệu suất của \textbf{phương pháp đề xuất} (MMD\_IDW, ShapeDD\_WMMD\_PROPER, SE\_CDT) với \textbf{các baseline} (MMD standard, KS-Test, D3, DAWIDD, ShapeDD gốc). Các chỉ số F1 được tính dựa trên khả năng phát hiện đúng các điểm drift đã biết (ground truth), kết quả được tổng hợp từ 30 lần chạy độc lập trên 11 tập dữ liệu (tổng 330 experiments).
+Bảng~\ref{tab:comprehensive_performance} so sánh hiệu suất của \textbf{phương pháp đề xuất} (MMD\_IDW, ShapeDD\_WMMD\_PROPER, SE\_CDT) với \textbf{các baseline} (Standard MMD, KS-Test, D3, DAWIDD, ShapeDD gốc). Các chỉ số F1 được tính dựa trên khả năng phát hiện đúng các điểm drift đã biết (ground truth), kết quả được tổng hợp từ 30 lần chạy độc lập trên 11 tập dữ liệu (tổng 330 experiments).
 
 % =============================================================================
 % Bảng tổng hợp hiệu suất
@@ -112,7 +112,7 @@ Bảng~\ref{tab:comprehensive_performance} so sánh hiệu suất của \textbf{
 \begin{figure}[h]
 	\centering
 	\includegraphics[width=0.9\textwidth]{../../results/plots/critical_difference_f1.png}
-	\caption[Biểu đồ Critical Difference (CD)]{Biểu đồ Critical Difference (CD) với mức ý nghĩa $\alpha = 0.05$. SE\_CDT và ShapeDD\_WMMD\_PROPER nằm ở nhóm đầu (rank thấp nhất là tốt nhất).}
+	\caption[Biểu đồ Critical Difference (CD)]{Biểu đồ Critical Difference (CD) với mức ý nghĩa $\alpha = 0.05$. Kết quả cho thấy không có sự khác biệt thống kê đáng kể giữa SE\_CDT và nhóm dẫn đầu (MMD, MMD\_IDW).}
 	\label{fig:critical_difference}
 \end{figure}
 
@@ -194,16 +194,7 @@ Bảng~\ref{tab:runtime_stats} so sánh thời gian và thông lượng.
 
 \textbf{Trực quan hóa so sánh Runtime:}
 
-Hình~\ref{fig:runtime-comparison} và Hình~\ref{fig:throughput-comparison} minh họa sự cải thiện về hiệu suất tính toán.
-
-\begin{figure}[H]
-	\centering
-	\includegraphics[width=0.85\textwidth]{../../results/plots/runtime_comparison.png}
-	\caption[Runtime Comparison]{
-		\textbf{So sánh Runtime trên benchmark datasets}: SE\_CDT (7.6ms/window) nhanh hơn ShapeDD (158.4ms) gấp 20.5 lần, cho phép xử lý real-time streams.
-	}
-	\label{fig:runtime-comparison}
-\end{figure}
+Hình~\ref{fig:throughput-comparison} minh họa sự cải thiện vượt trội về thông lượng xử lý, trong khi chi tiết thời gian chạy cụ thể được liệt kê trong Bảng~\ref{tab:runtime_stats}.
 
 \begin{figure}[H]
 	\centering
@@ -320,7 +311,7 @@ Hình~\ref{fig:detection_timeline_mixed_a} minh họa detection timeline trên m
 \end{figure}
 
 \textbf{Nhận xét:}
-So với paper values của CDT\_MSW, SE-CDT đạt kết quả tương đương về CAT Accuracy (81.2\% vs 87.5\%) nhưng vượt trội về khả năng phát hiện sự kiện (EDR 94.4\% vs 80\%). Đặc biệt, SE-CDT đạt SUB Accuracy cao hơn (50\% vs 42\%), cho thấy khả năng phân loại chi tiết tốt hơn. Điều này có thể được lý giải bởi hai yếu tố kỹ thuật:
+So với paper values của CDT\_MSW, SE-CDT đạt kết quả thấp hơn nhẹ về CAT Accuracy (81.2\% so với 87.5\%) nhưng bù lại vượt trội hoàn toàn về khả năng phát hiện sự kiện (EDR 94.4\% vs 80\%). Đặc biệt, SE-CDT đạt SUB Accuracy cao hơn (50\% vs 42\%), cho thấy khả năng phân loại chi tiết tốt hơn. Điều này có thể được lý giải bởi hai yếu tố kỹ thuật:
 \begin{itemize}
     \item \textbf{Unsupervised vs Supervised:} SE-CDT hoạt động hoàn toàn không cần labels, trong khi CDT\_MSW yêu cầu model accuracy signal. Điều này giúp SE-CDT linh hoạt hơn trong các tình huống thiếu ground truth.
     \item \textbf{Độ nhạy của MMD với $P(X)$:} SE-CDT đo trực tiếp sự thay đổi phân phối đặc trưng thông qua MMD, phát hiện drift sớm hơn so với việc chờ đợi accuracy drop. Hình~\ref{fig:detection_timeline_mixed_a} cho thấy SE-CDT phát hiện các drift events với độ trễ thấp hơn đáng kể.
@@ -354,18 +345,13 @@ So với paper values của CDT\_MSW, SE-CDT đạt kết quả tương đương
 
 \textbf{Hình dạng tín hiệu (Signal Shapes):}
 
-Hình~\ref{fig:signal_sudden}, Hình~\ref{fig:signal_gradual} và Hình~\ref{fig:signal_incremental} minh họa sự khác biệt trong hình dạng tín hiệu MMD cho các loại drift, giải thích tại sao Sudden detection tốt hơn Gradual.
+Hình~\ref{fig:signal_sudden} và Hình~\ref{fig:signal_incremental} minh họa sự khác biệt trong hình dạng tín hiệu MMD. Đối với Gradual Drift, như đã phân tích ở Hình~\ref{fig:gradual_drift_vis} (Mục~\ref{sec:detection-eval}), tín hiệu có dạng plateau kéo dài và không có đỉnh nhọn, giải thích tại sao việc phát hiện gặp khó khăn.
 
 \begin{figure}[H]
         \centering
         \includegraphics[width=0.95\textwidth]{../../results/plots/figure_2_sudden_drift.png}
         \caption[Signal Shape - Sudden Drift]{Tín hiệu SE-CDT cho Sudden drift: Peak nhọn, đối xứng, dễ phát hiện bằng height threshold.}
         \label{fig:signal_sudden}
-\end{figure}\begin{figure}[H]
-	\centering
-	\includegraphics[width=0.95\textwidth]{../../results/plots/vis_repeated_gradual_SE.png}
-	\caption[Signal Shape - Gradual Drift]{Tín hiệu SE-CDT cho Gradual drift: Plateau kéo dài, không có peak rõ ràng, cần temporal features để phát hiện.}
-	\label{fig:signal_gradual}
 \end{figure}
 
 \begin{figure}[H]
