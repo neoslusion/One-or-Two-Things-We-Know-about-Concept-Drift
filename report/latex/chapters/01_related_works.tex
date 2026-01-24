@@ -51,10 +51,13 @@ phí tính toán khá cao do phải kiểm tra nhiều kích thước cửa sổ
 ADWIN, nhiều phương pháp thống kê khác lần lượt xuất hiện.
 
 Một phương pháp khác là \textbf{KSWIN} (Kolmogorov–Smirnov WINdowing~\cite{raab2020kswin}), kết hợp kiểm định Kolmogorov–Smirnov với cửa
-sổ trượt nhằm phát hiện thay đổi phân phối một cách phi tham số.  Các phương pháp thống kê thuần túy này có ưu điểm là không phụ
+sổ trượt nhằm phát hiện thay đổi phân phối mà không cần giả định trước về dạng phân phối. Các phương pháp thống kê thuần túy này có ưu điểm là không phụ
 thuộc vào mô hình học máy cụ thể, do đó có thể áp dụng trong môi trường phi giám sát (không cần nhãn). Mặt khác, chúng thường đòi
-hỏi giả định mạnh về độc lập và phân phối dữ liệu, và có thể bỏ sót những thay đổi nhỏ nếu kích thước mẫu không đủ lớn. Dù vậy, nhóm
-phương pháp thống kê đã đặt nền móng quan trọng cho lĩnh vực phát hiện drift, đặc biệt cho các bài toán quan tâm trực tiếp đến
+hỏi giả định mạnh về độc lập và phân phối dữ liệu, và có thể bỏ sót những thay đổi nhỏ nếu kích thước mẫu không đủ lớn.
+
+Gần đây, Schrab et al. (2023)~\cite{schrab2023mmdagg} đề xuất \textbf{MMD-Agg} (MMD Aggregated), một phương pháp sử dụng multiple kernel bandwidths để tăng robustness trong phát hiện thay đổi phân phối. Phương pháp này có đảm bảo lý thuyết mạnh về statistical power và Type I error control, tuy nhiên chi phí tính toán cao ($\sim$500ms/window với wild bootstrap) khiến không phù hợp với streaming context yêu cầu low latency.
+
+Dù vậy, nhóm phương pháp thống kê đã đặt nền móng quan trọng cho lĩnh vực phát hiện drift, đặc biệt cho các bài toán quan tâm trực tiếp đến
 sự thay đổi của dữ liệu hơn là hiệu năng mô hình.
 
 \subsubsection{Các phương pháp dựa trên hiệu năng mô hình}
@@ -82,9 +85,9 @@ phát hiện drift khi khoảng cách giảm mạnh so với giá trị tối đ
 hơn DDM trong nhiều trường hợp~\cite{baena2006early}. Sau DDM và EDDM, hàng loạt thuật toán dựa trên theo dõi hiệu năng ra đời, cho thấy sự phát
 triển đáng kể trong giai đoạn sau này.
 
-\textbf{HDDM (Hoeffding's Drift Detection Method)}~\cite{HDDM} là một hướng cải tiến quan trọng, áp dụng các ràng buộc thống kê chặt chẽ hơn để giảm
-giả định phân phối. Thay vì giả định rằng tỷ lệ lỗi tuân theo phân phối cụ thể (như DDM giả định phân phối nhị thức), HDDM sử dụng bất đẳng thức
-Hoeffding để xây dựng tiêu chí phát hiện drift phi tham số (non-parametric). HDDM có hai biến thể chính:
+\textbf{HDDM (Hoeffding's Drift Detection Method)}~\cite{HDDM} là một hướng cải tiến quan trọng, áp dụng các công cụ thống kê chặt chẽ hơn để giảm
+giả định phân phối. Thay vì giả định rằng tỷ lệ lỗi tuân theo phân phối cụ thể (như DDM giả định phân phối nhị thức), HDDM sử dụng bất đẳng thức Hoeffding
+để xây dựng tiêu chí phát hiện drift mà không cần giả định về dạng phân phối. HDDM có hai biến thể chính:
 \begin{itemize}
 	\item \textbf{HDDM\_A:} Sử dụng trung bình tỷ lệ lỗi với Hoeffding bound
 	\item \textbf{HDDM\_W:} Sử dụng tỷ lệ lỗi có trọng số (weighted), gán trọng số cao hơn cho dữ liệu gần đây
@@ -106,7 +109,7 @@ FHDDMS liên tục so sánh giá trị trung bình hiện tại với giá trị
 biệt của \textit{bất kỳ} cửa sổ nào vượt quá ngưỡng Hoeffding tương ứng. Thiết kế dual-window này cho phép FHDDMS tận dụng được ưu điểm của cả
 hai kích thước cửa sổ, cân bằng giữa độ nhạy (sensitivity) và độ tin cậy (reliability).
 
-\textbf{MDDM (McDiarmid's Drift Detection Method)}~\cite{pesaranghader2018mcdiarmid} là phương pháp áp dụng bất đẳng thức McDiarmid – một bất đẳng thức tập trung (concentration inequality)
+\textbf{MDDM (McDiarmid's Drift Detection Method)}~\cite{pesaranghader2018mcdiarmid} là phương pháp áp dụng bất đẳng thức McDiarmid – một công cụ thống kê mạnh (concentration inequality)
 mạnh mẽ – để phát hiện chính xác những thay đổi đáng kể trong phân phối dữ liệu. Điểm đặc biệt của MDDM là việc áp dụng các lược đồ trọng số (weighting schemes)
 cho các phần tử trong cửa sổ trượt:
 \begin{itemize}
@@ -139,7 +142,7 @@ Mục tiêu chung của các cải tiến này là tăng độ nhạy với nhi�
 		\midrule
 		DDM~\cite{gama2004learning}            & 2004         & Theo dõi error rate     & Đơn giản, phát hiện sudden drift tốt  \\
 		EDDM~\cite{baena2006early}             & 2006         & Khoảng cách giữa lỗi    & Phát hiện gradual drift sớm hơn       \\
-		HDDM~\cite{friasblanco2015hddm}        & 2015         & Hoeffding bound         & Phi tham số, không giả định phân phối \\
+		HDDM~\cite{friasblanco2015hddm}        & 2015         & Hoeffding bound         & Không giả định dạng phân phối cụ thể \\
 		FHDDM~\cite{pesaranghader2016fhddm}    & 2016         & Tối ưu tốc độ           & Nhanh cho high-speed stream           \\
 		FHDDMS~\cite{pesaranghader2016fhddm}   & 2016         & Dual windows            & Cân bằng sudden/gradual detection     \\
 		MDDM~\cite{pesaranghader2018mcdiarmid} & 2018         & McDiarmid + weights     & Nhấn mạnh dữ liệu gần đây             \\
@@ -227,7 +230,7 @@ tiêu chí phát hiện drift. Các phương pháp này có ưu điểm tận d�
 		2004         & DDM~\cite{gama2004learning}         & Giám sát tỉ lệ lỗi mô hình, đặt ngưỡng cảnh báo và drift theo luật SPC; phát hiện drift đột ngột hiệu quả.                                                                              \\
 		2006         & EDDM~\cite{baena2006early}          & Mở rộng DDM, cải thiện phát hiện drift dần dần bằng cách theo dõi khoảng cách giữa các lỗi.                                                                                             \\
 		2007         & ADWIN~\cite{bifet2007learning}      & Cửa sổ trượt thích ứng với đảm bảo lý thuyết, so sánh thống kê hai cửa sổ con để phát hiện thay đổi phân phối.                                                                          \\
-		2015         & HDDM~\cite{friasblanco2015hddm}     & Sử dụng bất đẳng thức Hoeffding (phi tham số) để phát hiện drift trên dòng lỗi; giảm giả định phân phối so với DDM.                                                                     \\
+		2015         & HDDM~\cite{friasblanco2015hddm}     & Sử dụng bất đẳng thức Hoeffding (không giả định phân phối) để phát hiện drift trên dòng lỗi; giảm giả định so với DDM.                                                                     \\
 		2016         & FHDDM~\cite{pesaranghader2016fhddm} & Phiên bản nhanh của HDDM, tăng tốc độ và độ nhạy khi drift (đột ngột và dần dần).                                                                                                       \\
 		2017         & RDDM~\cite{barros2017rddm}          & Phản ứng nhanh với drift đột ngột, rút ngắn giai đoạn cảnh báo của DDM; phù hợp cả drift lặp lại.                                                                                       \\
 		2020         & DAWIDD~\cite{hinder2020dawidd}      & Phương pháp phi tham số dùng kiểm định độc lập (independence test) thay vì mô hình dự đoán; linh hoạt với nhiều dạng drift khác nhau.                                                   \\

@@ -51,9 +51,9 @@
 % Title page information
 \title[Phát Hiện Concept Drift]{Nghiên cứu và phát triển hệ thống tự động phát hiện hiện tượng trôi dạt và cập nhật mô hình học máy thích ứng}
 \subtitle{Luận văn tốt nghiệp}
-\author[Nguyen Duc Trung]{%
-  Sinh viên thực hiện: Nguyen Duc Trung\\[0.5em]
-  \small Giảng viên hướng dẫn: TS. Nguyễn An Khương
+\author[Le Phuc Duc]{%
+  Sinh viên thực hiện: Le Phuc Duc\\[0.5em]
+  \small Giảng viên hướng dẫn: PGS.TS. Thoại Nam
 }
 \institute[HCMUT]{Trường Đại học Bách Khoa - ĐHQG-HCM}
 \date{\today}
@@ -230,37 +230,68 @@
         \end{tabular}
     \end{table}
     
-    \footnotesize{\textit{*ShapeDD\_WMMD đạt cân bằng tốt nhất giữa tốc độ và độ tin cậy (0 False Alarm cho P(X) changes).}}
+    \footnotesize{\textit{*ShapeDD\_WMMD đạt FP=0 do chỉ phát hiện thay đổi P(X), không báo động sai trên virtual drift (P(Y|X) đổi).}}
+\end{frame}
+
+\begin{frame}{Chi tiết về 11 Datasets Thực nghiệm}
+    \textbf{Phân loại theo bản chất thay đổi phân phối:}
+    
+    \vspace{0.5em}
+    \textbf{Nhóm 1: Sudden Drift (P(X) thay đổi đột ngột):}
+    \begin{itemize}
+        \item \textit{Gaussian Shift:} Dịch chuyển trung bình ($\delta=1.5$) trong không gian 10 chiều
+        \item \textit{STAGGER:} Thay đổi quy luật với tín hiệu P(X) rõ ràng
+        \item \textit{Random RBF (4 mức):} Mild, Moderate, Severe, Ultra-severe ($\delta$ từ 0.125 đến 2.0)
+    \end{itemize}
+    
+    \vspace{0.5em}
+    \textbf{Nhóm 2: Blip Drift (thay đổi ngắn hạn):}
+    \begin{itemize}
+        \item \textit{RBF Blips:} Drift tạm thời, kiểm tra khả năng bắt tín hiệu nhanh
+    \end{itemize}
+    
+    \vspace{0.5em}
+    \textbf{Nhóm 3: Virtual Drift - Control Group (chỉ P(Y|X) đổi):}
+    \begin{itemize}
+        \item \textit{SEA, Hyperplane, LED Abrupt:} P(X) không đổi
+        \item \textbf{Mục đích:} Kiểm chứng phương pháp unsupervised \textbf{không} phát hiện sai (FP = 0)
+    \end{itemize}
 \end{frame}
 
 \begin{frame}{Đánh giá Phân loại Drift (SE-CDT)}
     \textbf{Bài toán:} Phân loại drift thành nhóm TCD (Transient) và PCD (Progressive).
     \textbf{Baseline:} CDT\_MSW (Supervised - Cần nhãn thật).
     
-    \vspace{1em}
+    \vspace{0.5em}
     \begin{columns}[T]
         \begin{column}{0.5\textwidth}
             \begin{table}
                 \centering
-                \begin{tabular}{lc}
+                \small
+                \begin{tabular}{lcc}
                     \toprule
-                    \textbf{Method} & \textbf{Accuracy (Category)} \\
+                    \textbf{Method} & \textbf{CAT} & \textbf{SUB} \\
                     \midrule
-                    \textbf{SE-CDT (Proposed)} & \textbf{85.8\%} \\
-                    CDT\_MSW (Supervised) & 38.7\% \\
+                    \textbf{SE-CDT} & \textbf{85.8\%} & \textbf{46.6\%} \\
+                    CDT\_MSW & 38.7\% & 18.7\% \\
                     \bottomrule
                 \end{tabular}
+                \caption*{\footnotesize CAT: Category (TCD vs PCD)\\SUB: Subcategory (5 loại chi tiết)}
             \end{table}
         \end{column}
         \begin{column}{0.5\textwidth}
             \textbf{Phân tích:}
             \begin{itemize}
-                \item SE-CDT hoạt động ổn định nhờ tín hiệu ShapeDD rõ ràng.
-                \item CDT\_MSW bị giới hạn bởi độ trễ của classifier trong cửa sổ nhỏ.
-                \item \textit{Hạn chế:} Độ chính xác phân loại chi tiết (Sub-category) còn thấp ở các lớp Gradual/Incremental.
+                \item SE-CDT: Category 85.8\%, Subcategory 46.6\%
+                \item \textbf{Thành công:} Phân biệt TCD/PCD rất tốt
+                \item \textbf{Thách thức:} Gradual $\leftrightarrow$ Incremental dễ nhầm lẫn (tín hiệu MMD tương tự)
+                \item \textbf{Trade-off:} EDR 94.4\% nhưng FP cao (1394)
             \end{itemize}
         \end{column}
     \end{columns}
+    
+    \vspace{0.5em}
+    \footnotesize{\textit{*Kết quả trên 17 configurations × 10 runs = 170 test cases}}
 \end{frame}
 
 \section{Hệ thống đề xuất}
@@ -361,7 +392,7 @@
 		\item \textbf{Gradual/Incremental:}
 		      \begin{itemize}
 			      \item \alert{Incremental learning} (cập nhật dần dần)
-			      \item Learning rate thấp để tránh catastrophic forgetting
+			      \item Learning rate thấp để tránh mô hình "quên" kiến thức cũ
 			      \item Cửa sổ lớn hơn: 1000 samples
 		      \end{itemize}
 
@@ -560,29 +591,59 @@
 	\end{enumerate}
 \end{frame}
 
-\begin{frame}{Hạn chế & Thách thức}
-	\begin{alertblock}{Độ nhạy với Virtual Drift}
-		Phương pháp hiện tại \textbf{không phát hiện} Virtual Drift (chỉ thay đổi $P(Y|X)$).
-		\begin{itemize}
-			\item \textit{Lý do:} ShapeDD hoạt động dựa trên $P(X)$ (unsupervised).
-			\item \textit{Góc độ tích cực:} Giúp hệ thống ổn định, không báo động giả khi phân phối đầu vào vẫn giữ nguyên (tính chất bảo toàn $P(X)$).
-		\end{itemize}
-	\end{alertblock}
-
-	\vspace{1em}
-	\textbf{Các hạn chế khác:}
+\begin{frame}{Hạn chế \& Thách thức}
+	\textbf{1. Thiết kế Unsupervised - Không phát hiện Virtual Drift:}
 	\begin{itemize}
-		\item Độ chính xác phân loại các drift phức tạp (Gradual/Incremental) chưa cao.
-		\item Chưa đánh giá sâu khả năng chịu lỗi (fault-tolerance) trong môi trường phân tán thực tế.
+		\item ShapeDD chỉ phát hiện thay đổi $P(X)$, bỏ qua thay đổi $P(Y|X)$
+		\item \textbf{Kết quả:} F1=0.0 trên SEA, Hyperplane, LED (mong đợi)
+		\item \textit{Ý nghĩa tích cực:} FP=0, không báo động sai khi $P(X)$ ổn định
+	\end{itemize}
+
+	\vspace{0.5em}
+	\textbf{2. Mild Drift - Thất bại hoàn toàn (F1=0.006):}
+	\begin{itemize}
+		\item IDW-MMD lọc quá mạnh, coi drift nhẹ là noise
+		\item Cần điều chỉnh trọng số cho vùng mật độ cao
+	\end{itemize}
+
+	\vspace{0.5em}
+	\textbf{3. Subcategory Classification hạn chế (46.6\%):}
+	\begin{itemize}
+		\item Gradual $\leftrightarrow$ Incremental: Tín hiệu MMD tương tự
+		\item Recurrent: Xử lý như chuỗi Sudden riêng lẻ
+	\end{itemize}
+
+	\vspace{0.5em}
+	\textbf{4. Đánh giá trên Synthetic Data:}
+	\begin{itemize}
+		\item Cần validation trên real-world traces (production logs)
 	\end{itemize}
 \end{frame}
 
 \begin{frame}{Hướng phát triển tương lai}
-	\begin{itemize}
-		\item \textbf{Ưu tiên 1:} Cải thiện độ nhạy với Gradual Drift (nghiên cứu đặc trưng Shape curve phẳng).
-		\item \textbf{Ưu tiên 2:} Tích hợp Meta-Learning để tự động chọn chiến lược thích ứng.
-		\item \textbf{Dài hạn:} Xây dựng bộ Benchmark chuẩn với dữ liệu thực tế (Real-world datasets) từ các đối tác công nghiệp.
-	\end{itemize}
+	\textbf{Ưu tiên ngắn hạn (3-6 tháng):}
+	\begin{enumerate}
+		\item \textbf{Khắc phục Mild Drift:}
+		\begin{itemize}
+			\item Điều chỉnh IDW-MMD: Giảm ảnh hưởng trọng số trong vùng mật độ cao
+			\item Adaptive threshold dựa trên noise level của dataset
+		\end{itemize}
+		
+		\item \textbf{Cải thiện Subcategory Classification (46.6\% $\rightarrow$ 70\%+):}
+		\begin{itemize}
+			\item Thêm features: Slope analysis, Multi-scale analysis
+			\item Phân biệt Gradual vs Incremental bằng tốc độ thay đổi
+		\end{itemize}
+	\end{enumerate}
+	
+	\vspace{0.5em}
+	\textbf{Ưu tiên dài hạn (6-12 tháng):}
+	\begin{enumerate}
+		\setcounter{enumi}{2}
+		\item \textbf{Real-world Validation:} Đánh giá trên production logs (Network traffic, IoT sensors)
+		\item \textbf{Meta-Learning:} Tự động chọn detector + strategy dựa trên đặc tính stream
+		\item \textbf{Benchmark chuẩn:} Đóng góp dataset có ground truth cho cộng đồng
+	\end{enumerate}
 \end{frame}
 
 \begin{frame}[plain]

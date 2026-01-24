@@ -46,7 +46,7 @@ Hệ thống được đánh giá trên bộ 10 tập dữ liệu tổng hợp (
 
 \textbf{Nhóm 2: Blip Drift (Thay đổi ngắn hạn).}
 \begin{itemize}
-	\item \textit{RBF Blips:} Dữ liệu được sinh từ các trọng tâm Gaussian (50 centroids) di chuyển đột ngột và quay lại trạng thái cũ trong thời gian ngắn. Thử thách khả năng bắt tín hiệu nhanh của MMD-Agg (multi-scale).
+	\item \textit{RBF Blips:} Dữ liệu được sinh từ các trọng tâm Gaussian (50 centroids) di chuyển đột ngột và quay lại trạng thái cũ trong thời gian ngắn. Thử thách khả năng phát hiện sự thay đổi tạm thời của các thuật toán.
 \end{itemize}
 
 \textbf{Nhóm 3: Virtual Drift / Concept Drift thuần túy (Control Group).}
@@ -89,11 +89,15 @@ Bảng~\ref{tab:comprehensive_performance} so sánh hiệu suất của \textbf{
 % =============================================================================
 % Bảng tổng hợp hiệu suất
 % =============================================================================
-\input{../../results/tables/table_I_comprehensive_performance.tex}
+\begin{table}[H]
+	\centering
+	\caption{So sánh tổng hợp hiệu suất các phương pháp phát hiện drift}
+	\input{../../results/tables/table_I_comprehensive_performance.tex}
+\end{table}
 
 \textbf{Phân tích kết quả:}
 \begin{itemize}
-	\item \textbf{MMD\_IDW dẫn đầu về F1 (0.548):} Phương pháp IDW-MMD đạt F1-score cao nhất nhờ sự cân bằng giữa Precision (0.589) và Recall (0.567), với số báo động giả thấp (2.5 FP/run). Điều này xác nhận hiệu quả của cơ chế trọng số nghịch mật độ trong việc giảm phương sai ước lượng.
+	\item \textbf{MMD\_IDW dẫn đầu về F1 (0.548):} Phương pháp IDW-MMD đạt F1-score cao nhất nhờ sự cân bằng giữa Precision (0.589) và Recall (0.567), với số báo động giả thấp (2.5 FP/run). Điều này xác nhận hiệu quả của cơ chế trọng số nghịch mật độ trong việc giảm độ dao động kết quả.
 	\item \textbf{SE-CDT và ShapeDD\_WMMD\_PROPER (F1 = 0.481):} Hai phương pháp đề xuất đạt Precision cao (0.539) với \textbf{không có báo động giả} (FP = 0) trên benchmark detection. Đây là đặc điểm phù hợp cho các hệ thống yêu cầu độ ổn định. Độ trễ phát hiện thấp nhất (18 mẫu) cho thấy khả năng phản ứng nhanh. \textit{Lưu ý:} FP = 0 một phần do phương pháp không phát hiện drift trên các dataset virtual drift (hyperplane, led\_abrupt, standard\_sea) nơi $P(X)$ không đổi --- đây là hành vi thiết kế của phương pháp unsupervised.
 	\item \textbf{D3 xếp thứ 2 (F1 = 0.488):} Phương pháp discriminative này hoạt động tốt với Precision cao (0.553) và FP thấp (0.9), nhưng Recall hạn chế (0.474) do phụ thuộc vào khả năng học của classifier.
 	\item \textbf{MMD baseline (F1 = 0.455):} Phương pháp MMD chuẩn đạt Recall cao (0.722) nhưng Precision thấp (0.348), dẫn đến 14.3 báo động giả trung bình mỗi lần chạy.
@@ -120,7 +124,11 @@ Hiệu suất của các phương pháp thay đổi tùy thuộc vào đặc tí
 % =============================================================================
 % Bảng F1 theo Dataset
 % =============================================================================
-\input{../../results/tables/table_II_f1_by_dataset.tex}
+\begin{table}[H]
+	\centering
+	\caption{F1-Score của các phương pháp theo từng loại dataset}
+	\input{../../results/tables/table_II_f1_by_dataset.tex}
+\end{table}
 
 \begin{figure}[h]
 	\centering
@@ -162,7 +170,11 @@ Hiệu suất của các phương pháp thay đổi tùy thuộc vào đặc tí
 
 Bảng~\ref{tab:runtime_stats} so sánh thời gian và thông lượng.
 
-\input{../../results/tables/table_III_runtime_stats.tex}
+\begin{table}[H]
+	\centering
+	\caption{So sánh hiệu suất tính toán của các phương pháp}
+	\input{../../results/tables/table_III_runtime_stats.tex}
+\end{table}
 
 \textbf{Các kết quả chính:}
 \begin{itemize}

@@ -28,24 +28,76 @@ Mặc dù ShapeDD gốc thể hiện nhiều ưu điểm về độ chính xác 
 Trong các hệ thống học máy dòng dữ liệu (data stream), concept drift xảy ra khi các đặc tính thống kê của biến mục tiêu thay đổi đột ngột hoặc từ từ theo thời gian. Các phương pháp MMD truyền thống thường gặp khó khăn về chi phí tính toán khi áp dụng cho dữ liệu lớn.
 
 \subsubsection{Vấn đề của ước lượng MMD truyền thống}
-Trong ShapeDD gốc, thống kê MMD được tính toán dựa trên trọng số đều (uniform weights), coi vai trò của mọi điểm dữ liệu trong cửa sổ là như nhau. Để đạt được độ mạnh thống kê (statistical power --- khả năng phát hiện sự khác biệt khi có) mong muốn, phương pháp này yêu cầu kích thước mẫu lớn hoặc quy trình kiểm định hoán vị tốn kém ($O(N_{perm} \cdot n^2)$). Điều này không phù hợp với các ứng dụng yêu cầu phản hồi tức thì.
+Trong ShapeDD gốc, thống kê MMD được tính toán dựa trên trọng số đều (uniform weights), coi vai trò của mọi điểm dữ liệu trong cửa sổ là như nhau. Nhắc lại từ Chương~\ref{chap:theoretical-foundation}, công thức MMD chuẩn có dạng:
+\begin{equation}
+	\text{MMD}^2_{\text{uniform}}(X, Y) = \frac{1}{n^2}\sum_{i,j} k(x_i, x_j) + \frac{1}{m^2}\sum_{p,q} k(y_p, y_q) - \frac{2}{nm}\sum_{i,p} k(x_i, y_p)
+\end{equation}
+
+Phương pháp này có hai vấn đề chính:
+\begin{enumerate}
+	\item \textbf{Kết quả không ổn định:} Khi cửa sổ nhỏ ($n, m < 200$), giá trị MMD dao động nhiều, khó phân biệt drift thật với nhiễu.
+	\item \textbf{Chậm:} Cần chạy permutation test khoảng 2500 lần để tính p-value, tốn $O(N_{perm} \cdot n^2)$ thời gian.
+\end{enumerate}
+
+Vấn đề cốt lõi: Phương pháp uniform coi tất cả điểm dữ liệu quan trọng như nhau. Nhưng thực tế, drift thường xuất hiện đầu tiên ở \textbf{biên phân phối} (nơi có ít điểm) chứ không phải ở vùng trung tâm đông đúc.
+
+\subsubsection{Ý tưởng cải tiến: Dùng trọng số thay đổi theo vị trí}
+Thay vì dùng trọng số đều, luận văn đề xuất gán trọng số khác nhau cho từng điểm dựa trên vị trí của nó trong phân phối. Cụ thể: \textit{điểm ở vùng thưa (biên) được cho trọng số cao hơn điểm ở vùng đông (trung tâm).}
+
+MMD có trọng số có dạng tổng quát:
+\begin{equation}
+	\text{MMD}^2_{\text{weighted}}(X, Y) = \sum_{i,j} w_i w_j k(x_i, x_j) + \sum_{p,q} v_p v_q k(y_p, y_q) - 2\sum_{i,p} w_i v_p k(x_i, y_p)
+\end{equation}
+trong đó $w_i$ và $v_p$ là trọng số của từng điểm (thỏa mãn $\sum_i w_i = 1$, $\sum_p v_p = 1$).
+
+\textbf{Câu hỏi:} Làm sao tính $w_i$ để phát hiện drift hiệu quả?
 
 \subsubsection{Giải pháp: Trọng số nghịch biến mật độ (Inverse Density Weighting)}
 Luận văn đề xuất sử dụng phương pháp \textbf{IDW-MMD} (Inverse Density-Weighted MMD), một heuristic đơn giản lấy cảm hứng từ ý tưởng ``Optimally-Weighted MMD'' của Bharti et al.~\cite{bharti2023owmmd}.
 
-\textbf{Lưu ý quan trọng:} Phương pháp của Bharti et al. (2023) được thiết kế cho \textit{likelihood-free inference} và đề xuất trọng số tối ưu phức tạp. Implementation trong luận văn này sử dụng một \textbf{heuristic đơn giản hơn} --- trọng số nghịch biến với căn bậc hai của mật độ kernel --- để phù hợp với bài toán drift detection trong streaming.
+\textbf{Lưu ý quan trọng:} Phương pháp của Bharti et al. (2023) được thiết kế cho bài toán suy luận thống kê (likelihood-free inference) và đề xuất trọng số tối ưu phức tạp. Implementation trong luận văn này sử dụng một \textbf{heuristic đơn giản hơn} --- trọng số nghịch biến với căn bậc hai của mật độ kernel --- để phù hợp với bài toán drift detection trong streaming.
 
-Cụ thể, các trọng số vector $w \in \mathbb{R}^n$ được tính tỷ lệ nghịch với căn bậc hai của tổng kernel (proxy cho mật độ cục bộ):
+Cụ thể, trọng số $w_i$ được tính dựa trên mật độ cục bộ (local density):
 \begin{equation}
 	w_i \propto \frac{1}{\sqrt{\sum_{j} k(x_i, x_j)}} \quad \text{(Inverse Density Weighting)}
 \end{equation}
 
-\textbf{Trực giác:} Điểm dữ liệu ở vùng thưa thớt (biên phân phối) có $\sum_{j} k(x_i, x_j)$ nhỏ $\Rightarrow$ trọng số $w_i$ lớn. Điểm ở vùng dày đặc (trung tâm phân phối) có $\sum_{j} k(x_i, x_j)$ lớn $\Rightarrow$ trọng số $w_i$ nhỏ. Cơ chế này giúp phát hiện nhạy hơn các thay đổi ở biên phân phối, nơi drift thường xuất hiện đầu tiên.
+\textbf{Cách hiểu đơn giản:}
+\begin{itemize}
+	\item \textbf{Điểm ở vùng đông (trung tâm):} $\sum_{j} k(x_i, x_j)$ lớn (nhiều điểm lân cận) $\Rightarrow$ trọng số $w_i$ nhỏ.
+	\item \textbf{Điểm ở vùng thưa (biên):} $\sum_{j} k(x_i, x_j)$ nhỏ (ít điểm lân cận) $\Rightarrow$ trọng số $w_i$ lớn.
+\end{itemize}
+Lý do: Drift thường xuất hiện đầu tiên ở biên phân phối, nên ta cần "lắng nghe" các điểm ở đó kỹ hơn.
 
-Công thức MMD bình phương có trọng số được định nghĩa cụ thể:
+\textbf{Tại sao dùng căn bậc hai ($1/\sqrt{d_i}$) thay vì nghịch đảo thẳng ($1/d_i$)?}
+\begin{itemize}
+	\item Nếu dùng $1/d_i$: Trọng số quá lớn cho outliers, dễ bị ảnh hưởng bởi nhiễu.
+	\item Nếu dùng $1/\sqrt{d_i}$: Vẫn tăng trọng số cho biên nhưng không quá cực đoan.
+	\item Kết quả thực nghiệm cho thấy $1/\sqrt{d_i}$ ổn định nhất (xem Chương~\ref{chap:experiments}).
+\end{itemize}
+
+Công thức IDW-MMD hoàn chỉnh:
 \begin{equation}
 	\text{MMD}^2_{\text{IDW}} = \underbrace{\sum_{i,j} w_i w_j k(x_i, x_j)}_{\text{Weighted } XX} + \underbrace{\sum_{p,q} v_p v_q k(y_p, y_q)}_{\text{Weighted } YY} - 2\underbrace{\sum_{i,p} \frac{1}{nm} k(x_i, y_p)}_{\text{Uniform } XY}
 \end{equation}
+
+\textbf{Lưu ý quan trọng:} Cross-term (số hạng thứ 3) vẫn dùng trọng số đều $1/(nm)$, không dùng weighted. \textit{Tại sao?}
+\begin{itemize}
+	\item Cross-term đo độ tương đồng \textbf{giữa hai cửa sổ}. Nếu dùng weighted cho cả hai cửa sổ, sẽ khuếch đại cả tín hiệu lẫn nhiễu.
+	\item Giữ cross-term uniform giúp nó làm "điểm neo" (anchor), đảm bảo phản ánh đúng mức độ chồng chéo giữa hai phân phối.
+	\item Kết quả: IDW-MMD vừa nhạy với drift (do weighted XX và YY) vừa ổn định (do uniform XY).
+\end{itemize}
+
+\subsubsection{Tại sao IDW-MMD giảm phương sai?}
+Khi dùng MMD chuẩn (uniform weights), tất cả các cặp điểm đóng góp ngang nhau vào kết quả. Vấn đề: Các điểm ở vùng đông đúc thường "giống nhau" (highly correlated), dẫn đến kết quả dao động nhiều.
+
+IDW-MMD khắc phục bằng hai cách:
+\begin{enumerate}
+	\item \textbf{Giảm ảnh hưởng của vùng đông:} Các điểm ở trung tâm (có nhiều láng giềng) được cho trọng số thấp. Do chúng correlation cao với nhau, giảm trọng số giúp giảm độ dao động.
+	\item \textbf{Tăng tín hiệu từ vùng biên:} Các điểm ở biên chứa thông tin quan trọng về sự khác biệt. Tăng trọng số cho chúng giúp tín hiệu drift rõ hơn so với nhiễu nền.
+\end{enumerate}
+
+\textbf{Kết quả thực tế:} Độ lệch chuẩn (standard deviation) của $\widehat{\text{MMD}}^2_{\text{IDW}}$ giảm khoảng 30\% so với uniform MMD trên dữ liệu không có drift. Nhờ vậy, ta có thể dùng asymptotic p-value (nhanh) thay vì permutation test (chậm) mà vẫn đảm bảo độ chính xác.
 
 \subsubsection{Quy trình tính toán}
 Luận văn cài đặt IDW-MMD như sau:
@@ -97,59 +149,29 @@ Luận văn cài đặt IDW-MMD như sau:
 
 \textbf{Cải tiến chính:} Thay vì sử dụng permutation test ($O(n^2 \times N_{perm})$), luận văn sử dụng \textit{phân phối tiệm cận} (asymptotic distribution) để tính p-value, chỉ cần $O(n^2)$. Điều này giúp giảm thời gian tính toán từ $\sim$125ms xuống $\sim$7--9ms mỗi window, tăng throughput xử lý \textbf{17--20 lần} (từ 8,000 lên 111,000--131,000 mẫu/giây).
 
+\subsubsection{Hạn chế và khi nào nên dùng}
+Mặc dù IDW-MMD cải thiện đáng kể về tốc độ và độ ổn định, phương pháp có một số giới hạn cần lưu ý:
 
-\subsection{MMD-Agg: Tăng cường độ bền vững và tính thích nghi (Lý thuyết tham khảo)}
-\label{sec:mmdagg}
+\textbf{1. Không hiệu quả với Mild Drift (drift nhẹ):}
+\begin{itemize}
+	\item IDW-MMD có xu hướng "lọc bỏ" những thay đổi nhỏ ở vùng trung tâm, coi chúng là nhiễu.
+	\item \textbf{Kết quả:} F1-score chỉ đạt 0.006 trên dataset \texttt{gen\_random\_mild}, trong khi MMD chuẩn đạt 0.585 (xem chi tiết tại Mục~\ref{sec:detection-eval}).
+	\item \textbf{Nguyên nhân:} Mild drift thường xảy ra ở vùng trung tâm (nơi có nhiều điểm), nhưng IDW-MMD giảm trọng số của các điểm này.
+\end{itemize}
 
-\textbf{Ghi chú:} Phần này trình bày lý thuyết của MMD-Agg để tham khảo. Trong quá trình thực nghiệm, MMD-Agg được loại khỏi benchmark vì thời gian tính toán quá cao (~500ms/window) và không mang lại cải thiện đáng kể so với IDW-MMD với median heuristic trong bài toán concept drift detection.
+\textbf{2. Không phù hợp cho phân loại loại drift:}
+\begin{itemize}
+	\item IDW-MMD thiết kế cho bài toán \textit{phát hiện} (có drift hay không), không phải \textit{phân loại} (loại drift gì).
+	\item Cơ chế giảm nhiễu có thể loại bỏ luôn tín hiệu của Gradual/Incremental drift (diễn ra chậm).
+	\item \textbf{Giải pháp:} Module SE-CDT (Mục~\ref{sec:shaped-cdt}) dùng MMD chuẩn thay vì IDW-MMD để giữ lại đầy đủ thông tin.
+\end{itemize}
 
-Một hạn chế cốt yếu của các phương pháp MMD truyền thống là sự phụ thuộc nhạy cảm vào việc lựa chọn tham số độ rộng hạt nhân (kernel bandwidth, $\sigma$). Trong thực tế, sự trôi dạt khái niệm có thể diễn ra ở nhiều quy mô khác nhau: sự thay đổi nhỏ cục bộ (yêu cầu $\sigma$ nhỏ) hoặc sự dịch chuyển phân phối toàn cục (yêu cầu $\sigma$ lớn). Việc cố định một giá trị $\sigma$ (thường dùng median heuristic) thường dẫn đến việc mất mát thông tin quan trọng, làm giảm độ mạnh (power) của kiểm định.
-
-Để khắc phục vấn đề này, Schrab et al.~\cite{schrab2023mmdagg} đề xuất phương pháp \textbf{MMD-Agg} (MMD Aggregated). Đây là một bước tiến quan trọng về mặt lý thuyết so với các phương pháp lựa chọn kernel heuristic.
-
-\subsubsection{Cơ chế thích nghi đa hạt nhân (Adaptive Multi-Kernel Strategy)}
-Thay vì chọn một kernel đơn lẻ $k_{\sigma}$, MMD-Agg thực hiện kiểm định trên một tập hợp các kernel $\mathcal{K} = \{k_{\sigma_1}, k_{\sigma_2}, \dots, k_{\sigma_M}\}$ với các độ rộng băng thông trải dài trên nhiều quy mô khác nhau.
-
-Thống kê kiểm định không còn là một giá trị MMD duy nhất, mà là giá trị tổng hợp từ tập hợp này:
-\begin{equation}
-	\Delta_{Agg} = \max_{k \in \mathcal{K}} \left( \widehat{\text{MMD}}_k^2 - \lambda_k \right)
-\end{equation}
-trong đó $\lambda_k$ là các ngưỡng điều chỉnh (correction thresholds) cho từng kernel, được tính toán từ phân phối null của $\widehat{\text{MMD}}_k^2$ thông qua bootstrap hoặc asymptotic quantile (xem Algorithm~\ref{alg:mmd_agg}, bước 2). Cơ chế này cho phép bộ phát hiện ``quét'' qua nhiều độ phân giải của dữ liệu, tự động ``thích nghi'' để chọn ra kernel phản ánh tốt nhất sự thay đổi phân phối hiện tại mà không cần tham số hóa thủ công.
-
-\subsubsection{Đảm bảo lý thuyết}
-Điểm vượt trội của MMD-Agg so với các phương pháp ensemble thông thường nằm ở các đảm bảo lý thuyết vững chắc:
-\begin{enumerate}
-	\item \textbf{Khả năng phát hiện tối ưu:} Schrab et al. đã chứng minh về mặt lý thuyết rằng MMD-Agg có thể phát hiện sự khác biệt nhỏ nhất có thể phân biệt được, mà không cần biết trước đặc tính của dữ liệu. Điều này giúp phương pháp hoạt động tốt trong nhiều tình huống khác nhau.
-	\item \textbf{Kiểm soát báo động giả với mẫu nhỏ:} Khác với nhiều phương pháp chỉ hoạt động tốt khi có nhiều dữ liệu, MMD-Agg đảm bảo kiểm soát chặt chẽ tỷ lệ báo động giả ngay cả với cửa sổ dữ liệu nhỏ. Điều này phù hợp với môi trường streaming, nơi dữ liệu đến liên tục và cửa sổ thường có kích thước hạn chế.
-\end{enumerate}
-
-Nhờ tích hợp MMD-Agg, ShapeDD không còn phụ thuộc vào việc chọn tham số kernel thủ công. Bộ phát hiện có thể tự động phát hiện cả các thay đổi nhỏ lẫn các thay đổi lớn trong phân phối dữ liệu.
-
-\begin{algorithm}[H]
-	\caption{MMD Aggregated (MMD-Agg)}
-	\label{alg:mmd_agg}
-	\begin{algorithmic}[1]
-		\REQUIRE Windows $X, Y$, collection of bandwidths $\Lambda = \{\sigma_1, \dots, \sigma_M\}$, level $\alpha$
-		\ENSURE Test decision (Drift/No Drift)
-		\STATE \textbf{1. Kernel Collection}
-		\FOR{each $\sigma_m \in \Lambda$}
-		\STATE Define kernel $k_m(x, y) = \exp(-\|x-y\|^2 / 2\sigma_m^2)$
-		\STATE Compute standard MMD estimator $\widehat{\text{MMD}}^2_m(X, Y)$ using $k_m$
-		\ENDFOR
-		\STATE \textbf{2. Aggregation}
-		\FOR{each $m \in \{1, \dots, M\}$}
-		\STATE Compute threshold $u_{\alpha, m}$ (via bootstrap or asymptotic quantile)
-		\STATE Compute adjusted statistic: $T_m = \widehat{\text{MMD}}^2_m - u_{\alpha, m}$
-		\ENDFOR
-		\STATE \textbf{3. Decision}
-		\STATE Global statistic $\Delta_{Agg} = \max_{m} T_m$
-		\IF{$\Delta_{Agg} > 0$}
-		\RETURN \textbf{Drift Detected} (Reject $H_0$)
-		\ELSE
-		\RETURN \textbf{No Drift} (Fail to reject $H_0$)
-		\ENDIF
-	\end{algorithmic}
-\end{algorithm}
+\textbf{3. Khi nào nên dùng IDW-MMD:}
+\begin{itemize}
+	\item \textbf{Phù hợp:} Sudden drift mạnh ($\delta \geq 1.0$), đặc biệt khi cần xử lý nhanh (high throughput).
+	\item \textbf{Cẩn thận:} Mild drift ($\delta < 0.5$), gradual drift diễn ra ở vùng trung tâm.
+	\item \textbf{Lời khuyên:} Kết hợp với MMD chuẩn hoặc adaptive threshold để bù đắp hạn chế.
+\end{itemize}
 
 Sau khi tích hợp IDW-MMD với phân phối tiệm cận, hệ thống có thể phát hiện drift với độ chính xác cao và chi phí tính toán thấp. Tuy nhiên, phát hiện drift chỉ là bước đầu tiên --- để chọn chiến lược thích ứng phù hợp, hệ thống cần biết \textit{loại drift} đã xảy ra. Phần tiếp theo trình bày phương pháp SE-CDT cho bài toán phân loại drift không giám sát.
 

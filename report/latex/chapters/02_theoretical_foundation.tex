@@ -211,19 +211,19 @@ trong đó:
 	\item $X \sim P$ đại diện cho biến ngẫu nhiên được lấy mẫu từ phân phối $P$
 	\item $Y \sim Q$ đại diện cho biến ngẫu nhiên được lấy mẫu từ phân phối $Q$
 	\item $\mathcal{F}$ là một lớp hàm $f$ sao cho $\|f\|_{\mathcal{H}} \leq 1$ trong Reproducing Kernel Hilbert Space (RKHS)~\cite{scholkopf2002learning}
-	\item $\sup$ biểu thị supremum (cận trên nhỏ nhất)
+	\item $\sup$ biểu thị giá trị lớn nhất có thể (supremum)
 \end{itemize}
 Trong không gian ban đầu, hai phân phối có thể khó phân biệt. Bằng cách ánh xạ vào RKHS thông qua hàm kernel~\cite{scholkopf2002learning},
 các cấu trúc phức tạp của phân phối trở nên rõ ràng hơn. MMD đo lường khoảng cách giữa "trung bình" (mean embedding) của hai phân phối trong không gian này.
 
-Trong thực tế, việc tìm supremum trên $\mathcal{F}$ là không khả thi về mặt tính toán. Do đó, MMD thường được triển khai trong
+Trong thực tế, việc tìm giá trị lớn nhất trên $\mathcal{F}$ là không khả thi về mặt tính toán. Do đó, MMD thường được triển khai trong
 RKHS~\cite{scholkopf2002learning} sử dụng kernel trick với hàm kernel $k(x, y)$:
 
 \begin{equation}
 	k(x, y) = \langle \phi(x), \phi(y) \rangle_{\mathcal{H}}
 \end{equation}
 
-Trong đó $\phi(x)$ ánh xạ điểm $x$ vào RKHS $\mathcal{H}$ và $\langle \cdot, \cdot \rangle_{\mathcal{H}}$ là tích vô hướng trong $\mathcal{H}$.
+Trong đó $\phi(x)$ ánh xạ điểm $x$ vào RKHS $\mathcal{H}$ và $\langle \cdot, \cdot \rangle_{\mathcal{H}}$ là phép nhân vô hướng (inner product) trong $\mathcal{H}$.
 \textbf{Lựa chọn kernel phổ biến:} Gaussian RBF kernel được sử dụng rộng rãi nhất do tính chất universal (có thể xấp xỉ bất kỳ hàm liên tục nào):
 \begin{equation}
 	k(x, y) = \exp\left(-\frac{\|x - y\|^2}{2\sigma^2}\right)
