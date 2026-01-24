@@ -71,6 +71,16 @@ def plot_scenario(scenario_name, seed=0):
                 "width": 600
             })
         length = 800 + 10 * 1200 + 500
+
+    elif scenario_name == "Repeated_Sudden":
+        # Match benchmark_proper.py: pos = 800 + i*1000, width=0
+        for i in range(10):
+            events.append({
+                "type": "Sudden",
+                "pos": 800 + i * 1000,
+                "width": 0
+            })
+        length = 800 + 10 * 1000 + 500
         
     X, y = generate_mixed_stream(events, length, seed)
     
@@ -173,9 +183,14 @@ def plot_scenario(scenario_name, seed=0):
             sig_idx = min(len(mmd_sig)-1, evt_pos // 10)
             sig_val = mmd_sig[sig_idx]
             
+            # Adaptive offset for annotation
+            max_sig = np.max(mmd_sig) if len(mmd_sig) > 0 else 1.0
+            range_sig = max_sig - np.min(mmd_sig)
+            offset = max(range_sig * 0.1, 0.05) if range_sig > 0 else 0.1
+            
             ax2_bottom.annotate(f"Pred: {pred}\n(GT: {gt})", 
                          xy=(evt_pos, sig_val), 
-                         xytext=(evt_pos, sig_val + 0.15), 
+                         xytext=(evt_pos, sig_val + offset), 
                          arrowprops=dict(facecolor=color, shrink=0.05),
                          color=color, fontweight='bold', ha='center')
             
@@ -191,3 +206,4 @@ if __name__ == "__main__":
     plot_scenario("Mixed_B", seed=0) # Blip -> Incremental -> Sudden
     plot_scenario("Repeated_Gradual", seed=0)
     plot_scenario("Repeated_Incremental", seed=0)
+    plot_scenario("Repeated_Sudden", seed=0)
