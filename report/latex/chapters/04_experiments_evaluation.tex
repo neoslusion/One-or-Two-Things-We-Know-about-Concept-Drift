@@ -92,6 +92,7 @@ Bảng~\ref{tab:comprehensive_performance} so sánh hiệu suất của \textbf{
 \begin{table}[H]
 	\centering
 	\caption{So sánh tổng hợp hiệu suất các phương pháp phát hiện drift}
+	\label{tab:comprehensive_performance}
 	\input{../../results/tables/table_I_comprehensive_performance.tex}
 \end{table}
 
@@ -126,8 +127,23 @@ Hiệu suất của các phương pháp thay đổi tùy thuộc vào đặc tí
 % =============================================================================
 \begin{table}[H]
 	\centering
-	\caption{F1-Score của các phương pháp theo từng loại dataset}
-	\input{../../results/tables/table_II_f1_by_dataset.tex}
+	\caption{F1-Score theo dataset (Phần 1: Dữ liệu cơ bản và Mild/Moderate Drift)}
+	\label{tab:f1_by_dataset_part1}
+	\input{../../results/tables/table_II_part1.tex}
+\end{table}
+
+\begin{table}[H]
+	\centering
+	\caption{F1-Score theo dataset (Phần 2: Drift mạnh và thay đổi mặt phẳng)}
+	\label{tab:f1_by_dataset_part2}
+	\input{../../results/tables/table_II_part2.tex}
+\end{table}
+
+\begin{table}[H]
+	\centering
+	\caption{F1-Score theo dataset (Phần 3: Blip và dữ liệu Stagger/SEA)}
+	\label{tab:f1_by_dataset_part3}
+	\input{../../results/tables/table_II_part3.tex}
 \end{table}
 
 \begin{figure}[h]
@@ -338,7 +354,7 @@ So với paper values của CDT\_MSW, SE-CDT đạt kết quả tương đương
 
 \textbf{Hình dạng tín hiệu (Signal Shapes):}
 
-Hình~\ref{fig:signal_shapes_comparison} minh họa sự khác biệt trong hình dạng tín hiệu MMD cho các loại drift, giải thích tại sao Sudden detection tốt hơn Gradual.
+Hình~\ref{fig:signal_sudden}, Hình~\ref{fig:signal_gradual} và Hình~\ref{fig:signal_incremental} minh họa sự khác biệt trong hình dạng tín hiệu MMD cho các loại drift, giải thích tại sao Sudden detection tốt hơn Gradual.
 
 \begin{figure}[H]
         \centering
