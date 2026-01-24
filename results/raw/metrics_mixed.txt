@@ -1,0 +1,52 @@
+Prequential Accuracy Evaluation Results (Comprehensive)
+Generated: 2026-01-24T20:13:58.601179
+Samples: 5000, Drifts: 5, Type: mixed, Seed: 42
+
+Config: w_ref=50, thresh=0.15
+Ground Truth: 3 drift points at [1250, 2500, 3750]
+
+type_specific:
+  --- Detection Metrics ---
+  EDR (Recall):     0.6667
+  MDR (Miss Rate):  0.3333
+  Precision:        0.2500
+  TP: 2, FP: 6, FN: 1
+  Mean Delay:       200.0 samples
+  --- Adaptation Metrics ---
+  Overall Accuracy: 0.8619
+  Post-Drift Acc:   0.8238
+  Adaptations:      8
+  Avg Class. Time:  1.9268 ms
+  Restoration Time: 160.3 samples
+  Performance Loss: 0.0565
+  Convergence Rate: -0.00098
+
+simple_retrain:
+  --- Detection Metrics ---
+  EDR (Recall):     0.6667
+  MDR (Miss Rate):  0.3333
+  Precision:        0.2500
+  TP: 2, FP: 6, FN: 1
+  Mean Delay:       200.0 samples
+  --- Adaptation Metrics ---
+  Overall Accuracy: 0.8619
+  Post-Drift Acc:   0.8238
+  Adaptations:      8
+  Restoration Time: 160.3 samples
+  Performance Loss: 0.0565
+  Convergence Rate: -0.00098
+
+no_adaptation:
+  --- Detection Metrics ---
+  EDR (Recall):     0.6667
+  MDR (Miss Rate):  0.3333
+  Precision:        0.2500
+  TP: 2, FP: 6, FN: 1
+  Mean Delay:       200.0 samples
+  --- Adaptation Metrics ---
+  Overall Accuracy: 0.8370
+  Post-Drift Acc:   0.8386
+  Adaptations:      0
+  Restoration Time: 29.3 samples
+  Performance Loss: 0.0445
+  Convergence Rate: 0.00063

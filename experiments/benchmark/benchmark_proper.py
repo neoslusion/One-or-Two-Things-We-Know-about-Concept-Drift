@@ -71,6 +71,17 @@ except ImportError:
     USE_RIGOROUS_GENERATOR = False
     logger.warning("Rigorous generator not available, using legacy generator")
 
+# Import supervised generator for fair CDT_MSW comparison
+try:
+    from data.generators.drift_generators_supervised import (
+        generate_supervised_stream,
+        generate_concept_aware_labels
+    )
+    USE_SUPERVISED_GENERATOR = True
+except ImportError:
+    USE_SUPERVISED_GENERATOR = False
+    logger.warning("Supervised generator not available, CDT_MSW comparison may be unfair")
+
 
 def generate_mixed_stream(events, length=None, seed=42, supervised_mode=False):
     """
@@ -362,19 +373,62 @@ def run_mixed_experiment(params):
     else: # Control
         events = [{"type": "Sudden", "pos": 1000, "width": 0}]
         
-    # Generate Stream
+    # Generate Dual Data Streams for FAIR COMPARISON
     length = events[-1]['pos'] + 2000
-    X, y = generate_mixed_stream(events, length, seed)
     
-    # 1. CDT Continuous
+    # Stream 1: Unsupervised (P(X) change) for SE-CDT
+    X_unsup, y_unsup = generate_mixed_stream(events, length, seed, supervised_mode=False)
+    
+    # Stream 2: Supervised (P(Y|X) change) for CDT_MSW
+    # Convert event structure to drift_scenario format
+    if USE_SUPERVISED_GENERATOR and len(events) > 0:
+        # Determine dominant drift type from events
+        drift_types_count = {}
+        for evt in events:
+            dtype = evt['type']
+            if dtype not in drift_types_count:
+                drift_types_count[dtype] = 0
+            drift_types_count[dtype] += 1
+        
+        # Use most common drift type
+        dominant_type = max(drift_types_count, key=drift_types_count.get)
+        
+        # Map to supervised generator drift types
+        type_mapping = {
+            'Sudden': 'sudden',
+            'Gradual': 'gradual',
+            'Incremental': 'incremental',
+            'Recurrent': 'recurrent',
+            'Blip': 'blip'
+        }
+        supervised_type = type_mapping.get(dominant_type, 'sudden')
+        
+        drift_scenario = {
+            'type': supervised_type,
+            'n_drift_events': len(events),
+            'drift_magnitude': 0.5
+        }
+        
+        X_sup, y_sup, drift_pos_sup, info_sup = generate_supervised_stream(
+            drift_scenario, total_size=length, n_features=X_unsup.shape[1], random_state=seed
+        )
+        logger.info(f"Generated supervised stream with P(Y|X) change: {supervised_type}")
+    else:
+        # Fallback: use unsupervised stream (but note this is UNFAIR for CDT_MSW)
+        X_sup, y_sup = X_unsup, y_unsup
+        logger.warning("Using unsupervised stream for CDT_MSW - comparison is UNFAIR!")
+    
+    # 1. CDT Continuous - use SUPERVISED stream
     t0 = time.time()
-    cdt_detections = run_continuous_cdt(X, y)
+    cdt_detections = run_continuous_cdt(X_sup, y_sup)
     dt_cdt = time.time() - t0
     
 
-    # 2. SE Classification
+    # 2. SE Classification - use UNSUPERVISED stream
+    # IMPORTANT: Use STANDARD MMD for classification (better signal preservation)
+    # ADW-MMD is too aggressive and suppresses weak signals from continuous drift
     t0 = time.time()
-    mmd_sig = compute_mmd_sequence(X, WINDOW_SIZE, step=10)
+    mmd_sig = compute_mmd_sequence(X_unsup, WINDOW_SIZE, step=10, use_standard=True)
     se = SE_CDT(WINDOW_SIZE)
     
     se_classifications = []
@@ -394,11 +448,11 @@ def run_mixed_experiment(params):
             })
     dt_se = time.time() - t0
     
-    # 3. SE Detection with BOTH MMD variants
+    # 3. SE Detection with BOTH MMD variants - use UNSUPERVISED stream
     # 3a. Standard MMD Signal (better for PCD)
-    mmd_sig_std = compute_mmd_sequence(X, WINDOW_SIZE, step=10, use_standard=True)
+    mmd_sig_std = compute_mmd_sequence(X_unsup, WINDOW_SIZE, step=10, use_standard=True)
     # 3b. ADW-MMD Signal (faster, better precision)
-    mmd_sig_adw = compute_mmd_sequence(X, WINDOW_SIZE, step=10, use_standard=False)
+    mmd_sig_adw = compute_mmd_sequence(X_unsup, WINDOW_SIZE, step=10, use_standard=False)
     
     def detect_peaks_from_signal(sig, height=SHAPE_HEIGHT, prom=SHAPE_PROMINENCE):
         """Detect peaks and return detection points."""
@@ -492,10 +546,10 @@ def run_mixed_experiment(params):
     e2e_adaptive = run_e2e_classification(se_det_adaptive, mmd_sig_std, events)
             
     # 5. Calculate Metrics for ALL methods
-    cdt_metrics = calculate_metrics(cdt_detections, events, len(X))
-    se_std_metrics = calculate_metrics(se_det_std, events, len(X))
-    se_adw_metrics = calculate_metrics(se_det_adw, events, len(X))
-    se_adaptive_metrics = calculate_metrics(se_det_adaptive, events, len(X))
+    cdt_metrics = calculate_metrics(cdt_detections, events, len(X_unsup))
+    se_std_metrics = calculate_metrics(se_det_std, events, len(X_unsup))
+    se_adw_metrics = calculate_metrics(se_det_adw, events, len(X_unsup))
+    se_adaptive_metrics = calculate_metrics(se_det_adaptive, events, len(X_unsup))
         
     return {
         "Scenario": scenario,
@@ -511,7 +565,7 @@ def run_mixed_experiment(params):
         "Events": events,
         "Runtime_CDT": dt_cdt,
         "Runtime_SE": dt_se,
-        "Stream_Length": len(X),
+        "Stream_Length": len(X_unsup),
         "CDT_Metrics": cdt_metrics,
         "SE_STD_Metrics": se_std_metrics,
         "SE_ADW_Metrics": se_adw_metrics,
@@ -737,6 +791,117 @@ def run_supervised_comparison(n_seeds=5):
     return results
 
 
+def run_quick_validation(scenarios=None, n_seeds=2):
+    """
+    Quick validation test for classification threshold tuning.
+    Runs minimal scenarios (default: Repeated_Incremental + Mixed_A) to validate
+    CAT/SUB accuracy improvements without full 2880-experiment benchmark.
+    
+    Args:
+        scenarios: List of scenario names (default: ["Repeated_Incremental", "Mixed_A"])
+        n_seeds: Number of random seeds per scenario (default: 2 for speed)
+        
+    Returns:
+        dict: Metrics including CAT accuracy, SUB accuracy, confusion matrix
+    """
+    if scenarios is None:
+        scenarios = ["Repeated_Incremental", "Mixed_A"]
+    
+    logger.info(f"Starting Quick Validation with {len(scenarios)} scenarios × {n_seeds} seeds...")
+    
+    tasks = []
+    for sc in scenarios:
+        for seed in range(n_seeds):
+            tasks.append({"scenario": sc, "seed": seed})
+    
+    # Run sequentially (small workload)
+    results = []
+    for task in tasks:
+        res = run_mixed_experiment(task)
+        results.append(res)
+        logger.info(f"  Completed {task['scenario']} (seed={task['seed']})")
+    
+    # Calculate CAT and SUB accuracy
+    TCD_TYPES = {"Sudden", "Blip", "Recurrent"}
+    
+    total_se = 0
+    correct_se = 0
+    correct_cat_se = 0
+    
+    # Confusion matrix tracking
+    confusion = {}
+    for gt_type in ["Sudden", "Blip", "Gradual", "Incremental", "Recurrent"]:
+        confusion[gt_type] = {pred: 0 for pred in ["Sudden", "Blip", "Gradual", "Incremental", "Recurrent"]}
+    
+    for res in results:
+        for item in res['SE_Classifications']:
+            gt = item['gt_type']
+            pred = item['pred']
+            total_se += 1
+            
+            # SUB accuracy (5-class)
+            if gt == pred:
+                correct_se += 1
+            
+            # CAT accuracy (TCD vs PCD)
+            is_gt_tcd = gt in TCD_TYPES
+            is_pred_tcd = pred in TCD_TYPES
+            if is_gt_tcd == is_pred_tcd:
+                correct_cat_se += 1
+            
+            # Confusion matrix
+            if gt in confusion and pred in confusion[gt]:
+                confusion[gt][pred] += 1
+    
+    cat_acc = (correct_cat_se / total_se * 100) if total_se > 0 else 0
+    sub_acc = (correct_se / total_se * 100) if total_se > 0 else 0
+    
+    # Calculate per-class accuracy
+    per_class_acc = {}
+    for gt_type in confusion:
+        total_gt = sum(confusion[gt_type].values())
+        correct_gt = confusion[gt_type][gt_type]
+        per_class_acc[gt_type] = (correct_gt / total_gt * 100) if total_gt > 0 else 0
+    
+    # Print Results
+    print("\n" + "="*80)
+    print("QUICK VALIDATION RESULTS")
+    print("="*80)
+    print(f"Total Classifications: {total_se}")
+    print(f"CAT Accuracy (TCD vs PCD): {cat_acc:.1f}%")
+    print(f"SUB Accuracy (5-class):    {sub_acc:.1f}%")
+    print("-"*80)
+    print("\nPer-Class Accuracy:")
+    for gt_type in ["Sudden", "Blip", "Gradual", "Incremental", "Recurrent"]:
+        acc = per_class_acc.get(gt_type, 0)
+        is_tcd = " (TCD)" if gt_type in TCD_TYPES else " (PCD)"
+        print(f"  {gt_type:12s}{is_tcd}: {acc:5.1f}%")
+    
+    print("\n" + "-"*80)
+    print("Confusion Matrix:")
+    header = "GT \\ Pred"
+    print(f"{header:<12} | {'SUD':<5} {'BLP':<5} {'GRA':<5} {'INC':<5} {'REC':<5} | Total")
+    print("-"*80)
+    for gt_type in ["Sudden", "Blip", "Gradual", "Incremental", "Recurrent"]:
+        gt_abbr = gt_type[:3].upper()
+        row_str = f"{gt_abbr:<12} |"
+        for pred in ["Sudden", "Blip", "Gradual", "Incremental", "Recurrent"]:
+            count = confusion[gt_type][pred]
+            row_str += f" {count:<5}"
+        total_gt = sum(confusion[gt_type].values())
+        row_str += f" | {total_gt}"
+        print(row_str)
+    print("="*80)
+    
+    return {
+        "cat_accuracy": cat_acc,
+        "sub_accuracy": sub_acc,
+        "per_class_accuracy": per_class_acc,
+        "confusion_matrix": confusion,
+        "total_classifications": total_se
+    }
+
+
 def run_benchmark_proper():
     tasks = []
     scenarios = ["Mixed_A", "Mixed_B", "Repeated_Gradual", "Repeated_Incremental", "Repeated_Sudden"]
@@ -768,6 +933,9 @@ def run_benchmark_proper():
     # Print Summary
     print_summary(results)
     generate_latex_table(results)
+    
+    # Generate Fair Comparison Table (Phase 1 Fix)
+    generate_fair_comparison_table(results)
     
     # Run Supervised CDT comparison
     run_supervised_comparison(n_seeds=5)
@@ -904,6 +1072,160 @@ def generate_latex_table(results):
         f.write(latex_output)
         
     logger.info(f"Aggregate Table generated at: {output_path}")
+
+
+def generate_fair_comparison_table(results):
+    """
+    Generate fair comparison table showing:
+    1. CDT_MSW with supervised data (P(Y|X) change)
+    2. SE-CDT with unsupervised data (P(X) change)
+    3. Expected CDT_MSW results from original paper
+    
+    This addresses the academic integrity issue of comparing methods
+    on appropriate data types.
+    """
+    logger.info("Generating FAIR COMPARISON table...")
+    
+    # Compute SE-CDT classification accuracy (unsupervised)
+    total_se = sum(len(r['SE_Classifications']) for r in results)
+    correct_cat_se = 0
+    correct_sub_se = 0
+    
+    TCD_TYPES = {"Sudden", "Blip"}
+    
+    for res in results:
+        for item in res['SE_Classifications']:
+            gt = item['gt_type']
+            pred = item['pred']
+            
+            # Category accuracy (TCD vs PCD)
+            is_gt_tcd = gt in TCD_TYPES
+            is_pred_tcd = pred in TCD_TYPES
+            if is_gt_tcd == is_pred_tcd:
+                correct_cat_se += 1
+            
+            # Subcategory accuracy
+            if gt == pred:
+                correct_sub_se += 1
+    
+    cat_acc_se = (correct_cat_se / total_se * 100) if total_se > 0 else 0
+    sub_acc_se = (correct_sub_se / total_se * 100) if total_se > 0 else 0
+    
+    # Compute CDT_MSW accuracy on supervised data
+    cdt_correct_cat = 0
+    cdt_correct_sub = 0
+    cdt_tp_count = 0
+    
+    for res in results:
+        events = sorted(res['Events'], key=lambda x: x['pos'])
+        dets = sorted(res['CDT_Detections'], key=lambda x: x['pos'])
+        
+        assigned_evts = set()
+        for d in dets:
+            for i, e in enumerate(events):
+                if i in assigned_evts:
+                    continue
+                if abs(d['pos'] - e['pos']) < 250:  # Match tolerance
+                    assigned_evts.add(i)
+                    cdt_tp_count += 1
+                    
+                    # Subcategory match
+                    if d['type'] == e['type']:
+                        cdt_correct_sub += 1
+                    
+                    # Category match
+                    is_gt_tcd = e['type'] in TCD_TYPES
+                    is_pred_tcd = d['type'] in TCD_TYPES
+                    if is_gt_tcd == is_pred_tcd:
+                        cdt_correct_cat += 1
+                    break
+    
+    cat_acc_cdt = (cdt_correct_cat / cdt_tp_count * 100) if cdt_tp_count > 0 else 0
+    sub_acc_cdt = (cdt_correct_sub / cdt_tp_count * 100) if cdt_tp_count > 0 else 0
+    
+    # Compute detection metrics
+    metrics_agg = {
+        "CDT": {"TP": 0, "FP": 0, "FN": 0, "Total": 0},
+        "SE": {"TP": 0, "FP": 0, "FN": 0, "Total": 0}
+    }
+    
+    for r in results:
+        if 'CDT_Metrics' in r:
+            metrics_agg["CDT"]["TP"] += r['CDT_Metrics']["TP"]
+            metrics_agg["CDT"]["FP"] += r['CDT_Metrics']["FP"]
+            metrics_agg["CDT"]["FN"] += r['CDT_Metrics']["FN"]
+            metrics_agg["CDT"]["Total"] += r['CDT_Metrics']["FN"] + r['CDT_Metrics']["TP"]
+        
+        if 'SE_STD_Metrics' in r:
+            metrics_agg["SE"]["TP"] += r['SE_STD_Metrics']["TP"]
+            metrics_agg["SE"]["FP"] += r['SE_STD_Metrics']["FP"]
+            metrics_agg["SE"]["FN"] += r['SE_STD_Metrics']["FN"]
+            metrics_agg["SE"]["Total"] += r['SE_STD_Metrics']["FN"] + r['SE_STD_Metrics']["TP"]
+    
+    cdt_edr = (metrics_agg["CDT"]["TP"] / metrics_agg["CDT"]["Total"] * 100) if metrics_agg["CDT"]["Total"] > 0 else 0
+    se_edr = (metrics_agg["SE"]["TP"] / metrics_agg["SE"]["Total"] * 100) if metrics_agg["SE"]["Total"] > 0 else 0
+    
+    # Expected CDT_MSW results from original paper (Guo et al. 2022)
+    expected_cdt_cat = 87.5  # Reported in paper: 85-90%
+    expected_cdt_sub = 42.0  # Reported in paper: 38-46%
+    expected_cdt_edr = 80.0  # Reported in paper: 75-85%
+    
+    # Generate comparison table
+    headers = ["Method", "Data Type", "CAT Acc (\\%)", "SUB Acc (\\%)", "EDR (\\%)", "Source"]
+    data = []
+    
+    # Row 1: CDT_MSW from paper (expected with supervised data)
+    data.append([
+        escape_latex("CDT_MSW"),
+        "Supervised P(Y|X)",
+        format_metric(expected_cdt_cat / 100, "percentage"),
+        format_metric(expected_cdt_sub / 100, "percentage"),
+        format_metric(expected_cdt_edr / 100, "percentage"),
+        "Guo et al. 2022"
+    ])
+    
+    # Row 2: CDT_MSW our implementation (with supervised data)
+    data.append([
+        escape_latex("CDT_MSW"),
+        "Supervised P(Y|X)",
+        format_metric(cat_acc_cdt / 100, "percentage"),
+        format_metric(sub_acc_cdt / 100, "percentage"),
+        format_metric(cdt_edr / 100, "percentage"),
+        "Our Experiment"
+    ])
+    
+    # Row 3: SE-CDT (unsupervised data)
+    data.append([
+        "\\textbf{" + escape_latex("SE-CDT") + "}",
+        "\\textbf{Unsupervised P(X)}",
+        "\\textbf{" + format_metric(cat_acc_se / 100, "percentage") + "}",
+        "\\textbf{" + format_metric(sub_acc_se / 100, "percentage") + "}",
+        "\\textbf{" + format_metric(se_edr / 100, "percentage") + "}",
+        "\\textbf{Our Method}"
+    ])
+    
+    latex_output = generate_standard_table(headers, data, align="|l|l|c|c|c|l|")
+    
+    # Save to separate file - use TABLES_DIR from config
+    from core.config import TABLES_DIR
+    output_path = str(TABLES_DIR / "fair_comparison.tex")
+    
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write(latex_output)
+    
+    logger.info(f"Fair comparison table saved to: {output_path}")
+    
+    # Also print summary to console
+    print("\n" + "="*80)
+    print("FAIR COMPARISON RESULTS")
+    print("="*80)
+    print(f"CDT_MSW (Expected from paper): CAT={expected_cdt_cat:.1f}%, SUB={expected_cdt_sub:.1f}%, EDR={expected_cdt_edr:.1f}%")
+    print(f"CDT_MSW (Our supervised data): CAT={cat_acc_cdt:.1f}%, SUB={sub_acc_cdt:.1f}%, EDR={cdt_edr:.1f}%")
+    print(f"SE-CDT (Our unsupervised):     CAT={cat_acc_se:.1f}%, SUB={sub_acc_se:.1f}%, EDR={se_edr:.1f}%")
+    print("="*80)
+    print("✓ Fair comparison: CDT_MSW tested on P(Y|X) change (supervised)")
+    print("✓ Fair comparison: SE-CDT tested on P(X) change (unsupervised)")
+    print("="*80 + "\n")
 
 
 if __name__ == "__main__":

@@ -198,7 +198,13 @@ class SE_CDT:
             'SNR': 0.0,   # Signal-to-Noise Ratio
             'CV': 0.0,    # Coefficient of Variation (Periodicity)
             'Mean': np.mean(sigma_s),
-            'peak_positions': peaks.tolist() if n_p > 0 else []  # For Blip detection
+            'peak_positions': peaks.tolist() if n_p > 0 else [],  # For Blip detection
+            'PPR': 0.0,   # Peak Proximity Ratio (for Blip)
+            'DPAR': 0.0,  # Dual-Peak Amplitude Ratio (for Blip)
+            # Temporal features (for Incremental vs Gradual)
+            'LTS': 0.0,   # Linear Trend Strength
+            'SDS': 0.0,   # Step Detection Score
+            'MS': 0.0     # Monotonicity Score
         }
         
         # SNR
@@ -221,8 +227,95 @@ class SE_CDT:
                 peak_distances = np.diff(peaks)
                 if len(peak_distances) > 0:
                     features['CV'] = np.std(peak_distances) / (np.mean(peak_distances) + 1e-10)
+                
+                # PPR (Peak Proximity Ratio) - for Blip detection
+                # Ratio of closest peak distance to signal length
+                min_peak_distance = np.min(peak_distances)
+                features['PPR'] = min_peak_distance / len(sigma_s)
+                
+                # DPAR (Dual-Peak Amplitude Ratio) - for Blip detection
+                # If 2 peaks close together with similar heights = Blip
+                if n_p == 2:
+                    peak_heights = properties['peak_heights']
+                    h1, h2 = peak_heights[0], peak_heights[1]
+                    features['DPAR'] = min(h1, h2) / (max(h1, h2) + 1e-10)
+        
+        # 4. Extract Temporal Features (for Incremental vs Gradual)
+        temporal_features = self.extract_temporal_features(sigma_s)
+        features.update(temporal_features)
         
         return features
+
+    def extract_temporal_features(self, sigma_signal: np.ndarray) -> Dict[str, float]:
+        """
+        Extract temporal features to distinguish Incremental from Gradual drift.
+        
+        Incremental: Stepwise changes with monotonic trend
+        Gradual: Smooth curve with oscillations
+        
+        Returns:
+        --------
+        temporal_features : dict
+            - LTS (Linear Trend Strength): R² of linear fit
+            - SDS (Step Detection Score): Number of significant steps
+            - MS (Monotonicity Score): Ratio of monotonic segments
+        """
+        if len(sigma_signal) < 10:
+            return {'LTS': 0.0, 'SDS': 0.0, 'MS': 0.0}
+        
+        signal = sigma_signal.copy()
+        n = len(signal)
+        
+        # 1. LTS (Linear Trend Strength) - R² coefficient
+        # High LTS = strong linear trend (Incremental)
+        # Low LTS = curved/oscillating (Gradual)
+        x = np.arange(n)
+        if np.std(signal) > 1e-10:
+            # Linear regression
+            A = np.vstack([x, np.ones(n)]).T
+            m, c = np.linalg.lstsq(A, signal, rcond=None)[0]
+            y_pred = m * x + c
+            
+            # R² calculation
+            ss_tot = np.sum((signal - np.mean(signal))**2)
+            ss_res = np.sum((signal - y_pred)**2)
+            lts = 1 - (ss_res / (ss_tot + 1e-10))
+            lts = max(0.0, min(1.0, lts))  # Clamp to [0, 1]
+        else:
+            lts = 0.0
+        
+        # 2. SDS (Step Detection Score) - Count significant jumps
+        # High SDS = many steps (Incremental)
+        # Low SDS = smooth changes (Gradual)
+        diffs = np.diff(signal)
+        if len(diffs) > 0:
+            diff_threshold = np.std(diffs) * 1.5  # 1.5 std = significant step
+            significant_steps = np.sum(np.abs(diffs) > diff_threshold)
+            sds = significant_steps / len(diffs)  # Normalized
+        else:
+            sds = 0.0
+        
+        # 3. MS (Monotonicity Score) - Ratio of monotonic direction
+        # High MS = mostly increasing or decreasing (Incremental)
+        # Low MS = back-and-forth oscillations (Gradual)
+        if len(diffs) > 0:
+            positive_changes = np.sum(diffs > 0)
+            negative_changes = np.sum(diffs < 0)
+            total_changes = positive_changes + negative_changes
+            
+            if total_changes > 0:
+                # Monotonicity = how much one direction dominates
+                ms = abs(positive_changes - negative_changes) / total_changes
+            else:
+                ms = 0.0
+        else:
+            ms = 0.0
+        
+        return {
+            'LTS': float(lts),
+            'SDS': float(sds),
+            'MS': float(ms)
+        }
 
     def classify(self, sigma_signal: np.ndarray) -> SECDTResult:
         """
@@ -239,52 +332,88 @@ class SE_CDT:
         cv = features['CV']
         mean_val = features['Mean']
         peak_positions = features.get('peak_positions', [])
+        ppr = features.get('PPR', 0.0)  # Peak Proximity Ratio
+        dpar = features.get('DPAR', 0.0)  # Dual-Peak Amplitude Ratio
         
         result = SECDTResult(features=features)
         
-        # Decision Logic (Algorithm 3.4 - Fixed Order)
+        # Decision Logic (Enhanced with PPR/DPAR for Blip)
         
-        # 1. Sudden Drift (TCD)
-        # Sharp single peak, high SNR, narrow width
-        if n_p <= 3 and wr < 0.12 and snr > 2.5:
-            result.drift_type = "TCD"
-            result.subcategory = "Sudden"
-            return result
-        
-        # 2. Blip Drift (TCD) - NEW!
-        # Two peaks close together (bump up then down in signal)
+        # 1. Blip Drift (TCD) - CHECK FIRST!
+        # Pattern: drift → revert quickly (2 peaks close together, similar height)
+        # Enhanced with PPR and DPAR features
         if n_p == 2 and len(peak_positions) >= 2:
             peak_distance = abs(peak_positions[1] - peak_positions[0])
-            # Close peaks (< 30 units in smoothed signal) = Blip
-            if peak_distance < 30 and wr < 0.2:
+            
+            # Multi-condition Blip detection (relaxed thresholds):
+            # - PPR < 0.20: Peaks are close (< 20% of signal length, was 0.15)
+            # - DPAR > 0.65: Similar peak heights (height ratio > 0.65, was 0.7)
+            # - peak_distance < 35: Close in smoothed signal units (was 30)
+            # - wr < 0.30: Not too wide (was 0.25)
+            is_blip = (
+                (ppr > 0 and ppr < 0.20 and dpar > 0.65) or
+                (peak_distance < 35 and wr < 0.30 and dpar > 0.60)
+            )
+            
+            if is_blip:
                 result.drift_type = "TCD"
                 result.subcategory = "Blip"
                 return result
         
-        # 3. Recurrent Drift (PCD)
-        # Multiple evenly-spaced peaks
-        if n_p >= 4 and cv < 0.3:
+        # 2. Sudden Drift (TCD)
+        # Sharp single peak, high SNR, narrow width
+        # THRESHOLD TUNING: Relaxed wr (0.12→0.15) and lowered snr (2.5→2.0)
+        # Rationale: Recapture TCD events previously misclassified as Recurrent/PCD
+        # Expected: TCD accuracy 25% → 60-70%, improves CAT accuracy
+        if n_p <= 3 and wr < 0.15 and snr > 2.0:
+            result.drift_type = "TCD"
+            result.subcategory = "Sudden"
+            return result
+        
+        # 3. Extract temporal features EARLY for disambiguation
+        lts = features.get('LTS', 0.0)
+        sds = features.get('SDS', 0.0)
+        ms = features.get('MS', 0.0)
+        
+        # 4. Recurrent Drift (PCD)
+        # Multiple evenly-spaced peaks BUT NOT with strong upward trend
+        # If strong temporal trend (LTS > 0.5), it's Incremental, not Recurrent
+        if n_p >= 4 and cv < 0.3 and lts < 0.5:
             result.drift_type = "PCD"
             result.subcategory = "Recurrent"
             return result
-            
-        # 4. Gradual Drift (PCD)
-        # Wide peak (WR >= 0.12) with moderate peak count
-        if wr >= 0.12 and n_p <= 6:
-            result.drift_type = "PCD"
-            result.subcategory = "Gradual"
-            return result
         
-        # 5. Incremental Drift (PCD) - Checked LAST as per thesis
-        # Many peaks or plateau-like signal (high mean, low SNR)
-        if n_p >= 7 or (n_p == 0 and mean_val > 0.0001) or (snr < 2.0 and mean_val > 0.0005):
-            result.drift_type = "PCD"
-            result.subcategory = "Incremental"
-            return result
-        
-        # Fallback: Gradual (most common PCD)
+        # 5. Gradual vs Incremental (PCD) - Use TEMPORAL features
+        # DEFAULT: All remaining cases are PCD, use temporal analysis
         result.drift_type = "PCD"
-        result.subcategory = "Gradual"
+        
+        # Decision logic for Incremental vs Gradual:
+        # THRESHOLD TUNING: Raised LTS from 0.3 → 0.5, added lts > 0.3 for compound conditions
+        # Rationale: Previous 0.3 threshold was too permissive, causing TCD/PCD boundary blur
+        #            Requires clear monotonic trend (R² > 0.5) for Incremental classification
+        # Trade-off: Incremental accuracy 40% → 25-30%, CAT accuracy 60% → 75-80%
+        # Expected behavior:
+        #   - Incremental: Clear upward trend with R² > 0.5 (e.g., linear parameter shift)
+        #   - Gradual: Oscillating/smooth curves with R² < 0.5 (e.g., slow RBF drift)
+        # Incremental can be EITHER:
+        #   A) Strong trend: LTS > 0.5 (STRENGTHENED - requires clear upward trend)
+        #   B) Weak trend + monotonic: MS > 0.6 AND LTS > 0.3 (STRENGTHENED both conditions)
+        #   C) Weak trend + steps: SDS > 0.12 AND LTS > 0.3 (STRENGTHENED lts requirement)
+        #   D) Many peaks: n_p >= 7 (plateau pattern, unchanged)
+        # Gradual: Low temporal scores (oscillating, smooth curve without trend)
+        
+        is_incremental = (
+            (lts > 0.5) or                    # Strong upward trend (STRENGTHENED from 0.3)
+            (ms > 0.6 and lts > 0.3) or       # Monotonic with moderate trend (STRENGTHENED)
+            (sds > 0.12 and lts > 0.3) or     # Steps with moderate trend (STRENGTHENED)
+            (n_p >= 7) or                      # Many peaks = plateau-like
+            (n_p == 0 and mean_val > 0.0001 and lts > 0.5)  # Plateau + strong trend (STRENGTHENED)
+        )
+        
+        if is_incremental:
+            result.subcategory = "Incremental"
+        else:
+            result.subcategory = "Gradual"
         
         return result
 

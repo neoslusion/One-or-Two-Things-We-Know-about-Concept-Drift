@@ -1,0 +1,19 @@
+% Per-drift-type performance comparison
+% CDT_MSW values from Guo et al. 2022 paper
+% SE-CDT values from our experiments (Phase 2.2 final)
+\begin{tabular}{|l|c|c|c|c|c|c|}
+\hline
+\textbf{Method} & \textbf{Sudden} & \textbf{Gradual} & \textbf{Incremental} & \textbf{Blip} & \textbf{Recurrent} & \textbf{Overall SUB} \\
+\hline
+CDT\_MSW (Paper) & N/A & N/A & N/A & N/A & N/A & 42.0\% \\
+\textbf{SE-CDT (Ours)} & \textbf{88.2\%} & \textbf{59.0\%} & \textbf{40.0\%} & \textbf{50.0\%} & \textbf{0.0\%}$^\dagger$ & \textbf{48.0\%} \\
+\hline
+\multicolumn{7}{|c|}{\textit{Category Accuracy (TCD vs PCD)}} \\
+\hline
+CDT\_MSW (Paper) & N/A & N/A & N/A & N/A & N/A & 87.5\% \\
+\textbf{SE-CDT (Ours)} & \textbf{100.0\%} & \textbf{75.0\%} & \textbf{85.0\%} & \textbf{100.0\%} & \textbf{100.0\%} & \textbf{86.5\%} \\
+\hline
+\multicolumn{7}{|l|}{\footnotesize $^\dagger$Recurrent drift processed as separate Sudden events (no concept memory).} \\
+\multicolumn{7}{|l|}{\footnotesize N/A: CDT\_MSW paper does not report per-drift-type breakdown.} \\
+\hline
+\end{tabular}

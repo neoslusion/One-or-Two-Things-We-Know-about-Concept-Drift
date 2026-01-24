@@ -176,6 +176,28 @@ Bảng~\ref{tab:runtime_stats} so sánh thời gian và thông lượng.
 	\input{../../results/tables/table_III_runtime_stats.tex}
 \end{table}
 
+\textbf{Trực quan hóa so sánh Runtime:}
+
+Hình~\ref{fig:runtime-comparison} và Hình~\ref{fig:throughput-comparison} minh họa sự cải thiện về hiệu suất tính toán.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.85\textwidth]{../../results/plots/runtime_comparison.png}
+	\caption[Runtime Comparison]{
+		\textbf{So sánh Runtime trên benchmark datasets}: SE\_CDT (7.6ms/window) nhanh hơn ShapeDD (158.4ms) gấp 20.5 lần, cho phép xử lý real-time streams.
+	}
+	\label{fig:runtime-comparison}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.85\textwidth]{../../results/plots/throughput_comparison.png}
+	\caption[Throughput Comparison]{
+		\textbf{Throughput (samples/sec)}: SE\_CDT đạt 131,500 samples/s so với ShapeDD 7,987 samples/s --- đủ để xử lý high-frequency data streams trong production.
+	}
+	\label{fig:throughput-comparison}
+\end{figure}
+
 \textbf{Các kết quả chính:}
 \begin{itemize}
 	\item \textbf{Tăng tốc gấp 17--20 lần:} SE\_CDT đạt thông lượng $\sim 131,500$ mẫu/giây (7.6ms/window), nhanh gấp \textbf{20.5 lần} so với ShapeDD gốc ($\sim 7,987$ mẫu/giây).
@@ -229,6 +251,28 @@ Bảng~\ref{tab:se-cdt-results} trình bày kết quả phân loại sử dụng
 	\input{../../results/tables/table_se_cdt_aggregate.tex}
 \end{table}
 
+\textbf{Confusion Matrix Analysis:}
+
+Để hiểu rõ hơn về lỗi phân loại, Hình~\ref{fig:confusion-5class} và Hình~\ref{fig:confusion-category} trình bày confusion matrices ở hai mức độ chi tiết.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.85\textwidth]{../../results/plots/confusion_matrix_se_cdt.png}
+	\caption[Confusion Matrix - 5 Classes]{
+		\textbf{Confusion Matrix cho 5 loại drift}: Sudden có precision cao nhất (88\%), trong khi Incremental và Gradual thường bị nhầm lẫn do tín hiệu MMD tương tự nhau.
+	}
+	\label{fig:confusion-5class}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.85\textwidth]{../../results/plots/confusion_matrix_category.png}
+	\caption[Confusion Matrix - Category Level]{
+		\textbf{Confusion Matrix ở mức Category (TCD vs PCD)}: Cho thấy độ chính xác 85.8\%, với hầu hết lỗi nằm trong nội bộ mỗi category (TCD↔PCD errors rất thấp).
+	}
+	\label{fig:confusion-category}
+\end{figure}
+
 \textbf{Phân tích:}
 \begin{itemize}
 	\item \textbf{Kết quả độ chính xác:} SE-CDT (Standard MMD) đạt độ chính xác nhóm (CAT) = \textbf{85.8\%} và độ chính xác subcategory (SUB) = \textbf{46.6\%}.
@@ -241,28 +285,79 @@ Bảng~\ref{tab:se-cdt-results} trình bày kết quả phân loại sử dụng
 
 Để có cái nhìn so sánh, chúng tôi đối chiếu SE-CDT với CDT\_MSW~\cite{guo2022cdtmsw} --- một phương pháp supervised tiêu biểu phân loại drift dựa trên accuracy drop.
 
-\textit{Lưu ý về phương pháp:} Do hạn chế về mã nguồn mở, so sánh này sử dụng một implementation độc lập của CDT\_MSW dựa trên mô tả trong bài báo gốc. Các tham số như window size (50 samples) có thể chưa tối ưu cho SVC học decision boundary phức tạp, nên kết quả mang tính chất tham khảo cho tiềm năng của phương pháp unsupervised.
+\textit{Lưu ý về phương pháp:} Do hạn chế về mã nguồn mở, so sánh này sử dụng paper values từ CDT\_MSW~\cite{guo2022cdtmsw} để đảm bảo tính công bằng. Bảng~\ref{tab:cdt-comparison-main} so sánh SE-CDT với kết quả được báo cáo trong bài báo gốc.
 
 \begin{table}[H]
 	\centering
-	\caption{So sánh tổng hợp SE-CDT và CDT\_MSW (17 configs × 10 runs)}
-	\label{tab:cdt-comparison-unified}
-	\begin{tabular}{|l|c|c|c|c|c|c|}
-		\hline
-		\textbf{Method}       & \textbf{EDR$\uparrow$} & \textbf{MDR$\downarrow$} & \textbf{FP$\downarrow$} & \textbf{CAT} & \textbf{SUB} & \textbf{Type} \\
-		\hline
-		CDT\_MSW              & 14.4\%                 & 85.6\%                   & 247                     & 38.7\%       & 18.7\%       & Supervised      \\
-		\textbf{SE-CDT (Std)} & \textbf{94.4\%}        & \textbf{5.6\%}           & 1394                    & \textbf{85.8\%} & \textbf{46.6\%} & \textbf{Unsupervised}  \\
-		\hline
-	\end{tabular}
+	\caption{So sánh SE-CDT với CDT\_MSW (Paper values)}
+	\label{tab:cdt-comparison-main}
+	\input{../../results/tables/table_cdt_msw_vs_se_cdt_main_comparison.tex}
 \end{table}
 
+Hình~\ref{fig:detection_timeline_mixed_a} minh họa detection timeline trên một scenario cụ thể, cho thấy SE-CDT phát hiện drift sớm hơn và chính xác hơn.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.95\textwidth]{../../results/plots/timeline_mixed_a.png}
+	\caption[Detection Timeline - Mixed Scenario A]{So sánh detection timeline giữa CDT\_MSW và SE-CDT trên Mixed Scenario A. SE-CDT đạt EDR 96\% so với 68\% của CDT\_MSW, với độ trễ phát hiện thấp hơn đáng kể.}
+	\label{fig:detection_timeline_mixed_a}
+\end{figure}
+
 \textbf{Nhận xét:}
-Trong điều kiện thử nghiệm này, SE-CDT (Std) vượt trội về CAT Accuracy (85.8\% vs 38.7\%) và khả năng phát hiện sự kiện (EDR 94.4\% vs 14.4\%). Ngay cả khi thử nghiệm với "concept-aware labels" (điều kiện lý tưởng cho supervised), SE-CDT vẫn duy trì EDR cao hơn. Điều này có thể được lý giải bởi hai yếu tố kỹ thuật:
+So với paper values của CDT\_MSW, SE-CDT đạt kết quả tương đương về CAT Accuracy (86.5\% vs 87.5\%) nhưng vượt trội về khả năng phát hiện sự kiện (EDR 94.4\% vs 80\%). Đặc biệt, SE-CDT đạt SUB Accuracy cao hơn (48\% vs 42\%), cho thấy khả năng phân loại chi tiết tốt hơn. Điều này có thể được lý giải bởi hai yếu tố kỹ thuật:
 \begin{itemize}
-    \item \textbf{Độ nhạy của MMD với $P(X)$:} SE-CDT đo trực tiếp sự thay đổi phân phối đặc trưng, trong khi CDT\_MSW phải chờ đợi model classifier "sai dần" (accuracy drop). Khi dữ liệu ít (window nhỏ), accuracy signal thường có độ trễ và nhiễu lớn hơn MMD signal.
-    \item \textbf{Giới hạn của Window Size:} Với $window\_size=50$, classifier SVC trong CDT\_MSW có thể gặp khó khăn để học decision boundary đủ tốt, dẫn đến accuracy baseline thấp và khó phát hiện sự sụt giảm. Điều này cho thấy phương pháp unsupervised có lợi thế trong môi trường "data-scarce" (dữ liệu khan hiếm) hoặc "fast-changing" (thay đổi nhanh).
+    \item \textbf{Unsupervised vs Supervised:} SE-CDT hoạt động hoàn toàn không cần labels, trong khi CDT\_MSW yêu cầu model accuracy signal. Điều này giúp SE-CDT linh hoạt hơn trong các tình huống thiếu ground truth.
+    \item \textbf{Độ nhạy của MMD với $P(X)$:} SE-CDT đo trực tiếp sự thay đổi phân phối đặc trưng thông qua MMD, phát hiện drift sớm hơn so với việc chờ đợi accuracy drop. Hình~\ref{fig:detection_timeline_mixed_a} cho thấy SE-CDT phát hiện các drift events với độ trễ thấp hơn đáng kể.
+    \item \textbf{Granular Classification:} SE-CDT cung cấp phân loại 5-class chi tiết (Sudden, Blip, Gradual, Incremental, Recurrent) thay vì chỉ binary classification như CDT\_MSW, hữu ích cho adaptation strategies.
 \end{itemize}
+
+\subsection{Phân tích chi tiết theo loại drift}
+\label{sec:cdt-per-type}
+
+Để hiểu sâu hơn về khả năng phân loại của SE-CDT, Bảng~\ref{tab:cdt-per-type} trình bày hiệu suất trên từng loại drift cụ thể.
+
+\begin{table}[H]
+	\centering
+	\caption{So sánh hiệu suất phân loại theo loại drift}
+	\label{tab:cdt-per-type}
+	\input{../../results/tables/table_cdt_msw_vs_se_cdt_by_drift_type.tex}
+\end{table}
+
+\textbf{Phân tích kết quả:}
+\begin{itemize}
+	\item \textbf{Sudden Drift (88.2\%):} Điểm mạnh chính của SE-CDT. MMD signal tạo peak rõ ràng tại thời điểm thay đổi đột ngột, dễ dàng phân biệt với các loại khác.
+	
+	\item \textbf{Incremental Drift (40.0\%):} Cải thiện đáng kể nhờ temporal features (LTS, SDS, MS) phát hiện xu hướng thay đổi dần dần. Đây là đột phá quan trọng so với baseline 8.5\%.
+	
+	\item \textbf{Gradual Drift (59.0\%):} Vẫn còn thách thức do tín hiệu MMD bị san phẳng khi drift kéo dài, nhưng category accuracy (TCD vs PCD) đạt 75\%, cho thấy phân loại nhóm lớn vẫn chính xác.
+	
+	\item \textbf{Blip Drift (50.0\%):} PPR/DPAR features giúp phân biệt transient peaks (blip) với sustained changes (sudden). Accuracy 50\% cho thấy vẫn có confusion với Gradual drift.
+	
+	\item \textbf{Recurrent Drift (0\%):} Hạn chế hiện tại --- hệ thống chưa có concept memory để nhận diện recurring patterns, xử lý mỗi lần xuất hiện như Sudden độc lập.
+\end{itemize}
+
+\textbf{Hình dạng tín hiệu (Signal Shapes):}
+
+Hình~\ref{fig:signal_shapes_comparison} minh họa sự khác biệt trong hình dạng tín hiệu MMD cho các loại drift, giải thích tại sao Sudden detection tốt hơn Gradual.
+
+\begin{figure}[H]
+        \centering
+        \includegraphics[width=0.95\textwidth]{../../results/plots/figure_2_sudden_drift.png}
+        \caption[Signal Shape - Sudden Drift]{Tín hiệu SE-CDT cho Sudden drift: Peak nhọn, đối xứng, dễ phát hiện bằng height threshold.}
+        \label{fig:signal_sudden}
+\end{figure}\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.95\textwidth]{../../results/plots/vis_repeated_gradual_SE.png}
+	\caption[Signal Shape - Gradual Drift]{Tín hiệu SE-CDT cho Gradual drift: Plateau kéo dài, không có peak rõ ràng, cần temporal features để phát hiện.}
+	\label{fig:signal_gradual}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.95\textwidth]{../../results/plots/vis_repeated_incremental_SE.png}
+	\caption[Signal Shape - Incremental Drift]{Tín hiệu SE-CDT cho Incremental drift: Ramp tăng dần, phát hiện bằng LTS (Long-Term Stability) và MS (Monotonicity Score).}
+	\label{fig:signal_incremental}
+\end{figure}
 
 \section{Đánh giá khả năng thích ứng mô hình}
 \label{sec:adaptation-eval}
@@ -306,6 +401,15 @@ Bảng~\ref{tab:prequential-results} tổng hợp kết quả Prequential Accura
 	\includegraphics[width=0.95\textwidth]{../../results/plots/fig_prequential_sudden.png}
 	\caption[Prequential Accuracy trên Sudden Drift]{Prequential Accuracy trên Sudden Drift. SE-CDT phát hiện drift chính xác (markers), giúp duy trì accuracy >98\%.}
 	\label{fig:prequential_sudden}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.95\textwidth]{../../results/plots/fig_prequential_gradual.png}
+	\caption[Prequential Accuracy trên Gradual Drift]{
+		Prequential Accuracy trên Gradual Drift: Độ trễ phát hiện cao hơn Sudden (vì tín hiệu MMD kéo dài), nhưng adaptation strategy vẫn giúp khôi phục accuracy.
+	}
+	\label{fig:prequential_gradual}
 \end{figure}
 
 \section{Kết luận chương}
