@@ -55,7 +55,7 @@ trong đó $w_i$ và $v_p$ là trọng số của từng điểm (thỏa mãn $\
 \subsubsection{Giải pháp: Trọng số nghịch biến mật độ (Inverse Density Weighting)}
 Luận văn đề xuất sử dụng phương pháp \textbf{IDW-MMD} (Inverse Density-Weighted MMD), một heuristic đơn giản lấy cảm hứng từ ý tưởng ``Optimally-Weighted MMD'' của Bharti et al.~\cite{bharti2023owmmd}.
 
-\textbf{Lưu ý quan trọng:} Phương pháp của Bharti et al. (2023) được thiết kế cho bài toán suy luận thống kê (likelihood-free inference) và đề xuất trọng số tối ưu phức tạp. Implementation trong luận văn này sử dụng một \textbf{heuristic đơn giản hơn} --- trọng số nghịch biến với căn bậc hai của mật độ kernel --- để phù hợp với bài toán drift detection trong streaming.
+\textbf{Lưu ý quan trọng:} Phương pháp của Bharti et al. (2023) được thiết kế cho bài toán suy luận thống kê (likelihood-free inference) và đề xuất trọng số tối ưu phức tạp. Luận văn này sử dụng một \textbf{heuristic đơn giản hơn} --- trọng số nghịch biến với căn bậc hai của mật độ kernel --- để phù hợp với bài toán drift detection trong streaming.
 
 Cụ thể, trọng số $w_i$ được tính dựa trên mật độ cục bộ (local density):
 \begin{equation}
@@ -147,7 +147,7 @@ Luận văn cài đặt IDW-MMD như sau:
 	\end{tabular}
 \end{table}
 
-\textbf{Cải tiến chính:} Thay vì sử dụng permutation test ($O(n^2 \times N_{perm})$), luận văn sử dụng \textit{phân phối tiệm cận} (asymptotic distribution) để tính p-value, chỉ cần $O(n^2)$. Điều này giúp giảm thời gian tính toán từ $\sim$125ms xuống $\sim$7--9ms mỗi window, tăng throughput xử lý \textbf{17--20 lần} (từ 8,000 lên 111,000--131,000 mẫu/giây).
+\textbf{Cải tiến chính:} Thay vì sử dụng permutation test ($O(n^2 \times N_{perm})$), luận văn sử dụng \textit{phân phối tiệm cận} (asymptotic distribution) để tính p-value, chỉ cần $O(n^2)$. Điều này giúp giảm thời gian tính toán cho MMD, từ đó giúp tăng throughput xử lý.
 
 \subsubsection{Hạn chế và khi nào nên dùng}
 Mặc dù IDW-MMD cải thiện đáng kể về tốc độ và độ ổn định, phương pháp có một số giới hạn cần lưu ý:
@@ -178,7 +178,7 @@ Sau khi tích hợp IDW-MMD với phân phối tiệm cận, hệ thống có th
 \section{Phương pháp phân loại drift: SE-CDT}
 \label{sec:shaped-cdt}
 
-Phương pháp CDT\_MSW gốc~\cite{guo2022cdtmsw} yêu cầu \textit{labels} để tính toán accuracy ratio, điều này không phù hợp trong môi trường streaming không giám sát. Luận văn đề xuất \textbf{SE-CDT} (ShapeDD-Enhanced Concept Drift Type), một phương pháp thay thế sử dụng trực tiếp tín hiệu drift magnitude $\sigma(t)$ từ ShapeDD để phân loại drift type.
+Lấy ý tưởng từ cơ chế hoạt động của CDT\_MSW, tuy nhiên, phương pháp CDT\_MSW gốc~\cite{guo2022cdtmsw} yêu cầu \textit{labels} để tính toán accuracy ratio, điều này không phù hợp trong môi trường streaming không giám sát. Luận văn đề xuất \textbf{SE-CDT} (ShapeDD-Enhanced Concept Drift Type), một phương pháp thay thế sử dụng trực tiếp tín hiệu drift magnitude $\sigma(t)$ từ ShapeDD để phân loại drift type.
 
 \subsection{Cơ sở lý thuyết}
 Theo phân loại của CDT\_MSW, drift được chia thành:
@@ -222,7 +222,7 @@ Theo phân loại của CDT\_MSW, drift được chia thành:
 \subsection{Ưu điểm và độ phức tạp}
 \textbf{Ưu điểm của SE-CDT:}
 \begin{itemize}
-	\item \textbf{Không giám sát:} Không cần labels, phù hợp với streaming data.
+	\item \textbf{Không giám sát:} Hoạt động theo kiểu không giám sát, không cần nhãn dữ liệu, phù hợp với streaming data.
 	\item \textbf{Tích hợp:} Sử dụng cùng tín hiệu $\sigma(t)$ đã tính cho detection, không cần tính toán thêm.
 	\item \textbf{Thời gian thực:} Phân loại ngay sau khi phát hiện drift.
 	\item \textbf{Sử dụng standard MMD:} Phù hợp hơn IDW-MMD cho classification vì standard MMD giữ lại tất cả sự khác biệt bao gồm cả những thay đổi nhỏ từ PCD (Gradual, Incremental).

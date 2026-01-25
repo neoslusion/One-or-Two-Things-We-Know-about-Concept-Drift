@@ -8,10 +8,9 @@
 Chương này trình bày các kết quả thực nghiệm nhằm kiểm chứng hiệu quả của hệ thống đề xuất. Quá trình đánh giá được chia thành hai giai đoạn chính:
 \begin{enumerate}
 	\item \textbf{Đánh giá khả năng phát hiện Drift (Detection Benchmark):} So sánh hiệu suất của ShapeDD và biến thể cải tiến (IDW-MMD với asymptotic p-value) với các phương pháp phổ biến (Baseline) trên các tập dữ liệu đa dạng.
+	\item \textbf{Đánh giá khả năg phân loại drift của SE-CDT:} Kiểm tra độ chính xác phân loại loại drift (sudden, gradual, incremental, recurrent, blip) dựa trên tín hiệu drift magnitude của phương pháp SE-CDT.
 	\item \textbf{Đánh giá khả năng thích ứng (Adaptation Evaluation):} Kiểm chứng hiệu quả của chiến lược cập nhật mô hình tự động thông qua chỉ số độ chính xác tích lũy (Prequential Accuracy).
 \end{enumerate}
-
-Cấu trúc chương được tổ chức như sau: Mục~\ref{sec:dataset-config} mô tả dữ liệu và môi trường thực nghiệm. Mục~\ref{sec:eval-strategy} trình bày tổng quan chiến lược đánh giá và kiến trúc hệ thống. Mục~\ref{sec:detection-eval} đi sâu vào so sánh hiệu suất phát hiện drift. Mục~\ref{sec:classification-eval} phân tích module phân loại (SE-CDT). Cuối cùng, Mục~\ref{sec:adaptation-eval} đánh giá hiệu quả thích ứng trên luồng dữ liệu.
 
 \subsection{Môi trường và Cấu hình}
 \label{sec:dataset-config}
@@ -34,7 +33,7 @@ Hệ thống streaming được giả lập sử dụng Apache Kafka\footnote{Tr
 
 \subsection{Tập dữ liệu thực nghiệm}
 
-Hệ thống được đánh giá trên bộ 10 tập dữ liệu tổng hợp (synthetic datasets), được thiết kế để kiểm tra các khía cạnh cụ thể của thuật toán phát hiện. Các tập dữ liệu được phân loại dựa trên bản chất của sự thay đổi phân phối:
+Hệ thống được đánh giá trên bộ 10 tập dữ liệu tổng hợp (synthetic datasets) và một tập dữ liệu thực tế (realworld datasets), được thiết kế để kiểm tra các khía cạnh cụ thể của thuật toán phát hiện. Các tập dữ liệu được phân loại dựa trên bản chất của sự thay đổi phân phối:
 
 \textbf{Nhóm 1: Sudden Drift (Thay đổi P(X) đột ngột).}
 Đây là trọng tâm chính của ShapeDD và IDW-MMD. Các dataset này chứa sự thay đổi đột ngột trong phân phối đầu vào $P(X)$ (Covariate Shift), nơi các phương pháp unsupervised cần phải phát hiện chính xác.
@@ -58,6 +57,10 @@ Nhóm này bao gồm các dataset chỉ có sự thay đổi về biên quyết 
 \end{itemize}
 
 \textbf{Mục đích kiểm chứng:} Đối với các phương pháp phát hiện drift không giám sát (như ShapeDD, MMD), kết quả lý tưởng trên nhóm này là \textbf{không phát hiện} (hoặc phát hiện rất ít), vì $P(X)$ không đổi. Việc benchmark trên nhóm này giúp xác nhận thuật toán không bị "ảo giác" (hallucination) trước các thay đổi chỉ mang tính ngữ nghĩa nhãn.
+
+\textbf{Nhóm 4: Dữ liệu thực tế.}
+Nhóm này bao gồm dataset từ môi trường thực tế với các đặc trưng phức tạp và không xác định trước, nhưng được kiểm soát về các điểm trôi dạt để có thể đánh giá cách hoạt động của phương pháp trong môi trường làm việc thực tế.
+
 
 \subsection{Chiến lược đánh giá và Kiến trúc hệ thống}
 \label{sec:eval-strategy}
