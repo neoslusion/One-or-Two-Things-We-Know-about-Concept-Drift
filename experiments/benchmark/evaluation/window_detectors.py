@@ -10,8 +10,7 @@ Baseline Methods:
 
 ShapeDD Variants:
 - ShapeDD: Original shape-based detection with permutation test
-- ShapeDD_WMMD: ShapeDD + Weighted MMD with permutation (rigorous, slow)
-- ShapeDD_WMMD_PROPER: ShapeDD + Weighted MMD with asymptotic p-value (RECOMMENDED)
+- ShapeDD_IDW: ShapeDD + Weighted MMD with asymptotic p-value (RECOMMENDED)
 
 Unified System:
 - SE_CDT: Unified detector-classifier (detection + drift type classification)
@@ -41,8 +40,6 @@ from core.detectors.dawidd import dawidd
 from core.detectors.mmd import mmd
 from core.detectors.mmd_variants import (
     mmd_adw,                  # Weighted MMD split test
-    shapedd_adw_mmd,          # Legacy heuristic (deprecated)
-    shape_with_wmmd,          # Permutation test version
     shapedd_adw_mmd_proper,   # PROPER design with asymptotic p-value
 )
 from core.detectors.ks import ks
@@ -93,7 +90,7 @@ def evaluate_drift_detector(
                 min_pvalue = shp_results[:, 2].min()
                 trigger = min_pvalue < 0.05
             
-            elif method_name in ("ShapeDD_WMMD_PROPER", "ShapeDD_ADW_PROPER"):
+            elif method_name in ("ShapeDD_IDW"):
                 # RECOMMENDED: ShapeDD + Weighted MMD with asymptotic p-value
                 # Fast (~5ms) + has statistical p-value
                 is_drift, positions, _, p_values = shapedd_adw_mmd_proper(
@@ -125,7 +122,7 @@ def evaluate_drift_detector(
                 p_value = ks(window)
                 trigger = p_value < 0.05
 
-            elif method_name in ("MMD_WMMD", "MMD_ADW"):
+            elif method_name in ("IDW_MMD"):
                 # Weighted MMD without ShapeDD (ablation study)
                 stat, threshold = mmd_adw(window, gamma="auto")
                 trigger = stat > threshold

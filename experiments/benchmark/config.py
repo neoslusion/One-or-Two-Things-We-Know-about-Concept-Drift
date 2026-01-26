@@ -78,25 +78,15 @@ WINDOW_METHODS = [
     # === LEGACY METHODS ===
     'D3',              # Deep learning-based (different paradigm)
     'DAWIDD',          # Distance-aware windowed
-    'MMD_ADW',         # Just IDW-MMD without ShapeDD (ablation)
+    'IDW_MMD',         # Just IDW-MMD without ShapeDD (ablation)
     
     # === SHAPEDD VARIANTS ===
     'ShapeDD',                # Original ShapeDD with permutation test (baseline)
-    'ShapeDD_WMMD_PROPER',    # RECOMMENDED: ShapeDD + IDW-MMD + asymptotic p-value (FAST)
+    'ShapeDD_IDW',            # RECOMMENDED: ShapeDD + IDW-MMD + asymptotic p-value (FAST)
     
     # === UNIFIED SYSTEM ===
     'SE_CDT',                 # Detection + Classification (most complete)
 ]
-
-# Legacy methods (not recommended, kept for backwards compatibility)
-WINDOW_METHODS_LEGACY = [
-    'D3',              # Deep learning-based (different paradigm)
-    'DAWIDD',          # Distance-aware windowed
-    'MMD_ADW',         # Just IDW-MMD without ShapeDD (ablation)
-    'ShapeDD_ADW_MMD', # Old heuristic version (superseded)
-    # 'ShapeDD_MMDAgg',  # REMOVED: Too slow (~500ms/window)
-]
-
 
 # Streaming methods (require model for accuracy signal)
 STREAMING_METHODS = [

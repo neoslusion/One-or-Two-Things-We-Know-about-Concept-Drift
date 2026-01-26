@@ -6,7 +6,7 @@ from typing import Tuple, Dict, Any, List, Optional
 import time
 
 # Import PROPER ShapeDD + ADW-MMD implementation
-from .mmd_variants import shapedd_adw_mmd_proper, shapedd_adw_mmd_full
+from .mmd_variants import shapedd_adw_mmd_proper
 
 @dataclass
 class SECDTResult:
@@ -39,9 +39,6 @@ class SE_CDT:
         Test window size for MMD validation
     alpha : float
         Significance level for drift detection (default 0.05)
-    use_proper : bool
-        If True, use PROPER ShapeDD+ADW-MMD (fast, with p-value)
-        If False, use heuristic version (for backward compatibility)
     """
     
     def __init__(self, window_size: int = 50, l2: int = 150, 
@@ -57,18 +54,16 @@ class SE_CDT:
         l2 : int
             Test window size for MMD. Default 150.
         threshold : float
-            Score threshold for heuristic mode. Default 0.15.
-            (Ignored when use_proper=True)
+            Legacy threshold parameter (kept for API compatibility).
         alpha : float
             Significance level for proper mode. Default 0.05.
         use_proper : bool
-            Use PROPER ShapeDD+ADW-MMD implementation. Default True.
+            Legacy parameter (ignored, always uses proper mode).
         """
         self.l1 = window_size
         self.l2 = l2
         self.threshold = threshold
         self.alpha = alpha
-        self.use_proper = use_proper
 
     def monitor(self, window: np.ndarray) -> SECDTResult:
         """
@@ -96,10 +91,7 @@ class SE_CDT:
             - mmd_trace: MMD signal for analysis
             - features: Extracted geometric features
         """
-        if self.use_proper:
-            return self._monitor_proper(window)
-        else:
-            return self._monitor_heuristic(window)
+        return self._monitor_proper(window)
     
     def _monitor_proper(self, window: np.ndarray) -> SECDTResult:
         """
@@ -130,39 +122,6 @@ class SE_CDT:
         
         # 2. Classification Step (if drift detected)
         if is_drift and len(mmd_trace) > 0:
-            t0 = time.time()
-            classification_res = self.classify(mmd_trace)
-            t1 = time.time()
-            
-            result.drift_type = classification_res.drift_type
-            result.subcategory = classification_res.subcategory
-            result.features = classification_res.features
-            result.classification_time = t1 - t0
-            
-        return result
-    
-    def _monitor_heuristic(self, window: np.ndarray) -> SECDTResult:
-        """
-        Heuristic implementation (backward compatible).
-        Uses pattern score threshold instead of p-value.
-        """
-        # 1. Detection Step (Heuristic ShapeDD-ADW)
-        pattern_score, mmd_max, mmd_trace = shapedd_adw_mmd_full(
-            window, l1=self.l1, l2=self.l2, gamma='auto'
-        )
-        
-        result = SECDTResult(
-            is_drift=False,
-            score=pattern_score,
-            p_value=1.0,  # No p-value in heuristic mode
-            mmd_trace=mmd_trace
-        )
-        
-        # 2. Trigger Check (threshold-based)
-        if pattern_score > self.threshold:
-            result.is_drift = True
-            
-            # 3. Classification Step (Algorithm 3.4)
             t0 = time.time()
             classification_res = self.classify(mmd_trace)
             t1 = time.time()

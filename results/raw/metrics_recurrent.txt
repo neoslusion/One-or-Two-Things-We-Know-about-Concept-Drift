@@ -1,6 +1,6 @@
 Prequential Accuracy Evaluation Results (Aggregated)
-Generated: 2026-01-26T18:02:02.269695
-Samples: 5000, Runs: 5, Type: mixed, Seed: 42
+Generated: 2026-01-26T18:01:56.423592
+Samples: 5000, Runs: 5, Type: recurrent, Seed: 42
 
 
 type_specific:

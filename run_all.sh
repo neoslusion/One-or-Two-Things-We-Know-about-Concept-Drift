@@ -127,7 +127,7 @@ if [ "$SKIP_BENCHMARK" = false ]; then
     echo "Running adaptation evaluation for all drift types..."
     for dtype in sudden gradual incremental recurrent mixed; do
         echo "  → Scenario: $dtype"
-        python3 main.py monitoring -- --drift_type $dtype 2>&1 | tee -a "$LOG_FILE"
+        python3 main.py monitoring --drift_type $dtype 2>&1 | tee -a "$LOG_FILE"
     done
     print_success "Monitoring Benchmark Complete"
 

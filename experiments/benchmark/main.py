@@ -31,6 +31,17 @@ import sys
 import time
 import warnings
 from pathlib import Path
+import os
+
+# OPTIMIZATION: Prevent thread oversubscription in parallel execution
+# DAWIDD and MMD use matrix operations (BLAS/LAPACK). If each parallel job
+# spawns multiple threads, the system thrashing destroys performance.
+# We force single-threaded linear algebra for worker processes.
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ["VECLIB_MAXIMUM_THREADS"] = "1"
+os.environ["NUMEXPR_NUM_THREADS"] = "1"
 
 import matplotlib.pyplot as plt
 import numpy as np
