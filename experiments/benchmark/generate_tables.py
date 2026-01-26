@@ -1,9 +1,18 @@
 import pandas as pd
 import numpy as np
 import os
+import sys
+from pathlib import Path
 
-RESULTS_FILE = "experiments/benchmark_proper_results.pkl"
-OUTPUT_DIR = "experiments/publication_figures"
+# Add project root to PYTHONPATH
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from core.config import BENCHMARK_PROPER_OUTPUTS, TABLES_DIR
+
+RESULTS_FILE = str(BENCHMARK_PROPER_OUTPUTS["results_pkl"])
+OUTPUT_DIR = str(TABLES_DIR)
 
 def generate_tables():
     if not os.path.exists(RESULTS_FILE):

@@ -1,10 +1,19 @@
 import pandas as pd
 import numpy as np
 import os
+import sys
+from pathlib import Path
 
-OUTPUT_DIR = "/home/goldship/sandboxes/One-or-Two-Things-We-Know-about-Concept-Drift/experiments/drift_detection_benchmark/publication_figures"
-PKL_FILE = os.path.join(OUTPUT_DIR, "benchmark_proper_detailed.pkl")
-TABLE_DIR = "/home/goldship/sandboxes/One-or-Two-Things-We-Know-about-Concept-Drift/report/latex/tables"
+# Add project root to PYTHONPATH
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from core.config import BENCHMARK_PROPER_OUTPUTS, TABLES_DIR
+
+OUTPUT_DIR = str(BENCHMARK_PROPER_OUTPUTS["results_pkl"].parent) # results/raw
+PKL_FILE = str(BENCHMARK_PROPER_OUTPUTS["results_pkl"])
+TABLE_DIR = str(TABLES_DIR)
 
 def load_results():
     if not os.path.exists(PKL_FILE):

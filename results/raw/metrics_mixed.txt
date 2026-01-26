@@ -1,5 +1,5 @@
 Prequential Accuracy Evaluation Results (Comprehensive)
-Generated: 2026-01-24T20:13:58.601179
+Generated: 2026-01-26T12:12:04.048603
 Samples: 5000, Drifts: 5, Type: mixed, Seed: 42
 
 Config: w_ref=50, thresh=0.15
@@ -16,7 +16,7 @@ type_specific:
   Overall Accuracy: 0.8619
   Post-Drift Acc:   0.8238
   Adaptations:      8
-  Avg Class. Time:  1.9268 ms
+  Avg Class. Time:  0.3517 ms
   Restoration Time: 160.3 samples
   Performance Loss: 0.0565
   Convergence Rate: -0.00098

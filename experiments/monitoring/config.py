@@ -52,4 +52,5 @@ ACCURACY_TOPIC = "model.accuracy"  # Real-time accuracy metrics
 GROUP_ID = "shapedd-detector"
 
 # Logging
-SHAPEDD_LOG = "shapedd_batches.csv"
+from core.config import LOGS_DIR
+SHAPEDD_LOG = str(LOGS_DIR / "shapedd_batches.csv")

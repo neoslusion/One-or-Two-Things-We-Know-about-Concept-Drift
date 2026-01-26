@@ -14,7 +14,7 @@ from scipy.stats import wilcoxon, friedmanchisquare
 import matplotlib.pyplot as plt
 import warnings
 import os
-from core.config import PLOTS_DIR
+from core.config import PLOTS_DIR, escape_latex
 
 # Try to import scikit-posthocs for Nemenyi test
 try:
@@ -186,7 +186,7 @@ def generate_statistical_report(df_results, output_dir):
     nemenyi_results = run_nemenyi_posthoc(df_results, metric='f1_score', output_dir=output_dir)
     results['nemenyi'] = nemenyi_results
 
-    cd_path = os.path.join(PLOTS_DIR, 'critical_difference_f1.png')
+    cd_path = os.path.join(PLOTS_DIR, 'fig_detection_statistical_ranking.png')
     cd_fig = plot_critical_difference_diagram(df_results, metric='f1_score', output_path=cd_path)
     results['cd_figure'] = cd_fig
 
@@ -206,14 +206,15 @@ def generate_statistical_latex_table(nemenyi_results, output_dir):
 \hline
 """
     for i, (method, avg_rank) in enumerate(avg_ranks.items(), 1):
-        latex += f"{method} & {avg_rank:.3f} & {i} \\\\\n"
+        latex += f"{escape_latex(method)} & {avg_rank:.3f} & {i} \\\\\n"
 
     latex += r"""\hline
 \multicolumn{3}{|l|}{Critical Difference (CD) = """ + f"{cd:.3f}" + r"""} \\
 \hline
 \end{tabular}
 """
-    output_path = os.path.join(output_dir, 'table_IV_statistical_significance.tex')
+    # Use the filename defined in core.config for consistency
+    output_path = os.path.join(output_dir, 'table_statistical_tests.tex')
     with open(output_path, 'w') as f:
         f.write(latex)
     return latex

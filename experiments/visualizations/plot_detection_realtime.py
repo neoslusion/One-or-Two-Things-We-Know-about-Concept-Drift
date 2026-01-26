@@ -20,9 +20,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from confluent_kafka import Consumer
+import sys
+
+# Add project root to PYTHONPATH
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 # Import shared configuration
-from config import BROKERS, TOPIC, SHAPEDD_LOG, ACCURACY_TOPIC
+from experiments.monitoring.config import BROKERS, TOPIC, SHAPEDD_LOG, ACCURACY_TOPIC
 
 # Configuration
 MAX_DISPLAY_POINTS = 3000  # Maximum points to display in plot

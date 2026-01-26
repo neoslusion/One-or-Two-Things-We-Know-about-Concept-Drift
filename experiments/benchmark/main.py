@@ -20,7 +20,10 @@ The benchmark includes:
 5. Publication-quality visualizations
 6. LaTeX table export for thesis
 
-Results are saved to ./experiments/drift_detection_benchmark/publication_figures/
+Results are saved to:
+- results/plots/ (Figures)
+- results/tables/ (LaTeX Tables)
+- results/raw/ (Raw Data)
 """
 
 import gc
@@ -81,6 +84,7 @@ else:
         OVERLAP,
         WINDOW_METHODS,
         STREAMING_METHODS,
+        N_JOBS,
     )
     from data.catalog import DATASET_CATALOG, get_enabled_datasets
     from data.generators.benchmark_generators import generate_drift_stream
@@ -97,11 +101,104 @@ else:
     # Import unified output configuration
     from core.config import DETECTION_BENCHMARK_OUTPUTS
 
+# Import joblib for parallel processing
+from joblib import Parallel, delayed
+
 # Suppress warnings
 warnings.filterwarnings('ignore')
 
 # Set plot style
 plt.style.use('seaborn-v0_8')
+
+
+def _process_single_run(run_idx, seed, enabled_datasets, stream_size, chunk_size, overlap, window_methods, streaming_methods):
+    """
+    Process a single benchmark run (one seed).
+    This function is executed in parallel by joblib.
+    """
+    # Note: We cannot use the global logger here as it writes to a shared file.
+    # We will just return the results.
+    print(f"Starting Run {run_idx} (seed={seed})...")
+    
+    run_results = []
+    run_summaries = []
+    
+    start_time = time.time()
+
+    for dataset_idx, (dataset_name, dataset_config) in enumerate(enabled_datasets, 1):
+        # Generate dataset with THIS RUN's seed
+        X, y, true_drifts, info = generate_drift_stream(
+            dataset_config,
+            total_size=stream_size,
+            seed=seed
+        )
+        
+        dataset_results = []
+
+        # Evaluate window-based methods
+        for method in window_methods:
+            result = evaluate_drift_detector(
+                method, X, true_drifts,
+                chunk_size=chunk_size,
+                overlap=overlap,
+                verbose=False
+            )
+
+            # Add metadata
+            result['paradigm'] = 'window'
+            result['dataset'] = dataset_name
+            result['n_features'] = info['n_features']
+            result['n_drifts'] = info['n_drifts']
+            result['drift_positions'] = true_drifts
+            result['intens'] = info['intens']
+            result['dims'] = info['dims']
+            result['ground_truth_type'] = dataset_config.get('ground_truth_type', 'unknown')
+            result['run_id'] = run_idx
+            result['seed'] = seed
+
+            dataset_results.append(result)
+            run_results.append(result)
+
+        # Evaluate streaming methods
+        for method in streaming_methods:
+            result = evaluate_streaming_detector(
+                method, X, y, true_drifts
+            )
+
+            result['paradigm'] = 'streaming'
+            result['dataset'] = dataset_name
+            result['n_features'] = info['n_features']
+            result['n_drifts'] = info['n_drifts']
+            result['drift_positions'] = true_drifts
+            result['intens'] = info['intens']
+            result['dims'] = info['dims']
+            result['ground_truth_type'] = dataset_config.get('ground_truth_type', 'unknown')
+            result['run_id'] = run_idx
+            result['seed'] = seed
+
+            dataset_results.append(result)
+            run_results.append(result)
+
+        # Dataset summary
+        if dataset_results:
+            avg_f1 = np.mean([r['f1_score'] for r in dataset_results])
+            detection_rate = np.mean([r['detection_rate'] for r in dataset_results])
+            
+            run_summaries.append({
+                'dataset': dataset_name,
+                'n_features': info['n_features'],
+                'n_drifts': info['n_drifts'],
+                'intens': info['intens'],
+                'avg_f1': avg_f1,
+                'detection_rate': detection_rate,
+                'run_id': run_idx,
+                'seed': seed
+            })
+        
+        gc.collect()
+
+    print(f"Finished Run {run_idx} ({time.time() - start_time:.1f}s)")
+    return run_results, run_summaries
 
 
 def run_benchmark():
@@ -144,107 +241,31 @@ def run_benchmark():
     logger.start_benchmark()
     benchmark_start_time = time.time()
 
+    print(f"\nStarting parallel execution with {N_JOBS} jobs...")
+
     # ========================================================================
-    # OUTER LOOP: Multiple Independent Runs
+    # PARALLEL EXECUTION: Multiple Independent Runs
     # ========================================================================
-    for run_idx, seed in enumerate(RANDOM_SEEDS, 1):
-        run_start_time = time.time()
-        
-        logger.start_run(run_idx, N_RUNS, seed, len(all_results))
+    parallel_results = Parallel(n_jobs=N_JOBS, verbose=10)(
+        delayed(_process_single_run)(
+            run_idx, seed, enabled_datasets, STREAM_SIZE, CHUNK_SIZE, OVERLAP, WINDOW_METHODS, STREAMING_METHODS
+        )
+        for run_idx, seed in enumerate(RANDOM_SEEDS, 1)
+    )
 
-        for dataset_idx, (dataset_name, dataset_config) in enumerate(enabled_datasets, 1):
-            # Generate dataset with THIS RUN's seed
-            X, y, true_drifts, info = generate_drift_stream(
-                dataset_config,
-                total_size=STREAM_SIZE,
-                seed=seed
-            )
-            
-            logger.start_dataset(
-                run_idx, N_RUNS,
-                dataset_idx, len(enabled_datasets),
-                dataset_name,
-                info['n_features'],
-                info['n_drifts']
-            )
+    # Flatten results
+    for run_res, run_sum in parallel_results:
+        all_results.extend(run_res)
+        dataset_summaries.extend(run_sum)
 
-            dataset_results = []
-
-            # Evaluate window-based methods
-            for method in WINDOW_METHODS:
-                logger.log_method_start(method)
-                
-                result = evaluate_drift_detector(
-                    method, X, true_drifts,
-                    chunk_size=CHUNK_SIZE,
-                    overlap=OVERLAP,
-                    verbose=False  # Suppress internal prints
-                )
-
-                # Add metadata
-                result['paradigm'] = 'window'
-                result['dataset'] = dataset_name
-                result['n_features'] = info['n_features']
-                result['n_drifts'] = info['n_drifts']
-                result['drift_positions'] = true_drifts
-                result['intens'] = info['intens']
-                result['dims'] = info['dims']
-                result['ground_truth_type'] = dataset_config.get('ground_truth_type', 'unknown')
-                result['run_id'] = run_idx
-                result['seed'] = seed
-
-                logger.log_method_result(method, dataset_name, result)
-                
-                dataset_results.append(result)
-                all_results.append(result)
-
-            # Evaluate streaming methods
-            for method in STREAMING_METHODS:
-                logger.log_method_start(method)
-                
-                result = evaluate_streaming_detector(
-                    method, X, y, true_drifts
-                )
-
-                result['paradigm'] = 'streaming'
-                result['dataset'] = dataset_name
-                result['n_features'] = info['n_features']
-                result['n_drifts'] = info['n_drifts']
-                result['drift_positions'] = true_drifts
-                result['intens'] = info['intens']
-                result['dims'] = info['dims']
-                result['ground_truth_type'] = dataset_config.get('ground_truth_type', 'unknown')
-                result['run_id'] = run_idx
-                result['seed'] = seed
-
-                logger.log_method_result(method, dataset_name, result)
-                
-                dataset_results.append(result)
-                all_results.append(result)
-
-            # Dataset summary
-            if dataset_results:
-                avg_f1 = np.mean([r['f1_score'] for r in dataset_results])
-                detection_rate = np.mean([r['detection_rate'] for r in dataset_results])
-                
-                logger.end_dataset(dataset_name, len(dataset_results), avg_f1)
-
-                dataset_summaries.append({
-                    'dataset': dataset_name,
-                    'n_features': info['n_features'],
-                    'n_drifts': info['n_drifts'],
-                    'intens': info['intens'],
-                    'avg_f1': avg_f1,
-                    'detection_rate': detection_rate,
-                    'run_id': run_idx,
-                    'seed': seed
-                })
-            
-            gc.collect()
-
-        # Run summary
-        run_elapsed = time.time() - run_start_time
-        logger.end_run(run_idx, run_elapsed, len(all_results))
+        # Log completion for each run (after the fact, for the record)
+        # Note: run_res contains multiple dataset results. 
+        # We can extract run_idx/seed from the first result.
+        if run_res:
+            rid = run_res[0]['run_id']
+            # We don't have exact run time here unless we passed it back, 
+            # but we can log that it's done.
+            logger._log(f"Run {rid}/{N_RUNS} completed (parallel)")
 
     # ========================================================================
     # FINAL VALIDATION AND SUMMARY

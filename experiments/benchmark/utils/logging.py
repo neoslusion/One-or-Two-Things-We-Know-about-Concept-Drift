@@ -10,6 +10,7 @@ import sys
 import time
 from datetime import datetime
 from pathlib import Path
+from core.config import LOGS_DIR
 
 
 class BenchmarkLogger:
@@ -24,7 +25,7 @@ class BenchmarkLogger:
     - Optional file output for later analysis
     """
     
-    def __init__(self, output_dir="./publication_figures", log_to_file=True, verbose=True):
+    def __init__(self, output_dir=LOGS_DIR, log_to_file=True, verbose=True):
         """
         Initialize benchmark logger.
         
@@ -34,7 +35,7 @@ class BenchmarkLogger:
             verbose: Whether to print detailed per-method output
         """
         self.output_dir = Path(output_dir)
-        self.output_dir.mkdir(exist_ok=True)
+        self.output_dir.mkdir(parents=True, exist_ok=True)
         self.verbose = verbose
         self.log_to_file = log_to_file
         
@@ -204,7 +205,7 @@ class BenchmarkLogger:
 _logger = None
 
 
-def get_logger(output_dir="./publication_figures", log_to_file=True, verbose=True):
+def get_logger(output_dir=LOGS_DIR, log_to_file=True, verbose=True):
     """Get or create the global benchmark logger."""
     global _logger
     if _logger is None:

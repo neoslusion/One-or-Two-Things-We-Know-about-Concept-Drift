@@ -1,8 +1,3 @@
-"""
-Configuration module for drift detection benchmark.
-
-Contains all hyperparameters, detection settings, and method configurations.
-"""
 
 import matplotlib.pyplot as plt
 import warnings
@@ -32,13 +27,20 @@ plt.rcParams['grid.alpha'] = 0.3
 STREAM_SIZE = 10000  # 10 drifts = ~909 samples per segment (sufficient for L2=150)
 RANDOM_SEED = 42  # Fixed seed for reproducibility (deprecated - use RANDOM_SEEDS instead)
 
+import os
+
 # ============================================================================
 # RELIABILITY CONFIGURATION (Multiple Independent Runs)
 # ============================================================================
 # Statistical validation requires multiple runs with different random seeds
 # Benchmark standard: 30-500 runs (we use 30 for 80% statistical power)
-N_RUNS = 30 # Number of independent runs (minimum for statistical validity)
+if os.environ.get("QUICK_MODE") == "True":
+    N_RUNS = 2
+else:
+    N_RUNS = 30 # Number of independent runs (minimum for statistical validity)
+
 RANDOM_SEEDS = [42 + i * 137 for i in range(N_RUNS)]  # Prime spacing avoids correlation
+N_JOBS = -1 # Number of parallel jobs (-1 = all cores)
 
 # ============================================================================
 # DETECTION PARAMETERS

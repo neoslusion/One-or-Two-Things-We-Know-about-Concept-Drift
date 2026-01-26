@@ -10,9 +10,9 @@ Standardized to match the formatting in se_cdt_content.tex:
 from pathlib import Path
 import pandas as pd
 import numpy as np
-from core.config import generate_standard_table, format_metric, escape_latex
+from core.config import generate_standard_table, format_metric, escape_latex, TABLES_DIR
 
-def export_all_tables(all_results, stream_size, output_dir="./results/tables"):
+def export_all_tables(all_results, stream_size, output_dir=TABLES_DIR):
     """
     Export all LaTeX tables for thesis.
     """
@@ -81,22 +81,70 @@ def export_all_tables(all_results, stream_size, output_dir="./results/tables"):
         f.write(latex_output)
 
     # ========================================================================
-    # TABLE II: F1 by Dataset
+    # TABLE II: F1 by Dataset (Broken down into parts)
     # ========================================================================
     f1_by_dataset = drift_results_df.pivot_table(
         values="F1", index="Method", columns="Dataset", aggfunc="mean"
     ).round(3)
     
+    # Calculate mean and sort
     f1_by_dataset["Mean"] = f1_by_dataset.mean(axis=1).round(3)
     f1_by_dataset = f1_by_dataset.sort_values("Mean", ascending=False)
 
+    # Dataset name simplifier
+    def simplify_name(name):
+        name = name.replace("gen_random_", "Random ").replace("gaussian_shift_", "Gaussian ").replace("electricity_semisynthetic", "Electricity")
+        name = name.replace("_", " ").title()
+        name = name.replace("Mmd", "MMD").replace("Adw", "ADW").replace("Proper", "PROPER")
+        return name
+
+    # Process columns (datasets) excluding Mean first
+    datasets = [c for c in f1_by_dataset.columns if c != "Mean"]
+    
+    # Chunk datasets into groups of 4
+    chunk_size = 4
+    for i, chunk_start in enumerate(range(0, len(datasets), chunk_size)):
+        chunk_cols = datasets[chunk_start:chunk_start + chunk_size]
+        
+        # If this is the last chunk, append Mean
+        is_last = (chunk_start + chunk_size >= len(datasets))
+        if is_last:
+            chunk_cols.append("Mean")
+            
+        # Prepare headers
+        headers = ["Method"] + [simplify_name(c) for c in chunk_cols]
+        data = []
+        
+        for method, row in f1_by_dataset.iterrows():
+            row_data = [escape_latex(method)]
+            for col in chunk_cols:
+                val = row[col]
+                if col == "Mean" and val == f1_by_dataset["Mean"].max():
+                    row_data.append(f"\\textbf{{{val:.3f}}}")
+                else:
+                    row_data.append(f"{val:.3f}")
+            data.append(row_data)
+
+        # Generate table part
+        part_num = i + 1
+        latex_output = generate_standard_table(headers, data)
+        
+        filename = f"table_II_part{part_num}.tex"
+        with open(output_dir / filename, "w") as f:
+            f.write(latex_output)
+            
+        print(f"  Generated {filename}")
+
+    # Keep original file as full backup (optional, or overwritten by full table if needed)
+    # But user asked to break it down. I will write the full one too just in case 
+    # but maybe with rotation or small font? No, just raw.
     headers = ["Method"] + list(f1_by_dataset.columns)
     data = []
     for method, row in f1_by_dataset.iterrows():
         data.append([escape_latex(method)] + [f"{val:.3f}" for val in row])
-
-    latex_output = generate_standard_table(headers, data)
+    
+    full_output = generate_standard_table(headers, data)
     with open(output_dir / "table_II_f1_by_dataset.tex", "w") as f:
-        f.write(latex_output)
+        f.write(full_output)
 
     print(f"  All tables exported to {output_dir}")

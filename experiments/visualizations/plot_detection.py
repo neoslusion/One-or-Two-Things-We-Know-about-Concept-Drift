@@ -2,9 +2,16 @@ import os, csv, json
 import numpy as np
 import matplotlib.pyplot as plt
 from confluent_kafka import Consumer
+import sys
+from pathlib import Path
+
+# Add project root to PYTHONPATH
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 # Import shared configuration
-from config import BROKERS, TOPIC, SHAPEDD_LOG
+from experiments.monitoring.config import BROKERS, TOPIC, SHAPEDD_LOG
 
 def load_detection_results(log_path):
     """Load drift detection results from CSV log."""
@@ -158,7 +165,13 @@ def main():
     fig.suptitle('Drift Detection Analysis - Aligned Plots for Comparison', fontsize=16, y=0.95)
     
     plt.tight_layout()
-    plt.show()
+    
+    # Save to plots directory
+    from core.config import PLOTS_DIR
+    output_path = PLOTS_DIR / "realtime_detection_snapshot.png"
+    plt.savefig(output_path, dpi=150, bbox_inches='tight')
+    print(f"Snapshot saved to: {output_path}")
+    # plt.show()
 
 if __name__ == "__main__":
     main()

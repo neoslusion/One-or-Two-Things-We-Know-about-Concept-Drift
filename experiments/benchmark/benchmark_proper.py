@@ -905,7 +905,13 @@ def run_quick_validation(scenarios=None, n_seeds=2):
 def run_benchmark_proper():
     tasks = []
     scenarios = ["Mixed_A", "Mixed_B", "Repeated_Gradual", "Repeated_Incremental", "Repeated_Sudden"]
-    n_seeds = 10 # Standard for comprehensive run
+    
+    # Check for Quick Mode
+    if os.environ.get("QUICK_MODE") == "True":
+        n_seeds = 2
+        logger.info("Running in QUICK MODE (n_seeds=2)")
+    else:
+        n_seeds = 10 # Standard for comprehensive run
     
     for sc in scenarios:
         for seed in range(n_seeds): 

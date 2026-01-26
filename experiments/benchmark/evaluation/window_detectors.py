@@ -64,7 +64,7 @@ def evaluate_drift_detector(
     if overlap is None:
         overlap = OVERLAP  # e.g., 150
 
-    start_time = time.time()
+    start_time = time.process_time()
     detections = []
     last_detection = -(10**9)
 
@@ -162,7 +162,7 @@ def evaluate_drift_detector(
                 print(f"    Window {window_idx} failed: {e}")
 
     # Calculate metrics
-    end_time = time.time()
+    end_time = time.process_time()
     metrics = calculate_detection_metrics_enhanced(detections, true_drifts, len(X))
 
     return {

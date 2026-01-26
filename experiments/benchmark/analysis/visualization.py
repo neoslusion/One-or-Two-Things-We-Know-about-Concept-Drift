@@ -17,6 +17,7 @@ import pandas as pd
 import numpy as np
 from scipy import stats
 import warnings
+from core.config import PLOTS_DIR
 
 def setup_plot_style():
     """Set up publication-quality plot style for thesis."""
@@ -275,7 +276,7 @@ def plot_critical_difference_diagram(results_df, metric='F1', output_dir=None, a
     }
 
 
-def generate_all_figures(all_results, output_dir="./publication_figures"):
+def generate_all_figures(all_results, output_dir=PLOTS_DIR):
     """
     Generate publication-quality figures organized by drift type.
 
@@ -291,7 +292,7 @@ def generate_all_figures(all_results, output_dir="./publication_figures"):
 
     Args:
         all_results: List of result dictionaries from benchmark
-        output_dir: Directory to save figures (default: ./publication_figures)
+        output_dir: Directory to save figures (default: results/plots)
     """
     output_dir = Path(output_dir)
     output_dir.mkdir(exist_ok=True)
