@@ -15,7 +15,7 @@ Mặc dù ShapeDD gốc thể hiện nhiều ưu điểm về độ chính xác 
 
 Để giải quyết các thách thức trên, luận văn xây dựng hệ thống \textbf{ShapeDD-Stream} --- một framework tích hợp kết hợp các phương pháp MMD tiên tiến với kiến trúc streaming, bao gồm ba tầng xử lý chính:
 \begin{itemize}
-	\item \textbf{Tầng thuật toán:} Cải tiến ShapeDD bằng cách tích hợp \textit{Inverse Density-Weighted MMD (IDW-MMD)} với phân phối tiệm cận để giảm phương sai và chi phí tính toán, loại bỏ nhu cầu permutation test tốn kém.
+	\item \textbf{Tầng thuật toán:} Cải tiến ShapeDD bằng cách tích hợp \textit{IDW-MMD (Inverse Density-Weighted MMD)} với phân phối tiệm cận để giảm phương sai và chi phí tính toán, loại bỏ nhu cầu permutation test tốn kém.
 	\item \textbf{Tầng chiến lược:} Xây dựng khung thích ứng thông minh, sử dụng kết quả phân loại từ \textit{SE-CDT} để kích hoạt chiến lược cập nhật mô hình tối ưu (Reset, Incremental, hoặc Reuse).
 	\item \textbf{Tầng kiến trúc:} Triển khai hệ thống trên nền tảng \textit{Apache Kafka}, đảm bảo khả năng xử lý luồng dữ liệu phân tán, độ trễ thấp và khả năng chịu lỗi.
 \end{itemize}
@@ -23,7 +23,7 @@ Mặc dù ShapeDD gốc thể hiện nhiều ưu điểm về độ chính xác 
 \section{Cải tiến thuật toán phát hiện concept drift}
 
 \subsection{Inverse Density-Weighted MMD (IDW-MMD): Tối ưu hóa hiệu suất và độ chính xác}
-\label{sec:adw-mmd}
+\label{sec:idw-mmd}
 
 Trong các hệ thống học máy dòng dữ liệu (data stream), concept drift xảy ra khi các đặc tính thống kê của biến mục tiêu thay đổi đột ngột hoặc từ từ theo thời gian. Các phương pháp MMD truyền thống thường gặp khó khăn về chi phí tính toán khi áp dụng cho dữ liệu lớn.
 
@@ -67,9 +67,9 @@ Cụ thể, trọng số $w_i$ được tính dựa trên mật độ cục bộ
 	\item \textbf{Điểm ở vùng đông (trung tâm):} $\sum_{j} k(x_i, x_j)$ lớn (nhiều điểm lân cận) $\Rightarrow$ trọng số $w_i$ nhỏ.
 	\item \textbf{Điểm ở vùng thưa (biên):} $\sum_{j} k(x_i, x_j)$ nhỏ (ít điểm lân cận) $\Rightarrow$ trọng số $w_i$ lớn.
 \end{itemize}
-Lý do: Drift thường xuất hiện đầu tiên ở biên phân phối, nên ta cần "lắng nghe" các điểm ở đó kỹ hơn.
+Lý do: Drift thường xuất hiện đầu tiên ở biên phân phối, nên cần tăng độ nhạy tại các điểm này.
 
-\textbf{Tại sao dùng căn bậc hai ($1/\sqrt{d_i}$) thay vì nghịch đảo thẳng ($1/d_i$)?}
+\textbf{Lý do dùng căn bậc hai ($1/\sqrt{d_i}$) thay vì nghịch đảo thẳng ($1/d_i$):}
 \begin{itemize}
 	\item Nếu dùng $1/d_i$: Trọng số quá lớn cho outliers, dễ bị ảnh hưởng bởi nhiễu.
 	\item Nếu dùng $1/\sqrt{d_i}$: Vẫn tăng trọng số cho biên nhưng không quá cực đoan.
@@ -97,7 +97,7 @@ IDW-MMD khắc phục bằng hai cách:
 	\item \textbf{Tăng tín hiệu từ vùng biên:} Các điểm ở biên chứa thông tin quan trọng về sự khác biệt. Tăng trọng số cho chúng giúp tín hiệu drift rõ hơn so với nhiễu nền.
 \end{enumerate}
 
-\textbf{Kết quả thực tế:} Độ lệch chuẩn (standard deviation) của $\widehat{\text{MMD}}^2_{\text{IDW}}$ giảm khoảng 30\% so với uniform MMD trên dữ liệu không có drift. Nhờ vậy, ta có thể dùng asymptotic p-value (nhanh) thay vì permutation test (chậm) mà vẫn đảm bảo độ chính xác.
+\textbf{Kết quả thực tế:} Độ lệch chuẩn (standard deviation) của $\widehat{\text{MMD}}^2_{\text{IDW}}$ giảm khoảng 30\% so với uniform MMD trên dữ liệu không có drift. Nhờ vậy, có thể dùng asymptotic p-value (nhanh) thay vì permutation test (chậm) mà vẫn đảm bảo độ chính xác.
 
 \subsubsection{Quy trình tính toán}
 Luận văn cài đặt IDW-MMD như sau:
@@ -178,10 +178,10 @@ Sau khi tích hợp IDW-MMD với phân phối tiệm cận, hệ thống có th
 \section{Phương pháp phân loại drift: SE-CDT}
 \label{sec:shaped-cdt}
 
-Lấy ý tưởng từ cơ chế hoạt động của CDT\_MSW, tuy nhiên, phương pháp CDT\_MSW gốc~\cite{guo2022cdtmsw} yêu cầu \textit{labels} để tính toán accuracy ratio, điều này không phù hợp trong môi trường streaming không giám sát. Luận văn đề xuất \textbf{SE-CDT} (ShapeDD-Enhanced Concept Drift Type), một phương pháp thay thế sử dụng trực tiếp tín hiệu drift magnitude $\sigma(t)$ từ ShapeDD để phân loại drift type.
+Lấy ý tưởng từ cơ chế hoạt động của CDT-MSW, tuy nhiên, phương pháp CDT-MSW gốc~\cite{guo2022cdtmsw} yêu cầu \textit{labels} để tính toán accuracy ratio, điều này không phù hợp trong môi trường streaming không giám sát. Luận văn đề xuất \textbf{SE-CDT} (ShapeDD-Enhanced Concept Drift Type), một phương pháp thay thế sử dụng trực tiếp tín hiệu drift magnitude $\sigma(t)$ từ ShapeDD để phân loại drift type.
 
 \subsection{Cơ sở lý thuyết}
-Theo phân loại của CDT\_MSW, drift được chia thành:
+Theo phân loại của CDT-MSW, drift được chia thành:
 \begin{itemize}
 	\item \textbf{TCD (Transient Concept Drift):} Drift tạm thời với thời gian chuyển đổi ngắn --- bao gồm \textit{sudden} và \textit{blip}.
 	\item \textbf{PCD (Progressive Concept Drift):} Drift tiến triển với thời gian chuyển đổi dài --- bao gồm \textit{gradual}, \textit{incremental}, và \textit{recurrent}.
@@ -286,7 +286,7 @@ Thay vì áp dụng một chiến lược duy nhất (như huấn luyện lại 
 \subsubsection{Chiến lược cho Sudden Drift (Trọng tâm nghiên cứu)}
 Trong phạm vi luận văn, chiến lược cho \textit{Sudden Drift} được cài đặt và đánh giá chi tiết nhất. Quy trình cụ thể như sau:
 \begin{enumerate}
-	\item \textbf{Kích hoạt:} Khi CDT\_MSW phân loại drift là "Sudden".
+	\item \textbf{Kích hoạt:} Khi CDT-MSW phân loại drift là "Sudden".
 	\item \textbf{Thu thập dữ liệu:} Hệ thống chờ và thu thập một lượng dữ liệu mới ($N_{new}$) ngay sau điểm drift.
 	\item \textbf{Huấn luyện lại:} Một instance mô hình mới (ví dụ: Logistic Regression) được khởi tạo với trọng số ngẫu nhiên và huấn luyện trên $N_{new}$.
 	\item \textbf{Thay thế:} Mô hình cũ bị loại bỏ hoàn toàn, mô hình mới được đưa vào sử dụng (hot-swap).
@@ -329,8 +329,8 @@ Hệ thống được thiết kế theo mô hình \textbf{Event-Driven Architect
 
 \begin{enumerate}
 	\item \textbf{Data Producer (Nguồn dữ liệu):} Mô phỏng hoặc thu thập dữ liệu từ cảm biến/nguồn phát, gửi vào topic \texttt{sensor.stream}.
-	\item \textbf{Drift Detection Consumer (Bộ phát hiện):} Đọc dữ liệu từ stream, duy trì cửa sổ trượt và thực thi thuật toán ShapeDD\_ADW\_MMD.
-	\item \textbf{Drift Classifier (Bộ phân loại):} Được kích hoạt khi có tín hiệu drift, thực thi CDT\_MSW để xác định loại drift và gửi sự kiện vào topic \texttt{drift.results}.
+	\item \textbf{Drift Detection Consumer (Bộ phát hiện):} Đọc dữ liệu từ stream, duy trì cửa sổ trượt và thực thi thuật toán ShapeDD-IDW.
+	\item \textbf{Drift Classifier (Bộ phân loại):} Được kích hoạt khi có tín hiệu drift, thực thi CDT-MSW để xác định loại drift và gửi sự kiện vào topic \texttt{drift.results}.
 	\item \textbf{Adaptation Manager (Bộ thích ứng):} Lắng nghe sự kiện drift, thực thi chiến lược thích ứng (huấn luyện lại/cập nhật) và publish mô hình mới.
 	\item \textbf{Monitoring Dashboard:} Trực quan hóa dữ liệu, điểm drift và hiệu suất mô hình theo thời gian thực.
 \end{enumerate}

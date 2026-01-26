@@ -7,15 +7,15 @@ Luận văn này đã giải quyết bài toán phát hiện và thích ứng v�
 
 \subsection{Đóng góp về Phương pháp luận (Methodological)}
 \begin{itemize}
-	\item \textbf{Tích hợp ShapeDD\_WMMD\_PROPER:} Tích hợp phương pháp IDW-MMD (Inverse Density-Weighted MMD) với asymptotic p-value, lấy cảm hứng từ~\cite{bharti2023owmmd}, vào ShapeDD detector. Kết quả cho thấy phương pháp này cải thiện thông lượng xử lý gấp \textbf{17--20 lần} (đạt $\approx$ 111,000--131,000 mẫu/giây) so với ShapeDD gốc ($\approx$ 8,000 mẫu/giây), trong khi đạt F1-score = 0.481 với \textbf{0 False Positives} trên detection benchmark. \textit{Lưu ý:} Phương pháp có giới hạn là không phát hiện được virtual drift (chỉ thay đổi $P(Y|X)$ mà không thay đổi $P(X)$), phản ánh đúng bản chất unsupervised của thuật toán.
-	\item \textbf{Đề xuất SE-CDT:} Xây dựng phương pháp phân loại drift không giám sát \textbf{SE-CDT}, tận dụng khả năng định vị chính xác thời điểm drift của ShapeDD để phân loại loại drift. Phương pháp đạt độ chính xác \textbf{85.8\%} trong việc phân loại nhóm drift (TCD vs PCD), cao hơn so với CDT\_MSW supervised (38.7\%) trong điều kiện thử nghiệm, tạo tiền đề cho chiến lược thích ứng thông minh.
+	\item \textbf{Tích hợp ShapeDD-IDW:} Tích hợp phương pháp IDW-MMD (Inverse Density-Weighted MMD) với asymptotic p-value, lấy cảm hứng từ~\cite{bharti2023owmmd}, vào ShapeDD detector. Kết quả cho thấy phương pháp này cải thiện thông lượng xử lý gấp \textbf{17--20 lần} (đạt $\approx$ 111,000--131,000 mẫu/giây) so với ShapeDD gốc ($\approx$ 8,000 mẫu/giây), trong khi đạt F1-score = 0.481 với \textbf{0 False Positives} trên detection benchmark. \textit{Lưu ý:} Phương pháp có giới hạn là không phát hiện được virtual drift (chỉ thay đổi $P(Y|X)$ mà không thay đổi $P(X)$), phản ánh đúng bản chất unsupervised của thuật toán.
+	\item \textbf{Đề xuất SE-CDT:} Xây dựng phương pháp phân loại drift không giám sát \textbf{SE-CDT}, tận dụng khả năng định vị chính xác thời điểm drift của ShapeDD để phân loại loại drift. Phương pháp đạt độ chính xác \textbf{85.8\%} trong việc phân loại nhóm drift (TCD vs PCD), cao hơn so với CDT-MSW supervised (38.7\%) trong điều kiện thử nghiệm, tạo tiền đề cho chiến lược thích ứng thông minh.
 \end{itemize}
 
 \subsection{Đóng góp về Thực nghiệm (Empirical)}
 \begin{itemize}
-	\item \textbf{Benchmark toàn diện:} Thực hiện đánh giá có hệ thống 8 phương pháp phát hiện drift (MMD, MMD\_IDW, KS, ShapeDD, ShapeDD\_WMMD\_PROPER, SE\_CDT, D3, DAWIDD) trên 11 tập dữ liệu tổng hợp đa dạng. Kết quả được kiểm chứng thống kê bằng kiểm định Friedman và Nemenyi (với 30 lần chạy độc lập, $\alpha = 0.05$), cung cấp cái nhìn khách quan về hiệu năng của các thuật toán hiện đại.
+	\item \textbf{Benchmark toàn diện:} Thực hiện đánh giá có hệ thống 8 phương pháp phát hiện drift (MMD, IDW-MMD, KS, ShapeDD, ShapeDD-IDW, SE-CDT, D3, DAWIDD) trên 11 tập dữ liệu tổng hợp đa dạng. Kết quả được kiểm chứng thống kê bằng kiểm định Friedman và Nemenyi (với 30 lần chạy độc lập, $\alpha = 0.05$), cung cấp cái nhìn khách quan về hiệu năng của các thuật toán hiện đại.
 	\item \textbf{Phân tích độ trễ và chi phí:} Chứng minh hiệu quả của việc loại bỏ permutation test và thay bằng asymptotic p-value nhờ IDW-MMD, giúp giảm độ trễ phát hiện trung bình xuống còn 18 mẫu và tăng throughput 17--20 lần.
-	\item \textbf{Xác nhận hành vi đúng:} Benchmark xác nhận SE\_CDT/WMMD\_PROPER không phát hiện ``drift'' trên các dataset virtual drift (hyperplane, led\_abrupt, sea) --- hành vi mong đợi vì $P(X)$ không đổi.
+	\item \textbf{Xác nhận hành vi đúng:} Benchmark xác nhận SE-CDT/ShapeDD-IDW không phát hiện ``drift'' trên các dataset virtual drift (hyperplane, led\_abrupt, sea) --- hành vi mong đợi vì $P(X)$ không đổi.
 \end{itemize}
 
 \subsection{Đóng góp về Hệ thống (System)}
@@ -46,7 +46,7 @@ Mặc dù đạt được những kết quả khả quan, nghiên cứu vẫn t�
 SE-CDT (Std) đạt EDR = 94.4\% nhưng có số lượng False Positives cao (FP = 1394). SE-CDT (ADW) giảm FP xuống 171 nhưng EDR giảm còn 50.6\%. Trong môi trường production cần cân nhắc trade-off này:
 \begin{itemize}
 	\item Nếu ưu tiên \textbf{recall cao}: Sử dụng SE-CDT (Std) với threshold thấp
-	\item Nếu ưu tiên \textbf{FP thấp}: Sử dụng SE-CDT (ADW) hoặc ShapeDD\_WMMD\_PROPER (FP = 0 trong detection benchmark)
+	\item Nếu ưu tiên \textbf{FP thấp}: Sử dụng SE-CDT (ADW) hoặc ShapeDD-IDW (FP = 0 trong detection benchmark)
 \end{itemize}
 
 \subsection{Subcategory Accuracy còn hạn chế}
@@ -83,8 +83,8 @@ Dựa trên nền tảng của luận văn, các hướng phát triển tiếp t
 Hành trình giải quyết bài toán concept drift là một quá trình liên tục. Luận văn này đã đưa ra các đề xuất cụ thể thông qua:
 \begin{enumerate}
 	\item \textbf{Cải thiện hiệu năng:} Tích hợp IDW-MMD với asymptotic p-value giúp tăng throughput \textbf{17--20 lần} (từ 8,000 lên 131,000 mẫu/giây), cho thấy tiềm năng áp dụng trong môi trường production.
-	\item \textbf{Đảm bảo độ tin cậy:} ShapeDD\_WMMD\_PROPER và SE\_CDT đạt \textbf{0 False Positives} trong detection benchmark (trên các dataset có thay đổi $P(X)$), quan trọng cho môi trường production.
-	\item \textbf{Phân loại không giám sát:} SE-CDT đạt \textbf{CAT = 85.8\%} mà không cần labels, cao hơn so với CDT\_MSW supervised (38.7\%) trong điều kiện thử nghiệm cụ thể (window\_size = 50).
+	\item \textbf{Đảm bảo độ tin cậy:} ShapeDD-IDW và SE-CDT đạt \textbf{0 False Positives} trong detection benchmark (trên các dataset có thay đổi $P(X)$), quan trọng cho môi trường production.
+	\item \textbf{Phân loại không giám sát:} SE-CDT đạt \textbf{CAT = 85.8\%} mà không cần labels, cao hơn so với CDT-MSW supervised (38.7\%) trong điều kiện thử nghiệm cụ thể (window\_size = 50).
 \end{enumerate}
 
 Kết quả nghiên cứu cho thấy rằng việc chuyển dịch từ các mô hình tĩnh sang các hệ thống thích ứng (adaptive systems) là xu hướng cần thiết. Với kiến trúc đề xuất và những hiểu biết thu được, hệ thống có khả năng mở rộng để đối mặt với những thách thức phức tạp hơn của dữ liệu luồng trong tương lai, hướng tới các ứng dụng AI vận hành bền vững và tin cậy.

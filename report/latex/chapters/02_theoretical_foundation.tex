@@ -81,8 +81,7 @@ Các phương pháp \textbf{không giám sát (unsupervised)} cho bài toán ph�
 hai phân phối dữ liệu trong hai cửa sổ thời gian liên tiếp. Tuy nhiên, do số lượng mẫu trong mỗi cửa sổ thường nhỏ, các phép đo
 này dễ bị \textbf{nhiễu}, khiến việc phân biệt giữa thay đổi thật và dao động ngẫu nhiên trở nên khó khăn.
 
-\textbf{ShapeDD (Shape-Based Drift Detection)} được đề xuất nhằm khắc phục vấn đề này bằng cách khai thác \textit{đặc trưng hình dạng}
-mà tín hiệu drift thể hiện, đặc biệt trong các trường hợp \textbf{drift đột ngột (abrupt drift)}.
+Phương pháp \textbf{ShapeDD (Shape-Based Drift Detection)} được đề xuất nhằm giải quyết vấn đề này thông qua việc khai thác \textit{đặc trưng hình học} của tín hiệu trôi dạt, đặc biệt hiệu quả trong các trường hợp \textbf{drift đột ngột (abrupt drift)}.
 
 \subsection{Quy ước ký hiệu}
 
@@ -141,7 +140,7 @@ Kết quả lý thuyết trung tâm của ShapeDD được phát biểu chính t
 	\end{equation}
 \end{theorem}
 
-\textbf{Ý nghĩa:} Hàm $h_l(t)$ có dạng \textbf{tam giác cân}, đạt cực đại tại thời điểm xảy ra drift ($t=0$), và suy giảm tuyến tính về hai phía. Đặc tính này hoàn toàn \textbf{không phụ thuộc vào dạng phân phối hay độ đo khoảng cách} sử dụng, mà chỉ bị co giãn theo hệ số $\|P - Q\|$. Đây là lý do tại sao ShapeDD có thể áp dụng cho nhiều domain khác nhau mà không cần thay đổi kernel hay metric.
+\textbf{Ý nghĩa:} Hàm $h_l(t)$ có dạng \textbf{tam giác cân}, đạt cực đại tại thời điểm xảy ra drift ($t=0$), và suy giảm tuyến tính về hai phía. Đặc tính này hoàn toàn \textbf{không phụ thuộc vào dạng phân phối hay độ đo khoảng cách} sử dụng, mà chỉ tỷ lệ thuận với hệ số $\|P - Q\|$. Đây là cơ sở để ShapeDD có thể áp dụng cho nhiều miền dữ liệu khác nhau mà không cần thay đổi kernel hay metric.
 
 \begin{quote}
 	\textbf{Giới hạn lý thuyết quan trọng:}
@@ -380,7 +379,7 @@ Tín hiệu shape được tính bằng convolution:
 
 \textbf{Độ phức tạp tính toán:} Permutation test là bước tốn thời gian nhất: $O(N_{\text{perm}} \cdot l_1^2)$. Tuy nhiên, vì chỉ áp dụng cho các candidate (không phải mọi thời điểm), chi phí trung bình vẫn chấp nhận được.
 
-\textbf{Hạn chế về throughput và động lực cải tiến:} Với $N_{\text{perm}} = 2500$ (giá trị mặc định) và $l_1 = 50$, mỗi window cần thực hiện khoảng $2500 \times 50^2 = 6.25$ triệu phép tính kernel. Điều này giới hạn throughput của ShapeDD gốc ở mức khoảng $6{,}800$ samples/giây --- chưa đủ cho nhiều ứng dụng real-time yêu cầu xử lý hàng chục nghìn samples mỗi giây. Hạn chế này là động lực chính cho phương pháp cải tiến \textbf{Weighted MMD} với công thức phân phối tiệm cận (asymptotic distribution) thay vì permutation test, được trình bày trong Chương~\ref{chap:proposed-model}. Phương pháp này lấy cảm hứng từ ý tưởng ``Optimally-Weighted MMD'' của Bharti et al.~\cite{bharti2023owmmd}, nhưng sử dụng một heuristic đơn giản hơn --- trọng số nghịch biến với mật độ kernel --- để cải thiện tốc độ xử lý trong khi vẫn duy trì độ chính xác phát hiện.
+\textbf{Hạn chế về throughput và động lực cải tiến:} Với $N_{\text{perm}} = 2500$ (giá trị mặc định) và $l_1 = 50$, mỗi window cần thực hiện khoảng $2500 \times 50^2 = 6.25$ triệu phép tính kernel. Điều này giới hạn throughput của ShapeDD gốc ở mức khoảng $6{,}800$ mẫu/giây --- chưa đáp ứng được yêu cầu của các ứng dụng thời gian thực xử lý hàng chục nghìn mẫu mỗi giây. Hạn chế này là động lực chính cho việc đề xuất phương pháp cải tiến \textbf{Weighted MMD} với công thức phân phối tiệm cận (asymptotic distribution) thay vì permutation test, được trình bày trong Chương~\ref{chap:proposed-model}. Phương pháp này lấy cảm hứng từ ý tưởng ``Optimally-Weighted MMD'' của Bharti et al.~\cite{bharti2023owmmd}, nhưng sử dụng một heuristic đơn giản hơn --- trọng số nghịch biến với mật độ kernel --- để cải thiện tốc độ xử lý trong khi vẫn duy trì độ chính xác phát hiện.
 
 \begin{algorithm}[H]
 	\caption{Shape-based Drift Detector (ShapeDD)}
@@ -424,7 +423,7 @@ Tín hiệu shape được tính bằng convolution:
 ShapeDD mang lại một số ưu điểm quan trọng so với các phương pháp phát hiện drift truyền thống:
 
 \begin{enumerate}
-	\item \textbf{Khử nhiễu và giảm báo động giả:} Nhờ cơ chế lọc shape, ShapeDD giảm đáng kể số lần báo động sai do nhiễu thống kê. Thay vì phản ứng với mọi dao động nhỏ trong tín hiệu, phương pháp chỉ tập trung vào các biến động có hình dạng phù hợp với drift thật. Việc yêu cầu tín hiệu phải match với triangle pattern giúp filter out các random fluctuations, cải thiện tính ổn định trong môi trường nhiều nhiễu so với phương pháp dùng trực tiếp MMD không lọc shape.
+	\item \textbf{Khử nhiễu và giảm báo động giả:} Nhờ cơ chế lọc shape, ShapeDD giảm đáng kể số lần báo động sai do nhiễu thống kê. Thay vì phản ứng với mọi dao động nhỏ trong tín hiệu, phương pháp chỉ tập trung vào các biến động có hình dạng phù hợp với drift thật. Việc yêu cầu tín hiệu phải khớp với mẫu hình tam giác giúp lọc bỏ các dao động ngẫu nhiên, cải thiện tính ổn định trong môi trường nhiều nhiễu so với phương pháp dùng trực tiếp MMD không lọc shape.
 
 	\item \textbf{Độ chính xác định vị cao:} ShapeDD có khả năng xác định chính xác thời điểm xảy ra drift. Nhờ việc khớp dạng tam giác, phương pháp định vị điểm thay đổi gần như trùng khớp với vị trí drift thực (sai lệch chỉ khoảng $\pm l$ hoặc ít hơn, có thể hiệu chỉnh). Trong khi nhiều phương pháp cửa sổ đôi khác chỉ báo động đang có drift trong một khoảng nào đó, ShapeDD cung cấp trực tiếp thời điểm drift với độ trễ rất nhỏ.
 

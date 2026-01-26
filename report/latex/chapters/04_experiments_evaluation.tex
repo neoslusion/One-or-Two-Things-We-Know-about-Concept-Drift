@@ -26,9 +26,9 @@ Hệ thống streaming được giả lập sử dụng Apache Kafka\footnote{Tr
 
 \textbf{Quy ước ký hiệu trong các bảng:}
 \begin{itemize}
-	\item \textbf{MMD\_IDW}: Inverse Density-Weighted MMD (IDW-MMD), sử dụng trọng số nghịch mật độ
-	\item \textbf{ShapeDD\_WMMD\_PROPER}: ShapeDD với IDW-MMD và asymptotic p-value
-	\item \textbf{SE\_CDT}: SE-CDT unified detector-classifier system
+	\item \textbf{MMD\_IDW (IDW-MMD)}: Inverse Density-Weighted MMD, sử dụng trọng số nghịch mật độ.
+	\item \textbf{ShapeDD\_WMMD\_PROPER (ShapeDD-IDW)}: ShapeDD với IDW-MMD và asymptotic p-value.
+	\item \textbf{SE\_CDT (SE-CDT)}: Hệ thống thống nhất phát hiện và phân loại drift.
 \end{itemize}
 
 \subsection{Tập dữ liệu thực nghiệm}
@@ -88,7 +88,7 @@ Phần này so sánh Detection Module của hệ thống đề xuất với các
 
 \subsection{Kết quả so sánh tổng hợp}
 
-Bảng~\ref{tab:comprehensive_performance} so sánh hiệu suất của \textbf{phương pháp đề xuất} (MMD\_IDW, ShapeDD\_WMMD\_PROPER, SE\_CDT) với \textbf{các baseline} (Standard MMD, KS-Test, D3, DAWIDD, ShapeDD gốc). Các chỉ số F1 được tính dựa trên khả năng phát hiện đúng các điểm drift đã biết (ground truth), kết quả được tổng hợp từ 30 lần chạy độc lập trên 11 tập dữ liệu (tổng 330 experiments).
+Bảng~\ref{tab:comprehensive_performance} so sánh hiệu suất của \textbf{phương pháp đề xuất} (IDW-MMD, ShapeDD-IDW, SE-CDT) với \textbf{các baseline} (Standard MMD, KS-Test, D3, DAWIDD, ShapeDD gốc). Các chỉ số F1 được tính dựa trên khả năng phát hiện đúng các điểm drift đã biết (ground truth), kết quả được tổng hợp từ 30 lần chạy độc lập trên 11 tập dữ liệu (tổng 330 experiments).
 
 % =============================================================================
 % Bảng tổng hợp hiệu suất
@@ -102,8 +102,8 @@ Bảng~\ref{tab:comprehensive_performance} so sánh hiệu suất của \textbf{
 
 \textbf{Phân tích kết quả:}
 \begin{itemize}
-	\item \textbf{MMD\_IDW dẫn đầu về F1 (0.548):} Phương pháp IDW-MMD đạt F1-score cao nhất nhờ sự cân bằng giữa Precision (0.589) và Recall (0.567), với số báo động giả thấp (2.5 FP/run). Điều này xác nhận hiệu quả của cơ chế trọng số nghịch mật độ trong việc giảm độ dao động kết quả.
-	\item \textbf{SE-CDT và ShapeDD\_WMMD\_PROPER (F1 = 0.481):} Hai phương pháp đề xuất đạt Precision cao (0.539) với \textbf{không có báo động giả} (FP = 0) trên benchmark detection. Đây là ưu điểm vượt trội so với các phương pháp giám sát (như DDM/ADWIN) thường báo động sai khi gặp Virtual Drift (thay đổi nhãn nhưng $P(X)$ giữ nguyên). Việc SE-CDT duy trì FP=0 trên các tập dữ liệu nhiễu nhãn (như \textit{standard\_sea}) chứng minh tính bền vững (robustness) của phương pháp unsupervised trong các hệ thống thực tế, giúp giảm thiểu hiện tượng "alert fatigue" cho người vận hành.
+	\item \textbf{IDW-MMD dẫn đầu về F1 (0.548):} Phương pháp này đạt F1-score cao nhất nhờ sự cân bằng giữa Precision (0.589) và Recall (0.567), với số báo động giả thấp (2.5 FP/run). Điều này xác nhận hiệu quả của cơ chế trọng số nghịch mật độ trong việc giảm độ dao động kết quả.
+	\item \textbf{SE-CDT và ShapeDD-IDW (F1 = 0.481):} Hai phương pháp đề xuất đạt Precision cao (0.539) với \textbf{không có báo động giả} (FP = 0) trên benchmark detection. Đây là ưu điểm vượt trội so với các phương pháp giám sát (như DDM/ADWIN) thường báo động sai khi gặp Virtual Drift (thay đổi nhãn nhưng $P(X)$ giữ nguyên). Việc SE-CDT duy trì FP=0 trên các tập dữ liệu nhiễu nhãn (như \textit{standard\_sea}) chứng minh tính bền vững (robustness) của phương pháp unsupervised trong các hệ thống thực tế, giúp giảm thiểu hiện tượng "alert fatigue" cho người vận hành.
 	\item \textbf{D3 xếp thứ 2 (F1 = 0.488):} Phương pháp discriminative này hoạt động tốt với Precision cao (0.553) và FP thấp (0.9), nhưng Recall hạn chế (0.474) do phụ thuộc vào khả năng học của classifier.
 	\item \textbf{MMD baseline (F1 = 0.455):} Phương pháp MMD chuẩn đạt Recall cao (0.722) nhưng Precision thấp (0.348), dẫn đến 14.3 báo động giả trung bình mỗi lần chạy.
 	\item \textbf{Sự đánh đổi của KS-Test (F1 = 0.289):} Phương pháp Kolmogorov-Smirnov đạt Recall cao nhất (0.796) nhưng lại có Precision thấp nhất (0.188) với số lượng báo động giả lớn (36.6 FP/run). Điều này cho thấy KS quá nhạy cảm với nhiễu, không phù hợp cho các hệ thống giám sát tự động yêu cầu độ tin cậy cao.
@@ -120,7 +120,7 @@ Bảng~\ref{tab:comprehensive_performance} so sánh hiệu suất của \textbf{
 	\label{fig:critical_difference}
 \end{figure}
 
-Kết quả kiểm định Friedman cho thấy MMD cơ bản có thứ hạng trung bình tốt nhất (3.64), tiếp theo là MMD\_IDW (3.91). SE\_CDT và ShapeDD\_WMMD\_PROPER xếp hạng 4-5 (4.50) với Critical Difference = 3.0. Điều này cho thấy không có sự khác biệt thống kê có ý nghĩa lớn về F1 giữa các phương pháp top, nhưng \textbf{SE\_CDT/ ShapeDD\_WMMD\_PROPER có sự khác biệt ở chỉ số FP = 0} --- yếu tố quan trọng trong môi trường production.
+Kết quả kiểm định Friedman cho thấy MMD cơ bản có thứ hạng trung bình tốt nhất (3.64), tiếp theo là IDW-MMD (3.91). SE-CDT và ShapeDD-IDW xếp hạng 4-5 (4.50) với Critical Difference = 3.0. Điều này cho thấy không có sự khác biệt thống kê có ý nghĩa lớn về F1 giữa các phương pháp top, nhưng \textbf{SE-CDT/ ShapeDD-IDW có sự khác biệt ở chỉ số FP = 0} --- yếu tố quan trọng trong môi trường production.
 
 \subsection{Đánh giá chi tiết trên từng loại dữ liệu}
 
@@ -160,16 +160,16 @@ Hiệu suất của các phương pháp thay đổi tùy thuộc vào đặc tí
 \textbf{Phân tích sâu:}
 \begin{enumerate}
 	\item \textbf{Kết quả trên Drift mạnh (Severe/Sudden):}
-	      Trên các dataset như \textit{gaussian\_shift\_moderate}, \textit{stagger}, và \textit{gen\_random\_severe/ultra\_severe}, phương pháp ShapeDD\_WMMD\_PROPER và SE\_CDT đạt F1 ở mức cao ($\geq 0.97$). Hình~\ref{fig:sudden_drift_vis} minh họa ShapeDD tạo thành hình tam giác đúng tại thời điểm drift.
+	      Trên các dataset như \textit{gaussian\_shift\_moderate}, \textit{stagger}, và \textit{gen\_random\_severe/ultra\_severe}, phương pháp ShapeDD-IDW và SE-CDT đạt F1 ở mức cao ($\geq 0.97$). Hình~\ref{fig:sudden_drift_vis} minh họa ShapeDD tạo thành hình tam giác đúng tại thời điểm drift.
 	\item \textbf{Thách thức với Drift nhẹ (Mild Drift) và Cơ chế IDW-MMD:}
-	      Trên tập \textit{gen\_random\_mild}, hiệu suất của SE\_CDT/ ShapeDD\_WMMD\_PROPER giảm mạnh (F1 = 0.006) so với MMD truyền thống (F1 = 0.585).
+	      Trên tập \textit{gen\_random\_mild}, hiệu suất của SE-CDT/ ShapeDD-IDW giảm mạnh (F1 = 0.006) so với MMD truyền thống (F1 = 0.585).
 	      \textit{Lý giải:} IDW-MMD gán trọng số thấp cho vùng mật độ cao, vô tình làm lu mờ tín hiệu drift nhẹ diễn ra trong vùng này (over-smoothing), dẫn đến tỷ lệ False Negative cao (xem Hình~\ref{fig:gradual_drift_vis}).
 	\item \textbf{Hành vi trên Virtual Drift (Control Group):}
-	      Trên các dataset \textit{hyperplane}, \textit{led\_abrupt}, và \textit{standard\_sea}, SE\_CDT/ ShapeDD\_WMMD\_PROPER đạt F1 = 0.0. Đây là \textbf{hành vi mong đợi} vì các dataset này chỉ có sự thay đổi $P(Y|X)$. Khác với các baseline giám sát (supervised baselines) thường báo động sai khi Accuracy giảm, phương pháp unsupervised chỉ tập trung vào $P(X)$, giúp hệ thống không bị "đánh lừa" bởi các thay đổi chỉ mang tính chất nhãn (label shift) mà bản chất dữ liệu không đổi.
+	      Trên các dataset \textit{hyperplane}, \textit{led\_abrupt}, và \textit{standard\_sea}, SE-CDT/ ShapeDD-IDW đạt F1 = 0.0. Đây là \textbf{hành vi mong đợi} vì các dataset này chỉ có sự thay đổi $P(Y|X)$. Khác với các baseline giám sát (supervised baselines) thường báo động sai khi Accuracy giảm, phương pháp unsupervised chỉ tập trung vào $P(X)$, giúp hệ thống không bị "đánh lừa" bởi các thay đổi chỉ mang tính chất nhãn (label shift) mà bản chất dữ liệu không đổi.
 	\item \textbf{Blip Drift:}
 	      Trên tập \textit{rbfblips}, SE\_CDT đạt F1 = 1.0. Cơ chế shape detection kết hợp IDW-MMD cho kết quả tốt với các thay đổi ngắn hạn, đột ngột.
 	\item \textbf{Phân tích Báo động giả (False Positives):}
-	      Hình~\ref{fig:stationary_fp} so sánh số lượng báo động giả. KS-Test tạo ra lượng báo động sai lớn nhất (36.6 FP/run). SE\_CDT và ShapeDD\_WMMD\_PROPER duy trì \textbf{0 False Positives}, nhờ vào cơ chế shape detection chặt chẽ.
+	      Hình~\ref{fig:stationary_fp} so sánh số lượng báo động giả. KS-Test tạo ra lượng báo động sai lớn nhất (36.6 FP/run). SE-CDT và ShapeDD-IDW duy trì \textbf{0 False Positives}, nhờ vào cơ chế shape detection chặt chẽ.
 \end{enumerate}
 
 \begin{figure}[h]
@@ -225,12 +225,12 @@ Phần này đánh giá hiệu quả của \textbf{Classification Module} (SE-CD
 \textbf{Cấu hình:} Dataset tổng hợp 8,000 mẫu với các loại drift TCD (Sudden, Blip) và PCD (Gradual, Incremental, Recurrent).
 \textbf{Đánh giá:} 17 configurations × 10 runs = 170 test cases. Tham số: window\_size=200, stride=40.
 
-Để tối ưu hóa hiệu suất phân loại, trước khi đưa ra kết quả cuối cùng, chúng tôi tiến hành hai bước hiệu chỉnh quan trọng: (1) Lựa chọn biến thể MMD phù hợp cho module phân loại, và (2) Hiệu chỉnh ngưỡng phát hiện (Threshold Calibration).
+Để tối ưu hóa hiệu suất phân loại, trước khi đưa ra kết quả cuối cùng, luận văn tiến hành hai bước hiệu chỉnh quan trọng: (1) Lựa chọn biến thể MMD phù hợp cho module phân loại, và (2) Hiệu chỉnh ngưỡng phát hiện (Threshold Calibration).
 
 \subsection{Lựa chọn biến thể MMD: Standard vs IDW-MMD}
 \label{sec:mmd-variant-choice}
 
-Trong quá trình phát triển SE-CDT, chúng tôi đã thử nghiệm cả hai biến thể MMD. Mặc dù IDW-MMD hoạt động tốt cho Detection (như đã thấy ở phần trước), kết quả thực nghiệm lại chỉ ra nó không phù hợp cho Classification.
+Trong quá trình phát triển SE-CDT, luận văn đã thử nghiệm cả hai biến thể MMD. Mặc dù IDW-MMD hoạt động tốt cho Detection (như đã thấy ở phần trước), kết quả thực nghiệm lại chỉ ra nó không phù hợp cho Classification.
 
 \textbf{Kết quả so sánh:}
 \begin{itemize}
@@ -294,28 +294,28 @@ Bảng~\ref{tab:se-cdt-results} trình bày kết quả phân loại sử dụng
 \subsection{So sánh với CDT\_MSW}
 \label{sec:secdt-vs-cdtmsw}
 
-Để có cái nhìn khách quan, chúng tôi đối chiếu SE-CDT với CDT\_MSW~\cite{guo2022cdtmsw} --- một phương pháp supervised tiêu biểu. Chúng tôi thực hiện so sánh kép: (1) so với kết quả tự thực nghiệm (local baseline) và (2) so với các giá trị được công bố trong bài báo gốc (paper values).
+Để có cái nhìn khách quan, SE-CDT được đối chiếu với CDT-MSW~\cite{guo2022cdtmsw} --- một phương pháp supervised tiêu biểu. Nghiên cứu thực hiện so sánh kép: (1) so với kết quả tự thực nghiệm (local baseline) và (2) so với các giá trị được công bố trong bài báo gốc (paper values).
 
-Bảng~\ref{tab:cdt-comparison-main} so sánh SE-CDT với kết quả của CDT\_MSW.
+Bảng~\ref{tab:cdt-comparison-main} so sánh SE-CDT với kết quả của CDT-MSW.
 
 \begin{table}[H]
 	\centering
-	\caption{So sánh SE-CDT với CDT\_MSW (Tổng hợp)}
+	\caption{So sánh SE-CDT với CDT-MSW (Tổng hợp)}
 	\label{tab:cdt-comparison-main}
 	\input{../../results/tables/table_se_cdt_aggregate.tex}
 \end{table}
 
 \textbf{Nhận xét:}
 \begin{itemize}
-    \item \textbf{Vượt trội so với local baseline:} Trong cùng điều kiện thử nghiệm trên bộ benchmark đa dạng, SE-CDT (81.2\% CAT) vượt xa phiên bản thực nghiệm của CDT\_MSW (53.2\% CAT). Điều này cho thấy tính ổn định của phương pháp unsupervised khi đối mặt với nhiều kịch bản drift phức tạp.
-    \item \textbf{So với paper values:} Mặc dù độ chính xác CAT của SE-CDT (81.2\%) thấp hơn nhẹ so với giá trị báo cáo trong bài báo gốc của CDT\_MSW (87.5\%), SE-CDT lại vượt trội về độ chính xác phân loại chi tiết (SUB Accuracy 50\% so với 42\%) và khả năng phát hiện sự kiện (EDR 94.4\% so với 80\%).
+    \item \textbf{Vượt trội so với local baseline:} Trong cùng điều kiện thử nghiệm trên bộ benchmark đa dạng, SE-CDT (81.2\% CAT) vượt xa phiên bản thực nghiệm của CDT-MSW (53.2\% CAT). Điều này cho thấy tính ổn định của phương pháp unsupervised khi đối mặt với nhiều kịch bản drift phức tạp.
+    \item \textbf{So với paper values:} Mặc dù độ chính xác CAT của SE-CDT (81.2\%) thấp hơn nhẹ so với giá trị báo cáo trong bài báo gốc của CDT-MSW (87.5\%), SE-CDT lại vượt trội về độ chính xác phân loại chi tiết (SUB Accuracy 50\% so với 42\%) và khả năng phát hiện sự kiện (EDR 94.4\% so với 80\%).
     \item \textbf{Độ trễ và Tính thực tiễn:} Như minh họa trong Hình~\ref{fig:detection_timeline_mixed_a}, SE-CDT phát hiện drift sớm hơn đáng kể nhờ việc trích xuất trực tiếp tín hiệu từ $P(X)$, thay vì chờ đợi sự suy giảm hiệu suất (accuracy drop) như các phương pháp supervised.
 \end{itemize}
 
 \subsection{Phân tích chi tiết theo loại drift}
 \label{sec:cdt-per-type}
 
-Để hiểu sâu hơn về khả năng phân loại của SE-CDT, Bảng~\ref{tab:cdt-per-type} trình bày hiệu suất trên từng loại drift cụ thể so với paper values của CDT\_MSW.
+Để hiểu sâu hơn về khả năng phân loại của SE-CDT, Bảng~\ref{tab:cdt-per-type} trình bày hiệu suất trên từng loại drift cụ thể so với paper values của CDT-MSW.
 
 \begin{table}[H]
 	\centering
@@ -364,7 +364,7 @@ Như đã thảo luận ở Mục~\ref{sec:overview} và Mục~\ref{sec:detectio
 
 \subsection{Kết quả phục hồi (Recovery)}
 
-Để khắc phục hạn chế của các bộ tạo dữ liệu Sudden Drift truyền thống (thường luân phiên giữa hai concept A $\to$ B $\to$ A, dẫn đến việc mô hình tĩnh có độ chính xác ảo ~75\%), chúng tôi đã bổ sung kịch bản **Stepping Drift**. Đây là dạng trôi dạt tích lũy (Cumulative Sudden Drift), nơi phân phối dữ liệu liên tục dịch chuyển ra xa trạng thái ban đầu ($P_0 \to P_1 \to P_2 \dots$), buộc mô hình phải học lại liên tục để duy trì hiệu suất.
+Để khắc phục hạn chế của các bộ tạo dữ liệu Sudden Drift truyền thống (thường luân phiên giữa hai concept A $\to$ B $\to$ A, dẫn đến việc mô hình tĩnh có độ chính xác ảo ~75\%), luận văn bổ sung kịch bản **Stepping Drift**. Đây là dạng trôi dạt tích lũy (Cumulative Sudden Drift), nơi phân phối dữ liệu liên tục dịch chuyển ra xa trạng thái ban đầu ($P_0 \to P_1 \to P_2 \dots$), buộc mô hình phải học lại liên tục để duy trì hiệu suất.
 
 Bảng~\ref{tab:prequential-results} tổng hợp kết quả Prequential Accuracy, trong đó kịch bản Stepping cho thấy rõ nhất hiệu quả của thích ứng.
 
@@ -398,7 +398,7 @@ Bảng~\ref{tab:prequential-results} tổng hợp kết quả Prequential Accura
 \end{figure}
 
 \textbf{So sánh với Sudden Drift truyền thống (Hình~\ref{fig:prequential_sudden}):}
-Để đối chiếu, chúng tôi cũng trình bày kết quả trên kịch bản Sudden Drift tiêu chuẩn (luân phiên A$\to$B$\to$A). Trong trường hợp này, mô hình tĩnh ("No Adaptation") vẫn duy trì độ chính xác trung bình khá cao ($\sim 75\%$) do concept A lặp lại. Tuy nhiên, điều này chỉ che giấu vấn đề: mô hình thực tế đã thất bại hoàn toàn trong các giai đoạn concept B. Hệ thống đề xuất (Type-Specific) đảm bảo độ chính xác ổn định >98% trong \textit{mọi} giai đoạn, bất kể concept có lặp lại hay không.
+Để đối chiếu, kết quả trên kịch bản Sudden Drift tiêu chuẩn (luân phiên A$\to$B$\to$A) cũng được trình bày. Trong trường hợp này, mô hình tĩnh ("No Adaptation") vẫn duy trì độ chính xác trung bình khá cao ($\sim 75\%$) do concept A lặp lại. Tuy nhiên, điều này chỉ che giấu vấn đề: mô hình thực tế đã thất bại hoàn toàn trong các giai đoạn concept B. Hệ thống đề xuất (Type-Specific) đảm bảo độ chính xác ổn định >98% trong \textit{mọi} giai đoạn, bất kể concept có lặp lại hay không.
 
 \begin{figure}[H]
 	\centering
@@ -420,7 +420,7 @@ Bảng~\ref{tab:prequential-results} tổng hợp kết quả Prequential Accura
 
 Các kết quả thực nghiệm dẫn đến những kết luận chính sau:
 \begin{enumerate}
-	\item \textbf{Detection:} Phương pháp đề xuất (ShapeDD\_WMMD\_PROPER) đạt sự cân bằng giữa hiệu suất và độ tin cậy với \textbf{0 False Positives}, đồng thời tăng tốc độ xử lý lên \textbf{20 lần} so với ShapeDD gốc.
+	\item \textbf{Detection:} Phương pháp đề xuất (ShapeDD-IDW) đạt sự cân bằng giữa hiệu suất và độ tin cậy với \textbf{0 False Positives}, đồng thời tăng tốc độ xử lý lên \textbf{20 lần} so với ShapeDD gốc.
 	\item \textbf{Classification:} Module SE-CDT (sử dụng Standard MMD) cho thấy khả năng phân loại loại drift (81.2\%) mà không cần dán nhãn dữ liệu, cao hơn các baseline trong điều kiện thử nghiệm.
 	\item \textbf{Adaptation:} Việc tích hợp phát hiện và phân loại drift vào quy trình thích ứng giúp cải thiện độ chính xác đáng kể: tăng \textbf{+6.42\%} trong các kịch bản trôi dạt tích lũy (Stepping Drift) và duy trì sự ổn định (+1.44\%) trong môi trường hỗn hợp. Điều này khẳng định giá trị của việc "hiểu" loại drift thay vì chỉ phản ứng mù quáng.
 \end{enumerate}

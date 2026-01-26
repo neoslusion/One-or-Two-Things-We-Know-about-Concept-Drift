@@ -32,15 +32,7 @@ Một trong những thách thức quan trọng là xử lý hiện tượng trô
 Đối với các ứng dụng học máy trong môi trường sản xuất công nghiệp như IoT,
 việc phát hiện drift trong thời gian thực hoặc gần thời gian thực là yêu cầu
 bắt buộc để đảm bảo chất lượng và độ tin cậy của hệ thống~\cite{jourdan2023process}.
-Tuy nhiên, việc xây dựng hệ thống như vậy đặt ra nhiều thách thức:
-\begin{enumerate}
-	\item Phát hiện chính xác thời điểm xảy ra drift với độ trễ thấp
-	      (\textit{short detection delay}).
-	\item Phân loại loại drift (sudden, gradual, incremental, recurrent)
-	      để xác định chiến lược thích ứng phù hợp.
-	\item Cập nhật mô hình nhanh chóng mà không làm gián đoạn dịch vụ
-	      và không yêu cầu nhãn thật liên tục (\textit{unsupervised adaptation}).
-\end{enumerate}
+Tuy nhiên, việc hiện thực hóa một hệ thống như vậy đối mặt với ba thách thức kỹ thuật trọng yếu. Thứ nhất là yêu cầu về độ trễ thấp trong phát hiện điểm trôi dạt (\textit{short detection delay}). Thứ hai là khả năng phân loại chính xác các loại trôi dạt (sudden, gradual, incremental, recurrent) để xác định chiến lược thích ứng phù hợp. Cuối cùng là cơ chế cập nhật mô hình nhanh chóng mà không làm gián đoạn dịch vụ và không yêu cầu nhãn thật liên tục (\textit{unsupervised adaptation}).
 
 Từ những thách thức trên, đề tài này đặt ra những mục tiêu nghiên cứu và phát triển một hệ thống tự động phát hiện và thích ứng với hiện tượng trôi dạt khái niệm trong môi trường luồng dữ liệu thời gian thực.
 \section{Mục tiêu đề tài}
@@ -55,7 +47,7 @@ từ đó xác định hướng cải tiến phù hợp.
 Dựa trên cơ sở lý thuyết và kết quả đánh giá hiệu năng, nghiên cứu tích hợp kỹ thuật \textbf{IDW-MMD (Inverse Density-Weighted MMD)} vào framework ShapeDD. Mục tiêu là giải quyết các hạn chế về chi phí tính toán và độ nhạy của phương pháp gốc. IDW-MMD sử dụng cơ chế trọng số nghịch biến với mật độ để giảm độ dao động kết quả, cho phép đạt độ chính xác cao với số lượng mẫu ít hơn.
 
 \subsection{Đề xuất phương pháp phân loại drift SE-CDT}
-Kết hợp khả năng định vị chính xác thời điểm drift của ShapeDD với mô hình phân loại \textit{drift} CDT\_MSW (Concept Drift Type identification based on Multi-Sliding Windows --- phương pháp phân loại loại drift dựa trên phân tích cửa sổ trượt đa kích thước~\cite{guo2022cdtmsw}, sẽ được trình bày chi tiết ở Mục~\ref{sec:cdt-msw-theory}) để đề xuất phương pháp mới \textbf{SE-CDT} (ShapeDD-Enhanced Concept Drift Type Identification).
+Kết hợp khả năng định vị chính xác thời điểm drift của ShapeDD với mô hình phân loại \textit{drift} CDT-MSW (Concept Drift Type identification based on Multi-Sliding Windows --- phương pháp phân loại loại drift dựa trên phân tích cửa sổ trượt đa kích thước~\cite{guo2022cdtmsw}, sẽ được trình bày chi tiết ở Mục~\ref{sec:cdt-msw-theory}) để đề xuất phương pháp mới \textbf{SE-CDT} (ShapeDD-Enhanced Concept Drift Type Identification).
 Hệ thống này có khả năng: (1) phát hiện chính xác thời điểm xảy ra \textit{drift} nhờ ShapeDD, và (2) sử dụng thông tin đó để trích xuất cửa sổ dữ liệu chính xác cho việc phân loại loại \textit{drift}, từ đó đưa ra chiến lược thích ứng tối ưu.
 
 \subsection{Tối ưu hóa tham số}
@@ -97,7 +89,7 @@ Cách tiếp cận đánh giá bao gồm:
 	      theo nhóm (TCD vs PCD) và theo loại cụ thể.
 
 	\item \textbf{So sánh công bằng:} Đánh giá phương pháp đề xuất (SE-CDT không giám sát)
-	      so với baseline CDT\_MSW có giám sát trong cùng điều kiện thử nghiệm.
+	      so với baseline CDT-MSW có giám sát trong cùng điều kiện thử nghiệm.
 \end{enumerate}
 
 
@@ -106,7 +98,7 @@ Cách tiếp cận đánh giá bao gồm:
 \begin{itemize}
 	\item \textbf{Phương pháp phát hiện drift:} ShapeDD và các phương pháp
 	      truyền thống (ADWIN, DDM, EDDM, Page-Hinkley).
-	\item \textbf{Mô hình phân loại drift:} CDT\_MSW --- phương pháp xác định
+	\item \textbf{Mô hình phân loại drift:} CDT-MSW --- phương pháp xác định
 	      loại \textit{drift} dựa trên multi-sliding windows.
 	\item \textbf{Dữ liệu streaming:} Các tập dữ liệu benchmark
 	      (SEA, Hyperplane, Electricity,...) và dữ liệu mô phỏng với
