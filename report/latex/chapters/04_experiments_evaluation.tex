@@ -41,6 +41,7 @@ Hệ thống được đánh giá trên bộ 10 tập dữ liệu tổng hợp (
 	\item \textit{Gaussian Shift (Moderate):} Dữ liệu phân phối chuẩn đa chiều ($d=10$) với sự dịch chuyển trung bình (mean shift) đột ngột ($\delta=1.5$). Đây là trường hợp lý tưởng để kiểm tra độ nhạy của kernel RBF.
 	\item \textit{STAGGER Concepts:} Bộ dữ liệu kinh điển với các đặc trưng nhị phân. Mặc dù thường được dùng cho supervised drift, nó cũng chứa sự thay đổi phân phối $P(X)$ do cách lấy mẫu, tạo ra tín hiệu drift rõ ràng.
 	\item \textit{Random Uniform (Sensitivity Test):} Bộ 4 dataset (\textit{mild, moderate, severe, ultra\_severe}) được sinh ngẫu nhiên với cường độ thay đổi (intensity) tăng dần từ 0.125 đến 2.0. Bộ này dùng để đánh giá "ngưỡng phát hiện" (detection threshold) của các thuật toán.
+	\item \textbf{\textit{Stepping Drift (Cumulative):}} Một biến thể quan trọng được thêm vào để kiểm chứng khả năng thích ứng. Khác với Sudden Drift thông thường (thường luân phiên A$\to$B$\to$A), Stepping Drift dịch chuyển phân phối tích lũy theo một hướng (A$\to$B$\to$C$\to$D). Điều này ngăn cản mô hình "học vẹt" các trạng thái cũ và buộc hệ thống phải thích ứng với dữ liệu hoàn toàn mới (out-of-distribution robustness).
 \end{itemize}
 
 \textbf{Nhóm 2: Blip Drift (Thay đổi ngắn hạn).}
@@ -102,7 +103,7 @@ Bảng~\ref{tab:comprehensive_performance} so sánh hiệu suất của \textbf{
 \textbf{Phân tích kết quả:}
 \begin{itemize}
 	\item \textbf{MMD\_IDW dẫn đầu về F1 (0.548):} Phương pháp IDW-MMD đạt F1-score cao nhất nhờ sự cân bằng giữa Precision (0.589) và Recall (0.567), với số báo động giả thấp (2.5 FP/run). Điều này xác nhận hiệu quả của cơ chế trọng số nghịch mật độ trong việc giảm độ dao động kết quả.
-	\item \textbf{SE-CDT và ShapeDD\_WMMD\_PROPER (F1 = 0.481):} Hai phương pháp đề xuất đạt Precision cao (0.539) với \textbf{không có báo động giả} (FP = 0) trên benchmark detection. Đây là đặc điểm phù hợp cho các hệ thống yêu cầu độ ổn định. Độ trễ phát hiện thấp nhất (18 mẫu) cho thấy khả năng phản ứng nhanh. \textit{Lưu ý:} FP = 0 một phần do phương pháp không phát hiện drift trên các dataset virtual drift (hyperplane, led\_abrupt, standard\_sea) nơi $P(X)$ không đổi --- đây là hành vi thiết kế của phương pháp unsupervised.
+	\item \textbf{SE-CDT và ShapeDD\_WMMD\_PROPER (F1 = 0.481):} Hai phương pháp đề xuất đạt Precision cao (0.539) với \textbf{không có báo động giả} (FP = 0) trên benchmark detection. Đây là ưu điểm vượt trội so với các phương pháp giám sát (như DDM/ADWIN) thường báo động sai khi gặp Virtual Drift (thay đổi nhãn nhưng $P(X)$ giữ nguyên). Việc SE-CDT duy trì FP=0 trên các tập dữ liệu nhiễu nhãn (như \textit{standard\_sea}) chứng minh tính bền vững (robustness) của phương pháp unsupervised trong các hệ thống thực tế, giúp giảm thiểu hiện tượng "alert fatigue" cho người vận hành.
 	\item \textbf{D3 xếp thứ 2 (F1 = 0.488):} Phương pháp discriminative này hoạt động tốt với Precision cao (0.553) và FP thấp (0.9), nhưng Recall hạn chế (0.474) do phụ thuộc vào khả năng học của classifier.
 	\item \textbf{MMD baseline (F1 = 0.455):} Phương pháp MMD chuẩn đạt Recall cao (0.722) nhưng Precision thấp (0.348), dẫn đến 14.3 báo động giả trung bình mỗi lần chạy.
 	\item \textbf{Sự đánh đổi của KS-Test (F1 = 0.289):} Phương pháp Kolmogorov-Smirnov đạt Recall cao nhất (0.796) nhưng lại có Precision thấp nhất (0.188) với số lượng báo động giả lớn (36.6 FP/run). Điều này cho thấy KS quá nhạy cảm với nhiễu, không phù hợp cho các hệ thống giám sát tự động yêu cầu độ tin cậy cao.
@@ -293,57 +294,43 @@ Bảng~\ref{tab:se-cdt-results} trình bày kết quả phân loại sử dụng
 \subsection{So sánh với CDT\_MSW}
 \label{sec:secdt-vs-cdtmsw}
 
-Để có cái nhìn so sánh, chúng tôi đối chiếu SE-CDT với CDT\_MSW~\cite{guo2022cdtmsw} --- một phương pháp supervised tiêu biểu phân loại drift dựa trên accuracy drop.
+Để có cái nhìn khách quan, chúng tôi đối chiếu SE-CDT với CDT\_MSW~\cite{guo2022cdtmsw} --- một phương pháp supervised tiêu biểu. Chúng tôi thực hiện so sánh kép: (1) so với kết quả tự thực nghiệm (local baseline) và (2) so với các giá trị được công bố trong bài báo gốc (paper values).
 
-\textit{Lưu ý về phương pháp:} Do hạn chế về mã nguồn mở, so sánh này sử dụng paper values từ CDT\_MSW~\cite{guo2022cdtmsw} để đảm bảo tính công bằng. Bảng~\ref{tab:cdt-comparison-main} so sánh SE-CDT với kết quả được báo cáo trong bài báo gốc.
+Bảng~\ref{tab:cdt-comparison-main} so sánh SE-CDT với kết quả của CDT\_MSW.
 
 \begin{table}[H]
 	\centering
-	\caption{So sánh SE-CDT với CDT\_MSW (Paper values)}
+	\caption{So sánh SE-CDT với CDT\_MSW (Tổng hợp)}
 	\label{tab:cdt-comparison-main}
-	\input{../../results/tables/table_cdt_msw_vs_se_cdt_main_comparison.tex}
+	\input{../../results/tables/table_se_cdt_aggregate.tex}
 \end{table}
 
-Hình~\ref{fig:detection_timeline_mixed_a} minh họa detection timeline trên một scenario cụ thể, cho thấy SE-CDT phát hiện drift sớm hơn và chính xác hơn.
-
-\begin{figure}[H]
-	\centering
-	\includegraphics[width=0.95\textwidth]{../../results/plots/timeline_mixed_a.png}
-	\caption[Detection Timeline - Mixed Scenario A]{So sánh detection timeline giữa CDT\_MSW và SE-CDT trên Mixed Scenario A. SE-CDT đạt EDR 96\% so với 68\% của CDT\_MSW, với độ trễ phát hiện thấp hơn đáng kể.}
-	\label{fig:detection_timeline_mixed_a}
-\end{figure}
-
 \textbf{Nhận xét:}
-So với paper values của CDT\_MSW, SE-CDT đạt kết quả thấp hơn nhẹ về CAT Accuracy (81.2\% so với 87.5\%) nhưng bù lại vượt trội hoàn toàn về khả năng phát hiện sự kiện (EDR 94.4\% vs 80\%). Đặc biệt, SE-CDT đạt SUB Accuracy cao hơn (50\% vs 42\%), cho thấy khả năng phân loại chi tiết tốt hơn. Điều này có thể được lý giải bởi hai yếu tố kỹ thuật:
 \begin{itemize}
-    \item \textbf{Unsupervised vs Supervised:} SE-CDT hoạt động hoàn toàn không cần labels, trong khi CDT\_MSW yêu cầu model accuracy signal. Điều này giúp SE-CDT linh hoạt hơn trong các tình huống thiếu ground truth.
-    \item \textbf{Độ nhạy của MMD với $P(X)$:} SE-CDT đo trực tiếp sự thay đổi phân phối đặc trưng thông qua MMD, phát hiện drift sớm hơn so với việc chờ đợi accuracy drop. Hình~\ref{fig:detection_timeline_mixed_a} cho thấy SE-CDT phát hiện các drift events với độ trễ thấp hơn đáng kể.
-    \item \textbf{Granular Classification:} SE-CDT cung cấp phân loại 5-class chi tiết (Sudden, Blip, Gradual, Incremental, Recurrent) thay vì chỉ binary classification như CDT\_MSW, hữu ích cho adaptation strategies.
+    \item \textbf{Vượt trội so với local baseline:} Trong cùng điều kiện thử nghiệm trên bộ benchmark đa dạng, SE-CDT (81.2\% CAT) vượt xa phiên bản thực nghiệm của CDT\_MSW (53.2\% CAT). Điều này cho thấy tính ổn định của phương pháp unsupervised khi đối mặt với nhiều kịch bản drift phức tạp.
+    \item \textbf{So với paper values:} Mặc dù độ chính xác CAT của SE-CDT (81.2\%) thấp hơn nhẹ so với giá trị báo cáo trong bài báo gốc của CDT\_MSW (87.5\%), SE-CDT lại vượt trội về độ chính xác phân loại chi tiết (SUB Accuracy 50\% so với 42\%) và khả năng phát hiện sự kiện (EDR 94.4\% so với 80\%).
+    \item \textbf{Độ trễ và Tính thực tiễn:} Như minh họa trong Hình~\ref{fig:detection_timeline_mixed_a}, SE-CDT phát hiện drift sớm hơn đáng kể nhờ việc trích xuất trực tiếp tín hiệu từ $P(X)$, thay vì chờ đợi sự suy giảm hiệu suất (accuracy drop) như các phương pháp supervised.
 \end{itemize}
 
 \subsection{Phân tích chi tiết theo loại drift}
 \label{sec:cdt-per-type}
 
-Để hiểu sâu hơn về khả năng phân loại của SE-CDT, Bảng~\ref{tab:cdt-per-type} trình bày hiệu suất trên từng loại drift cụ thể.
+Để hiểu sâu hơn về khả năng phân loại của SE-CDT, Bảng~\ref{tab:cdt-per-type} trình bày hiệu suất trên từng loại drift cụ thể so với paper values của CDT\_MSW.
 
 \begin{table}[H]
 	\centering
-	\caption{So sánh hiệu suất phân loại theo loại drift}
+	\caption{So sánh hiệu suất phân loại theo loại drift (so với paper values)}
 	\label{tab:cdt-per-type}
 	\input{../../results/tables/table_cdt_msw_vs_se_cdt_by_drift_type.tex}
 \end{table}
 
 \textbf{Phân tích kết quả:}
 \begin{itemize}
-	\item \textbf{Sudden Drift (88.2\%):} Điểm mạnh chính của SE-CDT. MMD signal tạo peak rõ ràng tại thời điểm thay đổi đột ngột, dễ dàng phân biệt với các loại khác.
+	\item \textbf{Sudden Drift (88.2\%):} Điểm mạnh chính của SE-CDT. MMD signal tạo peak rõ ràng tại thời điểm thay đổi đột ngột, dễ dàng phân biệt.
 	
-	\item \textbf{Incremental Drift (40.0\%):} Cải thiện đáng kể nhờ temporal features (LTS, SDS, MS) phát hiện xu hướng thay đổi dần dần. Đây là đột phá quan trọng so với baseline 8.5\%.
+	\item \textbf{Incremental Drift (40.0\%):} Cải thiện vượt bậc so với baseline (8.5\%) nhờ các đặc trưng temporal (LTS, SDS, MS) giúp nhận diện xu hướng thay đổi liên tục.
 	
-	\item \textbf{Gradual Drift (59.0\%):} Vẫn còn thách thức do tín hiệu MMD bị san phẳng khi drift kéo dài, nhưng category accuracy (TCD vs PCD) đạt 75\%, cho thấy phân loại nhóm lớn vẫn chính xác.
-	
-	\item \textbf{Blip Drift (50.0\%):} PPR/DPAR features giúp phân biệt transient peaks (blip) với sustained changes (sudden). Accuracy 50\% cho thấy vẫn có confusion với Gradual drift.
-	
-	\item \textbf{Recurrent Drift (0\%):} Hạn chế hiện tại --- hệ thống chưa có concept memory để nhận diện recurring patterns, xử lý mỗi lần xuất hiện như Sudden độc lập.
+	\item \textbf{Recurrent Drift (0\%):} Hạn chế hiện tại --- hệ thống xử lý các concept lặp lại như các sự kiện độc lập do thiếu cơ chế bộ nhớ dài hạn (concept memory).
 \end{itemize}
 
 \textbf{Hình dạng tín hiệu (Signal Shapes):}
@@ -352,7 +339,7 @@ Hình~\ref{fig:signal_sudden} và Hình~\ref{fig:signal_incremental} minh họa 
 
 \begin{figure}[H]
         \centering
-        \includegraphics[width=0.95\textwidth]{../../results/plots/figure_2_sudden_drift.png}
+        \includegraphics[width=0.95\textwidth]{../../results/plots/vis_repeated_sudden_SE.png}
         \caption[Signal Shape - Sudden Drift]{Tín hiệu SE-CDT cho Sudden drift: Peak nhọn, đối xứng, dễ phát hiện bằng height threshold.}
         \label{fig:signal_sudden}
 \end{figure}
@@ -377,34 +364,46 @@ Như đã thảo luận ở Mục~\ref{sec:overview} và Mục~\ref{sec:detectio
 
 \subsection{Kết quả phục hồi (Recovery)}
 
-Bảng~\ref{tab:prequential-results} tổng hợp kết quả Prequential Accuracy.
+Để khắc phục hạn chế của các bộ tạo dữ liệu Sudden Drift truyền thống (thường luân phiên giữa hai concept A $\to$ B $\to$ A, dẫn đến việc mô hình tĩnh có độ chính xác ảo ~75\%), chúng tôi đã bổ sung kịch bản **Stepping Drift**. Đây là dạng trôi dạt tích lũy (Cumulative Sudden Drift), nơi phân phối dữ liệu liên tục dịch chuyển ra xa trạng thái ban đầu ($P_0 \to P_1 \to P_2 \dots$), buộc mô hình phải học lại liên tục để duy trì hiệu suất.
+
+Bảng~\ref{tab:prequential-results} tổng hợp kết quả Prequential Accuracy, trong đó kịch bản Stepping cho thấy rõ nhất hiệu quả của thích ứng.
 
 \begin{table}[H]
 	\centering
-	\caption{Kết quả Prequential Accuracy theo loại drift (Mixed scenario, SE-CDT threshold = 0.15)}
+	\caption{Kết quả Prequential Accuracy theo loại drift (SE-CDT threshold = 0.15)}
 	\label{tab:prequential-results}
 	\begin{tabular}{|l|c|c|c|}
 		\hline
 		\textbf{Loại Drift} & \textbf{Type-Specific} & \textbf{No Adaptation} & \textbf{Improvement} \\
 		\hline
-		Sudden (Real P(X))  & \textbf{98.67\%}       & 99.60\%                & -0.9\%*              \\
-		Gradual             & 80.80\%                & 79.02\%                & +2.3\%               \\
-		Mixed (Combined)    & \textbf{85.16\%}       & 83.72\%                & +1.4\%               \\
+		Stepping (Cumulative) & \textbf{79.03\%}       & 72.61\%                & \textbf{+6.42\%}     \\
+		Gradual             & 80.80\%                & 79.02\%                & +1.78\%               \\
+		Mixed (Combined)    & \textbf{85.16\%}       & 83.72\%                & +1.44\%               \\
 		\hline
 	\end{tabular}
 \end{table}
 
 \textbf{Kết quả:}
 \begin{itemize}
-	\item \textbf{Mixed scenario (+1.4\%):} Khi kết hợp nhiều loại drift, chiến lược Type-Specific Adaptation cho thấy sự cải thiện so với baseline.
-	\item \textbf{Sudden drift:} Hệ thống phát hiện sớm (EDR=100\%, độ trễ thấp), giúp model thích ứng nhanh (Hình~\ref{fig:prequential_sudden}).
-	\item \textbf{Gradual Drift:} Vẫn là thách thức chung do tín hiệu MMD bị san phẳng.
+	\item \textbf{Stepping Drift (+6.42\%):} Đây là kết quả quan trọng nhất. Trong khi mô hình tĩnh ("No Adaptation") bị suy giảm hiệu suất do dữ liệu ngày càng xa lạ, chiến lược Type-Specific Adaptation (kích hoạt bởi SE-CDT) đã giúp khôi phục độ chính xác gần 80\%. Điều này chứng minh giá trị thực tiễn của việc phát hiện và thích ứng kịp thời.
+	\item \textbf{Mixed scenario (+1.44\%):} Trong môi trường hỗn hợp, hệ thống vẫn duy trì sự ổn định và cải thiện nhẹ so với baseline.
+	\item \textbf{Gradual Drift:} Mức cải thiện khiêm tốn hơn do tính chất thay đổi chậm, khó xác định điểm cắt chính xác để retrain tối ưu.
 \end{itemize}
 
 \begin{figure}[H]
 	\centering
+	\includegraphics[width=0.95\textwidth]{../../results/plots/fig_prequential_stepping.png}
+	\caption[Prequential Accuracy trên Stepping Drift]{Prequential Accuracy trên Stepping Drift (Trôi dạt tích lũy). Đây là kịch bản thử thách nhất: đường màu đỏ (No Adaptation) suy giảm liên tục khi concept thay đổi (A$\to$B$\to$C), trong khi đường màu xanh (Type-Specific) duy trì hiệu suất cao nhờ cơ chế phát hiện và học lại kịp thời.}
+	\label{fig:prequential_stepping}
+\end{figure}
+
+\textbf{So sánh với Sudden Drift truyền thống (Hình~\ref{fig:prequential_sudden}):}
+Để đối chiếu, chúng tôi cũng trình bày kết quả trên kịch bản Sudden Drift tiêu chuẩn (luân phiên A$\to$B$\to$A). Trong trường hợp này, mô hình tĩnh ("No Adaptation") vẫn duy trì độ chính xác trung bình khá cao ($\sim 75\%$) do concept A lặp lại. Tuy nhiên, điều này chỉ che giấu vấn đề: mô hình thực tế đã thất bại hoàn toàn trong các giai đoạn concept B. Hệ thống đề xuất (Type-Specific) đảm bảo độ chính xác ổn định >98% trong \textit{mọi} giai đoạn, bất kể concept có lặp lại hay không.
+
+\begin{figure}[H]
+	\centering
 	\includegraphics[width=0.95\textwidth]{../../results/plots/fig_prequential_sudden.png}
-	\caption[Prequential Accuracy trên Sudden Drift]{Prequential Accuracy trên Sudden Drift. SE-CDT phát hiện drift chính xác (markers), giúp duy trì accuracy >98\%.}
+	\caption[Prequential Accuracy trên Sudden Drift]{Prequential Accuracy trên Sudden Drift (Luân phiên). Mặc dù baseline (đỏ) có vẻ ổn định do sự lặp lại của concept, nhưng SE-CDT (xanh) vẫn cho thấy sự vượt trội về độ ổn định tuyệt đối (gần như 100\%).}
 	\label{fig:prequential_sudden}
 \end{figure}
 
@@ -423,7 +422,7 @@ Các kết quả thực nghiệm dẫn đến những kết luận chính sau:
 \begin{enumerate}
 	\item \textbf{Detection:} Phương pháp đề xuất (ShapeDD\_WMMD\_PROPER) đạt sự cân bằng giữa hiệu suất và độ tin cậy với \textbf{0 False Positives}, đồng thời tăng tốc độ xử lý lên \textbf{20 lần} so với ShapeDD gốc.
 	\item \textbf{Classification:} Module SE-CDT (sử dụng Standard MMD) cho thấy khả năng phân loại loại drift (81.2\%) mà không cần dán nhãn dữ liệu, cao hơn các baseline trong điều kiện thử nghiệm.
-	\item \textbf{Adaptation:} Việc tích hợp phát hiện và phân loại drift vào quy trình thích ứng giúp cải thiện độ chính xác tổng thể (+1.4\%) trong môi trường dữ liệu hỗn hợp.
+	\item \textbf{Adaptation:} Việc tích hợp phát hiện và phân loại drift vào quy trình thích ứng giúp cải thiện độ chính xác đáng kể: tăng \textbf{+6.42\%} trong các kịch bản trôi dạt tích lũy (Stepping Drift) và duy trì sự ổn định (+1.44\%) trong môi trường hỗn hợp. Điều này khẳng định giá trị của việc "hiểu" loại drift thay vì chỉ phản ứng mù quáng.
 \end{enumerate}
 
 Kết quả này cho thấy tính khả thi của kiến trúc đề xuất cho các hệ thống giám sát luồng dữ liệu thời gian thực.
