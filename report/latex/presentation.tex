@@ -202,7 +202,7 @@
     \end{table}
     
     \vspace{0.5em}
-    \textbf{Ưu điểm:} Không cần nhãn thật để tính Accuracy Ratio như phương pháp cũ (CDT\_MSW).
+    \textbf{Ưu điểm:} Không cần nhãn thật để tính Accuracy Ratio như phương pháp cũ (CDT-MSW).
 \end{frame}
 
 \section{Kết quả thực nghiệm}
@@ -222,7 +222,7 @@
             \textbf{Method} & \textbf{F1-Score} & \textbf{False Pos} & \textbf{Delay (samples)} & \textbf{Throughput} \\
             \midrule
             \rowcolor{green!10}
-            \textbf{ShapeDD\_WMMD} & \textbf{0.481} & \textbf{0} & \textbf{18} & \textbf{131,280} \\
+            \textbf{ShapeDD-IDW} & \textbf{0.481} & \textbf{0} & \textbf{18} & \textbf{131,280} \\
             ShapeDD (Original) & 0.440 & 4 & 25 & 6,399 \\
             D3 (Discriminative) & 0.517 & 121 & 35 & 27,693 \\
             KS-Test & 0.299 & 289 & 10 & 28,161 \\
@@ -230,7 +230,7 @@
         \end{tabular}
     \end{table}
     
-    \footnotesize{\textit{*ShapeDD\_WMMD đạt FP=0 do chỉ phát hiện thay đổi P(X), không báo động sai trên virtual drift (P(Y|X) đổi).}}
+    \footnotesize{\textit{*ShapeDD-IDW đạt FP=0 do chỉ phát hiện thay đổi P(X), không báo động sai trên virtual drift (P(Y|X) đổi).}}
 \end{frame}
 
 \begin{frame}{Chi tiết về 11 Datasets Thực nghiệm}
@@ -260,7 +260,7 @@
 
 \begin{frame}{Đánh giá Phân loại Drift (SE-CDT)}
     \textbf{Bài toán:} Phân loại drift thành nhóm TCD (Transient) và PCD (Progressive).
-    \textbf{Baseline:} CDT\_MSW (Supervised - Cần nhãn thật).
+    \textbf{Baseline:} CDT-MSW (Supervised - Cần nhãn thật).
     
     \vspace{0.5em}
     \begin{columns}[T]
@@ -273,7 +273,7 @@
                     \textbf{Method} & \textbf{CAT} & \textbf{SUB} \\
                     \midrule
                     \textbf{SE-CDT} & \textbf{85.8\%} & \textbf{46.6\%} \\
-                    CDT\_MSW & 38.7\% & 18.7\% \\
+                    CDT-MSW & 38.7\% & 18.7\% \\
                     \bottomrule
                 \end{tabular}
                 \caption*{\footnotesize CAT: Category (TCD vs PCD)\\SUB: Subcategory (5 loại chi tiết)}
@@ -305,7 +305,7 @@
 			]
 			\node[block] (input) {Data Stream};
 			\node[block, right of=input, xshift=2cm] (detect) {ShapeDD\\Drift Detection};
-			\node[block, right of=detect, xshift=2cm] (classify) {CDT\_MSW\\Drift Classification};
+			\node[block, right of=detect, xshift=2cm] (classify) {CDT-MSW\\Drift Classification};
 			\node[block, below of=classify, yshift=-0.5cm] (adapt) {Adaptive Strategy};
 			\node[block, below of=input, yshift=-0.5cm] (model) {ML Model};
 
@@ -321,7 +321,7 @@
 	\textbf{Luồng hoạt động:}
 	\begin{enumerate}
 		\item Luồng dữ liệu được giám sát liên tục bởi ShapeDD
-		\item Khi phát hiện drift → Kích hoạt phân loại (CDT\_MSW)
+		\item Khi phát hiện drift → Kích hoạt phân loại (CDT-MSW)
 		\item Dựa vào loại drift → Áp dụng chiến lược thích ứng phù hợp
 		\item Cập nhật mô hình và tiếp tục giám sát
 	\end{enumerate}
@@ -347,11 +347,11 @@
 
 	\vspace{0.5em}
 	\begin{block}{Cải tiến trong nghiên cứu}
-		\textbf{ShapeDD\_OW\_MMD:} Tích hợp trọng số tối ưu giúp giảm phương sai và tăng tốc độ.
+		\textbf{ShapeDD-IDW:} Tích hợp trọng số tối ưu giúp giảm phương sai và tăng tốc độ.
 	\end{block}
 \end{frame}
 
-\begin{frame}{Drift Classification (CDT\_MSW)}
+\begin{frame}{Drift Classification (CDT-MSW)}
 	\textbf{Phương pháp Multiple Sliding Windows:}
 	\begin{itemize}
 		\item Sử dụng 3 cửa sổ khác nhau: nhỏ, trung bình, lớn
@@ -581,7 +581,7 @@
 			\begin{itemize}
 				\item \textbf{Hiệu suất:} Thông lượng tăng \textbf{17--20 lần} ($\approx$ 131,000 mẫu/giây).
 				\item \textbf{Độ tin cậy:} F1-Score = 0.481 với \textbf{0 False Positives} trên detection benchmark.
-				\item \textbf{Phân loại:} Độ chính xác SE-CDT (85.8\%) cao hơn baseline CDT\_MSW (38.7\%).
+				\item \textbf{Phân loại:} Độ chính xác SE-CDT (85.8\%) cao hơn baseline CDT-MSW (38.7\%).
 			\end{itemize}
 
 		\item \textbf{Về Hệ thống (System):}
@@ -664,8 +664,8 @@
 			\toprule
 			\textbf{Method} & \textbf{Runtime (s)} & \textbf{Throughput (samples/s)} \\
 			\midrule
-			\textbf{ShapeDD\_OW\_MMD} & \textbf{0.19} & \textbf{131,280} \\
-			MMD\_OW & 0.20 & 130,500 \\
+			\textbf{ShapeDD-IDW} & \textbf{0.19} & \textbf{131,280} \\
+			IDW-MMD & 0.20 & 130,500 \\
 			KS Test & 0.36 & 28,161 \\
 			D3 & 0.36 & 27,693 \\
 			ShapeDD (Original) & 1.56 & 6,399 \\
