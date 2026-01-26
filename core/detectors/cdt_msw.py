@@ -177,7 +177,7 @@ class CDT_MSW:
     
     def identify_subcategory(self, tfr_values, drift_category):
         """Identify subcategory from TFR curve"""
-        print(f"DEBUG: Identifying subcategory for {drift_category}. TFR curve: {tfr_values}")
+        # print(f"DEBUG: Identifying subcategory for {drift_category}. TFR curve: {tfr_values}")
         if len(tfr_values) < 3:
             return "Unknown"
         

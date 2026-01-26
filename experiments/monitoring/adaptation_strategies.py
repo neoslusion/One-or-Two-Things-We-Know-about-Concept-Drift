@@ -22,6 +22,7 @@ def err(msg: str):
 
 
 def adapt_sudden_drift(model_factory: Callable, X: np.ndarray, y: Optional[np.ndarray],
+                       current_model: Optional[Pipeline] = None,
                        feature_names: Optional[List[str]] = None, allow_unlabeled: bool = False):
     """
     SUDDEN drift: Full model reset and retrain (sklearn batch learning).
@@ -32,22 +33,24 @@ def adapt_sudden_drift(model_factory: Callable, X: np.ndarray, y: Optional[np.nd
     - Abrupt change - best to start fresh
     """
     log("SUDDEN drift → Full model reset and retrain")
-    new_model = model_factory()
-
+    
     if y is not None:
         # Check for single-class issue
         unique_classes = np.unique(y)
         if len(unique_classes) < 2:
             log(f"  WARNING: Only {len(unique_classes)} class in data, skipping retrain")
-            return model_factory()  # Return fresh untrained model
+            # If we have a current model, keep it! Don't return an empty shell.
+            return current_model if current_model is not None else model_factory()
         
         # Batch training with sklearn
+        new_model = model_factory()
         new_model.fit(X, y)
         log(f"  Retrained on {len(X)} samples using sklearn .fit()")
+        return new_model
     elif allow_unlabeled:
         log(f"  WARNING: Cannot train classifier without labels - returning untrained model")
 
-    return new_model
+    return current_model if current_model is not None else model_factory()
 
 
 def adapt_incremental_drift(model, X: np.ndarray, y: Optional[np.ndarray],

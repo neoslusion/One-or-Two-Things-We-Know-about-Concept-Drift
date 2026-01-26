@@ -122,9 +122,13 @@ if [ "$SKIP_BENCHMARK" = false ]; then
     python3 main.py compare 2>&1 | tee -a "$LOG_FILE"
     print_success "Comparison Benchmark Complete"
 
-    # 2c. Monitoring Benchmark
+    # 2c. Monitoring Benchmark (Prequential)
     print_header "2c. Monitoring Benchmark (Prequential)"
-    python3 main.py monitoring 2>&1 | tee -a "$LOG_FILE"
+    echo "Running adaptation evaluation for all drift types..."
+    for dtype in sudden gradual incremental recurrent mixed; do
+        echo "  → Scenario: $dtype"
+        python3 main.py monitoring -- --drift_type $dtype 2>&1 | tee -a "$LOG_FILE"
+    done
     print_success "Monitoring Benchmark Complete"
 
 else

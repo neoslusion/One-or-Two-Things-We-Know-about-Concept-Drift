@@ -31,6 +31,7 @@ from pathlib import Path
 from collections import deque
 from datetime import datetime
 from typing import Callable, Optional, Dict, List
+from joblib import Parallel, delayed
 
 # Add parent directory for imports
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -38,6 +39,7 @@ REPO_ROOT = SCRIPT_DIR.parent.parent
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+from experiments.benchmark.config import N_JOBS
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
@@ -205,15 +207,29 @@ def generate_synthetic_stream(
     elif drift_type == "sudden":
         # Use P(X) drift generator instead of SEA (which is virtual drift only)
         # This creates actual mean shift in feature space that SE-CDT can detect
+        # ENABLE supervised_mode=True to creating Real Drift (P(Y|X) change) so accuracy drops
         events = [
-            {"type": "Sudden", "pos": (i + 1) * (n_samples // (n_drifts + 1)), "width": 0}
+            {"type": "Sudden", "pos": (i + 1) * (n_samples // (n_drifts + 1)), "width": 0, "magnitude": 3.0}
             for i in range(n_drifts)
         ]
         X, y, concepts = generate_mixed_stream_rigorous(
-            events, length=n_samples, n_features=n_features, seed=random_seed
+            events, length=n_samples, n_features=n_features, seed=random_seed, supervised_mode=True
         )
         drift_points = [e["pos"] for e in events]
         return X, y, drift_points, ["sudden"] * len(drift_points)
+
+    elif drift_type == "stepping":
+        # Cumulative Sudden Drift (Staircase) - Good for rigorous testing
+        # Each drift adds +3.0 to mean, moving further away
+        events = [
+            {"type": "Stepping", "pos": (i + 1) * (n_samples // (n_drifts + 1)), "width": 0, "magnitude": 3.0}
+            for i in range(n_drifts)
+        ]
+        X, y, concepts = generate_mixed_stream_rigorous(
+            events, length=n_samples, n_features=n_features, seed=random_seed, supervised_mode=True
+        )
+        drift_points = [e["pos"] for e in events]
+        return X, y, drift_points, ["sudden"] * len(drift_points)  # Classify as sudden for adaptation logic
     
     elif drift_type == "gradual":
         # Use P(X) drift generator with gradual transition
@@ -226,7 +242,7 @@ def generate_synthetic_stream(
             for i in range(n_drifts)
         ]
         X, y, concepts = generate_mixed_stream_rigorous(
-            events, length=n_samples, n_features=n_features, seed=random_seed
+            events, length=n_samples, n_features=n_features, seed=random_seed, supervised_mode=True
         )
         drift_points = [e["pos"] for e in events]
         return X, y, drift_points, ["gradual"] * len(drift_points)
@@ -239,7 +255,7 @@ def generate_synthetic_stream(
             for i in range(n_drifts)
         ]
         X, y, concepts = generate_mixed_stream_rigorous(
-            events, length=n_samples, n_features=n_features, seed=random_seed
+            events, length=n_samples, n_features=n_features, seed=random_seed, supervised_mode=True
         )
         drift_points = [e["pos"] for e in events]
         return X, y, drift_points, ["incremental"] * len(drift_points)
@@ -251,11 +267,11 @@ def generate_synthetic_stream(
     else:
         # Default fallback: use sudden P(X) drift
         events = [
-            {"type": "Sudden", "pos": (i + 1) * (n_samples // (n_drifts + 1)), "width": 0}
+            {"type": "Sudden", "pos": (i + 1) * (n_samples // (n_drifts + 1)), "width": 0, "magnitude": 3.0}
             for i in range(n_drifts)
         ]
         X, y, concepts = generate_mixed_stream_rigorous(
-            events, length=n_samples, n_features=n_features, seed=random_seed
+            events, length=n_samples, n_features=n_features, seed=random_seed, supervised_mode=True
         )
         drift_points = [e["pos"] for e in events]
         return X, y, drift_points, ["sudden"] * len(drift_points)
@@ -402,10 +418,16 @@ def evaluate_with_adaptation(
                 strategy_used = "unknown"
                 if mode == AdaptationMode.SIMPLE:
                     # Naively retrain on recent window
-                    # Force a new model instance to be sure
-                    model = create_model()
-                    model.fit(adapt_X, adapt_y)
-                    strategy_used = "simple_retrain"
+                    # Check for single-class issue (common with extreme drift)
+                    if len(np.unique(adapt_y)) < 2:
+                        # Skip retraining if only one class is present
+                        # We keep the old model (even if it's bad) to avoid crashing
+                        strategy_used = "simple_skipped"
+                    else:
+                        # Force a new model instance to be sure
+                        model = create_model()
+                        model.fit(adapt_X, adapt_y)
+                        strategy_used = "simple_retrain"
 
                 # 3. TYPE SPECIFIC
                 elif mode == AdaptationMode.TYPE_SPECIFIC:
@@ -416,7 +438,7 @@ def evaluate_with_adaptation(
                     if (
                         drift_type == "Sudden" or drift_type == "TCD"
                     ):  # Handle capitalization variations
-                        model = adapt_sudden_drift(model_factory, adapt_X, adapt_y)
+                        model = adapt_sudden_drift(model_factory, adapt_X, adapt_y, current_model=model)
                         strategy_used = "sudden"
                     elif drift_type == "Recurrent":
                         # Try to load from cache
@@ -1030,6 +1052,57 @@ def calculate_metrics(results: Dict[str, Dict], drift_points: List[int]) -> Dict
     return metrics
 
 
+def _run_single_experiment(seed, args, cache_dir):
+    """Worker function for a single independent run."""
+    # Generate data for this specific seed
+    X, y, drift_points, drift_types = generate_synthetic_stream(
+        n_samples=args.n_samples,
+        n_drifts=args.n_drifts,
+        drift_type=args.drift_type,
+        random_seed=seed,
+    )
+
+    results = {}
+    
+    # Evaluate strategies
+    acc_ts, det_ts, adapt_ts, times_ts = evaluate_with_adaptation(
+        X, y, drift_points, mode=AdaptationMode.TYPE_SPECIFIC,
+        cache_dir=cache_dir, w_ref=args.w_ref, sudden_thresh=args.sudden_thresh,
+    )
+    results[AdaptationMode.TYPE_SPECIFIC] = {
+        "accuracy": acc_ts, "detections": det_ts, "adaptations": adapt_ts, "classification_times": times_ts,
+    }
+
+    acc_simple, det_simple, adapt_simple, _ = evaluate_with_adaptation(
+        X, y, drift_points, mode=AdaptationMode.SIMPLE
+    )
+    results[AdaptationMode.SIMPLE] = {
+        "accuracy": acc_simple, "detections": det_simple, "adaptations": adapt_simple,
+    }
+
+    acc_none, det_none, adapt_none, _ = evaluate_with_adaptation(
+        X, y, drift_points, mode=AdaptationMode.NONE
+    )
+    results[AdaptationMode.NONE] = {
+        "accuracy": acc_none, "detections": det_none, "adaptations": adapt_none,
+    }
+
+    # Calculate metrics
+    metrics = calculate_metrics(results, drift_points)
+    sota_metrics = {}
+    for mode, data in results.items():
+        sota_metrics[mode] = calculate_sota_adaptation_metrics(
+            data["accuracy"], drift_points, n_samples=args.n_samples, adaptation_window=500,
+        )
+
+    return {
+        "results": results,
+        "metrics": metrics,
+        "sota_metrics": sota_metrics,
+        "X": X, "y": y, "drift_points": drift_points, "drift_types": drift_types
+    }
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Prequential Accuracy Evaluation (Enhanced)"
@@ -1042,9 +1115,10 @@ def main():
         "--drift_type",
         type=str,
         default="mixed",
-        choices=["sudden", "gradual", "incremental", "recurrent", "mixed"],
+        choices=["sudden", "gradual", "incremental", "recurrent", "mixed", "stepping"],
         help='Type of drift to simulate (use "mixed" for realistic scenario with multiple drift types)',
     )
+    parser.add_argument("--n_runs", type=int, default=5, help="Number of independent runs")
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
     parser.add_argument(
         "--output_dir",
@@ -1062,6 +1136,9 @@ def main():
         default=0.15,  # FIXED: Lowered from 0.5 - pattern_score typically 0.0-0.4
         help="Threshold for drift detection (pattern_score typically 0.0-0.4, default 0.15)",
     )
+    parser.add_argument(
+        "--chunk_size", type=int, default=50, help="Detection interval (samples)"
+    )
 
     args = parser.parse_args()
 
@@ -1078,7 +1155,7 @@ def main():
     cache_dir.mkdir(parents=True, exist_ok=True)
 
     print("=" * 80)
-    print("PREQUENTIAL ACCURACY EVALUATION (Enhanced with 5 Strategies)")
+    print(f"PREQUENTIAL ACCURACY EVALUATION: {args.n_runs} RUNS (PARALLEL)")
     print("=" * 80)
     print(
         f"Samples: {args.n_samples}, Drifts: {args.n_drifts}, Type: {args.drift_type}, Seed: {args.seed}"
@@ -1086,126 +1163,58 @@ def main():
     print(f"SE-CDT Config: w_ref={args.w_ref}, thresh={args.sudden_thresh}")
     print("=" * 80)
 
-    # Generate data
-    print("\n[1] Generating synthetic data stream...")
-    X, y, drift_points, drift_types = generate_synthetic_stream(
-        n_samples=args.n_samples,
-        n_drifts=args.n_drifts,
-        drift_type=args.drift_type,
-        random_seed=args.seed,
+    # Execute parallel runs
+    seeds = [args.seed + i * 137 for i in range(args.n_runs)]
+    all_run_data = Parallel(n_jobs=N_JOBS, verbose=10)(
+        delayed(_run_single_experiment)(seed, args, cache_dir) for seed in seeds
     )
 
-    results = {}
+    # Aggregation
+    agg_metrics = {}
+    modes = [AdaptationMode.TYPE_SPECIFIC, AdaptationMode.SIMPLE, AdaptationMode.NONE]
+    
+    for mode in modes:
+        mode_data = [run["metrics"][mode] for run in all_run_data]
+        sota_data = [run["sota_metrics"][mode] for run in all_run_data]
+        
+        agg_metrics[mode] = {
+            "acc_mean": np.mean([m["overall_accuracy"] for m in mode_data]),
+            "acc_std": np.std([m["overall_accuracy"] for m in mode_data]),
+            "edr_mean": np.mean([m["EDR"] for m in mode_data]),
+            "edr_std": np.std([m["EDR"] for m in mode_data]),
+            "restore_mean": np.mean([s["avg_restoration_time"] for s in sota_data]),
+            "restore_std": np.std([s["avg_restoration_time"] for s in sota_data]),
+            "fp_mean": np.mean([m["FP"] for m in mode_data]),
+        }
 
-    # Evaluate WITH type-specific adaptation
-    print("\n[2] Evaluating WITH type-specific adaptation (5 strategies)...")
-    acc_ts, det_ts, adapt_ts, times_ts = evaluate_with_adaptation(
-        X,
-        y,
-        drift_points,
-        mode=AdaptationMode.TYPE_SPECIFIC,
-        cache_dir=cache_dir,
-        w_ref=args.w_ref,
-        sudden_thresh=args.sudden_thresh,
-    )
-    results[AdaptationMode.TYPE_SPECIFIC] = {
-        "accuracy": acc_ts,
-        "detections": det_ts,
-        "adaptations": adapt_ts,
-        "classification_times": times_ts,
-    }
-
-    # Evaluate WITH simple adaptation
-    print("\n[3] Evaluating WITH simple retrain adaptation...")
-    acc_simple, det_simple, adapt_simple, _ = evaluate_with_adaptation(
-        X, y, drift_points, mode=AdaptationMode.SIMPLE
-    )
-    results[AdaptationMode.SIMPLE] = {
-        "accuracy": acc_simple,
-        "detections": det_simple,
-        "adaptations": adapt_simple,
-    }
-
-    # Evaluate WITHOUT adaptation
-    print("\n[4] Evaluating WITHOUT adaptation (baseline)...")
-    acc_none, det_none, adapt_none, _ = evaluate_with_adaptation(
-        X, y, drift_points, mode=AdaptationMode.NONE
-    )
-    results[AdaptationMode.NONE] = {
-        "accuracy": acc_none,
-        "detections": det_none,
-        "adaptations": adapt_none,
-    }
-
-    # Calculate metrics
-    print("\n[5] Calculating metrics...")
-    metrics = calculate_metrics(results, drift_points)
-
-    # Calculate SOTA Adaptation Metrics (Recovery Speed, etc.)
-    print(
-        "\n[5.1] Calculating SOTA Adaptation Metrics (Recovery Speed, Performance Loss)..."
-    )
-    sota_metrics = {}
-    for mode, data in results.items():
-        sota_metrics[mode] = calculate_sota_adaptation_metrics(
-            data["accuracy"],
-            drift_points,
-            n_samples=args.n_samples,
-            adaptation_window=500,
-        )
+    # Find the "Median" run for plotting (the one closest to mean accuracy of Type-Specific)
+    target_acc = agg_metrics[AdaptationMode.TYPE_SPECIFIC]["acc_mean"]
+    accuracies = [run["metrics"][AdaptationMode.TYPE_SPECIFIC]["overall_accuracy"] for run in all_run_data]
+    median_idx = np.argmin([abs(a - target_acc) for a in accuracies])
+    best_run = all_run_data[median_idx]
 
     print("\n" + "=" * 90)
-    print("RESULTS - COMPREHENSIVE EVALUATION")
+    print(f"RESULTS - AGGREGATED OVER {args.n_runs} RUNS")
     print("=" * 90)
     print(f"\nDrift Type: {args.drift_type.upper()}")
-    print(f"Ground Truth: {len(drift_points)} drift points")
     print("-" * 90)
 
     # Header
-    print(f"{'Mode':<20} | {'Detection':<30} | {'Adaptation':<25}")
-    print(
-        f"{'':20} | {'EDR':>6} {'MDR':>6} {'Prec':>6} {'FP':>4} | {'Acc':>8} {'Restore':>10}"
-    )
+    print(f"{'Mode':<20} | {'Detection (EDR/FP)':<25} | {'Adaptation (Acc/Restore)':<25}")
     print("-" * 90)
 
-    for mode in [
-        AdaptationMode.TYPE_SPECIFIC,
-        AdaptationMode.SIMPLE,
-        AdaptationMode.NONE,
-    ]:
-        m = metrics.get(mode, {})
-        s = sota_metrics.get(mode, {})
-
-        # Detection metrics
-        edr = m.get("EDR", 0)
-        mdr = m.get("MDR", 0)
-        prec = m.get("Precision", 0)
-        fp = m.get("FP", 0)
-
-        # Adaptation metrics
-        acc = m.get("overall_accuracy", 0)
-        restore = s.get("avg_restoration_time", float("inf"))
-        restore_str = f"{restore:.0f}" if restore < 1000 else "N/A"
-
+    for mode in modes:
+        m = agg_metrics[mode]
         print(
-            f"{mode:<20} | {edr:>6.3f} {mdr:>6.3f} {prec:>6.3f} {fp:>4} | {acc:>7.2%} {restore_str:>10}"
+            f"{mode:<20} | {m['edr_mean']:.3f} (±{m['edr_std']:.3f}) / {m['fp_mean']:.1f} | "
+            f"{m['acc_mean']:>7.2%} (±{m['acc_std']:.2%}) / {m['restore_mean']:>6.1f}"
         )
 
     print("-" * 90)
-    print(
-        f"\nImprovement (Type-Specific vs No-Adaptation): "
-        f"+{metrics.get('improvement_vs_none', 0):.4f} "
-        f"(+{metrics.get('improvement_pct_vs_none', 0):.1f}%)"
-    )
-    print(
-        f"Improvement (Type-Specific vs Simple):        "
-        f"+{metrics.get('improvement_vs_simple', 0):.4f}"
-    )
     print("=" * 90)
 
-    # Generate plot
-    print("\n[6] Generating plot...")
-    # Use drift type to determine output filename from unified config
+    # Generate plot using best run
+    print("\n[Plotting] Generating visualization for representative (median) run...")
     drift_type_map = {
         "sudden": "sudden_accuracy",
         "gradual": "gradual_accuracy",
@@ -1214,63 +1223,36 @@ def main():
         "mixed": "mixed_accuracy",
     }
     plot_key = drift_type_map.get(args.drift_type, "mixed_accuracy")
-    plot_path = PREQUENTIAL_OUTPUTS.get(plot_key, output_dir / f"prequential_accuracy_{args.drift_type}.pdf")
+    plot_path = PREQUENTIAL_OUTPUTS.get(plot_key, output_dir / f"prequential_accuracy_{args.drift_type}.png")
     
     plot_prequential_comparison(
-        results,
-        drift_points,
+        best_run["results"],
+        best_run["drift_points"],
         plot_path,
-        drift_types=drift_types,
-        metrics=metrics,
-        X=X,
-        y=y,
+        drift_types=best_run["drift_types"],
+        metrics=best_run["metrics"],
+        X=best_run["X"],
+        y=best_run["y"],
     )
 
     # Save metrics to file
     metrics_path = output_dir / f"metrics_{args.drift_type}.txt"
     with open(metrics_path, "w") as f:
-        f.write(f"Prequential Accuracy Evaluation Results (Comprehensive)\n")
+        f.write(f"Prequential Accuracy Evaluation Results (Aggregated)\n")
         f.write(f"Generated: {datetime.now().isoformat()}\n")
-        f.write(
-            f"Samples: {args.n_samples}, Drifts: {args.n_drifts}, Type: {args.drift_type}, Seed: {args.seed}\n\n"
-        )
-        f.write(f"Config: w_ref={args.w_ref}, thresh={args.sudden_thresh}\n")
-        f.write(f"Ground Truth: {len(drift_points)} drift points at {drift_points}\n")
-
-        for mode in [
-            AdaptationMode.TYPE_SPECIFIC,
-            AdaptationMode.SIMPLE,
-            AdaptationMode.NONE,
-        ]:
-            m = metrics.get(mode, {})
-            s = sota_metrics.get(mode, {})
+        f.write(f"Samples: {args.n_samples}, Runs: {args.n_runs}, Type: {args.drift_type}, Seed: {args.seed}\n\n")
+        
+        for mode in modes:
+            m = agg_metrics[mode]
             f.write(f"\n{mode}:\n")
-            f.write(f"  --- Detection Metrics ---\n")
-            f.write(f"  EDR (Recall):     {m.get('EDR', 0):.4f}\n")
-            f.write(f"  MDR (Miss Rate):  {m.get('MDR', 0):.4f}\n")
-            f.write(f"  Precision:        {m.get('Precision', 0):.4f}\n")
-            f.write(
-                f"  TP: {m.get('TP', 0)}, FP: {m.get('FP', 0)}, FN: {m.get('FN', 0)}\n"
-            )
-            f.write(f"  Mean Delay:       {m.get('Mean_Delay', 0):.1f} samples\n")
-            f.write(f"  --- Adaptation Metrics ---\n")
-            f.write(f"  Overall Accuracy: {m.get('overall_accuracy', 0):.4f}\n")
-            f.write(f"  Post-Drift Acc:   {m.get('post_drift_accuracy', 0):.4f}\n")
-            f.write(f"  Adaptations:      {m.get('n_adaptations', 0)}\n")
-            if mode == AdaptationMode.TYPE_SPECIFIC:
-                f.write(
-                    f"  Avg Class. Time:  {m.get('avg_classification_time_ms', 0):.4f} ms\n"
-                )
-            f.write(
-                f"  Restoration Time: {s.get('avg_restoration_time', float('inf')):.1f} samples\n"
-            )
-            f.write(f"  Performance Loss: {s.get('avg_performance_loss', 0):.4f}\n")
-            f.write(f"  Convergence Rate: {s.get('convergence_rate', 0):.5f}\n")
+            f.write(f"  Accuracy:         {m['acc_mean']:.4f} (±{m['acc_std']:.4f})\n")
+            f.write(f"  EDR (Recall):     {m['edr_mean']:.4f} (±{m['edr_std']:.4f})\n")
+            f.write(f"  Restoration Time: {m['restore_mean']:.1f} (±{m['restore_std']:.1f}) samples\n")
+            f.write(f"  False Positives:  {m['fp_mean']:.1f}\n")
 
     print(f"Metrics saved to: {metrics_path}")
-
     print("\n✓ Evaluation complete!")
-    return metrics, sota_metrics
+    return agg_metrics
 
 
 def calculate_sota_adaptation_metrics(

@@ -1,0 +1,22 @@
+Prequential Accuracy Evaluation Results (Aggregated)
+Generated: 2026-01-26T15:42:08.298592
+Samples: 5000, Runs: 5, Type: sudden, Seed: 42
+
+
+type_specific:
+  Accuracy:         0.7124 (±0.0065)
+  EDR (Recall):     1.0000 (±0.0000)
+  Restoration Time: 414.2 (±38.7) samples
+  False Positives:  15.0
+
+simple_retrain:
+  Accuracy:         0.7124 (±0.0065)
+  EDR (Recall):     1.0000 (±0.0000)
+  Restoration Time: 414.2 (±38.7) samples
+  False Positives:  15.0
+
+no_adaptation:
+  Accuracy:         0.7220 (±0.0027)
+  EDR (Recall):     1.0000 (±0.0000)
+  Restoration Time: 288.2 (±48.8) samples
+  False Positives:  15.0

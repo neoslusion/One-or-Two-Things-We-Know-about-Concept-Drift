@@ -50,22 +50,23 @@ def main():
     # Plot command
     plot_parser = subparsers.add_parser("plot", help="Generate all publication figures")
 
-    args = parser.parse_args()
+    args, unknown_args = parser.parse_known_args()
 
     if args.command == "benchmark":
         # Pass quick mode via environment variable if needed, or handle in script
         if args.quick:
             os.environ["QUICK_MODE"] = "True"
-        run_script("experiments/benchmark/main.py")
+        # Forward any extra args to the script
+        run_script("experiments/benchmark/main.py", unknown_args)
     
     elif args.command == "compare":
-        run_script("experiments/benchmark/benchmark_proper.py")
+        run_script("experiments/benchmark/benchmark_proper.py", unknown_args)
         
     elif args.command == "monitoring":
-        run_script("experiments/monitoring/evaluate_prequential.py")
+        run_script("experiments/monitoring/evaluate_prequential.py", unknown_args)
         
     elif args.command == "plot":
-        run_script("experiments/visualizations/plot_all_figures.py")
+        run_script("experiments/visualizations/plot_all_figures.py", unknown_args)
         
     else:
         parser.print_help()

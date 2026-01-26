@@ -45,14 +45,14 @@ from dataclasses import dataclass
 @dataclass
 class DriftEvent:
     """Describes a single drift event."""
-    drift_type: Literal["Sudden", "Gradual", "Incremental", "Recurrent", "Blip"]
+    drift_type: Literal["Sudden", "Gradual", "Incremental", "Recurrent", "Blip", "Stepping"]
     position: int  # Start position of drift
     width: int = 0  # Transition width (0 for sudden)
     magnitude: float = 2.0  # Magnitude of distribution shift
     
     def __post_init__(self):
-        if self.drift_type == "Sudden":
-            self.width = 0  # Sudden has no transition width
+        if self.drift_type in ["Sudden", "Stepping"]:
+            self.width = 0  # Sudden types have no transition width
 
 
 class ConceptDriftStreamGenerator:
@@ -146,6 +146,55 @@ class ConceptDriftStreamGenerator:
         concept_id[drift_position:] = 1
         
         return X, concept_id, drift_position
+
+    def generate_stepping_drift(
+        self,
+        length: int,
+        drift_positions: List[int],
+        magnitude: float = 2.0
+    ) -> Tuple[np.ndarray, np.ndarray, List[int]]:
+        """
+        Generate stream with STEPPING (cumulative sudden) drift.
+        
+        Mathematical Definition:
+            P_t = P_k where k is the number of drift points before t.
+            P_k has mean μ₀ + k·δ
+            
+        This creates a staircase effect where the concept keeps moving further away.
+        
+        Args:
+            length: Total stream length
+            drift_positions: List of positions where drift occurs
+            magnitude: Step size
+            
+        Returns:
+            X: Feature matrix
+            concept_id: Concept assignment
+            drift_positions: List of drift positions
+        """
+        X = np.empty((length, self.n_features))
+        concept_id = np.zeros(length, dtype=int)
+        
+        sorted_pos = sorted(drift_positions) + [length]
+        start = 0
+        current_shift = 0.0
+        
+        n_shift = max(1, self.n_features // 2)
+        
+        for i, end in enumerate(sorted_pos):
+            # Generate base data
+            segment_len = end - start
+            if segment_len > 0:
+                X[start:end] = self._generate_base_concept(segment_len)
+                # Apply cumulative shift
+                X[start:end, :n_shift] += current_shift
+                concept_id[start:end] = i
+            
+            # Prepare for next segment
+            start = end
+            current_shift += magnitude
+            
+        return X, concept_id, sorted(drift_positions)
     
     def generate_gradual_drift(
         self,
@@ -448,6 +497,15 @@ def generate_mixed_stream_rigorous(
             X[pos:, :n_shift] += shift
             concept_id[pos:] = current_concept
             
+        elif dtype == "Stepping":
+            # Cumulative sudden shift (Staircase)
+            current_concept += 1
+            # Accumulate magnitude instead of alternating
+            # Previous X[pos:] already has shifts from previous events because we modify X in place
+            # So we just add the NEW step magnitude to everything after pos
+            X[pos:, :n_shift] += magnitude
+            concept_id[pos:] = current_concept
+
         elif dtype == "Gradual":
             # Probabilistic mixture during transition
             end_pos = min(pos + width, length)
