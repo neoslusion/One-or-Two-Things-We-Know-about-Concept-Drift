@@ -308,7 +308,7 @@ Bảng~\ref{tab:cdt-comparison-main} so sánh SE-CDT với kết quả của CDT
 \textbf{Nhận xét:}
 \begin{itemize}
     \item \textbf{Vượt trội so với local baseline:} Trong cùng điều kiện thử nghiệm trên bộ benchmark đa dạng, SE-CDT (81.2\% CAT) vượt xa phiên bản thực nghiệm của CDT-MSW (53.2\% CAT). Điều này cho thấy tính ổn định của phương pháp unsupervised khi đối mặt với nhiều kịch bản drift phức tạp.
-    \item \textbf{So với paper values:} Mặc dù độ chính xác CAT của SE-CDT (81.2\%) thấp hơn nhẹ so với giá trị báo cáo trong bài báo gốc của CDT-MSW (87.5\%), SE-CDT lại vượt trội về độ chính xác phân loại chi tiết (SUB Accuracy 50\% so với 42\%) và khả năng phát hiện sự kiện (EDR 94.4\% so với 80\%).
+    \item \textbf{So với paper values:} Mặc dù độ chính xác CAT của SE-CDT (81.2\%) thấp hơn nhẹ so với giá trị được trình bày trong bài báo gốc của CDT-MSW (87.5\%), SE-CDT lại vượt trội về độ chính xác phân loại chi tiết (SUB Accuracy 50\% so với 42\%) và khả năng phát hiện sự kiện (EDR 94.4\% so với 80\%).
     \item \textbf{Độ trễ và Tính thực tiễn:} Như minh họa trong Hình~\ref{fig:detection_timeline_mixed_a}, SE-CDT phát hiện drift sớm hơn đáng kể nhờ việc trích xuất trực tiếp tín hiệu từ $P(X)$, thay vì chờ đợi sự suy giảm hiệu suất (accuracy drop) như các phương pháp supervised.
 \end{itemize}
 

@@ -1,23 +1,23 @@
 \chapter{Mô hình đề xuất}
 \label{chap:proposed-model}
 
-\textit{Tóm tắt: Trên cơ sở lý thuyết về ShapeDD và các phương pháp phát hiện concept drift đã trình bày ở Chương~\ref{chap:theoretical-foundation}, chương này trình bày việc tích hợp \textbf{Weighted MMD với phân phối tiệm cận} vào framework ShapeDD nhằm cải thiện hiệu suất tính toán, đồng thời đề xuất phương pháp mới SE-CDT cho phân loại drift không giám sát. Báo cáo cũng trình bày kiến trúc hệ thống xử lý luồng dữ liệu thời gian thực dựa trên Apache Kafka. Các đóng góp chính bao gồm: (1) Tích hợp Inverse Density-Weighted MMD (IDW-MMD) với asymptotic p-value để tăng tốc độ xử lý, (2) Xây dựng khung chiến lược thích ứng đa dạng dựa trên loại drift, và (3) Thiết kế kiến trúc hệ thống có khả năng mở rộng và chịu lỗi cao.}
+\textit{Tóm tắt: Trên cơ sở lý thuyết về ShapeDD và các phương pháp phát hiện concept drift đã trình bày ở Chương~\ref{chap:theoretical-foundation}, chương này trình bày việc tích hợp \textbf{Weighted MMD với phân phối tiệm cận} vào framework ShapeDD nhằm cải thiện hiệu suất tính toán, đồng thời đề xuất phương pháp mới SE-CDT cho phân loại drift không giám sát. Luận văn cũng trình bày kiến trúc hệ thống xử lý luồng dữ liệu. Các đóng góp chính bao gồm: (1) Tích hợp Inverse Density-Weighted MMD (IDW-MMD) với asymptotic p-value để tăng tốc độ xử lý, (2) Xây dựng khung chiến lược thích ứng đa dạng dựa trên loại drift, và (3) Thiết kế kiến trúc hệ thống có khả năng mở rộng và chịu lỗi cao.}
 
 \section{Động lực và tổng quan cách tiếp cận}
 
 Mặc dù ShapeDD gốc thể hiện nhiều ưu điểm về độ chính xác định vị và khả năng khử nhiễu, việc áp dụng phương pháp này trong các hệ thống thời gian thực (real-time) quy mô lớn gặp phải hai thách thức chính:
 
 \begin{enumerate}
-	\item \textbf{Chi phí tính toán cao:} Việc sử dụng kiểm định hoán vị (permutation test) với số lượng lớn (thường là 2500 lần) để ước lượng p-value tạo ra nút thắt cổ chai về hiệu năng, giới hạn thông lượng (throughput) xử lý.
+	\item \textbf{Chi phí tính toán cao:} Việc sử dụng kiểm định hoán vị (permutation test) với số lượng lớn (thường là 2500 lần) để ước lượng p-value tạo ra nút thắt cổ chai về hiệu năng, giới hạn thông lượng xử lý.
 	\item \textbf{Độ nhạy với tham số:} Hiệu suất của ShapeDD phụ thuộc nhiều vào việc lựa chọn độ rộng hạt nhân (kernel bandwidth) và kích thước cửa sổ, làm giảm khả năng tổng quát hóa trên các luồng dữ liệu có đặc tính drift đa dạng.
 	\item \textbf{Thiếu cơ chế thích ứng:} Phát hiện drift chỉ là bước đầu; hệ thống cần một cơ chế để tự động cập nhật mô hình một cách phù hợp với bản chất của sự thay đổi (đột ngột hay dần dần).
 \end{enumerate}
 
-Để giải quyết các thách thức trên, luận văn xây dựng hệ thống \textbf{ShapeDD-Stream} --- một framework tích hợp kết hợp các phương pháp MMD tiên tiến với kiến trúc streaming, bao gồm ba tầng xử lý chính:
+Để giải quyết các thách thức trên, luận văn xây dựng hệ thống \textbf{SE-CDT-Stream} --- một framework tích hợp kết hợp các phương pháp MMD tiên tiến với kiến trúc streaming, bao gồm ba tầng xử lý chính:
 \begin{itemize}
 	\item \textbf{Tầng thuật toán:} Cải tiến ShapeDD bằng cách tích hợp \textit{IDW-MMD (Inverse Density-Weighted MMD)} với phân phối tiệm cận để giảm phương sai và chi phí tính toán, loại bỏ nhu cầu permutation test tốn kém.
 	\item \textbf{Tầng chiến lược:} Xây dựng khung thích ứng thông minh, sử dụng kết quả phân loại từ \textit{SE-CDT} để kích hoạt chiến lược cập nhật mô hình tối ưu (Reset, Incremental, hoặc Reuse).
-	\item \textbf{Tầng kiến trúc:} Triển khai hệ thống trên nền tảng \textit{Apache Kafka}, đảm bảo khả năng xử lý luồng dữ liệu phân tán, độ trễ thấp và khả năng chịu lỗi.
+	\item \textbf{Tầng kiến trúc:} Đề xuất triển khai hệ thống trên nền tảng \textit{Apache Kafka}, đảm bảo khả năng xử lý luồng dữ liệu phân tán, độ trễ thấp và khả năng chịu lỗi.
 \end{itemize}
 
 \section{Cải tiến thuật toán phát hiện concept drift}
@@ -25,10 +25,10 @@ Mặc dù ShapeDD gốc thể hiện nhiều ưu điểm về độ chính xác 
 \subsection{Inverse Density-Weighted MMD (IDW-MMD): Tối ưu hóa hiệu suất và độ chính xác}
 \label{sec:idw-mmd}
 
-Trong các hệ thống học máy dòng dữ liệu (data stream), concept drift xảy ra khi các đặc tính thống kê của biến mục tiêu thay đổi đột ngột hoặc từ từ theo thời gian. Các phương pháp MMD truyền thống thường gặp khó khăn về chi phí tính toán khi áp dụng cho dữ liệu lớn.
+Trong các hệ thống học máy xử lý trên dòng dữ liệu, concept drift xảy ra khi các đặc tính thống kê của biến mục tiêu thay đổi đột ngột hoặc từ từ theo thời gian. Các phương pháp MMD truyền thống thường gặp khó khăn về chi phí tính toán khi áp dụng cho dữ liệu lớn.
 
 \subsubsection{Vấn đề của ước lượng MMD truyền thống}
-Trong ShapeDD gốc, thống kê MMD được tính toán dựa trên trọng số đều (uniform weights), coi vai trò của mọi điểm dữ liệu trong cửa sổ là như nhau. Nhắc lại từ Chương~\ref{chap:theoretical-foundation}, công thức MMD chuẩn có dạng:
+Trong phương pháp gốc, thống kê MMD được tính toán dựa trên trọng số đều (uniform weights), coi vai trò của mọi điểm dữ liệu trong cửa sổ là như nhau. Nhắc lại từ Chương~\ref{chap:theoretical-foundation}, công thức MMD chuẩn có dạng:
 \begin{equation}
 	\text{MMD}^2_{\text{uniform}}(X, Y) = \frac{1}{n^2}\sum_{i,j} k(x_i, x_j) + \frac{1}{m^2}\sum_{p,q} k(y_p, y_q) - \frac{2}{nm}\sum_{i,p} k(x_i, y_p)
 \end{equation}
@@ -48,11 +48,9 @@ MMD có trọng số có dạng tổng quát:
 \begin{equation}
 	\text{MMD}^2_{\text{weighted}}(X, Y) = \sum_{i,j} w_i w_j k(x_i, x_j) + \sum_{p,q} v_p v_q k(y_p, y_q) - 2\sum_{i,p} w_i v_p k(x_i, y_p)
 \end{equation}
-trong đó $w_i$ và $v_p$ là trọng số của từng điểm (thỏa mãn $\sum_i w_i = 1$, $\sum_p v_p = 1$).
+trong đó $w_i$ và $v_p$ là trọng số của từng điểm (thỏa mãn $\sum_i w_i = 1$, $\sum_p v_p = 1$). Từ đó câu hỏi được đặt ra: Làm sao tính $w_i$ để phát hiện drift hiệu quả?
 
-\textbf{Câu hỏi:} Làm sao tính $w_i$ để phát hiện drift hiệu quả?
-
-\subsubsection{Giải pháp: Trọng số nghịch biến mật độ (Inverse Density Weighting)}
+\subsubsection{Giải pháp đề xuất: Trọng số nghịch biến mật độ (Inverse Density Weighting)}
 Luận văn đề xuất sử dụng phương pháp \textbf{IDW-MMD} (Inverse Density-Weighted MMD), một heuristic đơn giản lấy cảm hứng từ ý tưởng ``Optimally-Weighted MMD'' của Bharti et al.~\cite{bharti2023owmmd}.
 
 \textbf{Lưu ý quan trọng:} Phương pháp của Bharti et al. (2023) được thiết kế cho bài toán suy luận thống kê (likelihood-free inference) và đề xuất trọng số tối ưu phức tạp. Luận văn này sử dụng một \textbf{heuristic đơn giản hơn} --- trọng số nghịch biến với căn bậc hai của mật độ kernel --- để phù hợp với bài toán drift detection trong streaming.
@@ -71,12 +69,12 @@ Lý do: Drift thường xuất hiện đầu tiên ở biên phân phối, nên 
 
 \textbf{Lý do dùng căn bậc hai ($1/\sqrt{d_i}$) thay vì nghịch đảo thẳng ($1/d_i$):}
 \begin{itemize}
-	\item Nếu dùng $1/d_i$: Trọng số quá lớn cho outliers, dễ bị ảnh hưởng bởi nhiễu.
+	\item Nếu dùng $1/d_i$: Trọng số quá lớn cho các điểm vùng biên, dễ bị ảnh hưởng bởi nhiễu.
 	\item Nếu dùng $1/\sqrt{d_i}$: Vẫn tăng trọng số cho biên nhưng không quá cực đoan.
 	\item Kết quả thực nghiệm cho thấy $1/\sqrt{d_i}$ ổn định nhất (xem Chương~\ref{chap:experiments}).
 \end{itemize}
 
-Công thức IDW-MMD hoàn chỉnh:
+Dựa trên những phân tích trên, luận văn đề xuất công thức IDW-MMD hoàn chỉnh:
 \begin{equation}
 	\text{MMD}^2_{\text{IDW}} = \underbrace{\sum_{i,j} w_i w_j k(x_i, x_j)}_{\text{Weighted } XX} + \underbrace{\sum_{p,q} v_p v_q k(y_p, y_q)}_{\text{Weighted } YY} - 2\underbrace{\sum_{i,p} \frac{1}{nm} k(x_i, y_p)}_{\text{Uniform } XY}
 \end{equation}
@@ -89,9 +87,7 @@ Công thức IDW-MMD hoàn chỉnh:
 \end{itemize}
 
 \subsubsection{Tại sao IDW-MMD giảm phương sai?}
-Khi dùng MMD chuẩn (uniform weights), tất cả các cặp điểm đóng góp ngang nhau vào kết quả. Vấn đề: Các điểm ở vùng đông đúc thường "giống nhau" (highly correlated), dẫn đến kết quả dao động nhiều.
-
-IDW-MMD khắc phục bằng hai cách:
+Khi dùng MMD chuẩn (uniform weights), tất cả các cặp điểm đóng góp ngang nhau vào kết quả. Vấn đề: Các điểm ở vùng đông đúc thường "giống nhau" (highly correlated), dẫn đến kết quả dao động nhiều. IDW-MMD khắc phục bằng hai cách:
 \begin{enumerate}
 	\item \textbf{Giảm ảnh hưởng của vùng đông:} Các điểm ở trung tâm (có nhiều láng giềng) được cho trọng số thấp. Do chúng correlation cao với nhau, giảm trọng số giúp giảm độ dao động.
 	\item \textbf{Tăng tín hiệu từ vùng biên:} Các điểm ở biên chứa thông tin quan trọng về sự khác biệt. Tăng trọng số cho chúng giúp tín hiệu drift rõ hơn so với nhiễu nền.
@@ -152,36 +148,19 @@ Luận văn cài đặt IDW-MMD như sau:
 \subsubsection{Hạn chế và khi nào nên dùng}
 Mặc dù IDW-MMD cải thiện đáng kể về tốc độ và độ ổn định, phương pháp có một số giới hạn cần lưu ý:
 
-\textbf{1. Không hiệu quả với Mild Drift (drift nhẹ):}
-\begin{itemize}
-	\item IDW-MMD có xu hướng "lọc bỏ" những thay đổi nhỏ ở vùng trung tâm, coi chúng là nhiễu.
-	\item \textbf{Kết quả:} F1-score chỉ đạt 0.006 trên dataset \texttt{gen\_random\_mild}, trong khi MMD chuẩn đạt 0.585 (xem chi tiết tại Mục~\ref{sec:detection-eval}).
-	\item \textbf{Nguyên nhân:} Mild drift thường xảy ra ở vùng trung tâm (nơi có nhiều điểm), nhưng IDW-MMD giảm trọng số của các điểm này.
-\end{itemize}
+\textbf{1. Hiệu quả không tốt với Mild Drift (drift nhẹ):} Do IDW-MMD có xu hướng "lọc bỏ" những thay đổi nhỏ ở vùng trung tâm, coi chúng là nhiễu. Nguyên nhân là Mild drift thường xảy ra ở vùng trung tâm (nơi có nhiều điểm), nhưng IDW-MMD giảm trọng số của các điểm này.
 
-\textbf{2. Không phù hợp cho phân loại loại drift:}
-\begin{itemize}
-	\item IDW-MMD thiết kế cho bài toán \textit{phát hiện} (có drift hay không), không phải \textit{phân loại} (loại drift gì).
-	\item Cơ chế giảm nhiễu có thể loại bỏ luôn tín hiệu của Gradual/Incremental drift (diễn ra chậm).
-	\item \textbf{Giải pháp:} Module SE-CDT (Mục~\ref{sec:shaped-cdt}) dùng MMD chuẩn thay vì IDW-MMD để giữ lại đầy đủ thông tin.
-\end{itemize}
-
-\textbf{3. Khi nào nên dùng IDW-MMD:}
-\begin{itemize}
-	\item \textbf{Phù hợp:} Sudden drift mạnh ($\delta \geq 1.0$), đặc biệt khi cần xử lý nhanh (high throughput).
-	\item \textbf{Cẩn thận:} Mild drift ($\delta < 0.5$), gradual drift diễn ra ở vùng trung tâm.
-	\item \textbf{Lời khuyên:} Kết hợp với MMD chuẩn hoặc adaptive threshold để bù đắp hạn chế.
-\end{itemize}
+\textbf{2. Không phù hợp cho phân loại loại drift:} IDW-MMD thiết kế cho bài toán \textit{phát hiện} (có drift hay không) đặc biệt là đối với sudden drift, không phải \textit{phân loại} (loại drift gì). Cơ chế giảm nhiễu có thể loại bỏ luôn tín hiệu của Gradual/Incremental drift (diễn ra chậm).Từ đó, luận văn sẽ đề xuất phương pháp SE-CDT (Mục~\ref{sec:shaped-cdt}) dùng MMD chuẩn thay vì IDW-MMD để giữ lại đầy đủ thông tin.
 
 Sau khi tích hợp IDW-MMD với phân phối tiệm cận, hệ thống có thể phát hiện drift với độ chính xác cao và chi phí tính toán thấp. Tuy nhiên, phát hiện drift chỉ là bước đầu tiên --- để chọn chiến lược thích ứng phù hợp, hệ thống cần biết \textit{loại drift} đã xảy ra. Phần tiếp theo trình bày phương pháp SE-CDT cho bài toán phân loại drift không giám sát.
 
 \section{Phương pháp phân loại drift: SE-CDT}
 \label{sec:shaped-cdt}
 
-Lấy ý tưởng từ cơ chế hoạt động của CDT-MSW, tuy nhiên, phương pháp CDT-MSW gốc~\cite{guo2022cdtmsw} yêu cầu \textit{labels} để tính toán accuracy ratio, điều này không phù hợp trong môi trường streaming không giám sát. Luận văn đề xuất \textbf{SE-CDT} (ShapeDD-Enhanced Concept Drift Type), một phương pháp thay thế sử dụng trực tiếp tín hiệu drift magnitude $\sigma(t)$ từ ShapeDD để phân loại drift type.
+Lấy ý tưởng từ cơ chế hoạt động của CDT-MSW được trình bày ở phần trước, tuy nhiên, phương pháp CDT-MSW gốc~\cite{guo2022cdtmsw} yêu cầu \textit{labels} để tính toán accuracy ratio, điều này không phù hợp trong môi trường với dữ liệu không giám sát - điều mà luận văn này hướng tới. Luận văn đề xuất \textbf{SE-CDT} (ShapeDD-Enhanced Concept Drift Type), một phương pháp thay thế sử dụng cơ chế tín hiệu drift magnitude $\sigma(t)$ từ ShapeDD để phát hiện và phân loại drift.
 
 \subsection{Cơ sở lý thuyết}
-Theo phân loại của CDT-MSW, drift được chia thành:
+Theo phân loại của CDT-MSW, drift được chia thành hai loại chính là:
 \begin{itemize}
 	\item \textbf{TCD (Transient Concept Drift):} Drift tạm thời với thời gian chuyển đổi ngắn --- bao gồm \textit{sudden} và \textit{blip}.
 	\item \textbf{PCD (Progressive Concept Drift):} Drift tiến triển với thời gian chuyển đổi dài --- bao gồm \textit{gradual}, \textit{incremental}, và \textit{recurrent}.
@@ -196,6 +175,9 @@ Theo phân loại của CDT-MSW, drift được chia thành:
 \end{enumerate}
 
 \subsection{Thuật toán phân loại}
+
+Công thức của SE-CDT được mô tả như sau:
+
 \begin{algorithm}[H]
 	\caption{SE-CDT: Phân loại drift không giám sát}
 	\label{alg:se-cdt}
