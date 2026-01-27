@@ -26,9 +26,9 @@ Hệ thống streaming được giả lập sử dụng Apache Kafka\footnote{Tr
 
 \textbf{Quy ước ký hiệu trong các bảng:}
 \begin{itemize}
-	\item \textbf{MMD\_IDW (IDW-MMD)}: Inverse Density-Weighted MMD, sử dụng trọng số nghịch mật độ.
-	\item \textbf{ShapeDD\_WMMD\_PROPER (ShapeDD-IDW)}: ShapeDD với IDW-MMD và asymptotic p-value.
-	\item \textbf{SE\_CDT (SE-CDT)}: Hệ thống thống nhất phát hiện và phân loại drift.
+	\item \textbf{MMD-IDW}: Inverse Density-Weighted MMD, sử dụng trọng số nghịch mật độ.
+	\item \textbf{ShapeDD-IDW}: ShapeDD với IDW-MMD và asymptotic p-value.
+	\item \textbf{SE-CDT}: Hệ thống thống nhất phát hiện và phân loại drift.
 \end{itemize}
 
 \subsection{Tập dữ liệu thực nghiệm}
@@ -59,17 +59,17 @@ Nhóm này bao gồm các dataset chỉ có sự thay đổi về biên quyết 
 
 \textbf{Mục đích kiểm chứng:} Đối với các phương pháp phát hiện drift không giám sát (như ShapeDD, MMD), kết quả lý tưởng trên nhóm này là \textbf{không phát hiện} (hoặc phát hiện rất ít), vì $P(X)$ không đổi. Việc benchmark trên nhóm này giúp xác nhận thuật toán không bị "ảo giác" (hallucination) trước các thay đổi chỉ mang tính ngữ nghĩa nhãn.
 
-\textbf{Nhóm 4: Dữ liệu thực tế.}
+\textbf{Nhóm 4: Dữ liệu thực tế có kiểm soát về các điểm trôi dạt.}
 Nhóm này bao gồm dataset từ môi trường thực tế với các đặc trưng phức tạp và không xác định trước, nhưng được kiểm soát về các điểm trôi dạt để có thể đánh giá cách hoạt động của phương pháp trong môi trường làm việc thực tế.
 
 
-\subsection{Chiến lược đánh giá và Kiến trúc hệ thống}
+\subsection{Chiến lược đánh giá}
 \label{sec:eval-strategy}
 
-Trước khi so sánh với các phương pháp hiện có, cần làm rõ kiến trúc của hệ thống đề xuất để định hình chiến lược đánh giá. Hệ thống ShapeDD-Stream được thiết kế theo kiến trúc modular gồm ba thành phần chính tương ứng với 3 giai đoạn xử lý:
+Trước khi so sánh với các phương pháp hiện có, cần làm rõ kiến trúc của hệ thống đề xuất để định hình chiến lược đánh giá. Hệ thống SE-CDT-Stream được thiết kế theo kiến trúc modular gồm ba thành phần chính tương ứng với 3 giai đoạn xử lý:
 
 \begin{enumerate}
-	\item \textbf{Detection Module (ShapeDD\_WMMD\_PROPER):}
+	\item \textbf{Detection Module (ShapeDD-IDW):}
 	Kết hợp ShapeDD với IDW-MMD và asymptotic p-value để phát hiện thời điểm xảy ra drift. Module này ưu tiên giảm thiểu Positive Rate (FP) và độ trễ.
 	
 	\item \textbf{Classification Module (SE-CDT):}
@@ -88,7 +88,7 @@ Phần này so sánh Detection Module của hệ thống đề xuất với các
 
 \subsection{Kết quả so sánh tổng hợp}
 
-Bảng~\ref{tab:comprehensive_performance} so sánh hiệu suất của \textbf{phương pháp đề xuất} (IDW-MMD, ShapeDD-IDW, SE-CDT) với \textbf{các baseline} (Standard MMD, KS-Test, D3, DAWIDD, ShapeDD gốc). Các chỉ số F1 được tính dựa trên khả năng phát hiện đúng các điểm drift đã biết (ground truth), kết quả được tổng hợp từ 30 lần chạy độc lập trên 11 tập dữ liệu (tổng 330 experiments).
+Bảng~\ref{tab:comprehensive_performance} so sánh hiệu suất của \textbf{phương pháp đề xuất} (IDW-MMD, ShapeDD-IDW, SE-CDT) với \textbf{các baseline} (Standard MMD, KS-Test, D3, DAWIDD, ShapeDD gốc). Các chỉ số F1 được tính dựa trên khả năng phát hiện đúng các điểm drift đã biết (ground truth), kết quả được tổng hợp từ 30 lần chạy độc lập trên 11 tập dữ liệu đã được nhắc đến ở trên.
 
 % =============================================================================
 % Bảng tổng hợp hiệu suất

@@ -196,7 +196,7 @@ Công thức của SE-CDT được mô tả như sau:
 		\ELSIF{$n_p \geq 10$ AND $\text{SignalMean} \approx 0$}
 		\RETURN \textbf{INCREMENTAL} (PCD)
 		\ELSE
-		\RETURN \textbf{GRADUAL} (PCD) \COMMENT{Default}
+		\RETURN \textbf{GRADUAL} (PCD)
 		\ENDIF
 	\end{algorithmic}
 \end{algorithm}
@@ -230,11 +230,12 @@ Các ngưỡng trong Algorithm~\ref{alg:se-cdt} được xác định dựa trê
 
 \textbf{Lưu ý về biến thể IDW-MMD:}
 Luận văn cũng thử nghiệm sử dụng IDW-MMD (trọng số nghịch mật độ) thay cho standard MMD trong SE-CDT. Tuy nhiên, kết quả cho thấy IDW-MMD không phù hợp cho classification do cơ chế giảm phương sai có xu hướng loại bỏ những thay đổi nhỏ (coi là noise). IDW-MMD phù hợp hơn cho drift \textit{detection} (nhị phân: có/không có drift), nhưng standard MMD tốt hơn cho \textit{classification} (phân loại loại drift). Chi tiết thử nghiệm và so sánh định lượng được trình bày ở Chương~\ref{chap:experiments}.
-
 Kết quả phân loại từ SE-CDT sẽ được sử dụng để kích hoạt chiến lược thích ứng phù hợp, được trình bày trong phần tiếp theo.
 
 \section{Khung chiến lược thích ứng mô hình}
 \label{sec:model-adaptation-framework}
+
+\todo{Thêm trích dẫn bài báo vào, confirm lại vị trí đặt phần này}
 
 Dựa trên kết quả phân loại drift từ SE-CDT, hệ thống có thể kích hoạt chiến lược cập nhật mô hình phù hợp. Phần này trình bày khung chiến lược thích ứng (Adaptation Framework).
 
@@ -284,7 +285,7 @@ Trong phạm vi luận văn, chiến lược cho \textit{Sudden Drift} được 
 \subsubsection{Cơ chế Meta-Learning (Hướng phát triển)}
 Hệ thống được thiết kế để hỗ trợ Meta-Learning trong tương lai: một mô hình cấp cao (meta-learner) sẽ học cách chọn chiến lược tốt nhất dựa trên lịch sử các lần thích ứng thành công hay thất bại, thay vì chỉ dựa vào quy tắc cố định.
 
-\section{Kiến trúc đề xuất cho hệ thống Streaming Real-time với Apache Kafka}
+\section{Kiến trúc đề xuất cho hệ thống phát hiện trôi dạt và cập nhật mô hình thích ứng}
 
 Để hiện thực hóa các phương pháp trên trong môi trường thực tế, luận văn đề xuất một kiến trúc xử lý luồng dữ liệu phân tán dựa trên Apache Kafka. Kiến trúc này được thiết kế để đảm bảo tính tách biệt (decoupling), khả năng mở rộng (scalability) và độ tin cậy (reliability).
 
