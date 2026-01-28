@@ -4,6 +4,7 @@ Used to generate evidence/screenshots for the thesis "System Implementation" sec
 """
 
 import time
+import csv
 import sys
 import numpy as np
 from collections import deque
@@ -11,6 +12,8 @@ from pathlib import Path
 
 # Add imports from experiment
 sys.path.append(str(Path(__file__).resolve().parent))
+# Add project root for core imports
+sys.path.append(str(Path(__file__).resolve().parents[2]))
 from adaptation_strategies import (
     adapt_sudden_drift,
     adapt_incremental_drift
@@ -18,9 +21,9 @@ from adaptation_strategies import (
 from drift_type_classifier import classify_drift_at_detection, DriftTypeConfig
 from config import BUFFER_SIZE, CHUNK_SIZE, SHAPE_L1, SHAPE_L2, DRIFT_ALPHA, SHAPE_N_PERM
 try:
-    from mmd_variants import shape_with_wmmd as shapedd_detect
+    from core.detectors.se_cdt import SE_CDT
 except ImportError:
-    shapedd_detect = None
+    SE_CDT = None
 
 # Mock configuration
 BROKERS = "localhost:19092"
@@ -56,7 +59,17 @@ def main():
     
     # buffers
     buffer = deque(maxlen=BUFFER_SIZE)
-    drift_type_cfg = DriftTypeConfig()
+    
+    # Prepare CSV log
+    csv_file = open("experiments/monitoring/shapedd_batches.csv", "w", newline="")
+    csv_writer = csv.writer(csv_file)
+    csv_writer.writerow(["detection_idx", "p_value", "drift", "buffer_end_idx", "drift_type", "drift_category"])
+
+    
+    # Initialize SE-CDT
+    se_cdt = None
+    if SE_CDT:
+        se_cdt = SE_CDT(window_size=SHAPE_L1, l2=SHAPE_L2, alpha=DRIFT_ALPHA, use_proper=True)
     
     drift_detected = False
     
@@ -98,25 +111,34 @@ def main():
                     buffer_X = np.array([item['x'] for item in buffer])
                     
                     # Detect
-                    if shapedd_detect:
-                        res = shapedd_detect(buffer_X, l1=SHAPE_L1, l2=SHAPE_L2, n_perm=SHAPE_N_PERM)
-                        chunk_pvals = res[max(0, len(res)-CHUNK_SIZE):, 2]
-                        p_min = np.min(chunk_pvals)
+                    if se_cdt:
+                        # Unified Monitor
+                        result = se_cdt.monitor(buffer_X)
                         
-                        if p_min < DRIFT_ALPHA:
+                        if result.is_drift:
                             drift_detected = True
                             drift_at_detected = idx
                             
                             print(f"\n{'='*80}")
-                            print(f"[Sample {idx}] DRIFT DETECTED")
+                            print(f"[Sample {idx}] DRIFT DETECTED (via SE-CDT)")
                             print(f"{'='*80}")
                             print(f"  Detection position: sample {idx}")
-                            print(f"  p-value: {p_min:.6f}")
+                            print(f"  Score: {result.score:.4f} (p-value: {result.p_value:.6f})")
                             print(f"  Current accuracy: 0.4512") # Simulate drop
                             
-                            # Classify
-                            print(f"  Drift type: sudden")
-                            print(f"  Category: PCD")
+                            print(f"  Drift type: {result.subcategory}")
+                            print(f"  Category: {result.drift_type}")
+                            
+                            # Log to CSV
+                            csv_writer.writerow([
+                                idx, 
+                                result.p_value, 
+                                1, 
+                                idx, 
+                                result.subcategory, 
+                                result.drift_type
+                            ])
+                            csv_file.flush()
                             
                             print(f"  Scheduling retraining after {ADAPTATION_DELAY}-sample delay")
                             print(f"  Model remains FROZEN (observe degradation)")
@@ -137,6 +159,7 @@ def main():
             if idx % 500 == 0:
                  print(f"[Sample {idx}] Accuracy: 0.8120 (Phase: FROZEN_DEPLOYMENT)")
 
+    csv_file.close()
     print("\n[Consumer] Shutdown complete")
 
 if __name__ == "__main__":

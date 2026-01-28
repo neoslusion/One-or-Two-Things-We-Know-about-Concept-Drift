@@ -312,10 +312,9 @@ Hệ thống được thiết kế theo mô hình \textbf{Event-Driven Architect
 
 \begin{enumerate}
 	\item \textbf{Data Producer (Nguồn dữ liệu):} Mô phỏng hoặc thu thập dữ liệu từ cảm biến/nguồn phát, gửi vào topic \texttt{sensor.stream}.
-	\item \textbf{Drift Detection Consumer (Bộ phát hiện):} Đọc dữ liệu từ stream, duy trì cửa sổ trượt và thực thi thuật toán ShapeDD-IDW.
-	\item \textbf{Drift Classifier (Bộ phân loại):} Được kích hoạt khi có tín hiệu drift, thực thi CDT-MSW để xác định loại drift và gửi sự kiện vào topic \texttt{drift.results}.
-	\item \textbf{Adaptation Manager (Bộ thích ứng):} Lắng nghe sự kiện drift, thực thi chiến lược thích ứng (huấn luyện lại/cập nhật) và publish mô hình mới.
-	\item \textbf{Monitoring Dashboard:} Trực quan hóa dữ liệu, điểm drift và hiệu suất mô hình theo thời gian thực.
+	\item \textbf{SE-CDT Analysis Consumer (Bộ xử lý hợp nhất):} Đọc dữ liệu từ stream, thực thi thuật toán phân tích SE-CDT. Nó thực hiện đồng thời hai nhiệm vụ: (1) Phát hiện drift bằng ShapeDD/MMD và (2) Phân loại loại drift ngay lập tức nếu phát hiện. Kết quả drift (gồm vị trí và loại drift) được gửi vào topic \texttt{drift.results}.
+	\item \textbf{Adaptation Manager (Bộ thích ứng):} Lắng nghe sự kiện từ \texttt{drift.results}, lựa chọn và thực thi chiến lược thích ứng phù hợp (ví dụ: kích hoạt lại module cũ hoặc retrain module mới) dựa trên loại drift đã phân loại.
+	\item \textbf{Monitoring Dashboard:} Trực quan hóa dữ liệu luồng, trạng thái hệ thống, và lịch sử các lần thích ứng.
 \end{enumerate}
 
 \subsection{Thiết kế chi tiết các thành phần}
@@ -351,9 +350,9 @@ Hệ thống sử dụng các topic riêng biệt để phân tách luồng dữ
 		\hline
 		\textbf{Topic Name}     & \textbf{Nội dung}   & \textbf{Mục đích}                               \\
 		\hline
-		\texttt{sensor.stream}  & Raw data samples    & Luồng dữ liệu đầu vào cho mô hình và detector.  \\
+		\texttt{sensor.stream}  & Raw data samples    & Luồng dữ liệu đầu vào cho hệ thống phân tích.   \\
 		\hline
-		\texttt{drift.results}  & Drift events        & Thông báo drift đã được phát hiện và phân loại. \\
+		\texttt{drift.results}  & Drift info \& Type  & Kết quả phân tích từ SE-CDT (Vị trí + Loại Drift). \\
 		\hline
 		\texttt{model.updated}  & Model metadata      & Thông báo mô hình mới đã sẵn sàng (hot-reload). \\
 		\hline

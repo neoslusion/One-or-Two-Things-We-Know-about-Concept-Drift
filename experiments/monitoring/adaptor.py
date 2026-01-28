@@ -7,6 +7,13 @@ from pathlib import Path
 
 import numpy as np
 
+import sys
+
+# SETUP PATHS FIRST
+REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.append(str(REPO_ROOT))
+
 # Kafka client: confluent_kafka (consistent with consumer)
 from confluent_kafka import Consumer, Producer, KafkaError
 
@@ -122,7 +129,7 @@ def main():
     consumer_conf = {
         'bootstrap.servers': KAFKA_BOOTSTRAP,
         'group.id': GROUP_ID,
-        'auto.offset.reset': 'latest',
+        'auto.offset.reset': 'earliest',  # Changed from latest to catch past events
         'enable.auto.commit': True,
     }
     consumer = Consumer(consumer_conf)

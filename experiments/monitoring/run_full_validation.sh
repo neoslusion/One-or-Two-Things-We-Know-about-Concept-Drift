@@ -16,7 +16,7 @@ N_SAMPLES=10000
 DRIFT_TYPE="mixed"
 THRESH=0.15
 W_REF=50
-BASE_OUT_DIR="experiments/drift_monitoring_system/validation_results_$(date +%Y%m%d_%H%M%S)"
+BASE_OUT_DIR="experiments/monitoring/validation_results_$(date +%Y%m%d_%H%M%S)"
 
 mkdir -p "$BASE_OUT_DIR"
 
@@ -41,7 +41,7 @@ for ((i=1; i<=N_RUNS; i++)); do
     
     # Run evaluation in background to speed up (batch of 5?)
     # For safety in this environment, running sequentially to avoid OOM
-    python3 experiments/drift_monitoring_system/evaluate_prequential.py \
+    .venv/bin/python experiments/monitoring/evaluate_prequential.py \
         --n_samples $N_SAMPLES \
         --drift_type $DRIFT_TYPE \
         --seed $seed \
@@ -67,4 +67,4 @@ echo "========================================================"
 
 # Run Aggregation
 echo "Aggregating results..."
-python3 experiments/drift_monitoring_system/aggregate_validation_results.py --input_dir "$BASE_OUT_DIR"
+.venv/bin/python experiments/monitoring/aggregate_validation_results.py --input_dir "$BASE_OUT_DIR"

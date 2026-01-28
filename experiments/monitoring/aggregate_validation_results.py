@@ -41,7 +41,7 @@ def parse_metrics_file(file_path):
         delay_match = re.search(r"Mean Delay:\s+([\d\.]+)", ts_section)
 
         # Adaptation
-        acc_match = re.search(r"Overall Accuracy:\s+([\d\.]+)", ts_section)
+        acc_match = re.search(r"Accuracy:\s+([\d\.]+)", ts_section)
         restore_match = re.search(r"Restoration Time:\s+([\d\.]+)", ts_section)
 
         if edr_match:
@@ -59,7 +59,7 @@ def parse_metrics_file(file_path):
 
         # Get No Adaptation Accuracy for Improvement Calc
         none_section = content.split("no_adaptation:")[1]
-        acc_none_match = re.search(r"Overall Accuracy:\s+([\d\.]+)", none_section)
+        acc_none_match = re.search(r"Accuracy:\s+([\d\.]+)", none_section)
         if acc_none_match:
             data["Baseline_Accuracy"] = float(acc_none_match.group(1))
             data["Improvement"] = data["Accuracy"] - data["Baseline_Accuracy"]

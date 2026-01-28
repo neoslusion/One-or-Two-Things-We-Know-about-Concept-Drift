@@ -13,6 +13,9 @@ export SHAPEDD_LOG=${SHAPEDD_LOG:-shapedd_batches.csv}
 # Config for internal use
 BROKERS_HOST="$BROKERS"
 
+# Ensure PYTHONPATH includes project root for core imports
+export PYTHONPATH=${PYTHONPATH:-}:$(pwd)/../..
+
 echo "[deploy] Environment:"
 echo "  BROKERS=$BROKERS"
 echo "  TOPIC=$TOPIC"
@@ -51,23 +54,23 @@ mkdir -p ./snapshots ./models ./datas
 echo "[deploy] Directories ready: ./snapshots, ./models, ./datas"
 
 echo "[deploy] Launching shapedd consumer..."
-BROKERS="$BROKERS_HOST" TOPIC="$TOPIC" SNAPSHOT_DIR="./snapshots" nohup python3 consumer_stream.py > consumer.log 2>&1 &
+BROKERS="$BROKERS_HOST" TOPIC="$TOPIC" SNAPSHOT_DIR="./snapshots" nohup ../../.venv/bin/python -u consumer_stream.py > consumer.log 2>&1 &
 CONSUMER_PID=$!
 echo "[deploy] Consumer PID: $CONSUMER_PID"
 
 sleep 2
 
-echo "[deploy] Launching producer..."
-BROKERS="$BROKERS_HOST" TOPIC="$TOPIC" nohup python3 producer.py > producer.log 2>&1 &
-PRODUCER_PID=$!
-echo "[deploy] Producer PID: $PRODUCER_PID"
+echo "[deploy] Launching adaptor..."
+KAFKA_BOOTSTRAP="$BROKERS_HOST" RESULT_TOPIC="$RESULT_TOPIC" SNAPSHOT_DIR="./snapshots" MODEL_PATH="./models/current_model.pkl" nohup ../../.venv/bin/python -u adaptor.py > adaptor.log 2>&1 &
+ADAPTOR_PID=$!
+echo "[deploy] Adaptor PID: $ADAPTOR_PID"
 
 sleep 2
 
-echo "[deploy] Launching adaptor..."
-KAFKA_BOOTSTRAP="$BROKERS_HOST" RESULT_TOPIC="$RESULT_TOPIC" SNAPSHOT_DIR="./snapshots" MODEL_PATH="./models/current_model.pkl" nohup python3 adaptor.py > adaptor.log 2>&1 &
-ADAPTOR_PID=$!
-echo "[deploy] Adaptor PID: $ADAPTOR_PID"
+echo "[deploy] Launching producer..."
+BROKERS="$BROKERS_HOST" TOPIC="$TOPIC" nohup ../../.venv/bin/python -u producer.py > producer.log 2>&1 &
+PRODUCER_PID=$!
+echo "[deploy] Producer PID: $PRODUCER_PID"
 
 trap 'echo; echo "[deploy] Stopping..."; kill $PRODUCER_PID $CONSUMER_PID $ADAPTOR_PID 2>/dev/null || true; exit 0' INT
 tail -f consumer.log producer.log adaptor.log
