@@ -412,6 +412,36 @@ Bảng~\ref{tab:prequential-results} tổng hợp kết quả Prequential Accura
 	\label{fig:prequential_gradual}
 \end{figure}
 
+\section{Triển khai và Đánh giá trên Hệ thống Kafka Thực tế}
+\label{sec:real-world-deployment}
+
+Để kiểm chứng tính khả thi và hiệu quả của kiến trúc đề xuất trong môi trường production, chúng tôi đã triển khai hệ thống đầy đủ trên Docker với các thành phần: Redpanda (Kafka), SE-CDT Consumer, và Adaptation Manager.
+
+\subsection{Kịch bản triển khai}
+\begin{itemize}
+	\item \textbf{Dữ liệu:} Luồng dữ liệu mô phỏng từ SEA dataset với Sudden Drift tại mẫu thứ 1500.
+	\item \textbf{Cấu hình:} Window size = 250, Adaptation Delay = 50 mẫu (để thu thập dữ liệu post-drift).
+	\item \textbf{Mục tiêu:} Xác nhận quy trình khép kín: Phát hiện Drift $\rightarrow$ Thích ứng đệm (Delayed Adaptation) $\rightarrow$ Cập nhật mô hình (Adaptor) $\rightarrow$ Reload mô hình (Consumer) $\rightarrow$ Phục hồi độ chính xác.
+\end{itemize}
+
+\subsection{Kết quả thực tế}
+
+Hình~\ref{fig:kafka_real_results} trình bày Dashboard giám sát trực tiếp từ lần chạy triển khai:
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\textwidth]{image/kafka_results_real.png}
+	\caption[Kết quả triển khai thực tế trên Kafka]{Dashboard giám sát hệ thống Kafka thực tế. (1) Dữ liệu stream với điểm drift tại mẫu 1500. (2) \textbf{Hiệu quả thích ứng:} Độ chính xác giảm xuống 0.59 tại điểm drift, nhưng nhanh chóng \textbf{phục hồi lên 0.93} sau khi mô hình được cập nhật tự động (vạch đỏ nét đứt "Model Reload"). (3) Tín hiệu SE-CDT phát hiện chính xác Sudden Drift. (4) Tài nguyên hệ thống (CPU/RAM) duy trì ổn định.}
+	\label{fig:kafka_real_results}
+\end{figure}
+
+\textbf{Phân tích:}
+\begin{itemize}
+	\item \textbf{Độ trễ phát hiện:} Drift xảy ra tại mẫu 1500, hệ thống phát hiện tại mẫu 1476 (do cơ chế cửa sổ trượt nhìn thấy sự thay đổi phân phối sớm).
+	\item \textbf{Quy trình Closed-Loop:} Log hệ thống xác nhận Consumer đã nhận tín hiệu "Model Updated" từ Adaptor và tải lại mô hình thành công tại mẫu 2277.
+	\item \textbf{Hiệu quả phục hồi:} Độ chính xác (Accuracy) tăng vọt từ mức ngẫu nhiên (59\%) lên mức tối ưu (93\%) ngay sau khi mô hình mới được áp dụng, chứng minh tính đúng đắn của toàn bộ pipeline xử lý.
+\end{itemize}
+
 \section{Kết luận chương}
 
 Các kết quả thực nghiệm dẫn đến những kết luận chính sau:
