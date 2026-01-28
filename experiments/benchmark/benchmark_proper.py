@@ -576,11 +576,10 @@ def print_summary(results):
     total_se = 0
     correct_se = 0
     
-    print("\n" + "="*60)
-    print("SE-CDT CLASSIFICATION SUMMARY")
-    print("="*60)
-    
+    # Confusion matrix for SE-CDT
     confusion = {}
+    TCD_TYPES = ["Sudden", "Blip", "Recurrent"]
+    correct_cat_se = 0
     
     for res in results:
         for item in res['SE_Classifications']:
@@ -594,114 +593,66 @@ def print_summary(results):
             total_se += 1
             if gt == pred:
                 correct_se += 1
-            elif gt == "Blip" and pred == "Sudden":
-                pass
+            
+            is_gt_tcd = gt in TCD_TYPES
+            is_pred_tcd = pred in TCD_TYPES
+            if is_gt_tcd == is_pred_tcd:
+                correct_cat_se += 1
                 
-    print(f"Overall Accuracy: {correct_se/total_se:.2%}" if total_se > 0 else "N/A")
-    
-    # Runtime Stats
-    total_cdt_time = sum([r['Runtime_CDT'] for r in results])
-    total_se_time = sum([r['Runtime_SE'] for r in results])
-    n_runs = len(results)
-    avg_stream_len = sum([r['Stream_Length'] for r in results]) / n_runs
-    
-    print("-" * 60)
-    print(f"RUNTIME PERFORMANCE (Avg per {int(avg_stream_len)} samples)")
-    print("-" * 60)
-    print(f"CDT_MSW : {total_cdt_time/n_runs:.4f} s")
-    print(f"SE_CDT  : {total_se_time/n_runs:.4f} s")
-    print(f"Speedup : {total_cdt_time/total_se_time:.2f}x (SE is faster)" if total_se_time > 0 else "N/A")
-    
-    # Aggregated Metrics for ALL methods (including ADAPTIVE)
+    # Calculate aggregated detection metrics
     metrics_agg = {
         "CDT": {"TP": 0, "FP": 0, "FN": 0, "Total": 0},
         "SE_STD": {"TP": 0, "FP": 0, "FN": 0, "Total": 0},
-        "SE_ADW": {"TP": 0, "FP": 0, "FN": 0, "Total": 0},
-        "SE_ADAPT": {"TP": 0, "FP": 0, "FN": 0, "Total": 0}
     }
     
     for r in results:
-        for m_key, agg_key in [("CDT_Metrics", "CDT"), ("SE_STD_Metrics", "SE_STD"), 
-                              ("SE_ADW_Metrics", "SE_ADW"), ("SE_Adaptive_Metrics", "SE_ADAPT")]:
+        for m_key, agg_key in [("CDT_Metrics", "CDT"), ("SE_STD_Metrics", "SE_STD")]:
             if m_key in r:
                 metrics_agg[agg_key]["TP"] += r[m_key]["TP"]
                 metrics_agg[agg_key]["FP"] += r[m_key]["FP"]
                 metrics_agg[agg_key]["FN"] += r[m_key]["FN"]
                 metrics_agg[agg_key]["Total"] += (r[m_key]["TP"] + r[m_key]["FN"])
 
-    print("-" * 90)
-    print(f"{'Method':<15} | {'MDR':<8} | {'EDR (Recall)':<12} | {'Precision':<10} | {'FP':<6}")
-    print("-" * 90)
+    # Runtime Stats
+    total_cdt_time = sum([r['Runtime_CDT'] for r in results])
+    total_se_time = sum([r['Runtime_SE'] for r in results])
+    n_runs = len(results)
     
-    for method in ["CDT", "SE_STD", "SE_ADW", "SE_ADAPT"]:
+    print("\n" + "="*80)
+    print("BENCHMARK SUMMARY REPORT")
+    print("="*80)
+    
+    print(f"1. RUNTIME (Avg per stream)")
+    print(f"   CDT_MSW : {total_cdt_time/n_runs:.4f} s")
+    print(f"   SE_CDT  : {total_se_time/n_runs:.4f} s")
+    print("-" * 80)
+    
+    print(f"2. DETECTION METRICS (Unsupervised vs Supervised)")
+    print(f"   {'Method':<12} | {'EDR (Recall)':<12} | {'MDR':<8} | {'FP (Total)':<10}")
+    for method in ["CDT", "SE_STD"]:
         total = metrics_agg[method]["Total"]
         tp = metrics_agg[method]["TP"]
         fp = metrics_agg[method]["FP"]
         fn = metrics_agg[method]["FN"]
-        
-        mdr = fn / total if total > 0 else 0.0
         edr = tp / total if total > 0 else 0.0
-        prec = tp / (tp + fp) if (tp + fp) > 0 else 0.0
-        
-        print(f"{method:<15} | {mdr:.3f}    | {edr:.3f}        | {prec:.3f}      | {fp}")
+        mdr = fn / total if total > 0 else 0.0
+        print(f"   {method:<12} | {edr:.1%}        | {mdr:.1%}    | {fp:<10}")
+    print("-" * 80)
     
-    print("-" * 60)
-    print(f"{'True Base':<15} | {'Predicted Distribution (Oracle Mode)'}")
-    print("-" * 60)
+    print(f"3. SE-CDT CLASSIFICATION ACCURACY")
+    cat_acc = correct_cat_se/total_se if total_se > 0 else 0
+    sub_acc = correct_se/total_se if total_se > 0 else 0
+    print(f"   Category Accuracy (TCD vs PCD): {cat_acc:.1%}")
+    print(f"   Subtype Accuracy (5-class):     {sub_acc:.1%}")
+    print("-" * 80)
     
+    print(f"4. SE-CDT CONFUSION MATRIX (Ground Truth -> Prediction)")
     for gt, preds in confusion.items():
         total_gt = sum(preds.values())
-        pred_str = ", ".join([f"{k}: {v} ({v/total_gt:.1%})" for k, v in preds.items()])
-        print(f"{gt:<15} | {pred_str}")
-    print("-" * 60)
-    
-    # End-to-End Classification Metrics for BOTH variants
-    print("\n" + "="*80)
-    print("END-TO-END CLASSIFICATION (Detection -> Classification)")
-    print("="*80)
-    
-    TCD_TYPES = ["Sudden", "Blip", "Recurrent"]
-    
-    def compute_e2e_metrics(results, key):
-        """Compute E2E accuracy for a given E2E key."""
-        total = 0
-        correct_sub = 0
-        correct_cat = 0
-        fp = 0
-        
-        for res in results:
-            for item in res.get(key, []):
-                if not item['matched']:
-                    fp += 1
-                    continue
-                    
-                gt = item['gt_type']
-                pred = item['pred']
-                
-                total += 1
-                if gt == pred:
-                    correct_sub += 1
-                
-                is_gt_tcd = gt in TCD_TYPES
-                is_pred_tcd = pred in TCD_TYPES
-                if is_gt_tcd == is_pred_tcd:
-                    correct_cat += 1
-        
-        return {
-            "Total": total,
-            "Sub_Acc": correct_sub / total if total > 0 else 0,
-            "Cat_Acc": correct_cat / total if total > 0 else 0,
-            "FP": fp
-        }
-    
-    e2e_std_metrics = compute_e2e_metrics(results, "E2E_STD")
-    e2e_adw_metrics = compute_e2e_metrics(results, "E2E_ADW")
-    
-    print(f"{'Variant':<15} | {'TP Classified':<14} | {'Sub Acc':<10} | {'Cat Acc':<10} | {'FP':<6}")
-    print("-" * 80)
-    print(f"{'Standard MMD':<15} | {e2e_std_metrics['Total']:<14} | {e2e_std_metrics['Sub_Acc']:.2%}     | {e2e_std_metrics['Cat_Acc']:.2%}     | {e2e_std_metrics['FP']}")
-    print(f"{'ADW-MMD':<15} | {e2e_adw_metrics['Total']:<14} | {e2e_adw_metrics['Sub_Acc']:.2%}     | {e2e_adw_metrics['Cat_Acc']:.2%}     | {e2e_adw_metrics['FP']}")
-    print("-" * 80)
+        top_preds = sorted(preds.items(), key=lambda x: x[1], reverse=True)[:3]
+        pred_str = ", ".join([f"{k}: {v/total_gt:.0%}" for k, v in top_preds])
+        print(f"   {gt:<12} -> {pred_str}")
+    print("="*80 + "\n")
 
 # === SUPERVISED CDT_MSW BENCHMARK ===
 def run_supervised_comparison(n_seeds=5):
@@ -1177,7 +1128,7 @@ def generate_fair_comparison_table(results):
     expected_cdt_edr = 80.0  # Reported in paper: 75-85%
     
     # Generate comparison table
-    headers = ["Method", "Data Type", "CAT Acc (\\%)", "SUB Acc (\\%)", "EDR (\\%)", "Source"]
+    headers = ["Method", "Data Type", "CAT Acc (%)", "SUB Acc (%)", "EDR (%)", "Source"]
     data = []
     
     # Row 1: CDT_MSW from paper (expected with supervised data)

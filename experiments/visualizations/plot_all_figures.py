@@ -135,6 +135,11 @@ def main():
     # Define all visualization scripts with descriptions
     viz_scripts = [
         # ====================================================================
+        # CATEGORY 0: Tables Generation
+        # ====================================================================
+        ("generate_tables.py", "LaTeX Table Generation"),
+
+        # ====================================================================
         # CATEGORY 1: Architecture & System Design
         # ====================================================================
         ("plot_architecture.py", "System Architecture Diagram"),

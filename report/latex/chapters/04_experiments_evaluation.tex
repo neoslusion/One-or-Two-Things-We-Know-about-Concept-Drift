@@ -113,7 +113,7 @@ Bảng~\ref{tab:comprehensive_performance} so sánh hiệu suất của \textbf{
 
 Để khẳng định sự khác biệt về hiệu suất không phải do ngẫu nhiên, biểu đồ Critical Difference (CD) sử dụng kiểm định Friedman và Nemenyi post-hoc test được trình bày trong Hình~\ref{fig:critical_difference}.
 
-\begin{figure}[h]
+\begin{figure}[H]
 	\centering
 	\includegraphics[width=0.9\textwidth]{../../results/plots/critical_difference_f1.png}
 	\caption[Biểu đồ Critical Difference (CD)]{Biểu đồ Critical Difference (CD) với mức ý nghĩa $\alpha = 0.05$. Kết quả cho thấy không có sự khác biệt thống kê đáng kể giữa SE\_CDT và nhóm dẫn đầu (MMD, MMD\_IDW).}
@@ -150,7 +150,7 @@ Hiệu suất của các phương pháp thay đổi tùy thuộc vào đặc tí
 	\input{../../results/tables/table_II_part3.tex}
 \end{table}
 
-\begin{figure}[h]
+\begin{figure}[H]
 	\centering
 	\includegraphics[width=0.9\textwidth]{../../results/plots/vis_mixed_a_SE.png}
 	\caption[Minh họa tín hiệu phát hiện trên dữ liệu Sudden Drift]{Minh họa tín hiệu phát hiện trên dữ liệu Sudden Drift (trong kịch bản Mixed A). ShapeDD tạo ra hình dạng "tam giác cân" đặc trưng (Subplot 03) tại điểm drift, đúng như dự báo lý thuyết.}
@@ -172,14 +172,14 @@ Hiệu suất của các phương pháp thay đổi tùy thuộc vào đặc tí
 	      Hình~\ref{fig:stationary_fp} so sánh số lượng báo động giả. KS-Test tạo ra lượng báo động sai lớn nhất (36.6 FP/run). SE-CDT và ShapeDD-IDW duy trì \textbf{0 False Positives}, nhờ vào cơ chế shape detection chặt chẽ.
 \end{enumerate}
 
-\begin{figure}[h]
+\begin{figure}[H]
 	\centering
 	\includegraphics[width=0.9\textwidth]{../../results/plots/vis_repeated_gradual_SE.png}
 	\caption[Minh họa tín hiệu trên dữ liệu Gradual Drift]{Minh họa tín hiệu trên dữ liệu Gradual Drift. Tín hiệu (màu đỏ - Subplot 03) không tạo thành đỉnh nhọn rõ ràng mà bị san phẳng.}
 	\label{fig:gradual_drift_vis}
 \end{figure}
 
-\begin{figure}[h]
+\begin{figure}[H]
 	\centering
 	\includegraphics[width=0.9\textwidth]{../../results/plots/figure_4_stationary_fp.png}
 	\caption[Phân tích số lượng báo động giả trên tập dữ liệu tĩnh]{Phân tích số lượng báo động giả trên tập dữ liệu tĩnh (Stationary). KS tạo ra nhiều báo động sai nhất, trong khi các phương pháp MMD và D3 ổn định hơn.}
@@ -286,56 +286,52 @@ Bảng~\ref{tab:se-cdt-results} trình bày kết quả phân loại sử dụng
 
 \textbf{Phân tích:}
 \begin{itemize}
-	\item \textbf{Kết quả độ chính xác:} SE-CDT (Standard MMD) đạt độ chính xác nhóm (CAT) = \textbf{81.2\%} và độ chính xác subcategory (SUB) = \textbf{50.0\%}.
-	\item \textbf{Event Detection Rate (EDR):} Đạt 94.4\%, nghĩa là phát hiện phần lớn các drift. Đổi lại, số lượng báo động giả (FP) cao hơn so với IDW-MMD (1394 vs 171), nhưng trong ngữ cảnh classification (sau khi detection module đã lọc), ưu tiên là không bỏ sót thông tin để phân loại đúng.
-	\item \textbf{Hạn chế:} Hệ thống hiện tại xử lý Recurrent drift như chuỗi các sự kiện Sudden riêng lẻ, chưa có cơ chế bộ nhớ dài hạn.
+	\item \textbf{Kết quả độ chính xác:} SE-CDT (Standard MMD) đạt độ chính xác nhóm (CAT) = \textbf{72.2\%} và độ chính xác subcategory (SUB) = \textbf{50.0\%}.
+	\item \textbf{Event Detection Rate (EDR):} Đạt \textbf{94.4\%}, nghĩa là phát hiện phần lớn các drift. Đổi lại, số lượng báo động giả (FP) cao hơn so với IDW-MMD (\textbf{1394} vs 171), nhưng trong ngữ cảnh classification (sau khi detection module đã lọc), ưu tiên là không bỏ sót thông tin để phân loại đúng.
+	\item \textbf{Hạn chế:} Hệ thống hiện tại xử lý Recurrent drift như chuỗi các sự kiện Sudden riêng lẻ (độ chính xác Recurrent = 0\%), chưa có cơ chế bộ nhớ dài hạn.
 \end{itemize}
 
-\subsection{So sánh với CDT\_MSW}
-\label{sec:secdt-vs-cdtmsw}
+\subsection{Hiệu năng phân loại chi tiết}
+\label{sec:secdt-detailed-performance}
 
-Để có cái nhìn khách quan, SE-CDT được đối chiếu với CDT-MSW~\cite{guo2022cdtmsw} --- một phương pháp supervised tiêu biểu. Nghiên cứu thực hiện so sánh kép: (1) so với kết quả tự thực nghiệm (local baseline) và (2) so với các giá trị được công bố trong bài báo gốc (paper values).
-
-Bảng~\ref{tab:cdt-comparison-main} so sánh SE-CDT với kết quả của CDT-MSW.
+Để đánh giá toàn diện khả năng của SE-CDT trong môi trường không giám sát, chúng tôi phân tích hiệu suất trên từng loại drift cụ thể. Bảng~\ref{tab:se-cdt-performance-summary} tóm tắt các chỉ số hiệu năng chính của hệ thống.
 
 \begin{table}[H]
 	\centering
-	\caption{So sánh SE-CDT với CDT-MSW (Tổng hợp)}
-	\label{tab:cdt-comparison-main}
-	\input{../../results/tables/table_se_cdt_aggregate.tex}
+	\caption{Tổng hợp hiệu năng phân loại của SE-CDT}
+	\label{tab:se-cdt-performance-summary}
+	\input{../../results/tables/table_se_cdt_performance_summary.tex}
 \end{table}
 
-\textbf{Nhận xét:}
-\begin{itemize}
-    \item \textbf{Vượt trội so với local baseline:} Trong cùng điều kiện thử nghiệm trên bộ benchmark đa dạng, SE-CDT (81.2\% CAT) vượt xa phiên bản thực nghiệm của CDT-MSW (53.2\% CAT). Điều này cho thấy tính ổn định của phương pháp unsupervised khi đối mặt với nhiều kịch bản drift phức tạp.
-    \item \textbf{So với paper values:} Mặc dù độ chính xác CAT của SE-CDT (81.2\%) thấp hơn nhẹ so với giá trị được trình bày trong bài báo gốc của CDT-MSW (87.5\%), SE-CDT lại vượt trội về độ chính xác phân loại chi tiết (SUB Accuracy 50\% so với 42\%) và khả năng phát hiện sự kiện (EDR 94.4\% so với 80\%).
-    \item \textbf{Độ trễ và Tính thực tiễn:} Như minh họa trong Hình~\ref{fig:detection_timeline_mixed_a}, SE-CDT phát hiện drift sớm hơn đáng kể nhờ việc trích xuất trực tiếp tín hiệu từ $P(X)$, thay vì chờ đợi sự suy giảm hiệu suất (accuracy drop) như các phương pháp supervised.
-\end{itemize}
+Kết quả cho thấy SE-CDT đạt độ chính xác phân loại nhóm (Category Accuracy) là \textbf{72.2\%} và độ chính xác chi tiết (Subtype Accuracy) là \textbf{50.0\%}. Đặc biệt, khả năng phát hiện sự kiện (Event Detection Rate - EDR) đạt mức rất cao \textbf{94.4\%}, cho thấy hệ thống rất nhạy trong việc bắt được các thời điểm thay đổi.
 
-\subsection{Phân tích chi tiết theo loại drift}
-\label{sec:cdt-per-type}
+\textbf{Phân tích theo từng loại drift:}
 
-Để hiểu sâu hơn về khả năng phân loại của SE-CDT, Bảng~\ref{tab:cdt-per-type} trình bày hiệu suất trên từng loại drift cụ thể so với paper values của CDT-MSW.
+Bảng~\ref{tab:se-cdt-performance-by-type} trình bày độ chính xác chi tiết cho từng loại drift.
 
 \begin{table}[H]
 	\centering
-	\caption{So sánh hiệu suất phân loại theo loại drift (so với paper values)}
-	\label{tab:cdt-per-type}
-	\input{../../results/tables/table_cdt_msw_vs_se_cdt_by_drift_type.tex}
+	\caption{Độ chính xác phân loại theo từng loại drift}
+	\label{tab:se-cdt-performance-by-type}
+	\input{../../results/tables/table_se_cdt_performance_by_type.tex}
 \end{table}
 
-\textbf{Phân tích kết quả:}
+\textbf{Nhận xét chi tiết:}
 \begin{itemize}
-	\item \textbf{Sudden Drift (88.2\%):} Điểm mạnh chính của SE-CDT. MMD signal tạo peak rõ ràng tại thời điểm thay đổi đột ngột, dễ dàng phân biệt.
+	\item \textbf{Sudden Drift (82.0\%):} Đây là điểm mạnh nhất của phương pháp. Tín hiệu MMD tạo ra đỉnh nhọn (peak) rõ ràng, giúp dễ dàng phân biệt với các loại khác.
 	
-	\item \textbf{Incremental Drift (40.0\%):} Cải thiện vượt bậc so với baseline (8.5\%) nhờ các đặc trưng temporal (LTS, SDS, MS) giúp nhận diện xu hướng thay đổi liên tục.
+	\item \textbf{Gradual Drift (55.0\%):} Khả năng phát hiện drift dần dần ở mức trung bình khá. Việc sử dụng Standard MMD giúp bảo toàn thông tin toàn cục tốt hơn so với IDW-MMD trong trường hợp này.
 	
-	\item \textbf{Recurrent Drift (0\%):} Hạn chế hiện tại --- hệ thống xử lý các concept lặp lại như các sự kiện độc lập do thiếu cơ chế bộ nhớ dài hạn (concept memory).
+	\item \textbf{Incremental Drift (24.0\%):} Mặc dù thấp hơn so với Sudden và Gradual, kết quả này vẫn cho thấy khả năng nhận diện xu hướng thay đổi tuyến tính nhờ các đặc trưng temporal (LTS, MS). Tuy nhiên, sự nhầm lẫn với Gradual drift vẫn còn cao do tính chất tương đồng của tín hiệu.
+	
+	\item \textbf{Blip Drift (18.0\%):} Kết quả thấp cho thấy khó khăn trong việc phân biệt giữa nhiễu ngắn hạn và drift tạm thời (Blip) trong môi trường không giám sát hoàn toàn.
+	
+	\item \textbf{Recurrent Drift (0\%):} Hạn chế hiện tại của hệ thống là chưa có cơ chế bộ nhớ dài hạn (concept memory) để liên kết các trạng thái lặp lại, do đó Recurrent drift thường được xử lý như các sự kiện Sudden riêng lẻ.
 \end{itemize}
 
 \textbf{Hình dạng tín hiệu (Signal Shapes):}
 
-Hình~\ref{fig:signal_sudden} và Hình~\ref{fig:signal_incremental} minh họa sự khác biệt trong hình dạng tín hiệu MMD. Đối với Gradual Drift, như đã phân tích ở Hình~\ref{fig:gradual_drift_vis} (Mục~\ref{sec:detection-eval}), tín hiệu có dạng plateau kéo dài và không có đỉnh nhọn, giải thích tại sao việc phát hiện gặp khó khăn.
+Hình~\ref{fig:signal_sudden} và Hình~\ref{fig:signal_incremental} minh họa sự khác biệt trong hình dạng tín hiệu MMD giúp hệ thống phân loại.
 
 \begin{figure}[H]
         \centering

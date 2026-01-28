@@ -159,7 +159,7 @@ def plot_scenario(scenario_name, seed=0):
     ax2_top.legend(loc='upper right')
 
     # --- Bottom Panel: MMD Signal ---
-    ax2_bottom.plot(mmd_x_axis, mmd_sig, color='blue', label='ADW-MMD Signal')
+    ax2_bottom.plot(mmd_x_axis, mmd_sig, color='blue', label='IDW-MMD Signal')
     ax2_bottom.set_title(f"SE_CDT: MMD Signal & Classification")
     ax2_bottom.set_ylabel("MMD Value")
     ax2_bottom.set_xlabel("Sample Index")
