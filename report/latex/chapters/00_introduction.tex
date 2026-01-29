@@ -1,8 +1,8 @@
 \chapter{Giới thiệu đề tài}
 
 \section{Thực trạng chung}
-Hệ thống phát hiện gian lận của một ngân hàng có thể đạt độ chính xác 99\%
-trong năm đầu vận hành, nhưng sau 18 tháng, tỷ lệ cảnh báo sai tăng đột biến
+Hệ thống phát hiện gian lận của một ngân hàng có thể đạt độ chính xác cao
+trong năm đầu vận hành, nhưng sau một thời gian dài vận hành, tỷ lệ cảnh báo sai tăng đột biến
 lên gấp ba lần. Một mô hình dự báo bảo trì máy móc trong nhà máy thép hoạt
 động ổn định suốt mùa khô, nhưng khi mùa mưa đến, hiệu suất giảm mạnh do
 điều kiện vận hành thay đổi. Đây không phải là lỗi của thuật toán hay của
@@ -44,7 +44,7 @@ Nghiên cứu sẽ so sánh hiệu năng, phân tích ưu nhược điểm,
 từ đó xác định hướng cải tiến phù hợp.
 
 \subsection{Tích hợp các cải tiến cho ShapeDD}
-Dựa trên cơ sở lý thuyết và kết quả đánh giá hiệu năng, nghiên cứu tích hợp kỹ thuật \textbf{IDW-MMD (Inverse Density-Weighted MMD)} vào framework ShapeDD. Mục tiêu là giải quyết các hạn chế về chi phí tính toán và độ nhạy của phương pháp gốc. IDW-MMD sử dụng cơ chế trọng số nghịch biến với mật độ để giảm độ dao động kết quả, cho phép đạt độ chính xác cao với số lượng mẫu ít hơn.
+Dựa trên cơ sở lý thuyết và kết quả đánh giá hiệu năng, nghiên cứu tích hợp kỹ thuật \textbf{IDW-MMD (Inverse Density-Weighted MMD)} vào phương pháp ShapeDD. Mục tiêu là giải quyết các hạn chế về chi phí tính toán và độ nhạy của phương pháp gốc. IDW-MMD sử dụng cơ chế trọng số nghịch biến với mật độ để giảm độ dao động kết quả, cho phép đạt độ chính xác cao với số lượng mẫu ít hơn.
 
 \subsection{Đề xuất phương pháp phân loại drift SE-CDT}
 Kết hợp khả năng định vị chính xác thời điểm drift của ShapeDD với mô hình phân loại \textit{drift} CDT-MSW (Concept Drift Type identification based on Multi-Sliding Windows --- phương pháp phân loại loại drift dựa trên phân tích cửa sổ trượt đa kích thước~\cite{guo2022cdtmsw}, sẽ được trình bày chi tiết ở Mục~\ref{sec:cdt-msw-theory}) để đề xuất phương pháp mới \textbf{SE-CDT} (ShapeDD-Enhanced Concept Drift Type Identification).
@@ -77,7 +77,7 @@ Cụ thể, luận văn sẽ tập trung vào việc phát triển hệ thống 
 \end{itemize}
 
 \textbf{Phạm vi đánh giá:} Hệ thống được thiết kế và đánh giá trên
-\textbf{đa dạng các loại drift} bao gồm sudden, gradual, incremental, recurrent, và blip.
+\textbf{đa dạng các loại drift} bao gồm sudden, gradual, incremental, recurrent, và blip nhưng vẫn tập trung vào sudden drift.
 Cách tiếp cận đánh giá bao gồm:
 
 \begin{enumerate}
@@ -98,11 +98,11 @@ Cách tiếp cận đánh giá bao gồm:
 \begin{itemize}
 	\item \textbf{Phương pháp phát hiện drift:} ShapeDD và các phương pháp
 	      truyền thống (ADWIN, DDM, EDDM, Page-Hinkley).
-	\item \textbf{Mô hình phân loại drift:} CDT-MSW --- phương pháp xác định
-	      loại \textit{drift} dựa trên multi-sliding windows.
+	\item \textbf{Mô hình phân loại drift:} SE-CDT --- phương pháp xác định
+	      loại \textit{drift} dựa trên multi-sliding windows lấy ý tưởng từ CDT-MSW.
 	\item \textbf{Dữ liệu streaming:} Các tập dữ liệu benchmark
 	      (SEA, Hyperplane, Electricity,...) và dữ liệu mô phỏng với
 	      các loại \textit{drift} khác nhau.
-	\item \textbf{Nền tảng xử lý streaming:} Apache Kafka cho việc triển khai
+	\item \textbf{Nền tảng xử lý streaming:} Đề xuất sử dụng Apache Kafka cho việc triển khai
 	      hệ thống \textit{real-time}.
 \end{itemize}

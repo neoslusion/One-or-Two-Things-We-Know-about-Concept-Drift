@@ -6,14 +6,6 @@
 	trên cửa sổ trượt. Các phương pháp sẽ được luận văn trình bày theo những góc nhìn khác nhau, từ đó có thể đưa ra các
 	so sánh, đánh giá, và làm tiền đề để phát triển mô hình phát hiện trôi dạt cho luận văn này.}
 
-\textbf{Quy ước thuật ngữ trong chương này:}
-\begin{itemize}
-	\item \textbf{Concept drift / Trôi dạt khái niệm:} Hiện tượng phân phối dữ liệu thay đổi theo thời gian, bao gồm cả virtual drift ($P(X)$ thay đổi) và real drift ($P(Y|X)$ thay đổi).
-	\item \textbf{Sudden drift / Abrupt drift:} Drift xảy ra đột ngột tại một thời điểm xác định.
-	\item \textbf{Detection delay:} Số lượng mẫu từ khi drift xảy ra đến khi được phát hiện.
-	\item \textbf{Warning zone:} Giai đoạn cảnh báo trước khi xác nhận drift (trong các phương pháp DDM-family).
-\end{itemize}
-
 \section{Các phương pháp phát hiện trôi dạt}
 Trải qua nhiều thập kỷ, bài toán phát hiện hiện tượng trôi dạt đã được nghiên cứu với nhiều cách tiếp cận khác nhau.
 Từ những năm 1990, các hệ thống học máy đầu tiên có khả năng thích ứng với concept drift chủ yếu dựa trên chiến lược
@@ -25,7 +17,7 @@ Nhìn chung, các phương pháp phát hiện trôi dạt có thể phân thành
 cốt lõi, bao gồm: (1) nhóm phương pháp thống kê (phân tích thay đổi phân phối dữ liệu), (2) nhóm phương pháp
 theo dõi hiệu năng mô hình (dựa trên sai số/ độ chính xác), (3) nhóm phương pháp học máy truyền
 thống (ví dụ sử dụng ensemble hoặc mô hình phụ để nhận biết drift), và (4) nhóm phương pháp học sâu (deep learning) mới nổi gần đây.
-\subsubsection{Các phương pháp thống kê}
+\subsection{Các phương pháp thống kê}
 Nhóm phương pháp thống kê tập trung vào việc phát hiện thay đổi phân phối dữ liệu một cách trực tiếp, thường
 thông qua các phép kiểm định thống kê hoặc quan sát cửa sổ trượt trên dòng dữ liệu. Một trong những kỹ thuật
 kinh điển là sử dụng các biểu đồ kiểm soát thống kê liên tục như \textit{CUSUM} hay kiểm định \textit{Page-Hinkley (PH)}.
@@ -60,7 +52,7 @@ Gần đây, Schrab et al. (2023)~\cite{schrab2023mmdagg} đề xuất \textbf{M
 Dù vậy, nhóm phương pháp thống kê đã đặt nền móng quan trọng cho lĩnh vực phát hiện drift, đặc biệt cho các bài toán quan tâm trực tiếp đến
 sự thay đổi của dữ liệu hơn là hiệu năng mô hình.
 
-\subsubsection{Các phương pháp dựa trên hiệu năng mô hình}
+\subsection{Các phương pháp dựa trên hiệu năng mô hình}
 Đây là nhóm phương pháp phổ biến trong giai đoạn giữa những năm 2000, khi các nhà nghiên cứu tập trung vào việc giám sát chất
 lượng dự đoán của mô hình học máy theo thời gian để phát hiện drift. Ý tưởng chính là nếu độ chính xác của mô hình học máy đột
 nhiên trở nên kém đi (tỉ lệ lỗi tăng lên đáng kể khi so sánh với nhãn thật) thì có khả năng dữ liệu đã có thay đổi. Phương pháp DDM
@@ -155,7 +147,7 @@ Tóm lại, nhóm phương pháp dựa trên hiệu năng mô hình đã phát t
 Bắt đầu từ DDM như một chuẩn mực nền tảng~\cite{gama2004learning}, các nghiên cứu nối tiếp đã dần hoàn thiện nó thành một họ
 phương pháp đa dạng, cân bằng hơn giữa tốc độ, độ chính xác và độ tin cậy trong môi trường dữ liệu phức tạp.
 
-\subsubsection{Các phương pháp học máy truyền thống}
+\subsection{Các phương pháp học máy truyền thống}
 Bên cạnh việc dùng trực tiếp thống kê hoặc sai số mô hình, các nhà nghiên cứu còn phát triển những kỹ thuật phát hiện drift dựa trên
 mô hình học máy hoặc tổ hợp nhiều mô hình. Những phương pháp này thường có tính "chủ động" hơn: không chỉ chờ hiệu năng giảm mà còn tìm
 dấu hiệu thay đổi trong cấu trúc dữ liệu hoặc trong phản ứng của nhiều mô hình khác nhau.
@@ -185,7 +177,7 @@ Nhóm phương pháp này phát triển mạnh khoảng 2008–2015, khi khả n
 dụng sức mạnh của ensemble và mô hình meta để phát hiện các thay đổi tinh vi, tạo bước chuyển từ các kỹ thuật thuần thống kê sang các
 hệ thống linh hoạt, kết hợp chặt chẽ quá trình phát hiện drift với quá trình học liên tục.
 
-\subsubsection{Các phương pháp học sâu}
+\subsection{Các phương pháp học sâu}
 Trong những năm gần đây, với sự bùng nổ của deep learning, bài toán concept drift được nghiên cứu trong bối cảnh các mô hình mạng
 neural phức tạp. Thách thức đặt ra là các mô hình deep learning thường có hàng triệu tham số và quá trình học phức tạp, làm sao tích
 hợp hoặc thiết kế bộ phát hiện drift hiệu quả? Các hướng tiếp cận chính bao gồm: (I) tích hợp các detector truyền thống để giám sát đầu
@@ -269,7 +261,7 @@ Các phương pháp cũng đã được thực nghiệm trên các tập dữ li
 	\end{tabular}
 \end{table}
 
-Tổng kết lại, từ khoảng năm 2015 đến nay, đã có sự gia tăng đáng kể các công trình kết hợp giữa deep learning và phát hiện
+Tổng kết lại, xuyên suốt quá trình hình thành và phát triển, đã có sự gia tăng đáng kể các công trình kết hợp giữa deep learning và phát hiện
 concept drift. Ban đầu, các mô hình deep thường dựa vào các "cảm biến" drift bên ngoài (như ADWIN, DDM) để quyết định khi nào cần
 tái huấn luyện. Dần dần, các kiến trúc deep thích ứng (như NADINE, DEN, ADL, DEVDAN) ra đời với khả năng tự điều chỉnh cấu trúc khi
 drift diễn ra. Mặc dù vẫn đang trong giai đoạn phát triển, các phương pháp này hứa hẹn đem lại sự linh hoạt và mạnh mẽ, giúp mô hình
@@ -321,7 +313,7 @@ thống vừa có khả năng học biểu diễn mạnh mẽ vừa linh hoạt 
 \label{sec:cdt-msw-theory}
 \subsection{Tổng quan}
 
-\textit{Mặc dù luận văn tập trung đánh giá \textbf{sudden drift} như đã nêu trong Chương~1, việc hệ thống hóa phương pháp phân loại loại drift là nền tảng quan trọng cho kiến trúc thích ứng thông minh được đề xuất trong Chương~3. Phương pháp CDT-MSW được tích hợp vào hệ thống để kích hoạt chiến lược cập nhật mô hình phù hợp với từng loại drift.}
+% \textit{Mặc dù luận văn tập trung đánh giá \textbf{sudden drift} như đã nêu trong Chương~1, việc hệ thống hóa phương pháp phân loại loại drift là nền tảng quan trọng cho kiến trúc thích ứng thông minh được đề xuất trong Chương~3. Phương pháp CDT-MSW được tích hợp vào hệ thống để kích hoạt chiến lược cập nhật mô hình phù hợp với từng loại drift.}
 
 Sau khi phát hiện được thời điểm xảy ra trôi dạt, việc xác định loại trôi dạt là điều cần thiết để có thể có những hành động phù hợp để can thiệp vào mô hình. Khác với các phương pháp truyền thống chỉ xác định có trôi dạt hay không, phương pháp \textbf{CDT-MSW} (Concept Drift Type identification based on Multi-Sliding Windows) được Guo \textit{et al.}~\cite{guo2022cdtmsw} đề xuất nhằm \emph{phân biệt bản chất và tốc độ thay đổi của quá trình drift}. Phương pháp này dựa trên việc quan sát hành vi thay đổi của độ chính xác giữa nhiều cửa sổ trượt (traditional sliding windows và adaptive windows), qua đó nhận dạng các loại drift như: \emph{sudden}, \emph{gradual}, \emph{incremental}, và \emph{recurrent}.
 
@@ -473,7 +465,7 @@ Tổng hợp từ các tài liệu trên, có thể chia các chiến lược c�
 
 	      Ví dụ, trong hệ thống giám sát quá trình sản xuất (process monitoring), Jourdan \textit{et al.}~\cite{jourdan2023process} thực hiện \emph{partial reinitialization} của các tầng cuối trong mạng nơ-ron khi độ bất định (uncertainty) vượt ngưỡng.
 
-	\item \textbf{Cập nhật dần (Gradual / Incremental Update):} Khi mô hình gặp \emph{gradual} hoặc \emph{incremental drift}, sự thay đổi xảy ra từ từ, cần cập nhật mềm với hệ số học $\eta_t$ nhỏ hơn. Theo Xiang \textit{et al.}, có thể mô hình hoá bằng công thức:
+	\item \textbf{Cập nhật dần (Gradual / Incremental Update):} Khi mô hình gặp \emph{gradual} hoặc \emph{incremental drift}, sự thay đổi xảy ra từ từ, cần cập nhật mềm với hệ số học $\eta_t$ nhỏ hơn. Theo Xiang \textit{et al.}~\cite{xiang2023review}, có thể mô hình hoá bằng công thức:
 	      \[
 		      \theta_{t+1} = \theta_t - \eta_t \nabla_\theta \mathcal{L}(x_t, y_t),
 		      \quad \text{với } \eta_t = f(L_d, r_t),
