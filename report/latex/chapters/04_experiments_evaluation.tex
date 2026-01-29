@@ -5,24 +5,16 @@
 \label{sec:overview}
 
 \subsection{Mục tiêu và Cấu trúc chương}
-Chương này trình bày các kết quả thực nghiệm nhằm kiểm chứng hiệu quả của hệ thống đề xuất. Quá trình đánh giá được chia thành hai giai đoạn chính:
+Chương này đi sâu phân tích các kết quả thực nghiệm nhằm minh chứng cho tính hiệu quả của hệ thống đề xuất. Khung đánh giá được thiết kế chặt chẽ với ba yếu tố chính, tương ứng với các module xử lý của hệ thống:
 \begin{enumerate}
-	\item \textbf{Đánh giá khả năng phát hiện Drift (Detection Benchmark):} So sánh hiệu suất của ShapeDD và biến thể cải tiến (IDW-MMD với asymptotic p-value) với các phương pháp phổ biến (Baseline) trên các tập dữ liệu đa dạng.
-	\item \textbf{Đánh giá khả năg phân loại drift của SE-CDT:} Kiểm tra độ chính xác phân loại loại drift (sudden, gradual, incremental, recurrent, blip) dựa trên tín hiệu drift magnitude của phương pháp SE-CDT.
-	\item \textbf{Đánh giá khả năng thích ứng (Adaptation Evaluation):} Kiểm chứng hiệu quả của chiến lược cập nhật mô hình tự động thông qua chỉ số độ chính xác tích lũy (Prequential Accuracy).
+	\item \textbf{Đánh giá khả năng phát hiện Drift (Detection Benchmark):} Đối chiếu hiệu suất của ShapeDD và biến thể cải tiến (IDW-MMD với asymptotic p-value) với các phương pháp nền tảng (Baseline) trên đa dạng các tập dữ liệu.
+	\item \textbf{Đánh giá khả năng phân loại drift của SE-CDT:} Kiểm chứng độ chính xác trong việc định danh loại drift (sudden, gradual, incremental, recurrent, blip) dựa trên phân tích tín hiệu drift magnitude.
+	\item \textbf{Đánh giá khả năng thích ứng (Adaptation Evaluation):} Xác thực hiệu quả thực tế của các chiến lược cập nhật mô hình tự động thông qua chỉ số độ chính xác cuốn chiếu (Prequential Accuracy).
 \end{enumerate}
 
 \subsection{Môi trường và Cấu hình}
 \label{sec:dataset-config}
-Hệ thống streaming được giả lập sử dụng Apache Kafka.
-
-\textbf{Cấu hình tham số chung:}
-\begin{itemize}
-	\item Kích thước luồng dữ liệu (Stream length): $10,000$ mẫu/dataset.
-	\item Số lượng điểm drift: $10$ điểm/dataset (cách đều nhau).
-	\item Độ trễ chấp nhận được (Acceptable delay): $\delta = 150$ mẫu.
-	\item Số lần chạy lặp lại (Runs): $30$ lần với các random seed khác nhau để đảm bảo độ tin cậy thống kê ($\alpha = 0.05$).
-\end{itemize}
+Thay vì liệt kê một cấu hình chung thiếu chính xác, các tham số môi trường và thuật toán sẽ được mô tả cụ thể gắn liền với từng kịch bản thử nghiệm (Detection, Classification, Adaptation). Cách tiếp cận này nhằm đảm bảo tính minh bạch và khả năng tái lập kết quả một cách chính xác nhất.
 
 \textbf{Quy ước ký hiệu trong các bảng:}
 \begin{itemize}
@@ -84,7 +76,17 @@ Tương ứng với kiến trúc này, phần đánh giá sẽ được chia th�
 \section{Đánh giá phương pháp phát hiện Drift}
 \label{sec:detection-eval}
 
-Phần này so sánh Detection Module của hệ thống đề xuất với các phương pháp state-of-the-art hiện có: KS-Test (thống kê cổ điển), MMD (kernel-based), DAWIDD (window-based), D3 (discriminative), và ShapeDD gốc (2021). Trọng tâm đánh giá là khả năng phát hiện \textbf{Sự thay đổi phân phối đầu vào} $P(X)$ (Distribution Shift / Covariate Shift).
+Mục này tập trung đối chiếu hiệu năng của Detection Module so với các phương pháp tiên tiến (SOTA) đại diện cho các trường phái khác nhau: KS-Test (thống kê cổ điển), MMD (kernel-based), DAWIDD (window-based), D3 (discriminative classifier), và ShapeDD gốc (2021). Trọng tâm phân tích được đặt vào khả năng nhận diện \textbf{Sự thay đổi phân phối đầu vào} $P(X)$ (Distribution Shift / Covariate Shift).
+
+\subsection{Thiết lập thực nghiệm (Detection Setup)}
+Các tham số cho bài toán benchmark phát hiện drift được thiết lập như sau (tương ứng với script \texttt{benchmark/main.py}):
+\begin{itemize}
+	\item \textbf{Dữ liệu:} 11 tập dữ liệu tổng hợp và thực tế (chi tiết ở Mục~\ref{sec:dataset-config}).
+	\item \textbf{Kích thước luồng:} $T = 10,000$ mẫu mỗi dataset.
+	\item \textbf{Số lượng drift:} 10 điểm drift được chèn tại các vị trí cố định (mỗi 1,000 mẫu) để tạo ground truth.
+	\item \textbf{Quy trình đánh giá:} Thực hiện 30 lần chạy độc lập (30 runs) với các random seed khác nhau.
+	\item \textbf{Độ trễ chấp nhận ($\delta$):} 250 mẫu. Nếu phát hiện nằm ngoài khoảng $[t_{drift}, t_{drift} + \delta]$, nó được tính là False Positive.
+\end{itemize}
 
 \subsection{Kết quả so sánh tổng hợp}
 
@@ -220,10 +222,16 @@ Hình~\ref{fig:throughput-comparison} minh họa sự cải thiện vượt tr�
 
 Phần này đánh giá hiệu quả của \textbf{Classification Module} (SE-CDT). Khác với các phương pháp supervised yêu cầu labels, SE-CDT hoạt động hoàn toàn không giám sát bằng cách phân tích hình dạng tín hiệu drift magnitude $\sigma(t)$.
 
-\subsection{Thiết kế thực nghiệm}
+\subsection{Thiết lập thực nghiệm (Classification Setup)}
 
-\textbf{Cấu hình:} Dataset tổng hợp 8,000 mẫu với các loại drift TCD (Sudden, Blip) và PCD (Gradual, Incremental, Recurrent).
-\textbf{Đánh giá:} 17 configurations × 10 runs = 170 test cases. Tham số: window\_size=200, stride=40.
+\textbf{Cấu hình (Code: \texttt{benchmark\_proper.py}):}
+\begin{itemize}
+	\item \textbf{Dữ liệu:} Dataset tổng hợp với độ dài $T = 8,000$ mẫu.
+	\item \textbf{Kịch bản Drift:} Bao gồm đầy đủ 5 loại drift: Sudden, Gradual, Incremental, Recurrent (A-B-A), và Blip.
+	\item \textbf{Số lượng test case:} 17 configurations $\times$ 10 runs = 170 kịch bản kiểm thử.
+	\item \textbf{Tham số ShapeDD:} Window size $W=50$, Stride $s=10$.
+	\item \textbf{Ground Truth:} Loại drift được gán nhãn thủ công tại các điểm thay đổi để tính Accuracy.
+\end{itemize}
 
 Để tối ưu hóa hiệu suất phân loại, trước khi đưa ra kết quả cuối cùng, luận văn tiến hành hai bước hiệu chỉnh quan trọng: (1) Lựa chọn biến thể MMD phù hợp cho module phân loại, và (2) Hiệu chỉnh ngưỡng phát hiện (Threshold Calibration).
 
@@ -247,13 +255,13 @@ $\rightarrow$ \textbf{Quyết định thiết kế:} Hệ thống sử dụng m�
 Việc lựa chọn ngưỡng ($\tau$) ảnh hưởng trực tiếp đến độ nhạy. Thông qua phân tích sơ bộ trên dữ liệu validation streaming:
 \begin{itemize}
 	\item \textbf{Ngưỡng mặc định ($\tau = 0.5$):} Quá cao (conservative), không phát hiện được drift nào trên dữ liệu streaming demo.
-	\item \textbf{Ngưỡng hiệu chỉnh ($\tau = 0.15$):} Cân bằng tốt nhất. Ngưỡng này đủ thấp để bắt được các tín hiệu drift vừa phải (moderate drift) nhưng đủ cao để lọc bỏ nhiễu ngẫu nhiên.
+	\item \textbf{Ngưỡng hiệu chỉnh ($\tau = 0.015$):} Cân bằng tốt nhất. Ngưỡng này đủ thấp để bắt được các tín hiệu drift vừa phải (moderate drift) nhưng đủ cao để lọc bỏ nhiễu ngẫu nhiên.
 \end{itemize}
-Do đó, các kết quả phân loại dưới đây sử dụng $\tau = 0.15$.
+Do đó, các kết quả phân loại dưới đây sử dụng $\tau = 0.015$.
 
 \subsection{Kết quả phân loại}
 
-Bảng~\ref{tab:se-cdt-results} trình bày kết quả phân loại sử dụng cấu hình đã chọn (Standard MMD, $\tau=0.15$).
+Bảng~\ref{tab:se-cdt-results} trình bày kết quả phân loại sử dụng cấu hình đã chọn (Standard MMD, $\tau=0.015$).
 
 \begin{table}[H]
 	\centering
@@ -352,8 +360,20 @@ Hình~\ref{fig:signal_sudden} và Hình~\ref{fig:signal_incremental} minh họa 
 
 Sau khi phát hiện drift, hệ thống kích hoạt quy trình thích ứng. Phần này đánh giá hiệu quả của chiến lược thích ứng theo loại drift (Type-Specific Adaptation) sử dụng chỉ số \textbf{Prequential Accuracy}.
 
-\subsection{Thiết lập thực nghiệm}
-Thực nghiệm chạy trên hệ thống Kafka streaming demo với ngưỡng SE-CDT $\tau=0.15$. Luồng dữ liệu gồm 5,000 mẫu với các loại drift Sudden, Gradual và Recurrent.
+\subsection{Thiết lập thực nghiệm (Adaptation Setup)}
+Thực nghiệm đánh giá khả năng thích ứng (Code: \texttt{monitoring/evaluate\_prequential.py}) được thiết lập như sau:
+\begin{itemize}
+	\item \textbf{Môi trường:} Giả lập Streaming Loop (Prequential Evaluation).
+	\item \textbf{Dữ liệu:} Luồng dữ liệu ngắn gọn $T = 5,000$ mẫu tập trung vào các sự kiện drift dày đặc.
+	\item \textbf{Các loại drift thử nghiệm:} Sudden (Stepping & Alternating), Gradual, và Recurrent.
+	\item \textbf{Cấu hình tham số:}
+	\begin{itemize}
+		\item SE-CDT threshold $\tau = 0.015$ (đã hiệu chỉnh).
+		\item Window size $W = 250$.
+		\item Classifier: RandomForest (n=10) hoặc Hoeffding Tree.
+	\end{itemize}
+	\item \textbf{Metric:} Prequential Accuracy (độ chính xác cuốn chiếu) để đo lường khả năng phục hồi tức thời.
+\end{itemize}
 
 \subsection{Phân biệt Real Drift và Virtual Drift trong thích ứng}
 Như đã thảo luận ở Mục~\ref{sec:overview} và Mục~\ref{sec:detection-eval}, các phương pháp unsupervised như SE-CDT được thiết kế để phát hiện Real Drift (thay đổi $P(X)$) và bỏ qua Virtual Drift (chỉ đổi $P(Y|X)$). Do đó, các kết quả đánh giá thích ứng dưới đây tập trung vào các kịch bản Real Drift, nơi SE-CDT có thể phát huy tác dụng kích hoạt learning.
@@ -366,7 +386,7 @@ Bảng~\ref{tab:prequential-results} tổng hợp kết quả Prequential Accura
 
 \begin{table}[H]
 	\centering
-	\caption{Kết quả Prequential Accuracy theo loại drift (SE-CDT threshold = 0.15)}
+	\caption{Kết quả Prequential Accuracy theo loại drift (SE-CDT threshold = 0.015)}
 	\label{tab:prequential-results}
 	\begin{tabular}{|l|c|c|c|}
 		\hline
