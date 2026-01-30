@@ -314,119 +314,94 @@ thống vừa có khả năng học biểu diễn mạnh mẽ vừa linh hoạt 
 \subsection{Tổng quan}
 
 % \textit{Mặc dù luận văn tập trung đánh giá \textbf{sudden drift} như đã nêu trong Chương~1, việc hệ thống hóa phương pháp phân loại loại drift là nền tảng quan trọng cho kiến trúc thích ứng thông minh được đề xuất trong Chương~3. Phương pháp CDT-MSW được tích hợp vào hệ thống để kích hoạt chiến lược cập nhật mô hình phù hợp với từng loại drift.}
+Sau khi phát hiện được thời điểm xảy ra trôi dạt, việc xác định loại trôi dạt là điều cần thiết để có thể có những hành động phù hợp để can thiệp vào mô hình. Khác với các phương pháp truyền thống chỉ xác định có trôi dạt hay không, phương pháp \textbf{CDT-MSW} (Concept Drift Type identification based on Multi-Sliding Windows) được Guo \textit{et al.}~ \cite{guo2022cdtmsw} đề xuất nhằm \emph{phân biệt bản chất và tốc độ thay đổi của quá trình drift}. Phương pháp này dựa trên việc quan sát hành vi thay đổi của độ chính xác giữa nhiều cửa sổ trượt (traditional sliding windows và adaptive windows), qua đó nhận dạng các loại drift như: \emph{sudden}, \emph{gradual}, \emph{incremental}, và \emph{recurrent}.
 
-Sau khi phát hiện được thời điểm xảy ra trôi dạt, việc xác định loại trôi dạt là điều cần thiết để có thể có những hành động phù hợp để can thiệp vào mô hình. Khác với các phương pháp truyền thống chỉ xác định có trôi dạt hay không, phương pháp \textbf{CDT-MSW} (Concept Drift Type identification based on Multi-Sliding Windows) được Guo \textit{et al.}~\cite{guo2022cdtmsw} đề xuất nhằm \emph{phân biệt bản chất và tốc độ thay đổi của quá trình drift}. Phương pháp này dựa trên việc quan sát hành vi thay đổi của độ chính xác giữa nhiều cửa sổ trượt (traditional sliding windows và adaptive windows), qua đó nhận dạng các loại drift như: \emph{sudden}, \emph{gradual}, \emph{incremental}, và \emph{recurrent}.
-
-\subsection{Giai đoạn 1: Phát hiện trôi dạt}
-Trong giai đoạn đầu, CDT-MSW định nghĩa \textbf{tỷ lệ phát hiện} (Detection Flow Ratio) để đo lường sự thay đổi giữa hai cửa sổ dữ liệu $W_A$ và $W_B$:
+\subsection{Giai đoạn 1: Phát hiện trôi dạt (Detection Process)}
+Trong giai đoạn đầu, CDT-MSW định nghĩa \textbf{Tỷ lệ Phát hiện Luồng} (Detection Flow Ratio) để đo lường sự thay đổi giữa hai cửa sổ dữ liệu $W_A$ (tĩnh/tham chiếu) và $W_B$ (trượt/hiện tại):
 \begin{equation}
-	\tilde{P}^{t}_{\text{det}} = \frac{a^B_t}{a^A_t},
-	\tag{1}
+    \tilde{P}^{t}_{\text{det}} = \frac{\alpha^t_{B}}{\alpha^{\star}_{A}} 
+    \tag{1}
 \end{equation}
-Trong đó $a^A_t$ và $a^B_t$ là độ chính xác (accuracy) của mô hình trên hai cửa sổ $W_A$ (cửa sổ tham chiếu) và $W_B$ (cửa sổ hiện tại) tại thời điểm $t$.
-
+Trong đó $\alpha^{\star}_{A}$ là độ chính xác thời gian thực (real-time accuracy) của mô hình huấn luyện trên cửa sổ $W_A$, và $\alpha^t_{B}$ là độ chính xác trên cửa sổ $W_B$ sau khi trượt $t$ lần.
 \begin{itemize}
-	\item Khi $\tilde{P}^{t}_{\text{det}} \approx 1$: Độ chính xác trên hai cửa sổ tương đương với việc không có drift.
-	\item Khi $\tilde{P}^{t}_{\text{det}} < \tau_{\text{det}}$ (ngưỡng phát hiện, thường $\sim$0.95): Accuracy suy giảm đáng kể, điều đó thể hiện có khả năng xảy ra drift.
+    \item Khi $\tilde{P}^{t}_{\text{det}} \approx 1$: Độ chính xác trên hai cửa sổ tương đương, không có drift.
+    \item Khi $\tilde{P}^{t}_{\text{det}} < \tau$ (ngưỡng phát hiện): Độ chính xác trên $W_B$ suy giảm đáng kể so với $W_A$, điều đó thể hiện có khả năng xảy ra drift.
 \end{itemize}
-Khi $\tilde{P}^{t}_{\text{det}}$ giảm mạnh (tức là độ chính xác trên $W_B$ suy giảm so với $W_A$), thuật toán xác định đây là vị trí có khả năng xảy ra trôi dạt. Điểm phát hiện được ký hiệu là $t_d$.
+Khi $\tilde{P}^{t}_{\text{det}}$ giảm mạnh (thỏa mãn $\tilde{P}^{t}_{\text{det}} < \tau$), thuật toán xác định đây là vị trí có khả năng xảy ra trôi dạt, ký hiệu là $t_d$.
 
-\subsection{Giai đoạn 2: Đo độ dài trôi dạt}
-Sau khi xác định được vị trí $t_d$, thuật toán tiếp tục \textbf{mở rộng vùng quan sát}
-để ước lượng độ dài của vùng thay đổi.
-Gọi $t_{\text{start}}$ và $t_{\text{end}}$ lần lượt là điểm bắt đầu và kết thúc của vùng trôi dạt,
-thì \textbf{độ dài trôi dạt} (drift length) được tính bởi:
+\subsection{Giai đoạn 2: Đo độ dài trôi dạt và Nhận dạng Danh mục (Growth Process)}
+Sau khi xác định được vị trí $t_d$, thuật toán tiếp tục \textbf{mở rộng vùng quan sát} để ước lượng \textbf{độ dài trôi dạt} (drift length, $m$). Độ dài trôi ($m$) là khoảng thời gian dữ liệu cần để thay đổi hoàn toàn từ một phân phối ổn định sang một phân phối ổn định mới.
 
+Trong giai đoạn này, một \textbf{cửa sổ phụ cận} ($W_R$) được kích hoạt để phát hiện độ dài $m$ dựa trên \textbf{phương sai} của độ chính xác thời gian thực ($\sigma^2_R$) trong $W_R$:
 \begin{equation}
-	L_d = t_{\text{end}} - t_{\text{start}}.
-	\label{eq:drift_length}
+    \sigma_{R}^{t+i^{2}} = \frac{\sum_{j=0}^{n-1}(\alpha_{R_{j}}^{t+i+j}-\overline{\alpha}_{R}^{t+i})^{2}}{n}.
+    \tag{3}
 \end{equation}
+Trong đó, $\overline{\alpha}_{R}^{t+i}$ là độ chính xác trung bình của các cửa sổ cơ bản ($W_{R_j}$) trong $W_R$ sau khi trượt $i-1$ bước.
 
-Nếu $L_d < \lambda$ (với $\lambda$ là ngưỡng định trước), quá trình thay đổi được
-xem là \textbf{sudden drift}; ngược lại, nếu $L_d \ge \lambda$, đó là \textbf{progressive drift} (có thể là gradual hoặc incremental).
-
-Độ chính xác của việc ước lượng vùng drift được đánh giá bằng hai chỉ số~\cite{guo2022cdtmsw}:
-\textbf{LOR (Length Overflow Rate)} và \textbf{LRR (Length Recall Rate)} như sau:
-
-\begin{align}
-	\text{LOR}   & = \frac{\sum_{t_i,\, d \in \text{Length}_i} \text{LOR}_i}{|\{t_i \mid d \in \text{Length}_i\}|}, \\[0.5em]
-	\text{LOR}_i & = \frac{\max\{\min_{e \in \text{BufE}_i}((d+m)-e),\,0\}}{m},                                     \\[0.5em]
-	\text{LRR}   & = 1 - \text{LLR}.
-\end{align}
-Trong đó:
+Việc phát hiện độ dài dựa trên sự ổn định của phân phối dữ liệu trong $W_R$:
 \begin{itemize}
-	\item $t_i$: Thời điểm drift thứ $i$ trong tập ground truth
-	\item $d$: Điểm bắt đầu của vùng drift thật (ground truth)
-	\item $m$: Độ dài vùng drift thật
-	\item $\text{BufE}_i$: Tập các điểm kết thúc của vùng drift được phát hiện tương ứng với drift thật $t_i$
-	\item $e$: Điểm kết thúc của vùng drift được phát hiện
-	\item $(d+m)$: Điểm kết thúc thật của vùng drift
+    \item Nếu $\sigma_{R}^{t+1^{2}} \le \delta$ (ngưỡng phát hiện độ dài): Độ dài trôi $m=1$. Danh mục là \textbf{Trôi khái niệm Tức thời} (Transient Concept Drift - TCD).
+    \item Nếu $\sigma_{R}^{t+i^{2}} > \delta$: $W_R$ tiếp tục trượt. Quá trình kết thúc khi $\sigma_{R}^{t+m^{2}} \le \delta$, độ dài trôi $m > 1$. Danh mục là \textbf{Trôi khái niệm Tiệm tiến} (Progressive Concept Drift - PCD).
 \end{itemize}
-\textbf{Ý nghĩa của LOR (Length Overflow Rate):}
+Trong quá trình này, các cửa sổ cơ bản $W_A$ và $W_B$ dần phát triển thành các \textbf{cửa sổ tổng hợp} $W_A^{\prime}$ và $W_B^{\prime}$ với kích thước bằng $m$ lần kích thước cửa sổ cơ bản ($ms$).
+
+\subsubsection*{Đánh giá độ chính xác ước lượng vùng Drift}
+Độ chính xác của việc ước lượng vùng drift được đánh giá bằng các chỉ số:
 \begin{itemize}
-	\item Đo lường mức độ \emph{ước lượng quá mức} (overestimation) của độ dài vùng drift.
-	\item $\text{LOR}_i$: Tỷ lệ phần vùng phát hiện vượt quá vùng drift thật.
-	\item Nếu điểm kết thúc phát hiện $e < (d+m)$ (phát hiện sớm) $\Rightarrow$ $\text{LOR}_i = 0$ (không overflow).
-	\item Nếu $e > (d+m)$ (phát hiện muộn) $\Rightarrow$ $\text{LOR}_i = \frac{e - (d+m)}{m}$ (tỷ lệ vượt quá).
-	\item \textbf{Mục tiêu:} LOR càng thấp càng tốt (lý tưởng = 0).
-\end{itemize}
-\textbf{Ý nghĩa của LRR (Length Recall Rate):}
-\begin{itemize}
-	\item Đo lường khả năng \emph{phát hiện đầy đủ} vùng drift.
-	\item $\text{LLR}$ (Length Loss Rate - không được định nghĩa trong công thức 13 nhưng được tính tương tự LOR cho phần thiếu).
-	\item LRR cao $\Rightarrow$ phát hiện được phần lớn vùng drift.
-	\item \textbf{Mục tiêu:} LRR càng cao càng tốt (lý tưởng = 1.0).
+    \item \textbf{LLR (Length Loss Rate):} Tỷ lệ phần vùng drift bị mất (ước lượng thiếu). Mục tiêu: LLR càng thấp càng tốt.
+    \item \textbf{LOR (Length Overflow Rate):} Đo lường mức độ \emph{ước lượng quá mức} (overestimation) của độ dài vùng drift. Mục tiêu: LOR càng thấp càng tốt (lý tưởng = 0).
+    \item \textbf{LRR (Length Recall Rate):} Đo lường khả năng \emph{phát hiện đầy đủ} vùng drift ($LRR = 1 - LLR$). Mục tiêu: LRR càng cao càng tốt (lý tưởng = 1.0).
 \end{itemize}
 
-\textbf{Tổng hợp:}
-Hai chỉ số này đo độ khớp giữa vùng drift thật và vùng được phát hiện:
-\begin{itemize}
-	\item \textbf{LOR nhỏ} (< 0.1): Không ước lượng quá mức $\Rightarrow$ detector không quá "chậm"
-	\item \textbf{LRR cao} (> 0.9): Phát hiện đầy đủ vùng drift $\Rightarrow$ detector đủ nhạy
-	\item Kết hợp hai chỉ số $\Rightarrow$ đánh giá toàn diện độ chính xác của việc localize vùng drift
-\end{itemize}
-
-\subsection{Giai đoạn 3: Theo dõi và nhận dạng loại drift}
-Để phân biệt chi tiết giữa các loại trôi dạt tiến triển, CDT-MSW định nghĩa
-\textbf{tỷ lệ theo dõi} (Tracking Flow Ratio – TFR):
-
+\subsection{Giai đoạn 3: Theo dõi và nhận dạng loại drift con (Tracking Process)}
+Để phân biệt chi tiết giữa các loại trôi dạt, CDT-MSW định nghĩa \textbf{Tỷ lệ Theo dõi Luồng} (Tracking Flow Ratio – TFR) bằng cách cho $W_A^{\prime}$ trượt về phía trước để theo dõi $W_B^{\prime}$ (tĩnh):
 \begin{equation}
-	\tilde{P}^{i}_{\text{tra}} = \frac{a^{*}_{B_0}}{a^{i}_{A_0}},
-	\tag{5}
+    \tilde{P}^{i}_{\text{tra}} = \frac{\alpha^{\star}_{B^{\prime}}}{\alpha^{i}_{A^{\prime}}}
+    \tag{5}
 \end{equation}
-Trong đó:
+Trong đó $\alpha^{\star}_{B^{\prime}}$ là độ chính xác của mô hình trên cửa sổ $W'_B$ tại vị trí ban đầu ($t$), và $\alpha^{i}_{A^{\prime}}$ là độ chính xác trên cửa sổ $W'_A$ khi trượt đến vị trí $i$.
+
+Dãy $\tilde{P}^{i}_{\text{tra}}$ được tổng hợp thành \textbf{Đường cong TFR} (TFR curve), thể hiện hình dạng và tốc độ thay đổi của khái niệm. Đường cong này dùng để phân biệt các loại drift cụ thể:
+
+\subsubsection*{Phân biệt TCD (Sudden, Blip, Recurrent)}
 \begin{itemize}
-	\item $a^{*}_{B_0}$: độ chính xác của mô hình huấn luyện trên cửa sổ $W'_B$ tại vị trí ban đầu;
-	\item $a^{i}_{A_0}$: độ chính xác của mô hình trên cửa sổ $W'_A$ khi trượt đến vị trí $i$.
+    \item \textbf{Sudden drift:} $\tilde{P}_{\text{tra}}$ nhỏ hơn 1 ở giai đoạn đầu, sau đó tăng lên gần 1 và duy trì ổn định.
+    \item \textbf{Blip:} TFR tương tự Sudden ở hai giai đoạn đầu, nhưng sau đó giảm đột ngột xuống dưới 1 và duy trì (do dữ liệu trong $W_A^{\prime}$ khôi phục lại phân phối cũ).
+    \item \textbf{Recurrent drift:} $\tilde{P}_{\text{tra}}$ giảm xuống dưới 1 sau khi tăng lên gần 1 trong một khoảng thời gian (do bản chất là sự kết hợp của hai Sudden).
 \end{itemize}
-Dãy $\tilde{P}^{i}_{\text{tra}}$ được tổng hợp thành đường cong TFR,
-thể hiện hình dạng và tốc độ thay đổi của khái niệm.
-Đường cong này dùng để phân biệt các loại drift cụ thể:
+
+\subsubsection*{Phân biệt PCD (Incremental và Gradual) bằng MTFR}
+Đối với PCD (Incremental và Gradual), do cửa sổ tổng hợp $W_A^{\prime}$ và $W_B^{\prime}$ lớn, làm giảm sự khác biệt giữa hai loại này, một đường cong \textbf{Micro TFR (MTFR)} được tính toán để \emph{khuếch đại sự khác biệt}.
 \begin{itemize}
-	\item \textbf{Sudden drift:} $\tilde{P}_{\text{tra}}$ giảm đột ngột, không có giai đoạn chuyển tiếp.
-	\item \textbf{Gradual drift:} $\tilde{P}_{\text{tra}}$ dao động nhẹ rồi ổn định.
-	\item \textbf{Incremental drift:} $\tilde{P}_{\text{tra}}$ thay đổi tuyến tính theo thời gian.
-	\item \textbf{Recurrent drift:} $\tilde{P}_{\text{tra}}$ có dạng chu kỳ lặp lại.
+    \item \textbf{Incremental/Gradual:} Giá trị $\tilde{P}_{\text{tra}}$ chuyển tiếp chậm từ nhỏ hơn 1 sang lớn hơn 1.
+    \item \textbf{MTFR} được tính bằng tỷ lệ độ chính xác kiểm tra của cửa sổ cơ bản đầu tiên trong $W_B^{\prime}$ so với cửa sổ cơ bản đầu tiên trong $W_A^{\prime}$ trong suốt quá trình theo dõi.
 \end{itemize}
 
 \subsection{Đánh giá khả năng nhận dạng loại trôi dạt}
-Khả năng phân loại chính xác các loại trôi dạt được đánh giá bằng hai chỉ số~\cite{guo2022cdtmsw}:
-\textbf{ACC\textsubscript{cat}} và \textbf{ACC\textsubscript{subcat}},
-tương ứng với độ chính xác nhận dạng loại chính (TCD) và loại phụ (PCD):
-
-\begin{align}
-	\text{ACC}_{\text{cat}}    & =
-	\frac{TT + TP}{TT + FT + TP + FP}, \tag{14} \\[0.5em]
-	\text{ACC}_{\text{subcat}} & =
-	\frac{\sum_i T^T_i + \sum_j T^P_j}{TT + TP}. \tag{15}
-\end{align}
-
-Trong đó:
+Khả năng phân loại chính xác các loại trôi dạt được đánh giá bằng hai chỉ số:
 \begin{itemize}
-	\item $TT$, $FT$: số lượng nhận dạng đúng/sai cho loại trôi dạt chính (TCD);
-	\item $TP$, $FP$: số lượng nhận dạng đúng/sai cho loại phụ (PCD);
-	\item $T^T_i$, $T^P_j$: số lần nhận dạng đúng từng tiểu loại (sudden, gradual, incremental, recurrent).
+    \item \textbf{ACC$_{\text{cat}}$} (Drift category accuracy): Độ chính xác nhận dạng loại chính (TCD/PCD).
+    \begin{equation}
+        \text{ACC}_{\text{cat}} = \frac{T_{T} + T_{P}}{T_{T} + F_{T} + T_{P} + F_{P}}
+        \tag{14}
+    \end{equation}
+    Trong đó $T_{T}$ và $F_{T}$ là số lượng nhận dạng đúng/sai cho TCD; $T_{P}$ và $F_{P}$ là số lượng nhận dạng đúng/sai cho PCD.
+    
+    \item \textbf{ACC$_{\text{subcat}}$} (Drift subcategory accuracy): Độ chính xác nhận dạng loại phụ (Sudden, Gradual, Incremental, Recurrent).
+    \begin{equation}
+        \text{ACC}_{\text{subcat}} = \frac{\sum_{i}T_{T}^{i} + \sum_{j}T_{P}^{j}}{T_{T} + T_{P}}
+        \tag{15}
+    \end{equation}
+    Trong đó $i \in \{\text{Sudden, Blip, Recurrent}\}$ và $j \in \{\text{Incremental, Gradual}\}$.
 \end{itemize}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.8\textwidth]{image/cdt_msw.png}
+	\caption{Tổng quan phương pháp CDT-MSW}
+	\label{fig:cdt_msw_overview}
+\end{figure}
 
 \subsection{Tổng hợp và ý nghĩa}
 Tóm lại, CDT-MSW nhận dạng loại trôi dạt dựa trên hai chỉ số động: \textbf{Detection Flow Ratio} (Công thức~1)
