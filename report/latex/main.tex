@@ -164,17 +164,17 @@
 \fancyhf{}
 
 % Header with university logo and department name
-\fancyhead[L]{
-    \begin{tabular}{rl}
-        \begin{picture}(15,15)(0,0)
-        \put(0,-8){\includegraphics[width=8mm, height=9mm]{image/hcmut.jpg}}
-        \end{picture}&
-        \begin{tabular}{l}
-            Đại học Bách khoa - ĐHQG TP.HCM\\
-            Khoa Khoa học \& Kỹ thuật máy tính
-        \end{tabular}
-    \end{tabular}
-}
+% \fancyhead[L]{
+%     \begin{tabular}{rl}
+%         \begin{picture}(15,15)(0,0)
+%         \put(0,-8){\includegraphics[width=8mm, height=9mm]{image/hcmut.jpg}}
+%         \end{picture}&
+%         \begin{tabular}{l}
+%             Đại học Bách khoa - ĐHQG TP.HCM\\
+%             Khoa Khoa học \& Kỹ thuật máy tính
+%         \end{tabular}
+%     \end{tabular}
+% }
 
 % Footer with thesis name and page number
 \renewcommand{\headrulewidth}{0pt}
@@ -186,24 +186,24 @@
 
 % Force ALL pages (including chapter first pages) to use fancy style
 % This will be applied AFTER front matter via \enablefancyplain command
-\fancypagestyle{fancyplain}{%
-    \fancyhf{}
-    \fancyhead[L]{
-        \begin{tabular}{rl}
-            \begin{picture}(15,15)(0,0)
-            \put(0,-8){\includegraphics[width=8mm, height=9mm]{image/hcmut.jpg}}
-            \end{picture}&
-            \begin{tabular}{l}
-                Đại học Bách khoa - ĐHQG TP.HCM\\
-                Khoa Khoa học \& Kỹ thuật máy tính
-            \end{tabular}
-        \end{tabular}
-    }
-    \renewcommand{\headrulewidth}{0pt}
-    \renewcommand{\footrulewidth}{0.4pt}
-    \fancyfoot[L]{Luận văn tốt nghiệp}
-    \fancyfoot[R]{\thepage}
-}
+% \fancypagestyle{fancyplain}{%
+%     \fancyhf{}
+%     \fancyhead[L]{
+%         \begin{tabular}{rl}
+%             \begin{picture}(15,15)(0,0)
+%             \put(0,-8){\includegraphics[width=8mm, height=9mm]{image/hcmut.jpg}}
+%             \end{picture}&
+%             \begin{tabular}{l}
+%                 Đại học Bách khoa - ĐHQG TP.HCM\\
+%                 Khoa Khoa học \& Kỹ thuật máy tính
+%             \end{tabular}
+%         \end{tabular}
+%     }
+%     \renewcommand{\headrulewidth}{0pt}
+%     \renewcommand{\footrulewidth}{0.4pt}
+%     \fancyfoot[L]{Luận văn tốt nghiệp}
+%     \fancyfoot[R]{\thepage}
+% }
 
 % Simple style for front matter (only page number, no header)
 \fancypagestyle{frontmatter}{%
@@ -222,26 +222,26 @@
 }
 
 % Command to enable fancy plain style (call before main content)
-\newcommand{\enablefancyplain}{%
-    \fancypagestyle{plain}{%
-        \fancyhf{}
-        \fancyhead[L]{
-            \begin{tabular}{rl}
-                \begin{picture}(15,15)(0,0)
-                \put(0,-8){\includegraphics[width=8mm, height=9mm]{image/hcmut.jpg}}
-                \end{picture}&
-                \begin{tabular}{l}
-                    Đại học Bách khoa - ĐHQG TP.HCM\\
-                    Khoa Khoa học \& Kỹ thuật máy tính
-                \end{tabular}
-            \end{tabular}
-        }
-        \renewcommand{\headrulewidth}{0pt}
-        \renewcommand{\footrulewidth}{0.4pt}
-        \fancyfoot[L]{Luận văn tốt nghiệp}
-        \fancyfoot[R]{\thepage}
-    }
-}
+% \newcommand{\enablefancyplain}{%
+%     \fancypagestyle{plain}{%
+%         \fancyhf{}
+%         \fancyhead[L]{
+%             \begin{tabular}{rl}
+%                 \begin{picture}(15,15)(0,0)
+%                 \put(0,-8){\includegraphics[width=8mm, height=9mm]{image/hcmut.jpg}}
+%                 \end{picture}&
+%                 \begin{tabular}{l}
+%                     Đại học Bách khoa - ĐHQG TP.HCM\\
+%                     Khoa Khoa học \& Kỹ thuật máy tính
+%                 \end{tabular}
+%             \end{tabular}
+%         }
+%         \renewcommand{\headrulewidth}{0pt}
+%         \renewcommand{\footrulewidth}{0.4pt}
+%         \fancyfoot[L]{Luận văn tốt nghiệp}
+%         \fancyfoot[R]{\thepage}
+%     }
+% }
 
 % Chapter title formatting - Vietnamese style (follow DOCX format)
 \titleformat{\chapter}[display]
