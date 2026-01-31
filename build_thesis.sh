@@ -15,6 +15,7 @@ NC='\033[0m' # No Color
 # Configuration
 LATEX_DIR="report/latex"
 MAIN_FILE="main"
+TARGET_NAME="2370116_LePhucDuc_ThesisReport"
 OUTPUT_DIR="output"
 
 # Function to print colored output
@@ -76,12 +77,12 @@ compile_latex() {
     # First pass
     print_status "Running pdflatex (1st pass)..."
     set +e  # Temporarily disable exit on error for pdflatex
-    pdflatex -interaction=nonstopmode "$MAIN_FILE.tex" > pdflatex_1st.log 2>&1
+    pdflatex -interaction=nonstopmode -jobname="$TARGET_NAME" "$MAIN_FILE.tex" > pdflatex_1st.log 2>&1
     local exit_code=$?
     set -e  # Re-enable exit on error
-    if [ $exit_code -ne 0 ] && ! grep -q "Output written on $MAIN_FILE.pdf" pdflatex_1st.log; then
-        print_error "First pdflatex pass failed. Check main.log for details."
-        cat main.log | tail -20
+    if [ $exit_code -ne 0 ] && ! grep -q "Output written on $TARGET_NAME.pdf" pdflatex_1st.log; then
+        print_error "First pdflatex pass failed. Check $TARGET_NAME.log for details."
+        cat "$TARGET_NAME.log" | tail -20
         cd - > /dev/null
         exit 1
     fi
@@ -89,7 +90,7 @@ compile_latex() {
     # Run bibtex if .bib file exists
     if [ -f "references.bib" ]; then
         print_status "Running bibtex..."
-        if ! bibtex "$MAIN_FILE" > /dev/null 2>&1; then
+        if ! bibtex "$TARGET_NAME" > /dev/null 2>&1; then
             print_warning "BibTeX failed, but continuing..."
         else
             print_success "BibTeX completed successfully."
@@ -99,12 +100,12 @@ compile_latex() {
     # Second pass
     print_status "Running pdflatex (2nd pass)..."
     set +e  # Temporarily disable exit on error for pdflatex
-    pdflatex -interaction=nonstopmode "$MAIN_FILE.tex" > pdflatex_2nd.log 2>&1
+    pdflatex -interaction=nonstopmode -jobname="$TARGET_NAME" "$MAIN_FILE.tex" > pdflatex_2nd.log 2>&1
     local exit_code=$?
     set -e  # Re-enable exit on error
-    if [ $exit_code -ne 0 ] && ! grep -q "Output written on $MAIN_FILE.pdf" pdflatex_2nd.log; then
-        print_error "Second pdflatex pass failed. Check main.log for details."
-        cat main.log | tail -20
+    if [ $exit_code -ne 0 ] && ! grep -q "Output written on $TARGET_NAME.pdf" pdflatex_2nd.log; then
+        print_error "Second pdflatex pass failed. Check $TARGET_NAME.log for details."
+        cat "$TARGET_NAME.log" | tail -20
         cd - > /dev/null
         exit 1
     fi
@@ -112,12 +113,12 @@ compile_latex() {
     # Third pass (to resolve all cross-references)
     print_status "Running pdflatex (3rd pass)..."
     set +e  # Temporarily disable exit on error for pdflatex
-    pdflatex -interaction=nonstopmode "$MAIN_FILE.tex" > pdflatex_3rd.log 2>&1
+    pdflatex -interaction=nonstopmode -jobname="$TARGET_NAME" "$MAIN_FILE.tex" > pdflatex_3rd.log 2>&1
     local exit_code=$?
     set -e  # Re-enable exit on error
-    if [ $exit_code -ne 0 ] && ! grep -q "Output written on $MAIN_FILE.pdf" pdflatex_3rd.log; then
-        print_error "Third pdflatex pass failed. Check main.log for details."
-        cat main.log | tail -20
+    if [ $exit_code -ne 0 ] && ! grep -q "Output written on $TARGET_NAME.pdf" pdflatex_3rd.log; then
+        print_error "Third pdflatex pass failed. Check $TARGET_NAME.log for details."
+        cat "$TARGET_NAME.log" | tail -20
         cd - > /dev/null
         exit 1
     fi
@@ -128,16 +129,16 @@ compile_latex() {
 
 # Function to check output
 check_output() {
-    if [ -f "$LATEX_DIR/$MAIN_FILE.pdf" ]; then
-        local file_size=$(stat -c%s "$LATEX_DIR/$MAIN_FILE.pdf" 2>/dev/null || stat -f%z "$LATEX_DIR/$MAIN_FILE.pdf" 2>/dev/null)
+    if [ -f "$LATEX_DIR/$TARGET_NAME.pdf" ]; then
+        local file_size=$(stat -c%s "$LATEX_DIR/$TARGET_NAME.pdf" 2>/dev/null || stat -f%z "$LATEX_DIR/$TARGET_NAME.pdf" 2>/dev/null)
         local file_size_mb=$((file_size / 1024 / 1024))
-        print_success "PDF generated successfully: $LATEX_DIR/$MAIN_FILE.pdf (${file_size_mb}MB)"
+        print_success "PDF generated successfully: $LATEX_DIR/$TARGET_NAME.pdf (${file_size_mb}MB)"
         
         # Copy to output directory if specified
         if [ "$1" = "--output" ] && [ -n "$2" ]; then
             mkdir -p "$2"
-            cp "$LATEX_DIR/$MAIN_FILE.pdf" "$2/"
-            print_success "PDF copied to: $2/$MAIN_FILE.pdf"
+            cp "$LATEX_DIR/$TARGET_NAME.pdf" "$2/"
+            print_success "PDF copied to: $2/$TARGET_NAME.pdf"
         fi
     else
         print_error "PDF generation failed!"
@@ -148,10 +149,10 @@ check_output() {
 # Function to show statistics
 show_stats() {
     cd "$LATEX_DIR"
-    if [ -f "$MAIN_FILE.log" ]; then
-        local pages=$(grep -o "Output written on $MAIN_FILE.pdf ([0-9]* pages" "$MAIN_FILE.log" | grep -o "[0-9]*" | head -1)
-        local warnings=$(grep -c "Warning" "$MAIN_FILE.log" 2>/dev/null || echo "0")
-        local errors=$(grep -c "Error" "$MAIN_FILE.log" 2>/dev/null || echo "0")
+    if [ -f "$TARGET_NAME.log" ]; then
+        local pages=$(grep -o "Output written on $TARGET_NAME.pdf ([0-9]* pages" "$TARGET_NAME.log" | grep -o "[0-9]*" | head -1)
+        local warnings=$(grep -c "Warning" "$TARGET_NAME.log" 2>/dev/null || echo "0")
+        local errors=$(grep -c "Error" "$TARGET_NAME.log" 2>/dev/null || echo "0")
         
         print_status "Compilation Statistics:"
         echo "  Pages: ${pages:-Unknown}"
@@ -159,7 +160,7 @@ show_stats() {
         echo "  Errors: $errors"
         
         if [ "$warnings" -gt 0 ]; then
-            print_warning "There were $warnings warnings. Check main.log for details."
+            print_warning "There were $warnings warnings. Check $TARGET_NAME.log for details."
         fi
     fi
     cd - > /dev/null
@@ -174,6 +175,7 @@ show_help() {
     echo "Options:"
     echo "  --clean, -c       Clean auxiliary files before building"
     echo "  --output, -o DIR  Copy PDF to specified output directory"
+    echo "  --name, -n NAME   Set custom output filename (without extension)"
     echo "  --fast, -f        Fast build (skip bibliography)"
     echo "  --watch, -w       Watch mode (rebuild on file changes)"
     echo "  --help, -h        Show this help message"
@@ -192,9 +194,9 @@ fast_build() {
     
     # Single pass
     print_status "Running pdflatex..."
-    if ! pdflatex -interaction=nonstopmode "$MAIN_FILE.tex" > /dev/null 2>&1; then
-        print_error "pdflatex failed. Check main.log for details."
-        cat main.log | tail -20
+    if ! pdflatex -interaction=nonstopmode -jobname="$TARGET_NAME" "$MAIN_FILE.tex" > /dev/null 2>&1; then
+        print_error "pdflatex failed. Check $TARGET_NAME.log for details."
+        cat "$TARGET_NAME.log" | tail -20
         cd - > /dev/null
         exit 1
     fi
@@ -249,6 +251,10 @@ main() {
                 ;;
             --output|-o)
                 output_dir="$2"
+                shift 2
+                ;;
+            --name|-n)
+                TARGET_NAME="$2"
                 shift 2
                 ;;
             --fast|-f)
