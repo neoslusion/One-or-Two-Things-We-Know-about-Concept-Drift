@@ -22,3 +22,4 @@ river>=0.15.0
 # Jupyter for notebooks (if you want to use notebooks)
 jupyter>=1.0.0
 ipykernel>=6.0.0
+scikit-posthocs>=0.7.0

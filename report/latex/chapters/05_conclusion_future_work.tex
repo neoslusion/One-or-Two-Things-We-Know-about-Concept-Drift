@@ -7,20 +7,21 @@ Luận văn này đã giải quyết bài toán phát hiện và thích ứng v�
 
 \subsection{Đóng góp về Phương pháp luận (Methodological)}
 \begin{itemize}
-	\item \textbf{Tích hợp ShapeDD\_OW\_MMD:} Tích hợp thành công phương pháp OW-MMD (Optimally-Weighted MMD)~\cite{bharti2023owmmd} vào ShapeDD detector. Kết quả cho thấy phương pháp này cải thiện thông lượng xử lý gấp \textbf{7 lần} (đạt $\approx$ 50,300 mẫu/giây) so với ShapeDD gốc, trong khi vẫn duy trì độ chính xác phát hiện ổn định (F1 $\approx$ 0.56).
-	\item \textbf{Đề xuất SHAPED\_CDT:} Xây dựng phương pháp phân loại drift không giám sát \textbf{SHAPED\_CDT}, tận dụng khả năng định vị chính xác thời điểm drift của ShapeDD để trích xuất cửa sổ dữ liệu cho CDT\_MSW. Phương pháp đạt độ chính xác \textbf{78.0\%} trong việc phân loại nhóm drift (TCD vs PCD), tạo tiền đề cho chiến lược thích ứng thông minh.
+	\item \textbf{Tích hợp ShapeDD-IDW:} Tích hợp phương pháp IDW-MMD (Inverse Density-Weighted MMD) với asymptotic p-value, lấy cảm hứng từ~\cite{bharti2023owmmd}, vào ShapeDD detector. Kết quả cho thấy phương pháp này cải thiện thông lượng xử lý gấp \textbf{17--20 lần} (đạt $\approx$ 111,000--131,000 mẫu/giây) so với ShapeDD gốc ($\approx$ 8,000 mẫu/giây), trong khi đạt F1-score = 0.481 với \textbf{0 False Positives} trên detection benchmark. \textit{Lưu ý:} Phương pháp có giới hạn là không phát hiện được virtual drift (chỉ thay đổi $P(Y|X)$ mà không thay đổi $P(X)$), phản ánh đúng bản chất unsupervised của thuật toán.
+	\item \textbf{Đề xuất SE-CDT:} Xây dựng phương pháp phân loại drift không giám sát \textbf{SE-CDT}, tận dụng khả năng định vị chính xác thời điểm drift của ShapeDD để phân loại loại drift. Phương pháp đạt độ chính xác \textbf{72.2\%} trong việc phân loại nhóm drift (TCD vs PCD) và \textbf{50.0\%} cho từng loại drift chi tiết, tạo tiền đề cho chiến lược thích ứng thông minh mà không cần nhãn dữ liệu.
 \end{itemize}
 
 \subsection{Đóng góp về Thực nghiệm (Empirical)}
 \begin{itemize}
-	\item \textbf{Benchmark toàn diện:} Thực hiện đánh giá có hệ thống 8 phương pháp phát hiện drift trên 10 tập dữ liệu tổng hợp (synthetic) đa dạng. Kết quả được kiểm chứng thống kê bằng kiểm định Friedman và Nemenyi (với 30 lần chạy độc lập), cung cấp cái nhìn khách quan về hiệu năng của các thuật toán hiện đại.
-	\item \textbf{Phân tích độ trễ và chi phí:} Chứng minh hiệu quả của việc giảm số lượng hoán vị (permutation) nhờ cơ chế giảm phương sai của OW-MMD, giúp giảm độ trễ phát hiện trung bình xuống còn 18 mẫu.
+	\item \textbf{Benchmark toàn diện:} Thực hiện đánh giá có hệ thống 8 phương pháp phát hiện drift (MMD, IDW-MMD, KS, ShapeDD, ShapeDD-IDW, SE-CDT, D3, DAWIDD) trên 11 tập dữ liệu tổng hợp đa dạng. Kết quả được kiểm chứng thống kê bằng kiểm định Friedman và Nemenyi (với 30 lần chạy độc lập, $\alpha = 0.05$), cung cấp cái nhìn khách quan về hiệu năng của các thuật toán hiện đại.
+	\item \textbf{Phân tích độ trễ và chi phí:} Chứng minh hiệu quả của việc loại bỏ permutation test và thay bằng asymptotic p-value nhờ IDW-MMD, giúp giảm độ trễ phát hiện trung bình xuống còn 18 mẫu và tăng throughput 17--20 lần.
+	\item \textbf{Xác nhận hành vi đúng:} Benchmark xác nhận SE-CDT/ShapeDD-IDW không phát hiện ``drift'' trên các dataset virtual drift (hyperplane, led\_abrupt, sea) --- hành vi mong đợi vì $P(X)$ không đổi.
 \end{itemize}
 
 \subsection{Đóng góp về Hệ thống (System)}
 \begin{itemize}
 	\item \textbf{Kiến trúc Real-time Streaming:} Thiết kế và triển khai kiến trúc hệ thống dựa trên \textbf{Apache Kafka}, cho phép xử lý phân tán và mở rộng. Hệ thống tách biệt các module (Detection, Classification, Adaptation) giúp dễ dàng bảo trì và nâng cấp.
-	\item \textbf{Khung chiến lược thích ứng:} Hiện thực hóa 5 chiến lược thích ứng tương ứng với các loại drift (Sudden, Incremental, Gradual, Recurrent, Blip). Đặc biệt, chiến lược \textit{Frozen Model Deployment} được đề xuất để đo lường chính xác tác động của drift trong môi trường production.
+	\item \textbf{Khung chiến lược thích ứng:} Hiện thực hóa 5 chiến lược thích ứng tương ứng với các loại drift (Sudden, Incremental, Gradual, Recurrent, Blip). Đặc biệt, chiến lược \textit{triển khai mô hình đóng băng (Frozen Model Deployment)} được đề xuất để đo lường chính xác tác động của drift trong môi trường production.
 \end{itemize}
 
 \section{Những phát hiện và hiểu biết chính}
@@ -28,11 +29,11 @@ Luận văn này đã giải quyết bài toán phát hiện và thích ứng v�
 Từ quá trình nghiên cứu và thực nghiệm, luận văn rút ra các bài học quan trọng:
 
 \begin{enumerate}
-	\item \textbf{Adaptive Window là yếu tố then chốt:} ShapeDD với kích thước cửa sổ thích ứng (adaptive sizing) vượt trội hoàn toàn so với cửa sổ cố định. Khả năng tự điều chỉnh theo độ lớn drift giúp giảm báo động giả (False Positives) và tăng độ nhạy.
+	\item \textbf{Adaptive Window là yếu tố then chốt:} ShapeDD với kích thước cửa sổ thích ứng (adaptive sizing) cho thấy cải thiện đáng kể so với cửa sổ cố định trong điều kiện thử nghiệm. Khả năng tự điều chỉnh theo độ lớn drift giúp giảm báo động giả (False Positives) và tăng độ nhạy.
 
-	\item \textbf{Trade-off giữa Tốc độ và Độ chính xác:} Các phương pháp cửa sổ trượt truyền thống chính xác nhưng chậm. Việc tích hợp OW-MMD đã giải quyết nút thắt này, đưa tốc độ xử lý của phương pháp dựa trên kernel tiệm cận với các thuật toán thống kê nhẹ (như ADWIN) mà không hy sinh độ chính xác.
+	\item \textbf{Trade-off giữa Tốc độ và Độ chính xác:} Các phương pháp cửa sổ trượt truyền thống chính xác nhưng chậm. Việc tích hợp IDW-MMD với asymptotic p-value đã giải quyết nút thắt này, đưa throughput từ $\sim$8,000 lên $\sim$131,000 mẫu/giây --- đạt tốc độ cao hơn KS-Test trong khi duy trì độ chính xác (F1 = 0.481 vs 0.289).
 
-	\item \textbf{Hiệu quả của Full Reset cho Sudden Drift:} Đối với các thay đổi đột ngột (Sudden Drift), việc huấn luyện lại mô hình từ đầu (Full Reset) cho hiệu quả phục hồi cao hơn (82.8\%) so với cập nhật tăng cường (incremental updates), đồng thời tránh được hiện tượng "catastrophic forgetting".
+	\item \textbf{Hiệu quả của Full Reset cho Sudden Drift:} Đối với các thay đổi đột ngột (Sudden Drift), việc huấn luyện lại mô hình từ đầu (Full Reset) cho hiệu quả phục hồi cao hơn (85.46\%) so với không thích ứng (81.26\%), cải thiện +5.2\%, đồng thời tránh được hiện tượng ``catastrophic forgetting''.
 
 	\item \textbf{Vai trò của Phân loại Drift:} Việc xác định đúng loại drift (ví dụ: Blip vs. Sudden) là cực kỳ quan trọng để tránh phản ứng thái quá với nhiễu (noise). Chiến lược thích ứng dựa trên loại drift giúp hệ thống vận hành ổn định và tiết kiệm tài nguyên.
 \end{enumerate}
@@ -41,11 +42,15 @@ Từ quá trình nghiên cứu và thực nghiệm, luận văn rút ra các bà
 
 Mặc dù đạt được những kết quả khả quan, nghiên cứu vẫn tồn tại một số hạn chế cần được xem xét:
 
-\subsection{False Positives cao}
-Phương pháp SE-CDT (Standard MMD) đạt recall 98\% nhưng có số lượng False Positives cao (FP = 1513 trong tổng benchmark). Điều này dẫn đến Precision chỉ đạt 25\%. Trong môi trường production, số lượng báo động giả cao có thể gây quá tải cho hệ thống thích ứng và làm giảm độ tin cậy. Việc phát triển cơ chế post-filtering hoặc adaptive threshold là hướng cải thiện cần thiết.
+\subsection{Trade-off giữa Detection và Classification}
+SE-CDT (Std) đạt EDR = 94.4\% nhưng có số lượng False Positives cao (FP = 1394). SE-CDT (ADW) giảm FP xuống 171 nhưng EDR giảm còn 50.6\%. Trong môi trường production cần cân nhắc trade-off này:
+\begin{itemize}
+	\item Nếu ưu tiên \textbf{recall cao}: Sử dụng SE-CDT (Std) với threshold thấp
+	\item Nếu ưu tiên \textbf{FP thấp}: Sử dụng SE-CDT (ADW) hoặc ShapeDD-IDW (FP = 0 trong detection benchmark)
+\end{itemize}
 
 \subsection{Subcategory Accuracy còn hạn chế}
-Mặc dù Category Accuracy (TCD vs PCD) đạt 74.6\%, Subcategory Accuracy chỉ đạt 42\%. Cụ thể:
+Mặc dù Category Accuracy (TCD vs PCD) đạt 72.2\%, Subcategory Accuracy chỉ đạt 50.0\%. Cụ thể:
 \begin{itemize}
 	\item Gradual và Incremental dễ nhầm lẫn do tín hiệu MMD tương tự
 	\item Recurrent bị phân loại thành chuỗi Sudden do xử lý từng peak độc lập
@@ -75,6 +80,11 @@ Dựa trên nền tảng của luận văn, các hướng phát triển tiếp t
 
 \section{Kết luận}
 
-Hành trình giải quyết bài toán concept drift là một quá trình liên tục. Luận văn này đã đóng góp một bước tiến cụ thể thông qua việc (1) tích hợp các tiến bộ lý thuyết mới nhất (OW-MMD) để giải quyết bài toán hiệu năng, và (2) đề xuất hướng tiếp cận phân loại drift không giám sát (SHAPED\_CDT) để định hướng thích ứng.
+Hành trình giải quyết bài toán concept drift là một quá trình liên tục. Luận văn này đã đưa ra các đề xuất cụ thể thông qua:
+\begin{enumerate}
+	\item \textbf{Cải thiện hiệu năng:} Tích hợp IDW-MMD với asymptotic p-value giúp tăng throughput \textbf{17--20 lần} (từ 8,000 lên 131,000 mẫu/giây), cho thấy tiềm năng áp dụng trong môi trường production.
+	\item \textbf{Đảm bảo độ tin cậy:} ShapeDD-IDW và SE-CDT đạt \textbf{0 False Positives} trong detection benchmark (trên các dataset có thay đổi $P(X)$), quan trọng cho môi trường production.
+	\item \textbf{Phân loại không giám sát:} SE-CDT đạt \textbf{CAT = 72.2\%} và \textbf{SUB = 50.0\%} mà không cần labels, chứng minh khả năng phân tích hình học của tín hiệu MMD là khả thi.
+\end{enumerate}
 
-Kết quả nghiên cứu khẳng định rằng việc chuyển dịch từ các mô hình tĩnh sang các hệ thống thích ứng (adaptive systems) là xu hướng tất yếu. Với kiến trúc đề xuất và những hiểu biết thu được, hệ thống hoàn toàn có khả năng mở rộng để đối mặt với những thách thức phức tạp hơn của dữ liệu luồng trong tương lai, hướng tới các ứng dụng AI vận hành bền vững và tin cậy.
+Kết quả nghiên cứu cho thấy rằng việc chuyển dịch từ các mô hình tĩnh sang các hệ thống thích ứng (adaptive systems) là xu hướng cần thiết. Với kiến trúc đề xuất và những hiểu biết thu được, hệ thống có khả năng mở rộng để đối mặt với những thách thức phức tạp hơn của dữ liệu luồng trong tương lai, hướng tới các ứng dụng AI vận hành bền vững và tin cậy.

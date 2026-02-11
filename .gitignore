@@ -90,5 +90,5 @@ temp/
 [Reference] - *
 *.npz
 # *.md
-*.txt
+# *.txt
 *.csv

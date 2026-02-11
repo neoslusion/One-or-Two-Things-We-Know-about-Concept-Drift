@@ -87,7 +87,7 @@ Các bảng số liệu thống kê chi tiết từ benchmark (bao gồm độ c
 
 \subsection*{B.3 Code snippet: ShapeDD implementation trong Python}
 
-\begin{verbatim}
+\begin{lstlisting}[language=Python]
 import numpy as np
 from scipy.spatial.distance import pdist, squareform
 from scipy.stats import permutation_test
@@ -140,11 +140,11 @@ class ShapeDD:
                 drift_points.append(t)
 
         return drift_points
-\end{verbatim}
+\end{lstlisting}
 
 \subsection*{B.4 Code snippet: Full Model Reset adaptation}
 
-\begin{verbatim}
+\begin{lstlisting}[language=Python]
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 from collections import deque
@@ -187,7 +187,7 @@ class AdaptiveMLPipeline:
         y_pred = self.model.predict(x_scaled)
 
         return y_pred
-\end{verbatim}
+\end{lstlisting}
 
 \section*{Phụ lục C: Hướng dẫn cài đặt và chạy thử nghiệm}
 
@@ -262,25 +262,21 @@ docker-compose ps
 \end{verbatim}
 
 \textbf{Phương án 2: Cài đặt thủ công}
-\begin{verbatim}
-# Tải Kafka
-wget https://downloads.apache.org/kafka/3.4.0/\
-kafka_2.13-3.4.0.tgz
+\begin{lstlisting}[language=bash]
+# Download Kafka
+wget https://downloads.apache.org/kafka/3.4.0/kafka_2.13-3.4.0.tgz
 tar -xzf kafka_2.13-3.4.0.tgz
 cd kafka_2.13-3.4.0
 
-# Khởi chạy Zookeeper
-bin/zookeeper-server-start.sh \
-config/zookeeper.properties &
+# Start Zookeeper
+bin/zookeeper-server-start.sh config/zookeeper.properties &
 
-# Khởi chạy Kafka broker
+# Start Kafka broker
 bin/kafka-server-start.sh config/server.properties &
 
-# Tạo topic cho stream
-bin/kafka-topics.sh --create --topic drift-stream \
---bootstrap-server localhost:9092 --partitions 3 \
---replication-factor 1
-\end{verbatim}
+# Create drift-stream topic
+bin/kafka-topics.sh --create --topic drift-stream --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1
+\end{lstlisting}
 
 \subsection*{C.4 Chạy thử nghiệm từ Jupyter Notebook}
 

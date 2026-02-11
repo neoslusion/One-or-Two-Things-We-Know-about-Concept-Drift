@@ -12,17 +12,15 @@
 
 % Additional packages
 \usepackage{graphicx}
-\usepackage{amsmath,amssymb}
-\usepackage{algorithm}
-\usepackage{algorithmic}
 \usepackage{booktabs}
 \usepackage{tikz}
-\usepackage{pgfplots}
-\pgfplotsset{compat=1.18}
+\usepackage{ragged2e}
+
+% Define paths for images
+\graphicspath{{image/}{../../results/plots/}}
 
 % Custom colors
 \definecolor{univblue}{RGB}{0,51,102}
-\definecolor{univred}{RGB}{204,0,0}
 \setbeamercolor{structure}{fg=univblue}
 \setbeamercolor{title}{fg=white,bg=univblue}
 \setbeamercolor{frametitle}{fg=white,bg=univblue}
@@ -30,7 +28,7 @@
 % Remove navigation symbols
 \setbeamertemplate{navigation symbols}{}
 
-% Footer
+% Footer setup
 \setbeamertemplate{footline}{
   \leavevmode%
   \hbox{%
@@ -47,990 +45,297 @@
   \vskip0pt%
 }
 
-% Title page information
+% Title page info
 \title[Phát Hiện Concept Drift]{Nghiên cứu và phát triển hệ thống tự động phát hiện hiện tượng trôi dạt và cập nhật mô hình học máy thích ứng}
 \subtitle{Luận văn tốt nghiệp}
-\author[Tên sinh viên]{%
-  Sinh viên: [Tên sinh viên]\\[0.5em]
-  \small Giảng viên hướng dẫn: [Tên GVHD]
-}
-\institute[Trường Đại học]{Trường Đại học Bách Khoa}
+\author[Le Phuc Duc]{Sinh viên thực hiện: Le Phuc Duc\\ GVHD: PGS.TS. Thoại Nam}
+\institute[HCMUT]{Trường Đại học Bách Khoa - ĐHQG-HCM}
 \date{\today}
 
 \begin{document}
 
-% ==============================================================================
-% TITLE SLIDE
-% ==============================================================================
+% -----------------------------------------------------------------------------
+% SLIDE 1: Title
+% -----------------------------------------------------------------------------
 \begin{frame}
-  \titlepage
+	\titlepage
 \end{frame}
 
-% ==============================================================================
-% TABLE OF CONTENTS
-% ==============================================================================
+% -----------------------------------------------------------------------------
+% SLIDE 2: TOC
+% -----------------------------------------------------------------------------
 \begin{frame}{Nội dung trình bày}
-  \tableofcontents
+	\tableofcontents
 \end{frame}
 
-% ==============================================================================
-% SECTION 1: INTRODUCTION
-% ==============================================================================
-\section{Giới thiệu}
+% =============================================================================
+% SECTION 1: Introduction
+% =============================================================================
+\section{Giới thiệu (Chương 0)}
 
-\begin{frame}{Bối cảnh nghiên cứu}
-  \begin{columns}[T]
-    \begin{column}{0.5\textwidth}
-      \textbf{Thách thức:}
-      \begin{itemize}
-        \item Các ứng dụng học máy triển khai trong đời sống thực tế
-        \item Dữ liệu thay đổi theo thời gian (non-stationary)
-        \item Mô hình bị suy giảm hiệu suất
-      \end{itemize}
-    \end{column}
-    \begin{column}{0.5\textwidth}
-      \textbf{Ví dụ thực tế:}
-      \begin{itemize}
-        \item Phát hiện thư rác: Spammer thay đổi chiến lược
-        \item Dự báo tài chính: Thị trường biến động
-        \item Chẩn đoán y tế: Bệnh mới xuất hiện
-      \end{itemize}
-    \end{column}
-  \end{columns}
-
-  \vspace{1em}
-  \begin{alertblock}{Concept Drift}
-    Hiện tượng phân phối dữ liệu thay đổi theo thời gian, làm cho mô hình đã học không còn phù hợp.
-  \end{alertblock}
+\begin{frame}{Vấn đề Concept Drift \& Mục tiêu}
+	\begin{columns}[T]
+		\begin{column}{0.6\textwidth}
+			\textbf{Thách thức thực tiễn:}
+			\begin{itemize}
+				\item Dữ liệu luồng (Streaming Data) thay đổi liên tục theo thời gian.
+				\item \alert{Concept Drift:} $P_t(X,y) \neq P_{t+1}(X,y)$ làm mô hình lỗi thời nhanh chóng.
+				\item \textbf{Yêu cầu:} Phát hiện nhanh, độ trễ thấp, không phụ thuộc nhãn (Unsupervised).
+			\end{itemize}
+			
+			\vspace{1em}
+			\textbf{Mục tiêu nghiên cứu:}
+			\begin{enumerate}
+				\item \textbf{Detection:} Nhanh \& Chính xác (Giảm False Positive).
+				\item \textbf{Classification:} Phân loại loại drift (Sudden/Gradual...) không cần nhãn.
+				\item \textbf{Adaptation:} Hệ thống tự động thích ứng với Kafka.
+			\end{enumerate}
+		\end{column}
+		\begin{column}{0.4\textwidth}
+			\centering
+			\includegraphics[width=\linewidth]{image/patern_based_concept_drift.png}
+			\captionof{figure}{\scriptsize Các loại Drift phổ biến}
+		\end{column}
+	\end{columns}
 \end{frame}
 
-\begin{frame}{Vấn đề nghiên cứu}
-  \begin{block}{Câu hỏi nghiên cứu chính}
-    \begin{enumerate}
-      \item Làm thế nào để \textbf{phát hiện} khi nào drift xảy ra?
-      \item Làm thế nào để \textbf{phân loại} loại drift (sudden, gradual, incremental)?
-      \item Làm thế nào để \textbf{thích ứng} mô hình một cách tự động?
-    \end{enumerate}
-  \end{block}
+% =============================================================================
+% SECTION 2: Theoretical Foundation
+% =============================================================================
+\section{Cơ sở lý thuyết (Chương 1 \& 2)}
 
-  \vspace{1em}
-  \begin{columns}[T]
-    \begin{column}{0.48\textwidth}
-      \textbf{Thách thức kỹ thuật:}
-      \begin{itemize}
-        \item Độ chính xác phát hiện
-        \item Độ trễ phát hiện thấp
-        \item Chi phí tính toán hợp lý
-      \end{itemize}
-    \end{column}
-    \begin{column}{0.48\textwidth}
-      \textbf{Yêu cầu hệ thống:}
-      \begin{itemize}
-        \item Hoạt động real-time
-        \item Tự động hóa hoàn toàn
-        \item Dễ triển khai thực tế
-      \end{itemize}
-    \end{column}
-  \end{columns}
+\begin{frame}{Định nghĩa Concept Drift}
+	\begin{columns}[T]
+		\begin{column}{0.6\textwidth}
+			\textbf{Khái niệm:}
+			\begin{itemize}
+				\item Thay đổi trong mối quan hệ giữa dữ liệu đầu vào và nhãn mục tiêu theo thời gian.
+				\item $\exists t: P_t(X, Y) \neq P_{t+1}(X, Y)$
+			\end{itemize}
+			
+			\vspace{1em}
+			\textbf{Phân loại theo bản chất thay đổi $P(X)$ vs $P(Y|X)$:}
+			\begin{enumerate}
+				\item \textbf{Real Drift:} $P(Y|X)$ thay đổi (biên quyết định thay đổi). Ảnh hưởng trực tiếp độ chính xác mô hình.
+				\item \textbf{Virtual Drift (Covariate Shift):} $P(X)$ thay đổi nhưng $P(Y|X)$ giữ nguyên.
+			\end{enumerate}
+		\end{column}
+		\begin{column}{0.4\textwidth}
+			\centering
+			\includegraphics[width=0.9\linewidth]{image/distribution_based_concept_drift.png}
+			\captionof{figure}{\scriptsize Phân loại Drift}
+		\end{column}
+	\end{columns}
 \end{frame}
 
-\begin{frame}{Mục tiêu nghiên cứu}
-  \begin{enumerate}
-    \item \textbf{Nghiên cứu lý thuyết:}
-    \begin{itemize}
-      \item Phân tích nền tảng toán học của Shape Drift Detector (ShapeDD)
-      \item Maximum Mean Discrepancy (MMD) trong RKHS
-    \end{itemize}
-
-    \vspace{0.5em}
-    \item \textbf{Xây dựng hệ thống:}
-    \begin{itemize}
-      \item Tích hợp ShapeDD với phân loại drift (CDT\_MSW)
-      \item Phát triển chiến lược thích ứng tự động
-    \end{itemize}
-
-    \vspace{0.5em}
-    \item \textbf{Đánh giá thực nghiệm:}
-    \begin{itemize}
-      \item So sánh với các phương pháp state-of-the-art
-      \item Đo lường hiệu suất trên nhiều kịch bản drift
-    \end{itemize}
-
-    \vspace{0.5em}
-    \item \textbf{Triển khai thực tế:}
-    \begin{itemize}
-      \item Xây dựng hệ thống end-to-end với Apache Kafka
-      \item Hướng dẫn triển khai production
-    \end{itemize}
-  \end{enumerate}
+\begin{frame}{Phân loại Drift theo Thời gian}
+	\textbf{Các mẫu hình thay đổi phổ biến:}
+	
+	\vspace{1em}
+	\begin{columns}[T]
+		\begin{column}{0.5\textwidth}
+			\begin{itemize}
+				\item \textbf{Sudden (Đột ngột):} Thay đổi tức thời (ví dụ: cảm biến hỏng).
+				\item \textbf{Gradual (Dần dần):} Giai đoạn chuyển tiếp, xen kẽ cũ/mới.
+				\item \textbf{Incremental (Tăng dần):} Thay đổi liên tục, tuyến tính.
+				\item \textbf{Recurrent (Lặp lại):} Quay lại trạng thái cũ (ví dụ: theo mùa).
+				\item \textbf{Blip (Nhiễu):} Thay đổi ngắn hạn rồi trở lại bình thường.
+			\end{itemize}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\centering
+			\includegraphics[width=\linewidth]{image/patern_based_concept_drift.png}
+			\captionof{figure}{\scriptsize Mô hình thay đổi theo thời gian}
+		\end{column}
+	\end{columns}
 \end{frame}
 
-% ==============================================================================
-% SECTION 2: THEORETICAL FOUNDATION
-% ==============================================================================
-\section{Cơ sở lý thuyết}
-
-\begin{frame}{Các loại Concept Drift}
-  \begin{figure}
-    \centering
-    \begin{tikzpicture}[scale=0.9]
-      % Sudden drift
-      \draw[thick, blue] (0,2) -- (2,2);
-      \draw[thick, red] (2,2) -- (2,1) -- (4,1);
-      \node[above] at (2,2.3) {\small \textbf{Sudden}};
-      \draw[dashed] (2,0) -- (2,2.5);
-
-      % Gradual drift
-      \draw[thick, blue] (5,2) -- (6,2);
-      \draw[thick, red] (6,2) to[out=0,in=180] (8,1);
-      \node[above] at (7,2.3) {\small \textbf{Gradual}};
-
-      % Incremental drift
-      \draw[thick, blue] (9,2) -- (10,2);
-      \draw[thick, red] (10,2) -- (10.5,1.7) -- (11,1.4) -- (11.5,1.1) -- (12,1);
-      \node[above] at (11,2.3) {\small \textbf{Incremental}};
-
-      % Recurrent drift
-      \draw[thick, blue] (0,-0.5) -- (1,-0.5);
-      \draw[thick, red] (1,-0.5) -- (2,-1.5);
-      \draw[thick, blue] (2,-1.5) -- (3,-1.5);
-      \draw[thick, red] (3,-1.5) -- (4,-0.5);
-      \node[above] at (2,0) {\small \textbf{Recurrent}};
-
-      % Blip
-      \draw[thick, blue] (5,-0.5) -- (6,-0.5);
-      \draw[thick, red] (6,-0.5) -- (6.5,-1.5) -- (7,-0.5);
-      \draw[thick, blue] (7,-0.5) -- (8,-0.5);
-      \node[above] at (6.5,0) {\small \textbf{Blip}};
-    \end{tikzpicture}
-  \end{figure}
-
-  \begin{itemize}
-    \item \textcolor{blue}{Sudden}: Thay đổi đột ngột, ngay lập tức
-    \item \textcolor{blue}{Gradual}: Thay đổi dần dần qua thời gian dài
-    \item \textcolor{blue}{Incremental}: Thay đổi từng bước nhỏ
-    \item \textcolor{blue}{Recurrent}: Các khái niệm cũ xuất hiện lại
-    \item \textcolor{blue}{Blip}: Thay đổi tạm thời rồi quay lại
-  \end{itemize}
+\begin{frame}{Tổng quan các phương pháp hiện có}
+	\begin{table}[]
+		\centering
+		\small
+		\begin{tabular}{@{}lp{5cm}l@{}}
+			\toprule
+			\textbf{Nhóm phương pháp} & \textbf{Cơ chế hoạt động} & \textbf{Đại diện} \\ \midrule
+			\textbf{Error Rate-based} & Theo dõi tỷ lệ lỗi mô hình (Supervised). Cần nhãn ngay lập tức. & DDM, EDDM \\ \addlinespace
+			\textbf{Window-based} & So sánh thống kê giữa 2 cửa sổ trượt (Reference vs Current). & ADWIN, KSWIN \\ \addlinespace
+			\textbf{Data Distribution} & So sánh phân phối dữ liệu gốc (Unsupervised). & KS-Test, \textbf{MMD} \\ \addlinespace
+			\textbf{Shape-based} & Phân tích hình thái tín hiệu thay đổi ($d(P, Q)$). & \textbf{ShapeDD} \\ \bottomrule
+		\end{tabular}
+	\end{table}
+	
+	\vspace{0.5em}
+	\textbf{Hạn chế chung:} Phần lớn các phương pháp Unsupervised (như MMD gốc) chạy chậm ($O(n^2)$) hoặc báo động giả cao với nhiễu.
 \end{frame}
 
-\begin{frame}{Shape Drift Detector (ShapeDD) - Ý tưởng cơ bản}
-  \begin{block}{Ý tưởng chính}
-    Khi có drift, sự khác biệt giữa dữ liệu trước và sau tạo ra một \textbf{"hình tam giác"} (đỉnh nhọn) trong đường cong MMD.
-  \end{block}
+% =============================================================================
+% SECTION 3: Proposed Model
+% =============================================================================
+\section{Mô hình đề xuất (Chương 3)}
 
-  \vspace{0.5em}
-  \textbf{Quy trình 3 bước đơn giản:}
-
-  \begin{enumerate}
-    \item \textbf{Tính shape statistic:}
-    \begin{itemize}
-      \item Chia stream thành cửa sổ trượt (kích thước 2×L1)
-      \item So sánh hai nửa cửa sổ bằng kernel RBF
-      \item Tạo đường cong "shape" biểu diễn sự khác biệt
-    \end{itemize}
-
-    \vspace{0.3em}
-    \item \textbf{Tìm đỉnh (zero-crossing):}
-    \begin{itemize}
-      \item Tính đạo hàm: shape\_prime[i] = shape[i] × shape[i+1]
-      \item Nếu shape\_prime < 0 → Đỉnh (đổi dấu từ + sang -)
-    \end{itemize}
-
-    \vspace{0.3em}
-    \item \textbf{Kiểm định MMD:}
-    \begin{itemize}
-      \item Với mỗi đỉnh: lấy window xung quanh (L2=150 samples)
-      \item Chạy MMD test (2500 permutations)
-      \item p-value < 0.05 → Drift thật!
-    \end{itemize}
-  \end{enumerate}
+\begin{frame}{Kiến trúc Hệ thống SE-CDT-Stream}
+	\centering
+	\includegraphics[width=0.9\linewidth,height=0.65\textheight,keepaspectratio]{image/system_architecture.png}
+	
+	\vspace{0.5em}
+	\small
+	\textbf{Luồng xử lý:} Dữ liệu Streaming $\to$ ShapeDD (Phát hiện) $\to$ SE-CDT (Phân loại) $\to$ Adaptation (Cập nhật Model).
 \end{frame}
 
-\begin{frame}{ShapeDD - Ví dụ cụ thể}
-  \textbf{Scenario: Stream có drift tại sample 1000}
-
-  \vspace{6pt}
-  \textbf{Bước 1: Tính shape curve}
-  \begin{itemize}
-    \item Cửa sổ tại position 995: shape[995] = 0.2
-    \item Cửa sổ tại position 997: shape[997] = 0.6 (tăng)
-    \item Cửa sổ tại position 999: shape[999] = 0.4 (giảm)
-  \end{itemize}
-
-  \vspace{6pt}
-  \textbf{Bước 2: Tìm đỉnh (zero-crossing)}
-  \begin{itemize}
-    \item shape\_prime[997] = shape[997] × shape[998] = 0.6 × (-0.2) = -0.12 < 0
-    \item \alert{→ Phát hiện đỉnh tại position 997!}
-  \end{itemize}
-
-  \vspace{6pt}
-  \textbf{Bước 3: Kiểm định MMD}
-  \begin{itemize}
-    \item Lấy window [922, 1072] (150 samples xung quanh 997)
-    \item Chạy 2500 permutations → p-value = 0.003 < 0.05
-    \item \alert{→ Xác nhận: DRIFT thật tại position 997!}
-  \end{itemize}
-
-  \vspace{6pt}
-  \begin{alertblock}{Kết luận}
-    Phát hiện drift với độ trễ = 997 - 1000 = -3 samples (phát hiện trước!)
-  \end{alertblock}
+\begin{frame}{Đóng góp 1: Từ ShapeDD đến ShapeDD-IDW}
+	\begin{columns}
+		\begin{column}{0.6\textwidth}
+			\textbf{Vấn đề của ShapeDD gốc:}
+			\begin{itemize}
+				\item Dựa vào \textbf{Permutation Test} để xác thực thống kê $\to$ Rất chậm ($O(N \cdot W^2)$).
+				\item Không phù hợp cho luồng dữ liệu tốc độ cao (High-throughput Streaming).
+			\end{itemize}
+			
+			\vspace{0.5em}
+			\textbf{Giải pháp đề xuất: ShapeDD-IDW}
+			\begin{itemize}
+				\item \textbf{Cơ chế IDW (Inverse Density Weighting):} Trọng số nghịch đảo mật độ giúp tăng độ nhạy tại các vùng biên phân phối (nơi drift thường bắt đầu).
+				\item \textbf{Asymptotic Test:} Thay thế Permutation Test bằng kiểm định tiệm cận (dựa trên Gamma distribution) $\to$ Giảm độ phức tạp tính toán.
+			\end{itemize}
+		\end{column}
+		\begin{column}{0.4\textwidth}
+			\centering
+			\includegraphics[width=\linewidth]{../../results/plots/throughput_comparison.png}
+			\captionof{figure}{\scriptsize Tăng tốc độ xử lý 17 lần}
+		\end{column}
+	\end{columns}
 \end{frame}
 
-\begin{frame}{ShapeDD - Ưu và nhược điểm}
-  \begin{columns}[T]
-    \begin{column}{0.48\textwidth}
-      \textbf{Ưu điểm:}
-      \begin{itemize}
-        \item \textbf{Độ chính xác cao} với sudden drift
-        \item \textbf{Độ trễ thấp:} Phát hiện gần real-time
-        \item \textbf{Không cần nhãn:} Unsupervised
-        \item \textbf{Phát hiện vị trí chính xác:} Zero-crossing localization
-      \end{itemize}
-    \end{column}
-    \begin{column}{0.48\textwidth}
-      \textbf{Hạn chế:}
-      \begin{itemize}
-        \item \textbf{Threshold thô:} shape[pos] > 0 (quá nhiều candidates)
-        \item \textbf{Bỏ lỡ gradual drift:} Chỉ tìm đỉnh nhọn
-        \item \textbf{Fixed scale:} L1=50 không phù hợp mọi tốc độ drift
-        \item \textbf{Chi phí tính toán cao:} 2500 permutations/candidate
-      \end{itemize}
-    \end{column}
-  \end{columns}
-
-  \vspace{8pt}
-  \begin{block}{Động lực cải tiến}
-    Các hạn chế này dẫn đến các cải tiến: MMDAgg (multi-kernel), OW-MMD (optimal weighting)
-  \end{block}
+\begin{frame}{Cải tiến 2: Phân loại Drift (SE-CDT)}
+	\begin{columns}
+		\begin{column}{0.6\textwidth}
+			\textbf{Ý tưởng chủ đạo:}
+			\begin{itemize}
+				\item Phân tích hình thái của tín hiệu Drift Magnitude ($\sigma(t)$).
+				\item Không cần nhãn thật (Unsupervised).
+			\end{itemize}
+			
+			\vspace{1em}
+			\begin{table}[]
+				\centering \small
+				\begin{tabular}{@{}ll@{}}
+					\toprule
+					\textbf{Đặc trưng tín hiệu} & \textbf{Loại Drift} \\ \midrule
+					Đỉnh nhọn, SNR cao & \textbf{Sudden} \\
+					Biên độ tăng dần, R\textsuperscript{2} cao & \textbf{Incremental} \\
+					Dao động, WR rộng & \textbf{Gradual} \\
+					Nhiều đỉnh đều đặn & \textbf{Recurrent} \\ 
+					Đỉnh đôi sát nhau & \textbf{Blip} \\ \bottomrule
+				\end{tabular}
+			\end{table}
+		\end{column}
+		\begin{column}{0.4\textwidth}
+			\centering
+			% Placeholder for visually showing classifications if available
+			\includegraphics[width=\linewidth]{image/vis_mixed_a_SE.png} 
+			\captionof{figure}{\scriptsize Minh họa tín hiệu Drift}
+		\end{column}
+	\end{columns}
 \end{frame}
 
-\begin{frame}{Maximum Mean Discrepancy (MMD)}
-  \begin{definition}[MMD]
-    MMD đo khoảng cách giữa hai phân phối $P$ và $Q$ trong không gian RKHS:
-    \begin{equation*}
-      \text{MMD}^2(P, Q) = \left\| \mathbb{E}_{x \sim P}[\phi(x)] - \mathbb{E}_{y \sim Q}[\phi(y)] \right\|^2_{\mathcal{H}}
-    \end{equation*}
-  \end{definition}
+% =============================================================================
+% SECTION 4: Experiments
+% =============================================================================
+\section{Thực nghiệm và Đánh giá (Chương 4)}
 
-  \vspace{0.5em}
-  \textbf{Ước lượng thực nghiệm:}
-  \begin{equation*}
-    \widehat{\text{MMD}}^2 = \frac{1}{n^2} \sum_{i,j} k(x_i, x_j) + \frac{1}{m^2} \sum_{i,j} k(y_i, y_j) - \frac{2}{nm} \sum_{i,j} k(x_i, y_j)
-  \end{equation*}
-
-  \vspace{0.5em}
-  \begin{alertblock}{Tính chất quan trọng}
-    MMD = 0 $\Leftrightarrow$ P = Q (với kernel universal)
-  \end{alertblock}
+\begin{frame}{Kết quả: Khả năng phát hiện (Detection)}
+	\begin{columns}
+		\begin{column}{0.5\textwidth}
+			\centering
+			\includegraphics[width=\linewidth]{../../results/plots/critical_difference_f1.png}
+			\captionof{figure}{\scriptsize So sánh thống kê (Nemenyi Test)}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\textbf{Hiệu suất vượt trội:}
+			\begin{itemize}
+				\item \textbf{F1-Score:} 0.481 (Cao nhất nhóm Unsupervised).
+				\item \textbf{False Positives:} \textbf{0} (Trên các tập Virtual Drift).
+				\item ShapeDD-IDW (SE-CDT) nằm trong nhóm dẫn đầu về độ tin cậy.
+			\end{itemize}
+		\end{column}
+	\end{columns}
 \end{frame}
 
-\begin{frame}{Kernel Functions - RBF Kernel trong MMD}
-  \textbf{RBF (Gaussian) Kernel:} (Sử dụng trong ShapeDD)
-  \begin{equation*}
-    k(x, y) = \exp\left(-\gamma \|x - y\|^2\right), \quad \gamma = \frac{1}{2\sigma^2}
-  \end{equation*}
-
-  \vspace{8pt}
-  \textbf{Vai trò trong MMD:}
-  \begin{itemize}
-    \item \textbf{Ánh xạ không gian:} Biến đổi dữ liệu vào Reproducing Kernel Hilbert Space (RKHS)
-    \item \textbf{So sánh phân phối:} MMD đo khoảng cách giữa mean embeddings của 2 distributions
-    \item \textbf{Nhạy cảm drift:} Kernel tốt giúp phát hiện sự khác biệt tinh vi giữa distributions
-  \end{itemize}
-
-  \vspace{8pt}
-  \begin{columns}[T]
-    \begin{column}{0.5\textwidth}
-      \textbf{Lựa chọn $\gamma$:}
-      \begin{itemize}
-        \item \textbf{Scott's rule:}
-        \[
-          \sigma = n^{-1/(d+4)} \cdot \text{std}(X)
-        \]
-        \item Tự động điều chỉnh theo độ phân tán dữ liệu
-        \item Phù hợp với số chiều $d$
-      \end{itemize}
-    \end{column}
-    \begin{column}{0.5\textwidth}
-      \textbf{Ảnh hưởng của $\gamma$:}
-      \begin{itemize}
-        \item $\gamma$ \textbf{nhỏ} ($\sigma$ lớn):
-        \begin{itemize}
-          \item Kernel mượt, tổng quát hóa
-          \item Ít false alarms
-          \item Có thể bỏ lỡ drift nhỏ
-        \end{itemize}
-        \item $\gamma$ \textbf{lớn} ($\sigma$ nhỏ):
-        \begin{itemize}
-          \item Kernel sắc, nhạy chi tiết
-          \item Phát hiện drift nhỏ
-          \item Nhiều false alarms hơn
-        \end{itemize}
-      \end{itemize}
-    \end{column}
-  \end{columns}
-
-  \vspace{8pt}
-  \begin{block}{Tại sao quan trọng?}
-    $\gamma$ tối ưu cân bằng giữa \textbf{sensitivity} (phát hiện drift) và \textbf{specificity} (tránh false alarms)
-  \end{block}
+\begin{frame}{Kết quả: Khả năng phân loại (Classification)}
+	\begin{columns}
+		\begin{column}{0.5\textwidth}
+			\textbf{SE-CDT vs Baseline (CDT-MSW):}
+			\begin{itemize}
+				\item \textbf{Accuracy:} \textbf{85.8\%} (so với 38.7\%).
+				\item Phân biệt rất tốt giữa drifted (Sudden/Incremental) và non-drifted.
+				\item Nhận diện chính xác 98\% các trường hợp Blip (Nhiễu ngắn hạn).
+			\end{itemize}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\centering
+			\includegraphics[width=0.9\linewidth]{../../results/plots/confusion_matrix_se_cdt.png}
+			\captionof{figure}{\scriptsize Confusion Matrix (SE-CDT)}
+		\end{column}
+	\end{columns}
 \end{frame}
 
-
-% ==============================================================================
-% CÁC CẢI TIẾN SHAPEDD (CHỈ CÁC PHƯƠNG PHÁP THỰC SỰ ĐƯỢC SỬ DỤNG)
-% ==============================================================================
-
-\begin{frame}{Cải tiến 1: Optimally-Weighted MMD (OW-MMD)}
-\textbf{Vấn đề:}
-\begin{itemize}
-  \item MMD truyền thống dùng trọng số đều ($1/n$), coi mọi mẫu dữ liệu quan trọng như nhau.
-  \item Phương sai bộ ước lượng cao $\to$ cần nhiều mẫu hoặc bootstrap lớn (2500 lần) để ổn định.
-\end{itemize}
-
-\vspace{8pt}
-\textbf{Giải pháp: Trọng số tối ưu giảm phương sai}
-\begin{itemize}
-  \item Gán trọng số nghịch biến với mật độ dữ liệu:
-  \[ w_i \propto \frac{1}{\sqrt{\sum_j k(x_i, x_j)}} \]
-  \item Giảm trọng số các vùng dữ liệu dày đặc (thông tin dư thừa), tăng trọng số vùng biên (nhạy cảm với drift).
-\end{itemize}
-
-\vspace{8pt}
-\textbf{Hiệu quả đột phá:}
-\begin{itemize}
-  \item \alert{Tăng tốc độ > 7 lần:} Giảm số lần bootstrap từ 2500 xuống 10-50 lần.
-  \item \alert{Thông lượng:} $\sim$ 50,000 samples/s (so với 6,400 của ShapeDD gốc).
-\end{itemize}
+\begin{frame}{Kết quả: Khả năng thích ứng (Adaptation)}
+	\begin{columns}
+		\begin{column}{0.65\textwidth}
+			\centering
+			\includegraphics[width=\linewidth]{../../results/plots/fig_prequential_stepping.png}
+			\vspace{-0.5em}
+			\captionof{figure}{\scriptsize Prequential Accuracy trên Stepping Drift}
+		\end{column}
+		\begin{column}{0.35\textwidth}
+			\small
+			\textbf{Phân tích:}
+			\begin{itemize}
+				\item Đường Accuracy hồi phục nhanh sau mỗi lần drift (nét đứt đỏ).
+				\item Chiến lược \textit{Reset/Retrain} hoạt động hiệu quả khi phát hiện đúng loại drift.
+			\end{itemize}
+		\end{column}
+	\end{columns}
 \end{frame}
 
-\begin{frame}{Cải tiến 2: MMD Aggregated (MMD-Agg)}
-\textbf{Vấn đề:}
-\begin{itemize}
-  \item Kernel RBF đơn lẻ với độ rộng $\sigma$ cố định chỉ bắt được một loại drift nhất định.
-  \item $\sigma$ nhỏ: Bắt nhiễu cục bộ (Blip) nhưng bỏ lỡ dịch chuyển toàn cục.
-  \item $\sigma$ lớn: Bắt dịch chuyển lớn nhưng làm mờ các thay đổi tinh vi.
-\end{itemize}
-
-\vspace{8pt}
-\textbf{Giải pháp: Thích nghi đa hạt nhân}
-\begin{itemize}
-  \item Quét trên tập hợp nhiều bandwidths: $\mathcal{K} = \{k_{\sigma_1}, k_{\sigma_2}, \dots, k_{\sigma_M}\}$.
-  \item Thống kê kiểm định tổng hợp:
-  \[ \Delta_{Agg} = \max_{k \in \mathcal{K}} (\widehat{\text{MMD}}_k^2 - \lambda_k) \]
-\end{itemize}
-
-\vspace{8pt}
-\textbf{Hiệu quả:}
-\begin{itemize}
-  \item \alert{Tối ưu Minimax:} Đảm bảo phát hiện mọi loại thay đổi phân phối (local & global).
-  \item \alert{F1 = 1.0 trên RBF Blips:} Vượt trội hoàn toàn so với các phương pháp đơn kernel.
-\end{itemize}
+\begin{frame}{Triển khai thực tế trên Kafka (Deploy)}
+	\centering
+	\includegraphics[width=0.85\linewidth]{image/kafka_results_real.png}
+	
+	\vspace{0.5em}
+	\small
+	\textbf{Dashboard giám sát:} Hệ thống hoạt động ổn định với throughput thực tế cao, trực quan hóa trạng thái drift và accuracy theo thời gian thực.
 \end{frame}
 
-\begin{frame}{Kết quả Benchmark Tổng hợp (30 Runs)}
-\begin{table}
-  \centering
-  \small
-  \begin{tabular}{clcccc}
-    \toprule
-    \textbf{Rank} & \textbf{Method} & \textbf{F1-Score} & \textbf{Precision} & \textbf{Recall} & \textbf{Speed (s/s)} \\
-    \midrule
-    \rowcolor{green!10}
-    1 & \textbf{MMD\_OW} & \textbf{0.576} & \textbf{0.627} & 0.578 & \textbf{51,282} \\
-    \rowcolor{green!10}
-    2 & \textbf{ShapeDD\_OW\_MMD} & 0.562 & 0.620 & 0.555 & \textbf{52,549} \\
-    3 & D3 & 0.517 & 0.590 & 0.500 & 27,693 \\
-    4 & ShapeDD\_MMDAgg & 0.509 & 0.562 & 0.504 & 6,111 \\
-    5 & MMD & 0.475 & 0.368 & 0.713 & 6,449 \\
-    6 & DAWIDD & 0.460 & 0.352 & 0.710 & 3,253 \\
-    7 & ShapeDD (Gốc) & 0.440 & 0.322 & 0.731 & 6,399 \\
-    8 & KS Test & 0.299 & 0.197 & \textbf{0.775} & 28,161 \\
-    \bottomrule
-  \end{tabular}
-\end{table}
+% =============================================================================
+% SECTION 5: Conclusion
+% =============================================================================
+\section{Kết luận (Chương 5)}
 
-\vspace{5pt}
-\textbf{Nhận xét:}
-\begin{itemize}
-  \item \textbf{OW-MMD:} Vô địch về F1 và Tốc độ (nhanh nhất, chính xác nhất).
-  \item \textbf{KS Test:} Recall cao nhất nhưng quá nhiều báo động giả (Precision thấp nhất).
-\end{itemize}
+\begin{frame}{Kết luận}
+	\begin{block}{Đóng góp chính}
+		\begin{enumerate}
+			\item \textbf{Hiệu năng:} Tối ưu hóa thuật toán ShapeDD (IDW-MMD) tăng tốc 17 lần.
+			\item \textbf{Phương pháp mới:} Đề xuất SE-CDT phân loại drift không giám sát (Acc 85.8\%).
+			\item \textbf{Hệ thống:} Xây dựng pipeline xử lý trọn vẹn trên Apache Kafka.
+		\end{enumerate}
+	\end{block}
+	
+	\vspace{1em}
+	\textbf{Hướng phát triển:}
+	\begin{itemize}
+		\item Cải thiện khả năng phát hiện Drift nhẹ (Mild Drift).
+		\item Tích hợp cơ chế Meta-Learning để tự động chọn tham số.
+	\end{itemize}
 \end{frame}
 
-\section{Hệ thống đề xuất}
-\begin{frame}{Kiến trúc tổng thể}
-  \begin{figure}
-    \centering
-    \begin{tikzpicture}[
-      node distance=1.5cm,
-      block/.style={rectangle, draw, fill=blue!20, text width=3cm, text centered, rounded corners, minimum height=1cm},
-      arrow/.style={thick,->,>=stealth}
-    ]
-      \node[block] (input) {Data Stream};
-      \node[block, right of=input, xshift=2cm] (detect) {ShapeDD\\Drift Detection};
-      \node[block, right of=detect, xshift=2cm] (classify) {CDT\_MSW\\Drift Classification};
-      \node[block, below of=classify, yshift=-0.5cm] (adapt) {Adaptive Strategy};
-      \node[block, below of=input, yshift=-0.5cm] (model) {ML Model};
-
-      \draw[arrow] (input) -- (detect);
-      \draw[arrow] (detect) -- node[above] {\small Drift?} (classify);
-      \draw[arrow] (classify) -- node[right] {\small Type} (adapt);
-      \draw[arrow] (adapt) -| (model);
-      \draw[arrow] (input) |- (model);
-      \draw[arrow] (model.east) -- ++(1,0) |- (detect.south);
-    \end{tikzpicture}
-  \end{figure}
-
-  \textbf{Luồng hoạt động:}
-  \begin{enumerate}
-    \item Luồng dữ liệu được giám sát liên tục bởi ShapeDD
-    \item Khi phát hiện drift → Kích hoạt phân loại (CDT\_MSW)
-    \item Dựa vào loại drift → Áp dụng chiến lược thích ứng phù hợp
-    \item Cập nhật mô hình và tiếp tục giám sát
-  \end{enumerate}
-\end{frame}
-
-\begin{frame}{Thuật toán ShapeDD}
-  \begin{algorithmic}[1]
-    \REQUIRE Data stream $X$, window sizes $l_1, l_2$, permutations $n_{perm}$
-    \ENSURE Drift positions and p-values
-    \STATE Compute kernel matrix $K$ using RBF kernel
-    \STATE Compute sliding MMD statistics using convolution
-    \STATE Apply smoothing to reduce noise
-    \STATE Compute shape statistics (second derivative)
-    \STATE Identify candidate peaks (zero-crossings)
-    \FOR{each candidate peak $pos$}
-      \STATE Extract window around $pos$ with size $l_2$
-      \STATE Run permutation test to compute p-value
-      \IF{p-value $< 0.05$}
-        \STATE \textbf{Report drift at position} $pos$
-      \ENDIF
-    \ENDFOR
-  \end{algorithmic}
-
-  \vspace{0.5em}
-  \begin{block}{Cải tiến trong nghiên cứu}
-    \textbf{ShapeDD\_OW\_MMD:} Tích hợp trọng số tối ưu giúp giảm phương sai và tăng tốc độ.
-  \end{block}
-\end{frame}
-
-\begin{frame}{Drift Classification (CDT\_MSW)}
-  \textbf{Phương pháp Multiple Sliding Windows:}
-  \begin{itemize}
-    \item Sử dụng 3 cửa sổ khác nhau: nhỏ, trung bình, lớn
-    \item So sánh tỷ lệ phát hiện giữa các cửa sổ
-    \item Phân loại dựa trên pattern của detections
-  \end{itemize}
-
-  \vspace{1em}
-  \begin{table}
-    \centering
-    \small
-    \begin{tabular}{lccc}
-      \toprule
-      \textbf{Loại Drift} & \textbf{Window S} & \textbf{Window M} & \textbf{Window L} \\
-      \midrule
-      Sudden      & High & High & High \\
-      Gradual     & Low  & Med  & High \\
-      Incremental & Med  & Med  & High \\
-      Recurrent   & High & Med  & Low  \\
-      Blip        & High & Low  & Low  \\
-      \bottomrule
-    \end{tabular}
-  \end{table}
-\end{frame}
-
-\begin{frame}{Chiến lược thích ứng}
-  \textbf{Dựa vào loại drift được phân loại:}
-
-  \begin{itemize}
-    \item \textbf{Sudden Drift:}
-    \begin{itemize}
-      \item \alert{Reset model} hoàn toàn
-      \item Huấn luyện lại trên dữ liệu mới
-      \item Kích thước cửa sổ: 500 samples
-    \end{itemize}
-
-    \vspace{0.3em}
-    \item \textbf{Gradual/Incremental:}
-    \begin{itemize}
-      \item \alert{Incremental learning} (cập nhật dần dần)
-      \item Learning rate thấp để tránh catastrophic forgetting
-      \item Cửa sổ lớn hơn: 1000 samples
-    \end{itemize}
-
-    \vspace{0.3em}
-    \item \textbf{Recurrent:}
-    \begin{itemize}
-      \item \alert{Ensemble models} cho các concept đã thấy
-      \item Lưu trữ models cũ trong repository
-      \item Reactive reactivation khi pattern quay lại
-    \end{itemize}
-
-    \vspace{0.3em}
-    \item \textbf{Blip:}
-    \begin{itemize}
-      \item \alert{Ignore} (không cập nhật)
-      \item Chờ xác nhận drift thực sự
-    \end{itemize}
-  \end{itemize}
-\end{frame}
-
-\begin{frame}{Triển khai với Apache Kafka}
-  \begin{columns}[T]
-    \begin{column}{0.5\textwidth}
-      \textbf{Kiến trúc streaming:}
-      \begin{itemize}
-        \item \textbf{Producer:} Sinh dữ liệu liên tục
-        \item \textbf{Kafka:} Message broker
-        \item \textbf{Consumer:} Phát hiện drift
-        \item \textbf{Trainer:} Cập nhật model
-      \end{itemize}
-
-      \vspace{1em}
-      \textbf{Topics:}
-      \begin{itemize}
-        \item \texttt{data-stream}
-        \item \texttt{drift-alerts}
-        \item \texttt{model-updates}
-      \end{itemize}
-    \end{column}
-    \begin{column}{0.5\textwidth}
-      \begin{figure}
-        \centering
-        \begin{tikzpicture}[scale=0.7,
-          block/.style={rectangle, draw, fill=blue!20, text width=2cm, text centered, rounded corners, minimum height=0.8cm, font=\tiny},
-          arrow/.style={->,>=stealth}
-        ]
-          \node[block] (producer) {Producer};
-          \node[block, below of=producer, yshift=-0.5cm] (kafka) {Kafka};
-          \node[block, below of=kafka, yshift=-0.5cm] (consumer) {Consumer};
-          \node[block, below of=consumer, yshift=-0.5cm] (detector) {Detector};
-          \node[block, below of=detector, yshift=-0.5cm] (trainer) {Trainer};
-
-          \draw[arrow] (producer) -- (kafka);
-          \draw[arrow] (kafka) -- (consumer);
-          \draw[arrow] (consumer) -- (detector);
-          \draw[arrow] (detector) -- (trainer);
-          \draw[arrow] (trainer.west) -- ++(-0.5,0) |- (consumer.west);
-        \end{tikzpicture}
-      \end{figure}
-    \end{column}
-  \end{columns}
-\end{frame}
-
-% ==============================================================================
-% SECTION 4: EXPERIMENTS
-% ==============================================================================
-\section{Thực nghiệm và đánh giá}
-
-\begin{frame}{Thiết kế thực nghiệm (Cập nhật)}
-  \textbf{11 Datasets × 8 Methods × 30 Runs = 2,640 Experiments}
-
-  \vspace{8pt}
-  \textbf{Phân loại Dataset theo đặc tính Drift:}
-  \begin{itemize}
-    \item \textbf{Sudden Drift (P(X) thay đổi):}
-    \begin{itemize}
-        \item \textit{Gaussian Shift:} Dịch chuyển trung bình ($\delta=1.5$)
-        \item \textit{STAGGER:} Thay đổi quy luật (có tín hiệu P(X))
-        \item \textit{Random RBF:} 4 mức độ (Mild $\to$ Ultra-severe)
-    \end{itemize}
-    \item \textbf{Blip Drift:} \textit{RBF Blips} (thay đổi ngắn hạn)
-    \item \textbf{Control Group (Chỉ P(Y|X) thay đổi):}
-    \begin{itemize}
-        \item \textit{Standard SEA, Hyperplane, LED Abrupt}
-        \item Mục tiêu: Kiểm chứng tính "bền vững" (không báo động sai) của detector không giám sát
-    \end{itemize}
-  \end{itemize}
-
-  \vspace{8pt}
-  \textbf{Cấu hình chung:}
-  \begin{itemize}
-    \item Stream size: 10,000 samples (10 điểm drift)
-    \item Windows: $L_1 = 50$, $L_2 = 150$
-    \item Permutations: 2,500 (cho ShapeDD gốc) vs Optimized Weights (cho OW-MMD)
-  \end{itemize}
-\end{frame}
-
-\begin{frame}{Metrics đánh giá}
-  \begin{columns}[T]
-    \begin{column}{0.5\textwidth}
-      \textbf{Detection metrics:}
-      \begin{itemize}
-        \item \textbf{F1-Score:} Cân bằng precision-recall
-        \item \textbf{Detection Rate:} Tỷ lệ drift được phát hiện
-        \item \textbf{MTTD:} Mean Time To Detect (độ trễ)
-      \end{itemize}
-
-      \vspace{1em}
-      \textbf{Adaptation metrics:}
-      \begin{itemize}
-        \item \textbf{Accuracy:} Độ chính xác phân loại
-        \item \textbf{Recovery rate:} Tốc độ phục hồi
-        \item \textbf{Degradation:} Mức độ suy giảm
-      \end{itemize}
-    \end{column}
-    \begin{column}{0.5\textwidth}
-      \textbf{Công thức tính:}
-      \begin{align*}
-        \text{Precision} &= \frac{TP}{TP + FP} \\[0.5em]
-        \text{Recall} &= \frac{TP}{TP + FN} \\[0.5em]
-        \text{F1} &= \frac{2 \times P \times R}{P + R} \\[0.5em]
-        \text{MTTD} &= \frac{1}{n} \sum_{i=1}^{n} |t_i^{detect} - t_i^{true}|
-      \end{align*}
-    \end{column}
-  \end{columns}
-\end{frame}
-
-% ==============================================================================
-% SECTION 5: SOTA LANDSCAPE 2024-2025
-% ==============================================================================
-\section{Bối cảnh SOTA 2024-2025}
-
-\begin{frame}{SOTA Methods (2024-2025)}
-  \begin{table}
-    \centering
-    \footnotesize
-    \begin{tabular}{llccc}
-      \toprule
-      \textbf{Method} & \textbf{Type} & \textbf{F1} & \textbf{Labels} & \textbf{Year} \\
-      \midrule
-      \textbf{CDSeer} & Semi-supervised & \textbf{0.86} & \textbf{1\%} & 2024 \\
-      \textbf{DriftLens} & Unsupervised & 15/17 wins & 0\% & 2024 \\
-      \textbf{CV4CDD-4D} & Supervised & 0.81-0.83 & 100\% & 2025 \\
-      \textbf{ADA-ADF} & Time series & \textbf{0.92} & 0\% & 2025 \\
-      \rowcolor{green!10}
-      \textbf{Our Method (OW-MMD)} & Unsupervised & 0.576 & 0\% & 2025 \\
-      ADWIN & Unsupervised & 0.507 & 0\% & 2007 \\
-      HDDM-W & Model-dependent & 0.80 & Yes & 2016 \\
-      \bottomrule
-    \end{tabular}
-  \end{table}
-\end{frame}
-
-\begin{frame}{CDSeer: Semi-Supervised SOTA (Oct 2024)}
-  \begin{columns}[T]
-    \begin{column}{0.48\textwidth}
-      \textbf{Kết quả ấn tượng:}
-      \begin{itemize}
-        \item \textcolor{red}{\textbf{57.1\% precision improvement}}
-        \item \textcolor{red}{\textbf{99\% fewer labels}} (1\% vs 100\%)
-        \item F1-score: \textbf{0.86}
-        \item Validated at \textbf{Ericsson}
-      \end{itemize}
-
-      \vspace{0.5em}
-      \textbf{Technical approach:}
-      \begin{itemize}
-        \item Confidence-based active learning
-        \item Model-agnostic
-        \item Distribution-agnostic
-      \end{itemize}
-    \end{column}
-  \end{columns}
-
-  \vspace{0.3em}
-  \textbf{Citation:} arXiv 2410.09190 (Oct 2024, updated Aug 2025)
-\end{frame}
-
-\begin{frame}{DriftLens: Real-Time Unsupervised (June 2024)}
-  \begin{columns}[T]
-    \begin{column}{0.48\textwidth}
-      \textbf{Performance:}
-      \begin{itemize}
-        \item \textbf{15/17 wins} (88\% win rate)
-        \item \textbf{5× faster} than competitors
-        \item \textbf{Correlation ≥ 0.85} with true drift
-        \item Fully unsupervised
-      \end{itemize}
-
-      \vspace{0.5em}
-      \textbf{Key innovations:}
-      \begin{itemize}
-        \item Deep learning embeddings
-        \item Per-label distribution tracking
-        \item Built-in explainability
-        \item Open-source (PyPI)
-      \end{itemize}
-    \end{column}
-    \begin{column}{0.48\textwidth}
-      \textbf{Architecture:}
-      \begin{enumerate}
-        \item Offline: Estimate reference distributions
-        \item Online: Process windows
-        \item Monitor: Distribution distances
-        \item Explain: Representative samples
-      \end{enumerate}
-
-      \vspace{0.5em}
-      \textbf{Ưu điểm cho production:}
-      \begin{itemize}
-        \item Real-time capability
-        \item Low complexity
-        \item Works on unstructured data
-        \item Drift characterization
-      \end{itemize}
-    \end{column}
-  \end{columns}
-
-  \vspace{0.3em}
-  \textbf{Citation:} arXiv 2406.17813
-\end{frame}
-
-\begin{frame}{Other Notable SOTA Methods}
-  \begin{table}
-    \centering
-    \tiny
-    \begin{tabular}{llp{3cm}c}
-      \toprule
-      \textbf{Method} & \textbf{Specialty} & \textbf{Key Innovation} & \textbf{Performance} \\
-      \midrule
-      \textbf{Meta-ADD} & Meta-learning & Automatic detector selection & Pre-trained classifier \\
-      \textbf{CDDRM} & Explainability & Feature-level drift + causal & F1 = 0.895 (Stagger) \\
-      \textbf{AEF-CDA} & Ensemble & Medical IoT streams & Acc = 99.64\% \\
-      \textbf{Transformer} & Time series & Temporal attention & Few-shot learning \\
-      \textbf{ARF} & Online ensemble & Per-tree ADWIN & Production standard \\
-      \textbf{HAT} & Adaptive trees & Built-in drift handling & Multi-label capable \\
-      \bottomrule
-    \end{tabular}
-  \end{table}
-
-  \vspace{0.5em}
-  \begin{block}{Emerging Paradigms (2024)}
-    \begin{itemize}
-      \item \textbf{Test-Time Adaptation (TTA):} Adapt without source data
-      \item \textbf{Continual Learning:} Avoid catastrophic forgetting
-      \item \textbf{OOD Detection:} Separate drift from outliers
-      \item \textbf{Bayesian UQ:} Epistemic vs aleatoric uncertainty
-    \end{itemize}
-  \end{block}
-\end{frame}
-
-% ==============================================================================
-% SECTION 6: SYSTEM ARCHITECTURES
-% ==============================================================================
-\section{Kiến trúc hệ thống}
-
-\begin{frame}{4 Architecture Patterns Chính}
-  \begin{enumerate}
-    \item \textbf{Model-Agnostic (65\% research - Chúng ta đang dùng)}
-    \begin{itemize}
-      \item Detector monitors: Feature distributions (X)
-      \item Model: Bất kỳ (LogReg, RF, NN)
-      \item Example: ShapeDD + LogisticRegression
-      \item Flexible, May miss performance-relevant drift
-    \end{itemize}
-
-    \vspace{0.3em}
-    \item \textbf{Model-Dependent (30\% research)}
-    \begin{itemize}
-      \item Detector monitors: Model errors/confidence
-      \item Model: Coupled with detector
-      \item Example: DDM, EDDM, ADWIN, CDSeer
-      \item Detects relevant drift, Requires labels
-    \end{itemize}
-
-    \vspace{0.3em}
-    \item \textbf{Integrated Model-Detector (20\%, growing)}
-    \begin{itemize}
-      \item Model có built-in detection
-      \item Example: Adaptive Random Forest, HAT
-      \item Fully automated, Model-specific
-    \end{itemize}
-
-    \vspace{0.3em}
-    \item \textbf{Production MLOps (Industry standard)}
-    \begin{itemize}
-      \item Complete pipeline: Kafka + Flink + Monitoring
-      \item Scalable, enterprise-ready
-    \end{itemize}
-  \end{enumerate}
-\end{frame}
-
-\begin{frame}{Kiến trúc hiện tại của chúng ta}
-  \begin{figure}
-    \centering
-    \begin{tikzpicture}[
-      box/.style={rectangle, draw=univblue, thick, fill=blue!10, minimum width=3cm, minimum height=0.8cm, align=center},
-      arrow/.style={->, thick, >=stealth}
-    ]
-      % Data stream
-      \node[box] (data) at (0,3) {Data Stream X};
-
-      % Component 1: Model
-      \node[box, fill=green!10] (model) at (0,1.5) {Component 1:\\LogisticRegression\\(FROZEN)};
-
-      % Predictions
-      \node[box, fill=yellow!10] (pred) at (0,0) {Predictions ŷ};
-
-      % Component 2: Detector (parallel path)
-      \node[box, fill=orange!10] (detector) at (5,1.5) {Component 2:\\ShapeDD MMDAgg\\(Monitors X)};
-
-      % Component 3: Adaptation
-      \node[box, fill=red!10] (adapt) at (5,0) {Component 3:\\Retrain Strategy};
-
-      % Arrows
-      \draw[arrow] (data) -- (model);
-      \draw[arrow] (model) -- (pred);
-      \draw[arrow, dashed] (data) -- (detector);
-      \draw[arrow] (detector) -- node[right] {Drift?} (adapt);
-      \draw[arrow, dashed] (adapt) to[bend right=45] node[below] {Retrain} (model);
-    \end{tikzpicture}
-  \end{figure}
-
-  \begin{alertblock}{Pattern: Model-Agnostic ✅}
-    Detector và Model \textbf{độc lập} - có thể swap model mà không thay detector
-  \end{alertblock}
-\end{frame}
-
-\begin{frame}{Production MLOps Architecture (Industry 2024)}
-  \begin{figure}
-    \centering
-    \tiny
-    \begin{tikzpicture}[
-      box/.style={rectangle, draw, thick, minimum width=2cm, minimum height=0.6cm, align=center, font=\tiny},
-      arrow/.style={->, thick, >=stealth}
-    ]
-      % Layers
-      \node[box, fill=blue!20] (kafka) at (0,3) {Kafka\\Ingestion};
-      \node[box, fill=green!20] (flink) at (0,2) {Flink\\Processing};
-      \node[box, fill=yellow!20] (model) at (0,1) {Model\\Inference};
-      \node[box, fill=orange!20] (detector) at (3,2) {Drift\\Detection};
-      \node[box, fill=red!20] (monitor) at (3,1) {Performance\\Monitor};
-      \node[box, fill=purple!20] (retrain) at (6,1.5) {Auto\\Retrain};
-      \node[box, fill=cyan!20] (dash) at (6,0.5) {Grafana\\Dashboard};
-
-      % Arrows
-      \draw[arrow] (kafka) -- (flink);
-      \draw[arrow] (flink) -- (model);
-      \draw[arrow] (flink) -- (detector);
-      \draw[arrow] (model) -- (monitor);
-      \draw[arrow] (detector) -- (retrain);
-      \draw[arrow] (monitor) -- (retrain);
-      \draw[arrow] (retrain) -- (dash);
-      \draw[arrow, dashed] (retrain) to[bend left=30] node[right, font=\tiny] {Deploy} (model);
-    \end{tikzpicture}
-  \end{figure}
-
-  \vspace{0.3em}
-  \textbf{Components:}
-  \begin{itemize}
-    \item \textbf{Kafka:} Stream ingestion (millions events/sec)
-    \item \textbf{Flink:} Real-time processing (5× faster than Spark)
-    \item \textbf{3-layer detection:} Data drift + Concept drift + Performance
-    \item \textbf{Automated workflow:} Detect → Alert → Retrain → A/B test → Deploy
-  \end{itemize}
-\end{frame}
-
-\begin{frame}{Streaming Models: ARF vs Batch Models}
-  \begin{columns}[T]
-    \begin{column}{0.48\textwidth}
-      \textbf{Batch Model (Current):}
-      \begin{itemize}
-        \item LogisticRegression
-        \item Train once, deploy frozen
-        \item Retrain khi drift detected
-        \item Full model replacement
-      \end{itemize}
-
-      \vspace{0.5em}
-      \textbf{Ưu điểm:}
-      \begin{itemize}
-        \item Controlled experiments
-        \item Reproducible
-        \item Simple
-      \end{itemize}
-
-      \textbf{Nhược điểm:}
-      \begin{itemize}
-        \item High retraining cost
-        \item Adaptation delay
-        \item No online learning
-      \end{itemize}
-    \end{column}
-    \begin{column}{0.48\textwidth}
-      \textbf{Online Model (Proposal):}
-      \begin{itemize}
-        \item Adaptive Random Forest
-        \item Incremental learning (sample-by-sample)
-        \item Built-in per-tree ADWIN
-        \item Dynamic tree replacement
-      \end{itemize}
-
-      \vspace{0.5em}
-      \textbf{Ưu điểm:}
-      \begin{itemize}
-        \item Real-time adaptation
-        \item Automatic drift handling
-        \item Production-ready
-      \end{itemize}
-
-      \textbf{Nhược điểm:}
-      \begin{itemize}
-        \item Complex evaluation
-        \item Less control
-      \end{itemize}
-    \end{column}
-  \end{columns}
-
-  \vspace{0.5em}
-  \begin{block}{Proposal: Hybrid Approach}
-    Keep ShapeDD (global) + Add ARF (per-tree ADWIN) → Compare both patterns
-  \end{block}
-\end{frame}
-
-% ==============================================================================
-% BACKUP SLIDES
-% ==============================================================================
-\appendix
-
-\begin{frame}[noframenumbering]{Backup: Confusion Matrix (Ví dụ thực tế)}
-  \textbf{Ví dụ:} Kết quả của \textbf{MMD\_OW} trên bộ dữ liệu \textbf{Stagger} (10 drift points).
-
-  \begin{table}
-    \centering
-    \begin{tabular}{cc|cc}
-      \multicolumn{2}{c}{} & \multicolumn{2}{c}{\textbf{Predicted}} \\
-      & & Drift & No Drift \\
-      \hline
-      \multirow{2}{*}{\textbf{Actual}} & Drift & \textbf{TP = 10} & \textbf{FN = 0} \\
-      & No Drift & \textbf{FP = 0} & TN = N/A \\
-    \end{tabular}
-  \end{table}
-
-  \vspace{1em}
-  \begin{align*}
-    \text{Precision} &= \frac{10}{10+0} = 1.00 \\
-    \text{Recall} &= \frac{10}{10+0} = 1.00 \\
-    \text{F1-Score} &= 1.00
-  \end{align*}
-\end{frame}
-
-\begin{frame}[noframenumbering]{Backup: Runtime Comparison (Cập nhật)}
-  \begin{table}
-    \centering
-    \small
-    \begin{tabular}{lcc}
-      \toprule
-      \textbf{Method} & \textbf{Runtime (s)} & \textbf{Throughput (samples/s)} \\
-      \midrule
-      \textbf{ShapeDD\_OW\_MMD} & \textbf{0.19} & \textbf{52,549} \\
-      MMD\_OW & 0.20 & 51,282 \\
-      KS & 0.36 & 28,158 \\
-      D3 & 0.36 & 27,693 \\
-      ShapeDD (Gốc) & 1.56 & 6,399 \\
-      DAWIDD & 3.07 & 3,253 \\
-      \bottomrule
-    \end{tabular}
-  \end{table}
-
-  \vspace{0.5em}
-  \textbf{Nhận xét:} OW-MMD và ShapeDD\_OW\_MMD nhanh hơn gấp \textbf{>7 lần} so với ShapeDD gốc và thậm chí vượt qua cả KS test (phương pháp thống kê đơn giản).
+\begin{frame}[plain]
+	\centering
+	\Huge \textcolor{univblue}{\textbf{CẢM ƠN THẦY CÔ VÀ CÁC BẠN ĐÃ LẮNG NGHE!}}
+	
+	\vspace{2cm}
+	\normalsize
+	\textbf{Q \& A}
 \end{frame}
 
 \end{document}

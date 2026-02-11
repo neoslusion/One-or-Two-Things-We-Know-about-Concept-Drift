@@ -1,8 +1,8 @@
 \chapter{Giới thiệu đề tài}
 
 \section{Thực trạng chung}
-Hệ thống phát hiện gian lận của một ngân hàng có thể đạt độ chính xác 99\%
-trong năm đầu vận hành, nhưng sau 18 tháng, tỷ lệ cảnh báo sai tăng đột biến
+Hệ thống phát hiện gian lận của một ngân hàng có thể đạt độ chính xác cao
+trong năm đầu vận hành, nhưng sau một thời gian dài vận hành, tỷ lệ cảnh báo sai tăng đột biến
 lên gấp ba lần. Một mô hình dự báo bảo trì máy móc trong nhà máy thép hoạt
 động ổn định suốt mùa khô, nhưng khi mùa mưa đến, hiệu suất giảm mạnh do
 điều kiện vận hành thay đổi. Đây không phải là lỗi của thuật toán hay của
@@ -20,30 +20,21 @@ Các mô hình học máy được huấn luyện với giả định rằng d�
 sẽ tuân theo cùng phân phối với dữ liệu huấn luyện (giả định i.i.d.). Tuy nhiên,
 môi trường sản xuất công nghiệp hiếm khi tĩnh: thiết bị lão hóa, quy trình thay đổi,
 cảm biến xuống cấp, và hành vi người dùng biến đổi~\cite{jourdan2023process}. Kết quả là
-hiệu suất mô hình suy giảm dần theo thời gian --- đôi khi đột ngột --- gây ảnh hưởng
-đến độ tin cậy hệ thống và chi phí vận hành. Để giải quyết vấn đề này, cần có cơ chế
+hiệu suất mô hình suy giảm dần theo thời gian --- đôi khi đột ngột --- làm giảm
+độ tin cậy hệ thống và tăng chi phí vận hành. Để giải quyết vấn đề này, cần có cơ chế
 (1) phát hiện drift càng sớm càng tốt, và (2) thích ứng mô hình một cách hiệu quả
 theo các điều kiện mới.
 
 \section{Tổng quan về bài toán}
-Việc xử lý và phân tích dữ liệu đang trở thành một thách thức lớn do tính phức tạp và tính động của dữ liệu trong bối cảnh hiện nay.
-Một thách thức quan trọng là xử lý hiện tượng concept drift - một hiện tượng xảy ra khi phân phối dữ liệu đầu vào $P(X)$ hoặc mối quan hệ giữa đầu vào và đầu ra $P(y|X)$ thay đổi theo thời gian - điều này ảnh
-hưởng trực tiếp đến hiệu suất của các mô hình học máy và các hệ thống ra quyết định tự động.
+Việc xử lý và phân tích dữ liệu đang trở thành một thách thức lớn do tính phức tạp và sự biến động của dữ liệu trong bối cảnh hiện nay.
+Một trong những thách thức quan trọng là xử lý hiện tượng trôi dạt khái niệm (concept drift). Hiện tượng này xảy ra khi phân phối dữ liệu đầu vào $P(X)$ hoặc mối quan hệ $P(y|X)$ thay đổi theo thời gian, làm suy giảm hiệu suất của các mô hình học máy và hệ thống ra quyết định tự động.
 
 Đối với các ứng dụng học máy trong môi trường sản xuất công nghiệp như IoT,
 việc phát hiện drift trong thời gian thực hoặc gần thời gian thực là yêu cầu
 bắt buộc để đảm bảo chất lượng và độ tin cậy của hệ thống~\cite{jourdan2023process}.
-Tuy nhiên, việc xây dựng hệ thống như vậy đặt ra nhiều thách thức:
-\begin{enumerate}
-	\item Phát hiện chính xác thời điểm xảy ra drift với độ trễ thấp
-	      (\textit{short detection delay}).
-	\item Phân loại loại drift (sudden, gradual, incremental, recurrent)
-	      để xác định chiến lược thích ứng phù hợp.
-	\item Cập nhật mô hình nhanh chóng mà không làm gián đoạn dịch vụ
-	      và không yêu cầu nhãn thật liên tục (\textit{unsupervised adaptation}).
-\end{enumerate}
+Tuy nhiên, việc hiện thực hóa một hệ thống như vậy đối mặt với ba thách thức kỹ thuật trọng yếu. Thứ nhất là yêu cầu về độ trễ thấp trong phát hiện điểm trôi dạt (\textit{short detection delay}). Thứ hai là khả năng phân loại chính xác các loại trôi dạt (sudden, gradual, incremental, recurrent) để xác định chiến lược thích ứng phù hợp. Cuối cùng là cơ chế cập nhật mô hình nhanh chóng mà không làm gián đoạn dịch vụ và không yêu cầu nhãn thật liên tục (\textit{unsupervised adaptation}).
 
-Từ những thách thức trên, đề tài này đặt ra những mục tiêu nghiên cứu và phát triển một hệ thống tự động phát hiện và thích ứng với hiện tượng concept drift trong môi trường dữ liệu streaming real-time.
+Từ những thách thức trên, đề tài này đặt ra những mục tiêu nghiên cứu và phát triển một hệ thống tự động phát hiện và thích ứng với hiện tượng trôi dạt khái niệm trong môi trường luồng dữ liệu thời gian thực.
 \section{Mục tiêu đề tài}
 
 \subsection{Khảo sát các phương pháp phát hiện drift}
@@ -53,20 +44,18 @@ Nghiên cứu sẽ so sánh hiệu năng, phân tích ưu nhược điểm,
 từ đó xác định hướng cải tiến phù hợp.
 
 \subsection{Tích hợp các cải tiến cho ShapeDD}
-Dựa trên cơ sở lý thuyết và kết quả đánh giá hiệu năng, nghiên cứu sẽ tích hợp các kỹ thuật tiên tiến gần đây như OW-MMD (Optimally-Weighted MMD) và MMD-Agg (MMD Aggregated) vào framework ShapeDD. Mục tiêu là giải quyết các hạn chế về chi phí tính toán và độ nhạy của phương pháp gốc.
+Dựa trên cơ sở lý thuyết và kết quả đánh giá hiệu năng, nghiên cứu tích hợp kỹ thuật \textbf{IDW-MMD (Inverse Density-Weighted MMD)} vào phương pháp ShapeDD. Mục tiêu là giải quyết các hạn chế về chi phí tính toán và độ nhạy của phương pháp gốc. IDW-MMD sử dụng cơ chế trọng số nghịch biến với mật độ để giảm độ dao động kết quả, cho phép đạt độ chính xác cao với số lượng mẫu ít hơn.
 
-\subsection{Đề xuất phương pháp phân loại drift SHAPED\_CDT}
-Kết hợp khả năng định vị chính xác thời điểm drift của ShapeDD với mô hình phân loại \textit{drift} CDT\_MSW~\cite{guo2022cdtmsw} để đề xuất phương pháp mới \textbf{SHAPED\_CDT} (ShapeDD-Enhanced Concept Drift Type Identification).
-Hệ thống này có khả năng: (1) phát hiện chính xác thời điểm xảy ra \textit{drift} nhờ ShapeDD, và (2) sử dụng thông tin đó để trích xuất cửa sổ dữ liệu chính xác cho việc phân loại loại \textit{drift}, từ đó đưa ra chiến lược thích ứng tối ưu.
+\subsection{Đề xuất phương pháp phân loại drift SE-CDT}
+Kết hợp khả năng định vị chính xác thời điểm drift của ShapeDD với mô hình phân loại \textit{drift} CDT-MSW (Concept Drift Type identification based on Multi-Sliding Windows --- phương pháp phân loại loại drift dựa trên phân tích cửa sổ trượt đa kích thước~\cite{guo2022cdtmsw}, sẽ được trình bày chi tiết ở Mục~\ref{sec:cdt-msw-theory}) để đề xuất phương pháp mới \textbf{SE-CDT} (ShapeDD-Enhanced Concept Drift Type Identification).
+Phương pháp này có khả năng: (1) phát hiện chính xác thời điểm xảy ra \textit{drift} nhờ ShapeDD, và (2) sử dụng thông tin đó để trích xuất cửa sổ dữ liệu chính xác cho việc phân loại loại \textit{drift}, từ đó đưa ra chiến lược thích ứng tối ưu.
 
 \subsection{Tối ưu hóa tham số}
 Tiến hành thử nghiệm và tùy chỉnh các tham số của phương pháp
 để đảm bảo hiệu quả với các kiểu dữ liệu và loại \textit{drift} khác nhau.
 
 \subsection{Triển khai và đánh giá}
-Triển khai hệ thống trên môi trường dữ liệu \textit{streaming real-time}
-sử dụng Apache Kafka. Đánh giá hiệu năng trong các kịch bản thực tế
-để kiểm chứng tính khả thi của giải pháp đề xuất.
+Thiết kế kiến trúc hệ thống trên môi trường dữ liệu \textit{streaming real-time} sử dụng Apache Kafka. Thực hiện mô phỏng và đánh giá hiệu năng trong các kịch bản thử nghiệm để kiểm chứng tính khả thi của giải pháp đề xuất. (Lưu ý: Việc triển khai production thực tế và đánh giá hiệu năng chịu tải quy mô lớn là hướng phát triển tương lai).
 
 \section{Phạm vi đề tài và đối tượng nghiên cứu}
 \subsection{Phạm vi đề tài}
@@ -88,20 +77,19 @@ Cụ thể, luận văn sẽ tập trung vào việc phát triển hệ thống 
 \end{itemize}
 
 \textbf{Phạm vi đánh giá:} Hệ thống được thiết kế và đánh giá trên
-\textbf{đa dạng các loại drift} bao gồm sudden, gradual, incremental, recurrent, và blip.
+\textbf{đa dạng các loại drift} bao gồm sudden, gradual, incremental, recurrent, và blip nhưng vẫn tập trung vào sudden drift.
 Cách tiếp cận đánh giá bao gồm:
 
 \begin{enumerate}
-	\item \textbf{Đánh giá toàn diện:} Thực nghiệm trên 5 kịch bản drift khác nhau
-	      với 10 runs mỗi kịch bản để đảm bảo độ tin cậy thống kê.
+	\item \textbf{Đánh giá toàn diện:} Thực nghiệm trên nhiều kịch bản drift khác nhau
+	      với nhiều lần chạy độc lập để đảm bảo độ tin cậy thống kê.
 
-	\item \textbf{Phân tích đa tầng:} Đánh giá cả khả năng \textit{phát hiện} (Detection Rate)
-	      lẫn khả năng \textit{phân loại} (Classification Accuracy) của hệ thống,
-	      bao gồm cả phân loại Category (TCD vs PCD) và Subcategory (Sudden, Gradual, Incremental, Recurrent, Blip).
+	\item \textbf{Phân tích đa tầng:} Đánh giá cả khả năng \textit{phát hiện}
+	      lẫn khả năng \textit{phân loại} của hệ thống, bao gồm phân loại
+	      theo nhóm (TCD vs PCD) và theo loại cụ thể.
 
 	\item \textbf{So sánh công bằng:} Đánh giá phương pháp đề xuất (SE-CDT không giám sát)
-	      so với baseline CDT\_MSW có giám sát trong cùng điều kiện thử nghiệm,
-	      bao gồm cả setup supervised với concept-aware labels.
+	      so với baseline CDT-MSW có giám sát trong cùng điều kiện thử nghiệm.
 \end{enumerate}
 
 
@@ -110,11 +98,11 @@ Cách tiếp cận đánh giá bao gồm:
 \begin{itemize}
 	\item \textbf{Phương pháp phát hiện drift:} ShapeDD và các phương pháp
 	      truyền thống (ADWIN, DDM, EDDM, Page-Hinkley).
-	\item \textbf{Mô hình phân loại drift:} CDT\_MSW --- phương pháp xác định
-	      loại \textit{drift} dựa trên multi-sliding windows.
+	\item \textbf{Mô hình phân loại drift:} SE-CDT --- phương pháp xác định
+	      loại \textit{drift} dựa trên multi-sliding windows lấy ý tưởng từ CDT-MSW.
 	\item \textbf{Dữ liệu streaming:} Các tập dữ liệu benchmark
 	      (SEA, Hyperplane, Electricity,...) và dữ liệu mô phỏng với
 	      các loại \textit{drift} khác nhau.
-	\item \textbf{Nền tảng xử lý streaming:} Apache Kafka cho việc triển khai
+	\item \textbf{Nền tảng xử lý streaming:} Đề xuất sử dụng Apache Kafka cho việc triển khai
 	      hệ thống \textit{real-time}.
 \end{itemize}
