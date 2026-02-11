@@ -51,9 +51,9 @@ MMD có trọng số có dạng tổng quát:
 trong đó $w_i$ và $v_p$ là trọng số của từng điểm (thỏa mãn $\sum_i w_i = 1$, $\sum_p v_p = 1$). Từ đó câu hỏi được đặt ra: Làm sao tính $w_i$ để phát hiện drift hiệu quả?
 
 \subsubsection{Giải pháp đề xuất: Trọng số nghịch biến mật độ (Inverse Density Weighting)}
-Luận văn đề xuất sử dụng phương pháp \textbf{IDW-MMD} (Inverse Density-Weighted MMD), một heuristic đơn giản lấy cảm hứng từ ý tưởng ``Optimally-Weighted MMD'' của Bharti et al.~\cite{bharti2023owmmd}.
+Luận văn đề xuất phương pháp \textbf{IDW-MMD} (Inverse Density-Weighted MMD), một \textbf{heuristic mới do luận văn xây dựng}, lấy động lực từ ý tưởng weighted MMD trong ``Optimally-Weighted MMD'' của Bharti et al.~\cite{bharti2023owmmd}.
 
-\textbf{Lưu ý quan trọng:} Phương pháp của Bharti et al. (2023) được thiết kế cho bài toán suy luận thống kê (likelihood-free inference) và đề xuất trọng số tối ưu phức tạp. Luận văn này sử dụng một \textbf{heuristic đơn giản hơn} --- trọng số nghịch biến với căn bậc hai của mật độ kernel --- để phù hợp với bài toán drift detection trong streaming.
+\textbf{Lưu ý quan trọng:} Phương pháp của Bharti et al. (2023) được thiết kế cho bài toán suy luận thống kê (likelihood-free inference) và đề xuất trọng số tối ưu phức tạp, \textbf{không liên quan đến bài toán drift detection}. Luận văn này chỉ kế thừa ý tưởng ``gán trọng số cho từng điểm dữ liệu trong MMD'' và đề xuất một \textbf{heuristic đơn giản riêng} --- trọng số nghịch biến với căn bậc hai của mật độ kernel --- để phù hợp với bài toán drift detection trong streaming.
 
 Cụ thể, trọng số $w_i$ được tính dựa trên mật độ cục bộ (local density):
 \begin{equation}

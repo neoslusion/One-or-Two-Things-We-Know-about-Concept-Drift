@@ -1,11 +1,24 @@
 """
-Drift Type Classifier for Streaming Systems
+[DEPRECATED] Drift Type Classifier for Streaming Systems
 
+WARNING: This module is DEPRECATED and no longer used in the current SE-CDT-Stream system.
+The SE-CDT module (core/detectors/se_cdt.py) has replaced this KS-distance-based classifier
+with a standard MMD-based approach that provides better drift type classification.
+
+This file is kept for historical reference only. Do NOT use in production.
+
+Original description:
 Classifies concept drift into types: sudden, incremental, gradual, recurrent, or blip.
 Based on the methodology from ConceptDrift_Pipeline.ipynb.
-
 Classification uses temporal tracking of distribution changes (KS distance) to identify patterns.
 """
+
+import warnings
+warnings.warn(
+    "drift_type_classifier.py is deprecated. Use core/detectors/se_cdt.py instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 import numpy as np
 from scipy.stats import ks_2samp
