@@ -319,8 +319,7 @@ Sau khi phát hiện được thời điểm xảy ra trôi dạt, việc xác �
 \subsection{Giai đoạn 1: Phát hiện trôi dạt (Detection Process)}
 Trong giai đoạn đầu, CDT-MSW định nghĩa \textbf{Tỷ lệ Phát hiện Luồng} (Detection Flow Ratio) để đo lường sự thay đổi giữa hai cửa sổ dữ liệu $W_A$ (tĩnh/tham chiếu) và $W_B$ (trượt/hiện tại):
 \begin{equation}
-    \tilde{P}^{t}_{\text{det}} = \frac{\alpha^t_{B}}{\alpha^{\star}_{A}} 
-    \tag{1}
+    \tilde{P}^{t}_{\text{det}} = \frac{\alpha^t_{B}}{\alpha^{\star}_{A}}
 \end{equation}
 Trong đó $\alpha^{\star}_{A}$ là độ chính xác thời gian thực (real-time accuracy) của mô hình huấn luyện trên cửa sổ $W_A$, và $\alpha^t_{B}$ là độ chính xác trên cửa sổ $W_B$ sau khi trượt $t$ lần.
 \begin{itemize}
@@ -332,17 +331,16 @@ Khi $\tilde{P}^{t}_{\text{det}}$ giảm mạnh (thỏa mãn $\tilde{P}^{t}_{\tex
 \subsection{Giai đoạn 2: Đo độ dài trôi dạt và Nhận dạng Danh mục (Growth Process)}
 Sau khi xác định được vị trí $t_d$, thuật toán tiếp tục \textbf{mở rộng vùng quan sát} để ước lượng \textbf{độ dài trôi dạt} (drift length, $m$). Độ dài trôi ($m$) là khoảng thời gian dữ liệu cần để thay đổi hoàn toàn từ một phân phối ổn định sang một phân phối ổn định mới.
 
-Trong giai đoạn này, một \textbf{cửa sổ phụ cận} ($W_R$) được kích hoạt để phát hiện độ dài $m$ dựa trên \textbf{phương sai} của độ chính xác thời gian thực ($\sigma^2_R$) trong $W_R$:
+Trong giai đoạn này, một \textbf{cửa sổ phụ cận} ($W_R$) được kích hoạt để phát hiện độ dài $m$ dựa trên \textbf{phương sai} của độ chính xác thời gian thực ($\sigma_R^{2}$) trong $W_R$:
 \begin{equation}
-    \sigma_{R}^{t+i^{2}} = \frac{\sum_{j=0}^{n-1}(\alpha_{R_{j}}^{t+i+j}-\overline{\alpha}_{R}^{t+i})^{2}}{n}.
-    \tag{3}
+    \sigma_{R}^{2\;t+i} = \frac{\sum_{j=0}^{n-1}(\alpha_{R_{j}}^{t+i+j}-\overline{\alpha}_{R}^{t+i})^{2}}{n}.
 \end{equation}
 Trong đó, $\overline{\alpha}_{R}^{t+i}$ là độ chính xác trung bình của các cửa sổ cơ bản ($W_{R_j}$) trong $W_R$ sau khi trượt $i-1$ bước.
 
 Việc phát hiện độ dài dựa trên sự ổn định của phân phối dữ liệu trong $W_R$:
 \begin{itemize}
-    \item Nếu $\sigma_{R}^{t+1^{2}} \le \delta$ (ngưỡng phát hiện độ dài): Độ dài trôi $m=1$. Danh mục là \textbf{Trôi khái niệm Tức thời} (Transient Concept Drift - TCD).
-    \item Nếu $\sigma_{R}^{t+i^{2}} > \delta$: $W_R$ tiếp tục trượt. Quá trình kết thúc khi $\sigma_{R}^{t+m^{2}} \le \delta$, độ dài trôi $m > 1$. Danh mục là \textbf{Trôi khái niệm Tiệm tiến} (Progressive Concept Drift - PCD).
+    \item Nếu $\sigma_{R}^{2\;t+1} \le \delta$ (ngưỡng phát hiện độ dài): Độ dài trôi $m=1$. Danh mục là \textbf{Trôi khái niệm Tức thời} (Transient Concept Drift - TCD).
+    \item Nếu $\sigma_{R}^{2\;t+i} > \delta$: $W_R$ tiếp tục trượt. Quá trình kết thúc khi $\sigma_{R}^{2\;t+m} \le \delta$, độ dài trôi $m > 1$. Danh mục là \textbf{Trôi khái niệm Tiệm tiến} (Progressive Concept Drift - PCD).
 \end{itemize}
 Trong quá trình này, các cửa sổ cơ bản $W_A$ và $W_B$ dần phát triển thành các \textbf{cửa sổ tổng hợp} $W_A^{\prime}$ và $W_B^{\prime}$ với kích thước bằng $m$ lần kích thước cửa sổ cơ bản ($ms$).
 
@@ -358,7 +356,6 @@ Trong quá trình này, các cửa sổ cơ bản $W_A$ và $W_B$ dần phát tr
 Để phân biệt chi tiết giữa các loại trôi dạt, CDT-MSW định nghĩa \textbf{Tỷ lệ Theo dõi Luồng} (Tracking Flow Ratio – TFR) bằng cách cho $W_A^{\prime}$ trượt về phía trước để theo dõi $W_B^{\prime}$ (tĩnh):
 \begin{equation}
     \tilde{P}^{i}_{\text{tra}} = \frac{\alpha^{\star}_{B^{\prime}}}{\alpha^{i}_{A^{\prime}}}
-    \tag{5}
 \end{equation}
 Trong đó $\alpha^{\star}_{B^{\prime}}$ là độ chính xác của mô hình trên cửa sổ $W'_B$ tại vị trí ban đầu ($t$), và $\alpha^{i}_{A^{\prime}}$ là độ chính xác trên cửa sổ $W'_A$ khi trượt đến vị trí $i$.
 
@@ -384,14 +381,12 @@ Khả năng phân loại chính xác các loại trôi dạt được đánh gi�
     \item \textbf{ACC$_{\text{cat}}$} (Drift category accuracy): Độ chính xác nhận dạng loại chính (TCD/PCD).
     \begin{equation}
         \text{ACC}_{\text{cat}} = \frac{T_{T} + T_{P}}{T_{T} + F_{T} + T_{P} + F_{P}}
-        \tag{14}
     \end{equation}
     Trong đó $T_{T}$ và $F_{T}$ là số lượng nhận dạng đúng/sai cho TCD; $T_{P}$ và $F_{P}$ là số lượng nhận dạng đúng/sai cho PCD.
     
     \item \textbf{ACC$_{\text{subcat}}$} (Drift subcategory accuracy): Độ chính xác nhận dạng loại phụ (Sudden, Gradual, Incremental, Recurrent).
     \begin{equation}
         \text{ACC}_{\text{subcat}} = \frac{\sum_{i}T_{T}^{i} + \sum_{j}T_{P}^{j}}{T_{T} + T_{P}}
-        \tag{15}
     \end{equation}
     Trong đó $i \in \{\text{Sudden, Blip, Recurrent}\}$ và $j \in \{\text{Incremental, Gradual}\}$.
 \end{itemize}

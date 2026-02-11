@@ -10,13 +10,13 @@ Mặc dù ShapeDD gốc thể hiện nhiều ưu điểm về độ chính xác 
 \begin{enumerate}
 	\item \textbf{Chi phí tính toán cao:} Việc sử dụng kiểm định hoán vị (permutation test) với số lượng lớn (thường là 2500 lần) để ước lượng p-value tạo ra nút thắt cổ chai về hiệu năng, giới hạn thông lượng xử lý.
 	\item \textbf{Độ nhạy với tham số:} Hiệu suất của ShapeDD phụ thuộc nhiều vào việc lựa chọn độ rộng hạt nhân (kernel bandwidth) và kích thước cửa sổ, làm giảm khả năng tổng quát hóa trên các luồng dữ liệu có đặc tính drift đa dạng.
-	\item \textbf{Thiếu cơ chế thích ứng:} Phát hiện drift chỉ là bước đầu; hệ thống cần một cơ chế để tự động cập nhật mô hình một cách phù hợp với bản chất của sự thay đổi (đột ngột hay dần dần).
+	\item \textbf{Thiếu cơ chế thích ứng:} Phát hiện drift chỉ là bước đầu; hệ thống cần một cơ chế để tự động cập nhật mô hình một cách phù hợp với bản chất của sự thay đổi (đột ngột hay dần dần)~\cite{yuan2022advances}.
 \end{enumerate}
 
 Để giải quyết các thách thức trên, luận văn xây dựng hệ thống \textbf{SE-CDT-Stream} --- một framework tích hợp kết hợp các phương pháp MMD tiên tiến với kiến trúc streaming, bao gồm ba tầng xử lý chính:
 \begin{itemize}
 	\item \textbf{Tầng thuật toán:} Cải tiến ShapeDD bằng cách tích hợp \textit{IDW-MMD (Inverse Density-Weighted MMD)} với phân phối tiệm cận để giảm phương sai và chi phí tính toán, loại bỏ nhu cầu permutation test tốn kém.
-	\item \textbf{Tầng chiến lược:} Xây dựng khung thích ứng thông minh, sử dụng kết quả phân loại từ \textit{SE-CDT} để kích hoạt chiến lược cập nhật mô hình tối ưu (Reset, Incremental, hoặc Reuse).
+	\item \textbf{Tầng chiến lược:} Xây dựng khung thích ứng thông minh, sử dụng kết quả phân loại từ \textit{SE-CDT} để kích hoạt chiến lược cập nhật mô hình tối ưu (Reset, Incremental, hoặc Reuse)~\cite{gama2014survey, lu2018learning}.
 	\item \textbf{Tầng kiến trúc:} Đề xuất triển khai hệ thống trên nền tảng \textit{Apache Kafka}, đảm bảo khả năng xử lý luồng dữ liệu phân tán, độ trễ thấp và khả năng chịu lỗi.
 \end{itemize}
 
@@ -235,9 +235,8 @@ Kết quả phân loại từ SE-CDT sẽ được sử dụng để kích hoạ
 \section{Khung chiến lược thích ứng mô hình}
 \label{sec:model-adaptation-framework}
 
-\todo{Thêm trích dẫn bài báo vào, confirm lại vị trí đặt phần này}
 
-Dựa trên kết quả phân loại drift từ SE-CDT, hệ thống có thể kích hoạt chiến lược cập nhật mô hình phù hợp. Phần này trình bày khung chiến lược thích ứng (Adaptation Framework).
+Dựa trên kết quả phân loại drift từ SE-CDT, hệ thống có thể kích hoạt chiến lược cập nhật mô hình phù hợp. Ý tưởng thiết kế chiến lược thích ứng theo loại drift được trình bày dưới đây lấy cảm hứng từ khung phân loại drift của Guo \textit{et al.}~\cite{guo2022cdtmsw} và các chiến lược thích ứng tổng hợp trong các khảo sát của Gama \textit{et al.}~\cite{gama2014survey}, Lu \textit{et al.}~\cite{lu2018learning}, và Yuan \textit{et al.}~\cite{yuan2022advances}.
 
 \subsection{Ma trận quyết định chiến lược}
 
@@ -379,4 +378,4 @@ Trong môi trường phân tán, các sự cố là không thể tránh khỏi. 
 \end{itemize}
 
 \section{Kết luận chương}
-Chương này đã trình bày chi tiết mô hình đề xuất \textbf{ShapeDD-Stream}, bao gồm cải tiến thuật toán (IDW-MMD với phân phối tiệm cận), chiến lược thích ứng thông minh, và kiến trúc hệ thống dựa trên Kafka. Cải tiến thuật toán được đánh giá thực nghiệm chi tiết trong Chương~\ref{chap:experiments}, trong khi kiến trúc Kafka được trình bày như một thiết kế đề xuất cho triển khai production trong tương lai.
+Chương này đã trình bày chi tiết mô hình đề xuất \textbf{SE-CDT-Stream}, bao gồm cải tiến thuật toán (IDW-MMD với phân phối tiệm cận), chiến lược thích ứng thông minh, và kiến trúc hệ thống dựa trên Kafka. Cải tiến thuật toán được đánh giá thực nghiệm chi tiết trong Chương~\ref{chap:experiments}, trong khi kiến trúc Kafka được trình bày như một thiết kế đề xuất cho triển khai production trong tương lai.

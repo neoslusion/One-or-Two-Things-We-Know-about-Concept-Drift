@@ -380,7 +380,7 @@ Như đã thảo luận ở Mục~\ref{sec:overview} và Mục~\ref{sec:detectio
 
 \subsection{Kết quả phục hồi (Recovery)}
 
-Để khắc phục hạn chế của các bộ tạo dữ liệu Sudden Drift truyền thống (thường luân phiên giữa hai concept A $\to$ B $\to$ A, dẫn đến việc mô hình tĩnh có độ chính xác ảo ~75\%), luận văn bổ sung kịch bản **Stepping Drift**. Đây là dạng trôi dạt tích lũy (Cumulative Sudden Drift), nơi phân phối dữ liệu liên tục dịch chuyển ra xa trạng thái ban đầu ($P_0 \to P_1 \to P_2 \dots$), buộc mô hình phải học lại liên tục để duy trì hiệu suất.
+Để khắc phục hạn chế của các bộ tạo dữ liệu Sudden Drift truyền thống (thường luân phiên giữa hai concept A $\to$ B $\to$ A, dẫn đến việc mô hình tĩnh có độ chính xác ảo ~75\%), luận văn bổ sung kịch bản \textbf{Stepping Drift}. Đây là dạng trôi dạt tích lũy (Cumulative Sudden Drift), nơi phân phối dữ liệu liên tục dịch chuyển ra xa trạng thái ban đầu ($P_0 \to P_1 \to P_2 \dots$), buộc mô hình phải học lại liên tục để duy trì hiệu suất.
 
 Bảng~\ref{tab:prequential-results} tổng hợp kết quả Prequential Accuracy, trong đó kịch bản Stepping cho thấy rõ nhất hiệu quả của thích ứng.
 
@@ -467,7 +467,7 @@ Hình~\ref{fig:kafka_real_results} trình bày Dashboard giám sát trực tiế
 Các kết quả thực nghiệm dẫn đến những kết luận chính sau:
 \begin{enumerate}
 	\item \textbf{Detection:} Phương pháp đề xuất (ShapeDD-IDW) đạt sự cân bằng giữa hiệu suất và độ tin cậy với \textbf{0 False Positives}, đồng thời tăng tốc độ xử lý lên \textbf{20 lần} so với ShapeDD gốc.
-	\item \textbf{Classification:} Module SE-CDT (sử dụng Standard MMD) cho thấy khả năng phân loại loại drift (81.2\%) mà không cần dán nhãn dữ liệu, cao hơn các baseline trong điều kiện thử nghiệm.
+	\item \textbf{Classification:} Module SE-CDT (sử dụng Standard MMD) cho thấy khả năng phân loại nhóm drift đạt CAT = 72.2\% và phân loại chi tiết SUB = 50.0\% mà không cần dán nhãn dữ liệu, với tỷ lệ phát hiện sự kiện (EDR) đạt 94.4\%.
 	\item \textbf{Adaptation:} Việc tích hợp phát hiện và phân loại drift vào quy trình thích ứng giúp cải thiện độ chính xác đáng kể: tăng \textbf{+6.42\%} trong các kịch bản trôi dạt tích lũy (Stepping Drift) và duy trì sự ổn định (+1.44\%) trong môi trường hỗn hợp. Điều này khẳng định giá trị của việc "hiểu" loại drift thay vì chỉ phản ứng mù quáng.
 \end{enumerate}
 
