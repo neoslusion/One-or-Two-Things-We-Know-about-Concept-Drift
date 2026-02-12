@@ -206,7 +206,7 @@ Hình~\ref{fig:throughput-comparison} minh họa sự cải thiện vượt tr�
 	\centering
 	\includegraphics[width=0.85\textwidth]{../../results/plots/throughput_comparison.png}
 	\caption[Throughput Comparison]{
-		\textbf{Throughput (samples/sec)}: SE\_CDT đạt 131,500 samples/s so với ShapeDD 7,987 samples/s --- đủ để xử lý high-frequency data streams trong production.
+		\textbf{Throughput (samples/sec)}: So sánh giữa CDT\_MSW (chỉ detection, $\sim$5,000 samples/s) và SE\_CDT (detection + classification, $\sim$500--2,000 samples/s). SE\_CDT chậm hơn do bổ sung module phân loại, nhưng vẫn đạt 131,579 samples/s trên benchmark detection riêng (xem Bảng~\ref{tab:runtime_stats}).
 	}
 	\label{fig:throughput-comparison}
 \end{figure}
@@ -278,7 +278,7 @@ Bảng~\ref{tab:se-cdt-results} trình bày kết quả phân loại sử dụng
 	\centering
 	\includegraphics[width=0.85\textwidth]{../../results/plots/confusion_matrix_se_cdt.png}
 	\caption[Confusion Matrix - 5 Classes]{
-		\textbf{Confusion Matrix cho 5 loại drift}: Sudden có precision cao nhất (88\%), trong khi Incremental và Gradual thường bị nhầm lẫn do tín hiệu MMD tương tự nhau.
+		\textbf{Confusion Matrix cho 5 loại drift}: Sudden có recall cao nhất (82.4\%, 140/170 events), trong khi Incremental và Gradual thường bị nhầm lẫn do tín hiệu MMD tương tự nhau.
 	}
 	\label{fig:confusion-5class}
 \end{figure}
@@ -287,7 +287,7 @@ Bảng~\ref{tab:se-cdt-results} trình bày kết quả phân loại sử dụng
 	\centering
 	\includegraphics[width=0.85\textwidth]{../../results/plots/confusion_matrix_category.png}
 	\caption[Confusion Matrix - Category Level]{
-		\textbf{Confusion Matrix ở mức Category (TCD vs PCD)}: Cho thấy độ chính xác 85.8\%, với hầu hết lỗi nằm trong nội bộ mỗi category (TCD$\leftrightarrow$PCD errors rất thấp).
+		\textbf{Confusion Matrix ở mức Category (TCD vs PCD)}: Cho thấy độ chính xác 81.2\%, với TCD recall = 90.4\% và PCD recall = 72.7\%.
 	}
 	\label{fig:confusion-category}
 \end{figure}
@@ -351,7 +351,7 @@ Hình~\ref{fig:signal_sudden} và Hình~\ref{fig:signal_incremental} minh họa 
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=0.95\textwidth]{../../results/plots/vis_repeated_incremental_SE.png}
-	\caption[Signal Shape - Incremental Drift]{Tín hiệu SE-CDT cho Incremental drift: Ramp tăng dần, phát hiện bằng LTS (Long-Term Stability) và MS (Monotonicity Score).}
+	\caption[Signal Shape - Incremental Drift]{Tín hiệu SE-CDT cho Incremental drift: Ramp tăng dần. Các predictions chưa hoàn hảo (xen kẽ Blip/Gradual/Incremental), phản ánh đúng độ chính xác subcategory 50\% trong Bảng~\ref{tab:se-cdt-results}.}
 	\label{fig:signal_incremental}
 \end{figure}
 
@@ -414,7 +414,7 @@ Bảng~\ref{tab:prequential-results} tổng hợp kết quả Prequential Accura
 \end{figure}
 
 \textbf{So sánh với Sudden Drift truyền thống (Hình~\ref{fig:prequential_sudden}):}
-Để đối chiếu, kết quả trên kịch bản Sudden Drift tiêu chuẩn (luân phiên A$\to$B$\to$A) cũng được trình bày. Trong trường hợp này, mô hình tĩnh ("No Adaptation") vẫn duy trì độ chính xác trung bình khá cao ($\sim 75\%$) do concept A lặp lại. Tuy nhiên, điều này chỉ che giấu vấn đề: mô hình thực tế đã thất bại hoàn toàn trong các giai đoạn concept B. Hệ thống đề xuất (Type-Specific) đảm bảo độ chính xác ổn định >98% trong \textit{mọi} giai đoạn, bất kể concept có lặp lại hay không.
+Để đối chiếu, kết quả trên kịch bản Sudden Drift tiêu chuẩn (luân phiên A$\to$B$\to$A) cũng được trình bày. Trong trường hợp này, mô hình tĩnh ("No Adaptation") vẫn duy trì độ chính xác trung bình khá cao ($\sim 75\%$) do concept A lặp lại. Tuy nhiên, điều này chỉ che giấu vấn đề: mô hình thực tế đã thất bại hoàn toàn trong các giai đoạn concept B. Hệ thống đề xuất (Type-Specific) phục hồi nhanh hơn sau mỗi drift event, đạt accuracy trung bình 71.1\% (so với baseline 72.1\%), cho thấy trong kịch bản luân phiên đơn giản, adaptation chưa mang lại lợi thế rõ rệt do concept lặp lại.
 
 \begin{figure}[H]
 	\centering
@@ -427,7 +427,7 @@ Bảng~\ref{tab:prequential-results} tổng hợp kết quả Prequential Accura
 	\centering
 	\includegraphics[width=0.95\textwidth]{../../results/plots/fig_prequential_gradual.png}
 	\caption[Prequential Accuracy trên Gradual Drift]{
-		Prequential Accuracy trên Gradual Drift: Độ trễ phát hiện cao hơn Sudden (vì tín hiệu MMD kéo dài), nhưng adaptation strategy vẫn giúp khôi phục accuracy.
+		Prequential Accuracy trên Gradual Drift: SE-CDT không phát hiện được drift trong kịch bản này (EDR = 0\%), do tín hiệu MMD của gradual drift quá yếu và kéo dài. Accuracy 74.7\% đạt được nhờ tính chất luân phiên của concept, không phải nhờ adaptation.
 	}
 	\label{fig:prequential_gradual}
 \end{figure}
