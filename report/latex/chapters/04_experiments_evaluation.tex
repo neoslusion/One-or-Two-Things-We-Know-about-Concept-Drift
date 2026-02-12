@@ -122,7 +122,7 @@ Bảng~\ref{tab:comprehensive_performance} so sánh hiệu suất của \textbf{
 	\label{fig:critical_difference}
 \end{figure}
 
-Kết quả kiểm định Friedman cho thấy MMD cơ bản có thứ hạng trung bình tốt nhất (3.64), tiếp theo là IDW-MMD (3.91). SE-CDT và ShapeDD-IDW xếp hạng 4-5 (4.50) với Critical Difference = 3.0. Điều này cho thấy không có sự khác biệt thống kê có ý nghĩa lớn về F1 giữa các phương pháp top, nhưng \textbf{SE-CDT/ ShapeDD-IDW có sự khác biệt ở chỉ số FP = 0} --- yếu tố quan trọng trong môi trường production.
+Kết quả kiểm định Friedman cho thấy MMD cơ bản có thứ hạng trung bình tốt nhất (3.64), tiếp theo là IDW-MMD (3.91). SE-CDT xếp hạng 4 (4.50) với Critical Difference = 3.17. Điều này cho thấy không có sự khác biệt thống kê có ý nghĩa lớn về F1 giữa các phương pháp top, nhưng \textbf{SE-CDT/ ShapeDD-IDW có sự khác biệt ở chỉ số FP = 0} --- yếu tố quan trọng trong môi trường production.
 
 \subsection{Đánh giá chi tiết trên từng loại dữ liệu}
 
@@ -213,7 +213,7 @@ Hình~\ref{fig:throughput-comparison} minh họa sự cải thiện vượt tr�
 
 \textbf{Các kết quả chính:}
 \begin{itemize}
-	\item \textbf{Tăng tốc gấp 17--20 lần:} SE\_CDT đạt thông lượng $\sim 131,500$ mẫu/giây (7.6ms/window), nhanh gấp \textbf{20.5 lần} so với ShapeDD gốc ($\sim 7,987$ mẫu/giây).
+	\item \textbf{Tăng tốc gấp 16 lần:} SE\_CDT đạt thông lượng $\sim 131,500$ mẫu/giây (7.6ms/window), nhanh gấp \textbf{16.5 lần} so với ShapeDD gốc ($\sim 7,987$ mẫu/giây, 125.2ms/window).
 	\item \textbf{Ý nghĩa thực tiễn:} Với thông lượng $>100,000$ mẫu/giây, hệ thống đủ khả năng đáp ứng các ứng dụng yêu cầu độ trễ thấp như giám sát log máy chủ hay giao dịch tài chính tần suất cao, nơi mà chi phí tính toán của phương pháp hoán vị (permutation test) truyền thống là rào cản lớn.
 \end{itemize}
 
@@ -294,7 +294,7 @@ Bảng~\ref{tab:se-cdt-results} trình bày kết quả phân loại sử dụng
 
 \textbf{Phân tích:}
 \begin{itemize}
-	\item \textbf{Kết quả độ chính xác:} SE-CDT (Standard MMD) đạt độ chính xác nhóm (CAT) = \textbf{72.2\%} và độ chính xác subcategory (SUB) = \textbf{50.0\%}.
+	\item \textbf{Kết quả độ chính xác:} SE-CDT (Standard MMD) đạt độ chính xác nhóm (CAT) = \textbf{81.2\%} và độ chính xác subcategory (SUB) = \textbf{50.0\%}. Lưu ý: kết quả phân loại được tính tại các vị trí drift đã biết (ground-truth positions) để đánh giá khả năng classify ở điều kiện tốt nhất.
 	\item \textbf{Event Detection Rate (EDR):} Đạt \textbf{94.4\%}, nghĩa là phát hiện phần lớn các drift. Đổi lại, số lượng báo động giả (FP) cao hơn so với IDW-MMD (\textbf{1394} vs 171), nhưng trong ngữ cảnh classification (sau khi detection module đã lọc), ưu tiên là không bỏ sót thông tin để phân loại đúng.
 	\item \textbf{Hạn chế:} Hệ thống hiện tại xử lý Recurrent drift như chuỗi các sự kiện Sudden riêng lẻ (độ chính xác Recurrent = 0\%), chưa có cơ chế bộ nhớ dài hạn.
 \end{itemize}
@@ -311,7 +311,7 @@ Bảng~\ref{tab:se-cdt-results} trình bày kết quả phân loại sử dụng
 	\input{../../results/tables/table_se_cdt_performance_summary.tex}
 \end{table}
 
-Kết quả cho thấy SE-CDT đạt độ chính xác phân loại nhóm (Category Accuracy) là \textbf{72.2\%} và độ chính xác chi tiết (Subtype Accuracy) là \textbf{50.0\%}. Đặc biệt, khả năng phát hiện sự kiện (Event Detection Rate - EDR) đạt mức rất cao \textbf{94.4\%}, cho thấy phương pháp rất nhạy trong việc bắt được các thời điểm thay đổi.
+Kết quả cho thấy SE-CDT đạt độ chính xác phân loại nhóm (Category Accuracy) là \textbf{81.2\%} và độ chính xác chi tiết (Subtype Accuracy) là \textbf{50.0\%}. Đặc biệt, khả năng phát hiện sự kiện (Event Detection Rate - EDR) đạt mức rất cao \textbf{94.4\%}, cho thấy phương pháp rất nhạy trong việc bắt được các thời điểm thay đổi.
 
 \textbf{Phân tích theo từng loại drift:}
 
@@ -419,7 +419,7 @@ Bảng~\ref{tab:prequential-results} tổng hợp kết quả Prequential Accura
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=0.95\textwidth]{../../results/plots/fig_prequential_sudden.png}
-	\caption[Prequential Accuracy trên Sudden Drift]{Prequential Accuracy trên Sudden Drift (Luân phiên). Mặc dù baseline (đỏ) có vẻ ổn định do sự lặp lại của concept, nhưng SE-CDT (xanh) vẫn cho thấy sự vượt trội về độ ổn định tuyệt đối (gần như 100\%).}
+	\caption[Prequential Accuracy trên Sudden Drift]{Prequential Accuracy trên Sudden Drift (Luân phiên). Baseline (đỏ) duy trì accuracy trung bình $\sim$72\% nhờ concept A lặp lại. SE-CDT (xanh) phục hồi nhanh hơn sau mỗi drift event nhưng đạt accuracy tương đương (71.1\%) do kịch bản này quá đơn giản cho adaptation.}
 	\label{fig:prequential_sudden}
 \end{figure}
 
@@ -466,8 +466,8 @@ Hình~\ref{fig:kafka_real_results} trình bày Dashboard giám sát trực tiế
 
 Các kết quả thực nghiệm dẫn đến những kết luận chính sau:
 \begin{enumerate}
-	\item \textbf{Detection:} Phương pháp đề xuất (ShapeDD-IDW) đạt sự cân bằng giữa hiệu suất và độ tin cậy với \textbf{0 False Positives}, đồng thời tăng tốc độ xử lý lên \textbf{20 lần} so với ShapeDD gốc.
-	\item \textbf{Classification:} Module SE-CDT (sử dụng Standard MMD) cho thấy khả năng phân loại nhóm drift đạt CAT = 72.2\% và phân loại chi tiết SUB = 50.0\% mà không cần dán nhãn dữ liệu, với tỷ lệ phát hiện sự kiện (EDR) đạt 94.4\%.
+	\item \textbf{Detection:} Phương pháp đề xuất (ShapeDD-IDW) đạt sự cân bằng giữa hiệu suất và độ tin cậy với \textbf{0 False Positives}, đồng thời tăng tốc độ xử lý lên \textbf{16.5 lần} so với ShapeDD gốc.
+	\item \textbf{Classification:} Module SE-CDT (sử dụng Standard MMD) cho thấy khả năng phân loại nhóm drift đạt CAT = 81.2\% và phân loại chi tiết SUB = 50.0\% mà không cần dán nhãn dữ liệu, với tỷ lệ phát hiện sự kiện (EDR) đạt 94.4\%.
 	\item \textbf{Adaptation:} Việc tích hợp phát hiện và phân loại drift vào quy trình thích ứng giúp cải thiện độ chính xác đáng kể: tăng \textbf{+6.42\%} trong các kịch bản trôi dạt tích lũy (Stepping Drift) và duy trì sự ổn định (+1.44\%) trong môi trường hỗn hợp. Điều này khẳng định giá trị của việc "hiểu" loại drift thay vì chỉ phản ứng mù quáng.
 \end{enumerate}
 

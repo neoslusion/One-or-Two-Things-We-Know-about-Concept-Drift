@@ -113,7 +113,7 @@ def generate_performance_summary_table(results):
     correct_cat_se = 0
     correct_sub_se = 0
     
-    TCD_TYPES = {"Sudden", "Blip"}
+    TCD_TYPES = {"Sudden", "Blip", "Recurrent"}
     
     for res in results:
         if 'SE_Classifications' not in res: continue
