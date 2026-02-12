@@ -334,11 +334,11 @@ class SE_CDT:
         sds = features.get('SDS', 0.0)
         ms = features.get('MS', 0.0)
         
-        # 4. Recurrent Drift (PCD)
+        # 4. Recurrent Drift (TCD)
         # Multiple evenly-spaced peaks BUT NOT with strong upward trend
         # If strong temporal trend (LTS > 0.5), it's Incremental, not Recurrent
         if n_p >= 4 and cv < 0.3 and lts < 0.5:
-            result.drift_type = "PCD"
+            result.drift_type = "TCD"
             result.subcategory = "Recurrent"
             return result
         

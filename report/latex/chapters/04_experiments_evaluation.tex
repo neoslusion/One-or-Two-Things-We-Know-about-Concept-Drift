@@ -171,7 +171,7 @@ Hiệu suất của các phương pháp thay đổi tùy thuộc vào đặc tí
 	\item \textbf{Blip Drift:}
 	      Trên tập \textit{rbfblips}, SE\_CDT đạt F1 = 1.0. Cơ chế shape detection kết hợp IDW-MMD cho kết quả tốt với các thay đổi ngắn hạn, đột ngột.
 	\item \textbf{Phân tích Báo động giả (False Positives):}
-	      Hình~\ref{fig:stationary_fp} so sánh số lượng báo động giả. KS-Test tạo ra lượng báo động sai lớn nhất (36.6 FP/run). SE-CDT và ShapeDD-IDW duy trì \textbf{0 False Positives}, nhờ vào cơ chế shape detection chặt chẽ.
+	      Hình~\ref{fig:stationary_fp} so sánh số lượng báo động giả \textit{trong detection benchmark} (có drift hay không). KS-Test tạo ra lượng báo động sai lớn nhất (36.6 FP/run). SE-CDT và ShapeDD-IDW duy trì \textbf{0 False Positives} trên tất cả các dataset có thay đổi $P(X)$, nhờ vào cơ chế shape detection chặt chẽ. \textit{Lưu ý:} Khái niệm FP ở đây khác với False Positives trong bài toán classification (Mục~\ref{sec:classification-eval}), nơi FP phản ánh lỗi phân loại loại drift.
 \end{enumerate}
 
 \begin{figure}[H]
@@ -278,7 +278,7 @@ Bảng~\ref{tab:se-cdt-results} trình bày kết quả phân loại sử dụng
 	\centering
 	\includegraphics[width=0.85\textwidth]{../../results/plots/confusion_matrix_se_cdt.png}
 	\caption[Confusion Matrix - 5 Classes]{
-		\textbf{Confusion Matrix cho 5 loại drift}: Sudden có recall cao nhất (82.4\%, 140/170 events), trong khi Incremental và Gradual thường bị nhầm lẫn do tín hiệu MMD tương tự nhau.
+		\textbf{Confusion Matrix cho 5 loại drift} (oracle mode: sử dụng vị trí drift ground-truth): Sudden có recall cao nhất (82.4\%, 140/170 events), trong khi Incremental và Gradual thường bị nhầm lẫn do tín hiệu MMD tương tự nhau.
 	}
 	\label{fig:confusion-5class}
 \end{figure}
@@ -287,7 +287,7 @@ Bảng~\ref{tab:se-cdt-results} trình bày kết quả phân loại sử dụng
 	\centering
 	\includegraphics[width=0.85\textwidth]{../../results/plots/confusion_matrix_category.png}
 	\caption[Confusion Matrix - Category Level]{
-		\textbf{Confusion Matrix ở mức Category (TCD vs PCD)}: Cho thấy độ chính xác 81.2\%, với TCD recall = 90.4\% và PCD recall = 72.7\%.
+		\textbf{Confusion Matrix ở mức Category (TCD vs PCD)} (oracle mode): Cho thấy độ chính xác 81.2\%, với TCD recall = 90.4\% và PCD recall = 72.7\%.
 	}
 	\label{fig:confusion-category}
 \end{figure}
@@ -312,6 +312,8 @@ Bảng~\ref{tab:se-cdt-results} trình bày kết quả phân loại sử dụng
 \end{table}
 
 Kết quả cho thấy SE-CDT đạt độ chính xác phân loại nhóm (Category Accuracy) là \textbf{81.2\%} và độ chính xác chi tiết (Subtype Accuracy) là \textbf{50.0\%}. Đặc biệt, khả năng phát hiện sự kiện (Event Detection Rate - EDR) đạt mức rất cao \textbf{94.4\%}, cho thấy phương pháp rất nhạy trong việc bắt được các thời điểm thay đổi.
+
+\textit{So sánh với State-of-the-Art:} Trong nghiên cứu gốc đề xuất CDT-MSW~\cite{guo2022cdtmsw} (phương pháp semi-supervised sử dụng labels để xác định drift), các tác giả báo cáo độ chính xác phân loại nhóm khoảng 87.5\% và độ chính xác chi tiết khoảng 42.0\%. SE-CDT đạt kết quả tương đương về phân loại nhóm (81.2\%) và vượt trội về phân loại chi tiết (50.0\%), mặc dù hoạt động hoàn toàn \textbf{không giám sát}. Điều này khẳng định hiệu quả của việc sử dụng các đặc trưng hình học từ tín hiệu MMD (như WR, PPR, DPAR) để thay thế cho labels trong bài toán định danh drift.
 
 \textbf{Phân tích theo từng loại drift:}
 

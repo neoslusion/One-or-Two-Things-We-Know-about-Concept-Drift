@@ -162,16 +162,28 @@ Lấy ý tưởng từ cơ chế hoạt động của CDT-MSW được trình b�
 \subsection{Cơ sở lý thuyết}
 Theo phân loại của CDT-MSW, drift được chia thành hai loại chính là:
 \begin{itemize}
-	\item \textbf{TCD (Transient Concept Drift):} Drift tạm thời với thời gian chuyển đổi ngắn --- bao gồm \textit{sudden} và \textit{blip}.
-	\item \textbf{PCD (Progressive Concept Drift):} Drift tiến triển với thời gian chuyển đổi dài --- bao gồm \textit{gradual}, \textit{incremental}, và \textit{recurrent}.
+	\item \textbf{TCD (Transient Concept Drift):} Drift tạm thời với thời gian chuyển đổi ngắn --- bao gồm \textit{sudden}, \textit{blip}, và \textit{recurrent} (do tính chất lặp lại của các trạng thái ổn định).
+	\item \textbf{PCD (Progressive Concept Drift):} Drift tiến triển với thời gian chuyển đổi dài --- bao gồm \textit{gradual} và \textit{incremental}.
 \end{itemize}
 
 \subsection{Đặc trưng phân loại từ tín hiệu $\sigma(t)$}
+SE-CDT trích xuất hai nhóm đặc trưng từ tín hiệu MMD:
+
+\textbf{Nhóm 1: Đặc trưng hình học (Geometric Features)}
 \begin{enumerate}
-	\item \textbf{Peak Width Ratio:} $\text{WR} = \frac{\text{FWHM}}{2L}$. TCD có $\text{WR} < 0.12$, PCD có $\text{WR} \geq 0.12$.
-	\item \textbf{Peak Count:} Số lượng peaks phát hiện được. Sudden có ít peaks ($\leq 4$), Recurrent có nhiều peaks đều đặn ($\geq 5$).
-	\item \textbf{Periodicity CV:} Hệ số biến thiên khoảng cách giữa peaks. Recurrent có CV $< 0.2$ (đều đặn).
-	\item \textbf{Signal-to-Noise Ratio:} $\text{SNR} = \frac{\max(\sigma)}{\text{median}(\sigma)}$ --- TCD có SNR cao (peaks sắc nét).
+	\item \textbf{Peak Width Ratio:} $\text{WR} = \frac{\text{FWHM}}{2L}$. TCD có $\text{WR} < 0.15$, PCD có $\text{WR} \geq 0.15$.
+	\item \textbf{Peak Count ($n_p$):} Số lượng peaks. Sudden có ít peaks ($\leq 3$), Recurrent có nhiều peaks đều đặn ($\geq 4$).
+	\item \textbf{Periodicity CV:} Hệ số biến thiên khoảng cách giữa peaks. Recurrent có CV $< 0.3$ (đều đặn).
+	\item \textbf{Signal-to-Noise Ratio:} $\text{SNR} = \frac{\max(\sigma)}{\text{median}(\sigma)}$ --- TCD có SNR cao ($> 2.0$, peaks sắc nét).
+	\item \textbf{Peak Proximity Ratio (PPR):} Tỉ lệ khoảng cách gần nhất giữa hai peaks so với độ dài tín hiệu. Blip drift có PPR $< 0.20$.
+	\item \textbf{Dual-Peak Amplitude Ratio (DPAR):} Tỉ lệ chiều cao giữa hai peaks gần nhau. Blip drift có DPAR $> 0.65$ (hai peaks cao tương đương).
+\end{enumerate}
+
+\textbf{Nhóm 2: Đặc trưng thời gian (Temporal Features)}
+\begin{enumerate}
+	\item \textbf{Linear Trend Strength (LTS):} Hệ số $R^2$ của hồi quy tuyến tính trên tín hiệu. Incremental có LTS cao ($> 0.5$).
+	\item \textbf{Step Detection Score (SDS):} Tỉ lệ các bước nhảy có ý nghĩa ($> 1.5\sigma$) trong tín hiệu.
+	\item \textbf{Monotonicity Score (MS):} Tỉ lệ chiều hướng thống trị (tăng hoặc giảm) trong tín hiệu.
 \end{enumerate}
 
 \subsection{Thuật toán phân loại}
@@ -186,14 +198,23 @@ Công thức của SE-CDT được mô tả như sau:
 		\ENSURE Loại drift (TCD/PCD) và subcategory
 		\STATE Làm mịn tín hiệu: $\sigma_s \leftarrow \text{GaussianFilter}(\sigma, \sigma=4)$
 		\STATE Phát hiện peaks: $P \leftarrow \text{FindPeaks}(\sigma_s, \text{threshold}=\bar{\sigma} + 0.3\sigma_{std})$
-		\STATE Tính các đặc trưng: $n_p \leftarrow |P|$, $\text{WR}$, $\text{CV}$, $\text{SNR}$
-		\IF{$n_p \leq 4$ AND $\text{WR} < 0.12$}
+		\STATE Tính đặc trưng hình học: $n_p \leftarrow |P|$, WR, CV, SNR, PPR, DPAR
+		\STATE Tính đặc trưng thời gian: LTS, SDS, MS
+		\STATE
+		\STATE \textbf{--- Bước 1: Blip (TCD) ---}
+		\IF{$n_p = 2$ AND (PPR $< 0.20$ AND DPAR $> 0.65$)}
+		\RETURN \textbf{BLIP} (TCD)
+		\ENDIF
+		\STATE \textbf{--- Bước 2: Sudden (TCD) ---}
+		\IF{$n_p \leq 3$ AND WR $< 0.15$ AND SNR $> 2.0$}
 		\RETURN \textbf{SUDDEN} (TCD)
-		\ELSIF{$n_p \geq 4$ AND $\text{CV} < 0.3$}
+		\ENDIF
+		\STATE \textbf{--- Bước 3: Recurrent (PCD) ---}
+		\IF{$n_p \geq 4$ AND CV $< 0.3$ AND LTS $< 0.5$}
 		\RETURN \textbf{RECURRENT} (PCD)
-		\ELSIF{$\text{WR} \geq 0.12$}
-		\RETURN \textbf{GRADUAL} (PCD)
-		\ELSIF{$n_p \geq 10$ AND $\text{SignalMean} \approx 0$}
+		\ENDIF
+		\STATE \textbf{--- Bước 4: Incremental vs Gradual (PCD) ---}
+		\IF{LTS $> 0.5$ OR (MS $> 0.6$ AND LTS $> 0.3$) OR (SDS $> 0.12$ AND LTS $> 0.3$) OR $n_p \geq 7$}
 		\RETURN \textbf{INCREMENTAL} (PCD)
 		\ELSE
 		\RETURN \textbf{GRADUAL} (PCD)
@@ -220,13 +241,14 @@ Công thức của SE-CDT được mô tả như sau:
 \end{itemize}
 
 \subsection{Giải thích lựa chọn ngưỡng}
-Các ngưỡng trong Algorithm~\ref{alg:se-cdt} được xác định dựa trên phân tích thực nghiệm trên synthetic datasets:
+Các ngưỡng trong Algorithm~\ref{alg:se-cdt} được xác định qua phân tích thực nghiệm trên synthetic datasets và tinh chỉnh qua nhiều vòng lặp:
 \begin{itemize}
-	\item \textbf{WR $<$ 0.12 (TCD):} Sudden drift tạo peak sắc nét với FWHM $<$ 24\% window size. Ngưỡng này phân biệt peak ``nhọn'' của sudden với peak ``rộng'' của gradual.
-	\item \textbf{$n_p \geq 4$ và CV $<$ 0.3 (Recurrent):} Recurrent drift có nhiều peaks đều đặn. CV (Coefficient of Variation) thấp chỉ ra khoảng cách giữa các peaks ổn định.
-	\item \textbf{$n_p \geq 10$ (Incremental):} Incremental drift tạo nhiều peaks nhỏ liên tục do sự thay đổi từ từ trong phân phối.
+	\item \textbf{Blip:} $n_p = 2$, PPR $< 0.20$, DPAR $> 0.65$. Blip drift tạo hai peaks gần nhau (PPR thấp) với biên độ tương đương (DPAR cao), phản ánh mẫu ``drift rồi quay lại''.
+	\item \textbf{Sudden:} $n_p \leq 3$, WR $< 0.15$, SNR $> 2.0$. Sudden drift tạo peak sắc nét (WR thấp) với tỉ lệ tín hiệu/nhiễu cao (SNR $> 2$). Ngưỡng WR $= 0.15$ cho phép FWHM $< 30\%$ window size.
+	\item \textbf{Recurrent:} $n_p \geq 4$, CV $< 0.3$, LTS $< 0.5$. Nhiều peaks đều đặn (CV thấp) mà \textit{không} có xu hướng tuyến tính (LTS thấp, để tránh nhầm với Incremental).
+	\item \textbf{Incremental vs Gradual:} Phân biệt bằng đặc trưng thời gian. Incremental có xu hướng tuyến tính mạnh (LTS $> 0.5$) hoặc tính đơn điệu cao (MS $> 0.6$). Gradual có tín hiệu dao động (LTS, MS thấp).
 \end{itemize}
-\textit{Ghi chú: Các ngưỡng này được tối ưu trên synthetic data và có thể cần điều chỉnh cho từng domain cụ thể.}
+\textit{Ghi chú: Các ngưỡng được tối ưu trên synthetic data và có thể cần điều chỉnh cho từng domain cụ thể. Xem bảng kèm theo mã nguồn để biết giá trị chính xác.}
 
 \textbf{Lưu ý về biến thể IDW-MMD:}
 Luận văn cũng thử nghiệm sử dụng IDW-MMD (trọng số nghịch mật độ) thay cho standard MMD trong SE-CDT. Tuy nhiên, kết quả cho thấy IDW-MMD không phù hợp cho classification do cơ chế giảm phương sai có xu hướng loại bỏ những thay đổi nhỏ (coi là noise). IDW-MMD phù hợp hơn cho drift \textit{detection} (nhị phân: có/không có drift), nhưng standard MMD tốt hơn cho \textit{classification} (phân loại loại drift). Chi tiết thử nghiệm và so sánh định lượng được trình bày ở Chương~\ref{chap:experiments}.
@@ -268,7 +290,7 @@ Thay vì áp dụng một chiến lược duy nhất (như huấn luyện lại 
 \subsubsection{Chiến lược cho Sudden Drift (Trọng tâm nghiên cứu)}
 Trong phạm vi luận văn, chiến lược cho \textit{Sudden Drift} được cài đặt và đánh giá chi tiết nhất. Quy trình cụ thể như sau:
 \begin{enumerate}
-	\item \textbf{Kích hoạt:} Khi CDT-MSW phân loại drift là "Sudden".
+	\item \textbf{Kích hoạt:} Khi SE-CDT phân loại drift là ``Sudden''.
 	\item \textbf{Thu thập dữ liệu:} Hệ thống chờ và thu thập một lượng dữ liệu mới ($N_{new}$) ngay sau điểm drift.
 	\item \textbf{Huấn luyện lại:} Một instance mô hình mới (ví dụ: Logistic Regression) được khởi tạo với trọng số ngẫu nhiên và huấn luyện trên $N_{new}$.
 	\item \textbf{Thay thế:} Mô hình cũ bị loại bỏ hoàn toàn, mô hình mới được đưa vào sử dụng (hot-swap).
