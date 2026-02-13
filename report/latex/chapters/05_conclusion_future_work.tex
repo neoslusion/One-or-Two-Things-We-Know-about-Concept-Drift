@@ -43,10 +43,10 @@ Từ quá trình nghiên cứu và thực nghiệm, luận văn rút ra các bà
 Mặc dù đạt được những kết quả khả quan, nghiên cứu vẫn tồn tại một số hạn chế cần được xem xét:
 
 \subsection{Trade-off giữa Detection và Classification}
-SE-CDT (Std) đạt EDR = 94.4\% nhưng có số lượng False Positives cao (FP = 1394). SE-CDT (ADW) giảm FP xuống 171 nhưng EDR giảm còn 50.6\%. Trong môi trường production cần cân nhắc trade-off này:
+SE-CDT (Std) đạt EDR = 94.4\% nhưng có số lượng False Positives cao (FP = 1394). SE-CDT (IDW) giảm FP xuống 171 nhưng EDR giảm còn 50.6\%. Trong môi trường production cần cân nhắc trade-off này:
 \begin{itemize}
 	\item Nếu ưu tiên \textbf{recall cao}: Sử dụng SE-CDT (Std) với threshold thấp
-	\item Nếu ưu tiên \textbf{FP thấp}: Sử dụng SE-CDT (ADW) hoặc ShapeDD-IDW (FP = 0 trong detection benchmark)
+	\item Nếu ưu tiên \textbf{FP thấp}: Sử dụng SE-CDT (IDW) hoặc ShapeDD-IDW (FP = 0 trong detection benchmark)
 \end{itemize}
 
 \subsection{Subcategory Accuracy còn hạn chế}

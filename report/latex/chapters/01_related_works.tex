@@ -320,6 +320,7 @@ Sau khi phát hiện được thời điểm xảy ra trôi dạt, việc xác �
 Trong giai đoạn đầu, CDT-MSW định nghĩa \textbf{Tỷ lệ Phát hiện Luồng} (Detection Flow Ratio) để đo lường sự thay đổi giữa hai cửa sổ dữ liệu $W_A$ (tĩnh/tham chiếu) và $W_B$ (trượt/hiện tại):
 \begin{equation}
     \tilde{P}^{t}_{\text{det}} = \frac{\alpha^t_{B}}{\alpha^{\star}_{A}}
+    \label{eq:dfr}
 \end{equation}
 Trong đó $\alpha^{\star}_{A}$ là độ chính xác thời gian thực (real-time accuracy) của mô hình huấn luyện trên cửa sổ $W_A$, và $\alpha^t_{B}$ là độ chính xác trên cửa sổ $W_B$ sau khi trượt $t$ lần.
 \begin{itemize}
@@ -356,6 +357,7 @@ Trong quá trình này, các cửa sổ cơ bản $W_A$ và $W_B$ dần phát tr
 Để phân biệt chi tiết giữa các loại trôi dạt, CDT-MSW định nghĩa \textbf{Tỷ lệ Theo dõi Luồng} (Tracking Flow Ratio – TFR) bằng cách cho $W_A^{\prime}$ trượt về phía trước để theo dõi $W_B^{\prime}$ (tĩnh):
 \begin{equation}
     \tilde{P}^{i}_{\text{tra}} = \frac{\alpha^{\star}_{B^{\prime}}}{\alpha^{i}_{A^{\prime}}}
+    \label{eq:tfr}
 \end{equation}
 Trong đó $\alpha^{\star}_{B^{\prime}}$ là độ chính xác của mô hình trên cửa sổ $W'_B$ tại vị trí ban đầu ($t$), và $\alpha^{i}_{A^{\prime}}$ là độ chính xác trên cửa sổ $W'_A$ khi trượt đến vị trí $i$.
 
@@ -381,12 +383,14 @@ Khả năng phân loại chính xác các loại trôi dạt được đánh gi�
     \item \textbf{ACC$_{\text{cat}}$} (Drift category accuracy): Độ chính xác nhận dạng loại chính (TCD/PCD).
     \begin{equation}
         \text{ACC}_{\text{cat}} = \frac{T_{T} + T_{P}}{T_{T} + F_{T} + T_{P} + F_{P}}
+        \label{eq:acc-cat}
     \end{equation}
     Trong đó $T_{T}$ và $F_{T}$ là số lượng nhận dạng đúng/sai cho TCD; $T_{P}$ và $F_{P}$ là số lượng nhận dạng đúng/sai cho PCD.
     
     \item \textbf{ACC$_{\text{subcat}}$} (Drift subcategory accuracy): Độ chính xác nhận dạng loại phụ (Sudden, Gradual, Incremental, Recurrent).
     \begin{equation}
         \text{ACC}_{\text{subcat}} = \frac{\sum_{i}T_{T}^{i} + \sum_{j}T_{P}^{j}}{T_{T} + T_{P}}
+        \label{eq:acc-subcat}
     \end{equation}
     Trong đó $i \in \{\text{Sudden, Blip, Recurrent}\}$ và $j \in \{\text{Incremental, Gradual}\}$.
 \end{itemize}
@@ -399,9 +403,9 @@ Khả năng phân loại chính xác các loại trôi dạt được đánh gi�
 \end{figure}
 
 \subsection{Tổng hợp và ý nghĩa}
-Tóm lại, CDT-MSW nhận dạng loại trôi dạt dựa trên hai chỉ số động: \textbf{Detection Flow Ratio} (Công thức~1)
-và \textbf{Tracking Flow Ratio} (Công thức~5), cùng với các chỉ số đánh giá độ dài và độ chính xác của quá
-trình phân loại (Công thức~11–15). Cơ chế này cho phép mô hình không chỉ phát hiện thời điểm drift xảy ra,
+Tóm lại, CDT-MSW nhận dạng loại trôi dạt dựa trên hai chỉ số động: \textbf{Detection Flow Ratio} (Công thức~\ref{eq:dfr})
+và \textbf{Tracking Flow Ratio} (Công thức~\ref{eq:tfr}), cùng với các chỉ số đánh giá độ chính xác của quá
+trình phân loại (Công thức~\ref{eq:acc-cat}--\ref{eq:acc-subcat}). Cơ chế này cho phép mô hình không chỉ phát hiện thời điểm drift xảy ra,
 mà còn hiểu được bản chất của sự thay đổi (nhanh, chậm, tuyến tính hay lặp lại), từ đó cung cấp thông tin đầu vào
 quan trọng cho \textbf{giai đoạn cập nhật mô hình thích ứng} được trình bày trong Mục~\ref{sec:model_adaptation_strategies}.
 
