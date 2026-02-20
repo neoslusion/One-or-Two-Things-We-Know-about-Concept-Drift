@@ -286,6 +286,7 @@ class AdaptationMode:
     NONE = "no_adaptation"
     SIMPLE = "simple_retrain"
     TYPE_SPECIFIC = "type_specific"
+    PERIODIC = "periodic_retrain"
 
 
 def evaluate_with_adaptation(
@@ -397,6 +398,19 @@ def evaluate_with_adaptation(
                 except Exception as e:
                     print(f"Error in SE-CDT monitor: {e}")
                     pass
+
+        # Periodic Retraining Logic
+        if mode == AdaptationMode.PERIODIC and idx > train_end and idx % 500 == 0:
+            adapt_start = max(0, len(buffer) - ADAPTATION_WINDOW)
+            adapt_data = list(buffer)[adapt_start:]
+            adapt_X = np.array([item["x"] for item in adapt_data])
+            adapt_y = np.array([item["y"] for item in adapt_data])
+            if len(np.unique(adapt_y)) >= 2:
+                model = create_model()
+                model.fit(adapt_X, adapt_y)
+            adaptations.append({"idx": idx, "strategy": "periodic_retrain"})
+            drift_detected = False
+            samples_since_drift = 0
 
         # Adaptation Logic
         if drift_detected:
@@ -519,11 +533,13 @@ def plot_prequential_comparison(
     mode_colors = {
         AdaptationMode.TYPE_SPECIFIC: "#2ecc71",  # Green
         AdaptationMode.SIMPLE: "#3498db",  # Blue
+        AdaptationMode.PERIODIC: "#f39c12",  # Orange
         AdaptationMode.NONE: "#e74c3c",  # Red
     }
     mode_labels = {
         AdaptationMode.TYPE_SPECIFIC: "Type-Specific Adaptation",
         AdaptationMode.SIMPLE: "Simple Retrain",
+        AdaptationMode.PERIODIC: "Periodic Retrain",
         AdaptationMode.NONE: "No Adaptation (Baseline)",
     }
 
@@ -774,7 +790,8 @@ def plot_prequential_comparison(
     y_positions = {
         AdaptationMode.TYPE_SPECIFIC: 1.5,
         AdaptationMode.SIMPLE: 0,
-        AdaptationMode.NONE: -1,
+        AdaptationMode.PERIODIC: -1,
+        AdaptationMode.NONE: -2,
     }
 
     # Classification type colors and markers for detected drifts
@@ -876,10 +893,10 @@ def plot_prequential_comparison(
                         zorder=4,
                     )
 
-    ax_det.set_ylim([-1.5, 2.5])
-    ax_det.set_yticks([1.5, 0, -1])
+    ax_det.set_ylim([-2.5, 2.5])
+    ax_det.set_yticks([1.5, 0, -1, -2])
     ax_det.set_yticklabels(
-        ["Detected + Classified", "Ground Truth", "Simple/None"], fontsize=9
+        ["Detected + Classified", "Ground Truth", "Simple Retrain", "None/Periodic"], fontsize=9
     )
     ax_det.set_xlabel("Sample Index", fontsize=12, fontweight="bold")
     ax_det.set_ylabel("Detection &\nClassification", fontsize=10, fontweight="bold")
@@ -901,6 +918,7 @@ def plot_prequential_comparison(
         for mode in [
             AdaptationMode.TYPE_SPECIFIC,
             AdaptationMode.SIMPLE,
+            AdaptationMode.PERIODIC,
             AdaptationMode.NONE,
         ]:
             m = metrics.get(mode, {})
@@ -1087,6 +1105,13 @@ def _run_single_experiment(seed, args, cache_dir):
         "accuracy": acc_none, "detections": det_none, "adaptations": adapt_none,
     }
 
+    acc_periodic, det_periodic, adapt_periodic, _ = evaluate_with_adaptation(
+        X, y, drift_points, mode=AdaptationMode.PERIODIC
+    )
+    results[AdaptationMode.PERIODIC] = {
+        "accuracy": acc_periodic, "detections": det_periodic, "adaptations": adapt_periodic,
+    }
+
     # Calculate metrics
     metrics = calculate_metrics(results, drift_points)
     sota_metrics = {}
@@ -1171,7 +1196,7 @@ def main():
 
     # Aggregation
     agg_metrics = {}
-    modes = [AdaptationMode.TYPE_SPECIFIC, AdaptationMode.SIMPLE, AdaptationMode.NONE]
+    modes = [AdaptationMode.TYPE_SPECIFIC, AdaptationMode.SIMPLE, AdaptationMode.PERIODIC, AdaptationMode.NONE]
     
     for mode in modes:
         mode_data = [run["metrics"][mode] for run in all_run_data]

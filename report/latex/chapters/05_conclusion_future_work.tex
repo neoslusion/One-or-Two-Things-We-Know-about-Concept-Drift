@@ -43,7 +43,7 @@ Từ quá trình nghiên cứu và thực nghiệm, luận văn rút ra các bà
 Mặc dù đạt được những kết quả khả quan, nghiên cứu vẫn tồn tại một số hạn chế cần được xem xét:
 
 \subsection{Trade-off giữa Detection và Classification}
-SE-CDT (Std) đạt EDR = 94.4\% nhưng có số lượng False Positives cao (FP = 1394). SE-CDT (IDW) giảm FP xuống 171 nhưng EDR giảm còn 50.6\%. Trong môi trường production cần cân nhắc trade-off này:
+SE-CDT (Std) đạt tỷ lệ phát hiện sự kiện (EDR - tương đương với Recall) = 94.4\% nhưng có số lượng False Positives cao (FP = 1394). SE-CDT (IDW) giảm FP xuống 171 nhưng EDR giảm còn 50.6\%. Trong môi trường production cần cân nhắc trade-off này:
 \begin{itemize}
 	\item Nếu ưu tiên \textbf{recall cao}: Sử dụng SE-CDT (Std) với threshold thấp
 	\item Nếu ưu tiên \textbf{FP thấp}: Sử dụng SE-CDT (IDW) hoặc ShapeDD-IDW (FP = 0 trong detection benchmark)
@@ -59,6 +59,9 @@ Mặc dù Category Accuracy (TCD vs PCD) đạt 81.2\%, Subcategory Accuracy ch�
 
 \subsection{Dữ liệu tổng hợp (Synthetic Data)}
 Việc đánh giá chủ yếu dựa trên các tập dữ liệu tổng hợp. Mặc dù chúng cho phép kiểm soát chính xác ground truth (thời điểm drift, loại drift) để đo lường F1-score và độ trễ, nhưng có thể chưa phản ánh hết độ phức tạp, nhiễu tạp và tính bất định của dữ liệu thực tế (real-world traces) trong các hệ thống sản xuất quy mô lớn.
+
+\subsection{Thiếu Baseline Cập Nhật Định Kỳ (Periodic Retraining)}
+Trong chương \ref{chap:experiments}, đánh giá chiến lược thích ứng (adaptation) hiện tại đang tập trung đối chiếu với baseline không cập nhật (No Adaptation). Thiết kế này tuy chứng minh được hệ thống có phản ứng linh hoạt khi drift xảy ra, nhưng để chứng minh đầy đủ tỷ lệ đánh đổi (trade-off) về tài nguyên tính toán đối với bài toán trên production, cần thêm phân tích toàn diện với các baseline cập nhật mù định kỳ (Periodic Retraining). Dù baseline này đã được tích hợp bổ sung vào hệ thống thực nghiệm, luận văn vẫn xem việc mở rộng đánh giá chuyên sâu cho nó là một hướng cải thiện quan trọng để khẳng định tính ưu việt của phương pháp cập nhật theo văn cảnh (context-aware adaptation).
 
 \section{Hướng nghiên cứu tương lai}
 

@@ -189,7 +189,7 @@ Ví dụ, trong giám sát mô hình CNN phân loại ảnh, có thể theo dõi
 biến (mô hình trở nên kém chắc chắn), một bộ phát hiện như ADWIN được kích hoạt để dò tìm thay đổi trong chuỗi entropy theo thời gian.
 Jourdan và cộng sự (2023) đã áp dụng thành công cách này để phát hiện drift trong hệ thống giám sát sản xuất công nghiệp: sử dụng ADWIN theo
 dõi độ lệch xác suất dự đoán của mạng CNN, khi ADWIN báo drift thì hệ thống trigger huấn luyện lại mô hình trên dữ liệu mới. Tương tự, trong
-mô hình phát hiện bất thường dùng LSTM, người ta cũng nhúng các detector như DDM hoặc Page-Hinkley để liên tục canh chừng lỗi dự đoán theo thời gian.
+mô hình phát hiện bất thường dùng LSTM, các nghiên cứu trước đây cũng nhúng các detector như DDM hoặc Page-Hinkley để liên tục canh chừng lỗi dự đoán theo thời gian.
 Việc tích hợp này lợi dụng được tính chất "model-agnostic" của các thuật toán drift detection truyền thống, biến chúng thành cảm biến cho các mô hình deep phức tạp.
 
 \textbf{Hướng (II): Self-adaptive architectures.} Các mạng neural tự điều chỉnh cấu trúc khi drift xảy ra đang trở thành xu hướng quan
@@ -246,7 +246,7 @@ Các phương pháp cũng đã được thực nghiệm trên các tập dữ li
 		\addlinespace
 		\textbf{EDDM}       & Statistical Process Control & Distance between errors  & Nhạy với gradual drift~\cite{baena2006early}                  & Dễ báo động giả lúc mới học~\cite{santos2024evolving}                    \\
 		\addlinespace
-		\textbf{ADWIN}      & Sliding Window              & Adaptive Windowing       & Có cam kết toán học về tỷ lệ FP~\cite{bifet2007learning}      & Tốn bộ nhớ hơn DDM/EDDM~\cite{hinder2024survey_partA}                    \\
+		\textbf{ADWIN}      & Sliding Window              & Adaptive Windowing       & Có đảm bảo lý thuyết (theoretical bounds) về tỷ lệ FP~\cite{bifet2007learning}      & Tốn bộ nhớ hơn DDM/EDDM~\cite{hinder2024survey_partA}                    \\
 		\addlinespace
 		\textbf{HDDM}       & Sliding Window              & Hoeffding's Bound        & Phù hợp cho abrupt/gradual drift~\cite{friasblanco2015hddm}   & Cần dữ liệu nhãn liên tục~\cite{santos2024evolving}                      \\
 		\addlinespace

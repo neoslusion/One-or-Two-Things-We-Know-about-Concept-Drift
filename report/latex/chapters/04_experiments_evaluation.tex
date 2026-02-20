@@ -14,7 +14,7 @@ Chương này đi sâu phân tích các kết quả thực nghiệm nhằm minh 
 
 \subsection{Môi trường và Cấu hình}
 \label{sec:dataset-config}
-Thay vì liệt kê một cấu hình chung thiếu chính xác, các tham số môi trường và thuật toán sẽ được mô tả cụ thể gắn liền với từng kịch bản thử nghiệm (Detection, Classification, Adaptation). Cách tiếp cận này nhằm đảm bảo tính minh bạch và khả năng tái lập kết quả một cách chính xác nhất.
+Thay vì trình bày một cấu hình chung, các tham số môi trường và thuật toán sẽ được mô tả cụ thể gắn liền với từng kịch bản thử nghiệm (Detection, Classification, Adaptation). Cách tiếp cận này nhằm đảm bảo tính minh bạch và khả năng tái lập kết quả một cách chính xác nhất.
 
 \textbf{Quy ước ký hiệu trong các bảng:}
 \begin{itemize}
@@ -295,7 +295,7 @@ Bảng~\ref{tab:se-cdt-results} trình bày kết quả phân loại sử dụng
 \textbf{Phân tích:}
 \begin{itemize}
 	\item \textbf{Kết quả độ chính xác:} SE-CDT (Standard MMD) đạt độ chính xác nhóm (CAT) = \textbf{81.2\%} và độ chính xác subcategory (SUB) = \textbf{50.0\%}. Lưu ý: kết quả phân loại được tính tại các vị trí drift đã biết (ground-truth positions) để đánh giá khả năng classify ở điều kiện tốt nhất.
-	\item \textbf{Event Detection Rate (EDR):} Đạt \textbf{94.4\%}, nghĩa là phát hiện phần lớn các drift. Đổi lại, số lượng báo động giả (FP) cao hơn so với IDW-MMD (\textbf{1394} vs 171), nhưng trong ngữ cảnh classification (sau khi detection module đã lọc), ưu tiên là không bỏ sót thông tin để phân loại đúng.
+	\item \textbf{Tỷ lệ phát hiện sự kiện (Event Detection Rate - tương đương với Recall):} Đạt \textbf{94.4\%}, nghĩa là phát hiện phần lớn các drift. Đổi lại, số lượng báo động giả (FP) cao hơn so với IDW-MMD (\textbf{1394} vs 171), nhưng trong ngữ cảnh classification (sau khi detection module đã lọc), ưu tiên là không bỏ sót thông tin để phân loại đúng.
 	\item \textbf{Hạn chế:} Hệ thống hiện tại xử lý Recurrent drift như chuỗi các sự kiện Sudden riêng lẻ (độ chính xác Recurrent = 0\%), chưa có cơ chế bộ nhớ dài hạn.
 \end{itemize}
 
@@ -311,7 +311,7 @@ Bảng~\ref{tab:se-cdt-results} trình bày kết quả phân loại sử dụng
 	\input{../../results/tables/table_se_cdt_performance_summary.tex}
 \end{table}
 
-Kết quả cho thấy SE-CDT đạt độ chính xác phân loại nhóm (Category Accuracy) là \textbf{81.2\%} và độ chính xác chi tiết (Subtype Accuracy) là \textbf{50.0\%}. Đặc biệt, khả năng phát hiện sự kiện (Event Detection Rate - EDR) đạt mức rất cao \textbf{94.4\%}, cho thấy phương pháp rất nhạy trong việc bắt được các thời điểm thay đổi.
+Kết quả cho thấy SE-CDT đạt độ chính xác phân loại nhóm (Category Accuracy) là \textbf{81.2\%} và độ chính xác chi tiết (Subtype Accuracy) là \textbf{50.0\%}. Đặc biệt, tỷ lệ phát hiện sự kiện (Event Detection Rate - tương đương với Recall) đạt mức rất cao \textbf{94.4\%}, cho thấy phương pháp rất nhạy trong việc bắt được các thời điểm thay đổi.
 
 \textit{So sánh với State-of-the-Art:} Trong nghiên cứu gốc đề xuất CDT-MSW~\cite{guo2022cdtmsw} (phương pháp semi-supervised sử dụng labels để xác định drift), các tác giả báo cáo độ chính xác phân loại nhóm khoảng 87.5\% và độ chính xác chi tiết khoảng 42.0\%. SE-CDT đạt kết quả tương đương về phân loại nhóm (81.2\%) và vượt trội về phân loại chi tiết (50.0\%), mặc dù hoạt động hoàn toàn \textbf{không giám sát}. Điều này khẳng định hiệu quả của việc sử dụng các đặc trưng hình học từ tín hiệu MMD (như WR, PPR, DPAR) để thay thế cho labels trong bài toán định danh drift.
 
@@ -469,7 +469,7 @@ Hình~\ref{fig:kafka_real_results} trình bày Dashboard giám sát trực tiế
 Các kết quả thực nghiệm dẫn đến những kết luận chính sau:
 \begin{enumerate}
 	\item \textbf{Detection:} Phương pháp đề xuất (ShapeDD-IDW) đạt sự cân bằng giữa hiệu suất và độ tin cậy với \textbf{0 False Positives}, đồng thời tăng tốc độ xử lý lên \textbf{16.5 lần} so với ShapeDD gốc.
-	\item \textbf{Classification:} Module SE-CDT (sử dụng Standard MMD) cho thấy khả năng phân loại nhóm drift đạt CAT = 81.2\% và phân loại chi tiết SUB = 50.0\% mà không cần dán nhãn dữ liệu, với tỷ lệ phát hiện sự kiện (EDR) đạt 94.4\%.
+	\item \textbf{Classification:} Module SE-CDT (sử dụng Standard MMD) cho thấy khả năng phân loại nhóm drift đạt CAT = 81.2\% và phân loại chi tiết SUB = 50.0\% mà không cần dán nhãn dữ liệu, với tỷ lệ phát hiện sự kiện (EDR - tương đương với Recall) đạt 94.4\%.
 	\item \textbf{Adaptation:} Việc tích hợp phát hiện và phân loại drift vào quy trình thích ứng giúp cải thiện độ chính xác đáng kể: tăng \textbf{+6.42\%} trong các kịch bản trôi dạt tích lũy (Stepping Drift) và duy trì sự ổn định (+1.44\%) trong môi trường hỗn hợp. Điều này khẳng định giá trị của việc "hiểu" loại drift thay vì chỉ phản ứng mù quáng.
 \end{enumerate}
 

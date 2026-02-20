@@ -57,8 +57,9 @@ Luận văn đề xuất phương pháp \textbf{IDW-MMD} (Inverse Density-Weight
 
 Cụ thể, trọng số $w_i$ được tính dựa trên mật độ cục bộ (local density):
 \begin{equation}
-	w_i \propto \frac{1}{\sqrt{\sum_{j} k(x_i, x_j)}} \quad \text{(Inverse Density Weighting)}
+	w_i \propto \frac{1}{\sqrt{\sum_{j} k(x_i, x_j)} + \epsilon} \quad \text{(Inverse Density Weighting)}
 \end{equation}
+trong đó $\epsilon$ là một hằng số nhỏ (ví dụ $\epsilon = 0.5$) để đảm bảo tính ổn định số học (numerical stability).
 
 \textbf{Cách hiểu đơn giản:}
 \begin{itemize}
