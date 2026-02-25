@@ -96,6 +96,11 @@ class SE_CDT:
     def _monitor_proper(self, window: np.ndarray) -> SECDTResult:
         """
         PROPER implementation using ShapeDD + ADW-MMD with p-value.
+        
+        Enhanced with Growth process (CDT-MSW Algorithm 2):
+        1. Detection: ShapeDD + ADW-MMD finds drift candidates
+        2. Growth: MMD variance measures drift length → TCD vs PCD
+        3. Classification: Shape + temporal features → subcategory
         """
         # 1. Detection Step (PROPER ShapeDD + ADW-MMD)
         is_drift, drift_positions, mmd_trace, p_values = shapedd_adw_mmd_proper(
@@ -105,8 +110,6 @@ class SE_CDT:
         # Compute aggregate score from p-values
         if p_values:
             min_p = min(p_values)
-            # Convert p-value to score for backward compatibility
-            # score = 1 - p_value (high score = more confident drift)
             score = 1.0 - min_p
         else:
             min_p = 1.0
@@ -120,10 +123,15 @@ class SE_CDT:
             drift_positions=drift_positions
         )
         
-        # 2. Classification Step (if drift detected)
+        # 2. Growth + Classification Step (if drift detected)
         if is_drift and len(mmd_trace) > 0:
             t0 = time.time()
-            classification_res = self.classify(mmd_trace)
+            
+            # Growth process: measure drift length from MMD signal shape
+            drift_length = self._growth_process(window, mmd_trace=mmd_trace)
+            
+            # Classification: use drift_length as primary TCD/PCD discriminator
+            classification_res = self.classify(mmd_trace, drift_length=drift_length)
             t1 = time.time()
             
             result.drift_type = classification_res.drift_type
@@ -132,6 +140,63 @@ class SE_CDT:
             result.classification_time = t1 - t0
             
         return result
+    
+    def _growth_process(self, data_window: np.ndarray, mmd_trace: np.ndarray = None) -> int:
+        """
+        Growth process (CDT-MSW Algorithm 2, adapted for unsupervised MMD).
+        
+        Determines drift length using the MMD signal's Width Ratio (WR) as a
+        proxy for how long the distribution transition lasted.
+        
+        Limitation: In unsupervised mode, the MMD signal resolution (~52 points
+        for a 750-sample buffer) is too coarse to reliably measure drift duration.
+        The WR feature provides a rough approximation:
+        - WR < 0.12: Very narrow peak → TCD (instant change)
+        - WR >= 0.12: Wider peak → potentially PCD (gradual change)
+        
+        This is a simplified adaptation of CDT-MSW's Growth process, which
+        uses accuracy variance (requiring labels) for precise drift length
+        measurement. Future work could improve this with multi-scale MMD analysis.
+        
+        Parameters:
+        -----------
+        data_window : np.ndarray
+            Raw data buffer (kept for API compatibility).
+        mmd_trace : np.ndarray, optional
+            The MMD trace from ShapeDD detection.
+            
+        Returns:
+        --------
+        drift_length : int
+            1 = TCD, >1 = PCD.
+        """
+        if mmd_trace is None or len(mmd_trace) < 10:
+            return 1
+        
+        from scipy.signal import find_peaks, peak_widths
+        
+        # Smooth and find peaks
+        sigma_s = gaussian_filter1d(mmd_trace, sigma=4)
+        threshold = np.mean(sigma_s) + 0.3 * np.std(sigma_s)
+        peaks, properties = find_peaks(sigma_s, height=threshold)
+        
+        if len(peaks) == 0:
+            return 1
+        
+        # Compute FWHM of the main peak
+        best_peak_idx = np.argmax(properties['peak_heights'])
+        widths, _, _, _ = peak_widths(sigma_s, [peaks[best_peak_idx]], rel_height=0.5)
+        fwhm = widths[0]
+        wr = fwhm / (2 * self.l1)
+        
+        # WR-based drift length estimation
+        # WR < 0.12: Very sharp peak → TCD (drift_length = 1)
+        # WR >= 0.12: Wider peak → PCD (drift_length proportional to width)
+        if wr < 0.12:
+            return 1
+        else:
+            # Estimate drift_length from peak width
+            return max(2, int(fwhm / 3))
 
     def extract_features(self, sigma_signal: np.ndarray) -> Dict[str, float]:
         """
@@ -276,10 +341,13 @@ class SE_CDT:
             'MS': float(ms)
         }
 
-    def classify(self, sigma_signal: np.ndarray) -> SECDTResult:
+    def classify(self, sigma_signal: np.ndarray, drift_length: int = None) -> SECDTResult:
         """
-        Classify drift type based on signal shape (Algorithm 3.4).
-        Decision order: Sudden → Blip → Recurrent → Gradual → Incremental
+        Classify drift type based on Growth process + signal shape.
+        
+        Enhanced Algorithm (CDT-MSW inspired):
+        1. If drift_length > 1 (Growth process says PCD): use temporal features
+        2. Otherwise: use original shape-based decision tree
         """
         features = self.extract_features(sigma_signal)
         if not features:
@@ -291,88 +359,69 @@ class SE_CDT:
         cv = features['CV']
         mean_val = features['Mean']
         peak_positions = features.get('peak_positions', [])
-        ppr = features.get('PPR', 0.0)  # Peak Proximity Ratio
-        dpar = features.get('DPAR', 0.0)  # Dual-Peak Amplitude Ratio
+        ppr = features.get('PPR', 0.0)
+        dpar = features.get('DPAR', 0.0)
+        lts = features.get('LTS', 0.0)
+        sds = features.get('SDS', 0.0)
+        ms = features.get('MS', 0.0)
         
         result = SECDTResult(features=features)
         
-        # Decision Logic (Enhanced with PPR/DPAR for Blip)
+        # =====================================================================
+        # PRIMARY: Use drift_length from Growth process (CDT-MSW Algorithm 2)
+        # drift_length > 1 → PCD (distribution changed gradually)
+        # =====================================================================
         
-        # 1. Blip Drift (TCD) - CHECK FIRST!
-        # Pattern: drift → revert quickly (2 peaks close together, similar height)
-        # Enhanced with PPR and DPAR features
+        if drift_length is not None and drift_length > 1:
+            result.drift_type = "PCD"
+            is_incremental = (
+                (lts > 0.5) or
+                (ms > 0.6 and lts > 0.3) or
+                (sds > 0.12 and lts > 0.3) or
+                (n_p >= 7) or
+                (n_p == 0 and mean_val > 0.0001 and lts > 0.5)
+            )
+            result.subcategory = "Incremental" if is_incremental else "Gradual"
+            return result
+        
+        # =====================================================================
+        # FALLBACK: Original shape-based decision tree
+        # Used when Growth process returns drift_length == 1
+        # =====================================================================
+        
+        # 1. Blip Drift (TCD)
         if n_p == 2 and len(peak_positions) >= 2:
             peak_distance = abs(peak_positions[1] - peak_positions[0])
-            
-            # Multi-condition Blip detection (relaxed thresholds):
-            # - PPR < 0.20: Peaks are close (< 20% of signal length, was 0.15)
-            # - DPAR > 0.65: Similar peak heights (height ratio > 0.65, was 0.7)
-            # - peak_distance < 35: Close in smoothed signal units (was 30)
-            # - wr < 0.30: Not too wide (was 0.25)
             is_blip = (
                 (ppr > 0 and ppr < 0.20 and dpar > 0.65) or
                 (peak_distance < 35 and wr < 0.30 and dpar > 0.60)
             )
-            
             if is_blip:
                 result.drift_type = "TCD"
                 result.subcategory = "Blip"
                 return result
         
         # 2. Sudden Drift (TCD)
-        # Sharp single peak, high SNR, narrow width
-        # THRESHOLD TUNING: Relaxed wr (0.12→0.15) and lowered snr (2.5→2.0)
-        # Rationale: Recapture TCD events previously misclassified as Recurrent/PCD
-        # Expected: TCD accuracy 25% → 60-70%, improves CAT accuracy
         if n_p <= 3 and wr < 0.15 and snr > 2.0:
             result.drift_type = "TCD"
             result.subcategory = "Sudden"
             return result
         
-        # 3. Extract temporal features EARLY for disambiguation
-        lts = features.get('LTS', 0.0)
-        sds = features.get('SDS', 0.0)
-        ms = features.get('MS', 0.0)
-        
-        # 4. Recurrent Drift (TCD)
-        # Multiple evenly-spaced peaks BUT NOT with strong upward trend
-        # If strong temporal trend (LTS > 0.5), it's Incremental, not Recurrent
+        # 3. Recurrent Drift (TCD)
         if n_p >= 4 and cv < 0.3 and lts < 0.5:
             result.drift_type = "TCD"
             result.subcategory = "Recurrent"
             return result
         
-        # 5. Gradual vs Incremental (PCD) - Use TEMPORAL features
-        # DEFAULT: All remaining cases are PCD, use temporal analysis
+        # 4. Gradual vs Incremental (PCD) — fallback
         result.drift_type = "PCD"
-        
-        # Decision logic for Incremental vs Gradual:
-        # THRESHOLD TUNING: Raised LTS from 0.3 → 0.5, added lts > 0.3 for compound conditions
-        # Rationale: Previous 0.3 threshold was too permissive, causing TCD/PCD boundary blur
-        #            Requires clear monotonic trend (R² > 0.5) for Incremental classification
-        # Trade-off: Incremental accuracy 40% → 25-30%, CAT accuracy 60% → 75-80%
-        # Expected behavior:
-        #   - Incremental: Clear upward trend with R² > 0.5 (e.g., linear parameter shift)
-        #   - Gradual: Oscillating/smooth curves with R² < 0.5 (e.g., slow RBF drift)
-        # Incremental can be EITHER:
-        #   A) Strong trend: LTS > 0.5 (STRENGTHENED - requires clear upward trend)
-        #   B) Weak trend + monotonic: MS > 0.6 AND LTS > 0.3 (STRENGTHENED both conditions)
-        #   C) Weak trend + steps: SDS > 0.12 AND LTS > 0.3 (STRENGTHENED lts requirement)
-        #   D) Many peaks: n_p >= 7 (plateau pattern, unchanged)
-        # Gradual: Low temporal scores (oscillating, smooth curve without trend)
-        
         is_incremental = (
-            (lts > 0.5) or                    # Strong upward trend (STRENGTHENED from 0.3)
-            (ms > 0.6 and lts > 0.3) or       # Monotonic with moderate trend (STRENGTHENED)
-            (sds > 0.12 and lts > 0.3) or     # Steps with moderate trend (STRENGTHENED)
-            (n_p >= 7) or                      # Many peaks = plateau-like
-            (n_p == 0 and mean_val > 0.0001 and lts > 0.5)  # Plateau + strong trend (STRENGTHENED)
+            (lts > 0.5) or
+            (ms > 0.6 and lts > 0.3) or
+            (sds > 0.12 and lts > 0.3) or
+            (n_p >= 7) or
+            (n_p == 0 and mean_val > 0.0001 and lts > 0.5)
         )
-        
-        if is_incremental:
-            result.subcategory = "Incremental"
-        else:
-            result.subcategory = "Gradual"
-        
+        result.subcategory = "Incremental" if is_incremental else "Gradual"
         return result
 

@@ -56,24 +56,34 @@ def adapt_sudden_drift(model_factory: Callable, X: np.ndarray, y: Optional[np.nd
 def adapt_incremental_drift(model, X: np.ndarray, y: Optional[np.ndarray],
                             feature_names: Optional[List[str]] = None):
     """
-    INCREMENTAL drift: Batch retrain on recent data (sklearn approach).
+    INCREMENTAL drift: Warm-start update preserving prior knowledge.
     
-    Note: sklearn doesn't support true incremental learning for LogisticRegression pipeline.
-    Strategy: Retrain on the drift window data (similar to sudden but keeps context).
-    Monotonic progression - retrain on recent samples.
+    Unlike sudden (full reset), incremental drift means the concept is
+    shifting continuously. We keep the existing model weights as a starting
+    point and fine-tune on the full buffer (old + new data).
+    This preserves knowledge from the pre-drift distribution.
     """
-    log("INCREMENTAL drift → Retrain on drift window")
+    log("INCREMENTAL drift → Warm-start retrain (preserving prior weights)")
     
     if y is not None:
-        # Check for single-class issue
         unique_classes = np.unique(y)
         if len(unique_classes) < 2:
             log(f"  WARNING: Only {len(unique_classes)} class in data, skipping retrain")
             return model
         
-        # Batch retrain on drift window
+        # Enable warm_start on the classifier to continue from current weights
+        if hasattr(model, 'named_steps') and 'clf' in model.named_steps:
+            model.named_steps['clf'].warm_start = True
+            model.named_steps['clf'].max_iter = 200  # Fewer iterations (fine-tuning)
+        
+        # Retrain on full buffer — warm_start means it continues from current weights
         model.fit(X, y)
-        log(f"  Retrained model on {len(X)} recent samples")
+        log(f"  Warm-start retrained on {len(X)} samples (preserving prior weights)")
+        
+        # Reset warm_start for future use
+        if hasattr(model, 'named_steps') and 'clf' in model.named_steps:
+            model.named_steps['clf'].warm_start = False
+            model.named_steps['clf'].max_iter = 1000
     else:
         log("  WARNING: Cannot retrain without labels")
     
@@ -83,39 +93,37 @@ def adapt_incremental_drift(model, X: np.ndarray, y: Optional[np.ndarray],
 def adapt_gradual_drift(model, X: np.ndarray, y: Optional[np.ndarray],
                         feature_names: Optional[List[str]] = None):
     """
-    GRADUAL drift: Retrain on recent samples (sklearn batch approach).
+    GRADUAL drift: Retrain with exponential recency weighting.
     
-    Non-monotonic with oscillations - focus on recent 50% of samples.
-    Note: sklearn doesn't support sample weighting in Pipeline easily,
-    so we use a subset strategy instead.
+    Gradual drift means the distribution is in transition — recent samples
+    are more representative of the new concept but old samples still carry
+    some value. We use exponential sample weights to smoothly blend.
     """
-    log("GRADUAL drift → Retrain on recent samples")
+    log("GRADUAL drift → Recency-weighted retrain")
 
     if y is None:
         log("  WARNING: Cannot retrain without labels")
         return model
 
-    # Focus on recent half (gradual drift still evolving)
-    n = len(X)
-    cutoff = n // 2
-    X_recent = X[cutoff:]
-    y_recent = y[cutoff:]
-
-    # Check for single-class issue (common with drift data)
-    unique_classes = np.unique(y_recent)
+    unique_classes = np.unique(y)
     if len(unique_classes) < 2:
-        log(f"  WARNING: Only {len(unique_classes)} class in recent samples, using full window")
-        X_recent = X
-        y_recent = y
-        unique_classes = np.unique(y_recent)
-        if len(unique_classes) < 2:
-            log(f"  WARNING: Still single class, skipping retrain")
-            return model
+        log(f"  WARNING: Only {len(unique_classes)} class in data, skipping retrain")
+        return model
 
-    # Batch retrain on recent samples
-    model.fit(X_recent, y_recent)
-    log(f"  Retrained on recent {len(X_recent)} samples (50% of window)")
-    return model
+    # Exponential recency weights: recent samples weighted much more heavily
+    n = len(X)
+    weights = np.exp(np.linspace(-2, 0, n))  # exp(-2) ≈ 0.14 to exp(0) = 1.0
+    weights /= weights.sum()  # Normalize
+    weights *= n  # Scale back so mean weight ≈ 1
+
+    # Create new model and fit with sample weights
+    new_model = Pipeline([
+        ('scaler', StandardScaler()),
+        ('clf', LogisticRegression(max_iter=1000, random_state=42))
+    ])
+    new_model.fit(X, y, clf__sample_weight=weights)
+    log(f"  Recency-weighted retrain on {n} samples (weight ratio: {weights[-1]/weights[0]:.1f}x)")
+    return new_model
 
 
 def compute_distribution_similarity(X1: np.ndarray, X2: np.ndarray) -> float:

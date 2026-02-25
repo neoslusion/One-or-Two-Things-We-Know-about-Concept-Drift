@@ -499,3 +499,19 @@
 2026-01-28 13:29:55 | INFO | Fair comparison table saved to: /home/lpd1hc/sandboxes/One-or-Two-Things-We-Know-about-Concept-Drift/results/tables/fair_comparison.tex
 2026-01-28 13:29:55 | INFO | Starting SUPERVISED CDT_MSW Benchmark...
 2026-01-28 13:29:59 | INFO | Supervised comparison complete.
+2026-02-26 00:49:19 | INFO | Starting Quick Validation with 2 scenarios × 2 seeds...
+2026-02-26 00:49:20 | INFO | Generated supervised stream with P(Y|X) change: incremental
+2026-02-26 00:49:22 | INFO |   Completed Repeated_Incremental (seed=0)
+2026-02-26 00:49:22 | INFO | Generated supervised stream with P(Y|X) change: incremental
+2026-02-26 00:49:23 | INFO |   Completed Repeated_Incremental (seed=1)
+2026-02-26 00:49:24 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-02-26 00:49:25 | INFO |   Completed Mixed_A (seed=0)
+2026-02-26 00:49:25 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-02-26 00:49:27 | INFO |   Completed Mixed_A (seed=1)
+2026-02-26 01:01:13 | INFO | Starting Quick Validation with 2 scenarios × 2 seeds...
+2026-02-26 01:01:13 | INFO | Generated supervised stream with P(Y|X) change: incremental
+2026-02-26 01:34:33 | INFO | Starting Quick Validation with 1 scenarios × 2 seeds...
+2026-02-26 01:34:33 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-02-26 01:34:35 | INFO |   Completed Mixed_A (seed=0)
+2026-02-26 01:34:35 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-02-26 01:34:37 | INFO |   Completed Mixed_A (seed=1)

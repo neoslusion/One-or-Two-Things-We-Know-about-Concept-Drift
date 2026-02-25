@@ -57,6 +57,8 @@ Mặc dù Category Accuracy (TCD vs PCD) đạt 81.2\%, Subcategory Accuracy ch�
 	\item Blip detection mới được thêm gần đây, cần validation thêm
 \end{itemize}
 
+\textbf{Nguyên nhân gốc:} Phương pháp CDT-MSW gốc~\cite{guo2022cdtmsw} sử dụng \textit{Growth process} (đo drift length bằng accuracy variance trong adjoint window) để phân biệt TCD và PCD một cách chính xác. Tuy nhiên, Growth process yêu cầu labels để tính accuracy -- điều không khả dụng trong môi trường unsupervised. SE-CDT thay thế bằng các đặc trưng hình học từ tín hiệu MMD (WR, SNR, LTS), nhưng tín hiệu MMD hoạt động ở độ phân giải cửa sổ ($\sim$150 mẫu/phép đo), nén các quá trình chuyển đổi drift thành tín hiệu $\sim$52 điểm có hình dạng tương tự bất kể loại drift. Đây là trade-off cốt lõi của việc sử dụng phương pháp không giám sát: được khả năng hoạt động không cần labels, mất khả năng phân biệt tốc độ thay đổi phân phối.
+
 \subsection{Dữ liệu tổng hợp (Synthetic Data)}
 Việc đánh giá chủ yếu dựa trên các tập dữ liệu tổng hợp. Mặc dù chúng cho phép kiểm soát chính xác ground truth (thời điểm drift, loại drift) để đo lường F1-score và độ trễ, nhưng có thể chưa phản ánh hết độ phức tạp, nhiễu tạp và tính bất định của dữ liệu thực tế (real-world traces) trong các hệ thống sản xuất quy mô lớn.
 
@@ -69,7 +71,7 @@ Dựa trên nền tảng của luận văn, các hướng phát triển tiếp t
 
 \subsection{Mở rộng sang các loại Drift khác (Ưu tiên hàng đầu)}
 \begin{itemize}
-	\item \textbf{Gradual Drift:} Nghiên cứu đặc trưng lý thuyết của tín hiệu MMD đối với drift dần dần (không có dạng tam giác nhọn). Cần điều chỉnh ngưỡng hoặc chiến lược cửa sổ để bắt được các thay đổi chậm.
+	\item \textbf{Gradual Drift:} Nghiên cứu đặc trưng lý thuyết của tín hiệu MMD đối với drift dần dần (không có dạng tam giác nhọn). Một hướng tiềm năng là \textit{multi-scale MMD analysis}: tính MMD đồng thời ở nhiều kích thước cửa sổ (ví dụ: 50, 150, 300 mẫu) để khôi phục thông tin về tốc độ thay đổi phân phối, thay thế Growth process yêu cầu labels của CDT-MSW gốc.
 	\item \textbf{Incremental Drift:} Thử nghiệm chiến lược thích ứng liên tục (continuous adaptation) sử dụng framework River, tập trung vào cân bằng giữa tốc độ cập nhật và độ ổn định mô hình.
 	\item \textbf{Recurrent Drift:} Tối ưu hóa cơ chế lưu trữ (caching) mô hình cũ và thuật toán so khớp phân phối để tái sử dụng mô hình hiệu quả hơn.
 \end{itemize}
@@ -86,8 +88,9 @@ Dựa trên nền tảng của luận văn, các hướng phát triển tiếp t
 Hành trình giải quyết bài toán concept drift là một quá trình liên tục. Luận văn này đã đưa ra các đề xuất cụ thể thông qua:
 \begin{enumerate}
 	\item \textbf{Cải thiện hiệu năng:} Tích hợp IDW-MMD với asymptotic p-value giúp tăng throughput \textbf{16.5 lần} (từ 8,000 lên 131,000 mẫu/giây), cho thấy tiềm năng áp dụng trong môi trường production.
-	\item \textbf{Đảm bảo độ tin cậy:} ShapeDD-IDW và SE-CDT đạt \textbf{0 False Positives} trong detection benchmark (trên các dataset có thay đổi $P(X)$), quan trọng cho môi trường production.
+	\item \textbf{Đảm bảo độ tin cậy:} ShapeDD-IDW và SE-CDT đạt \textbf{0 False Positives} trong cả detection benchmark và monitoring experiments (nhờ cơ chế reset bộ đệm ADWIN), quan trọng cho môi trường production.
 	\item \textbf{Phân loại không giám sát:} SE-CDT đạt \textbf{CAT = 81.2\%} và \textbf{SUB = 50.0\%} mà không cần labels, chứng minh khả năng phân tích hình học của tín hiệu MMD là khả thi.
+	\item \textbf{Thích ứng hiệu quả:} Type-Specific Adaptation đạt \textbf{+22.14\%} so với No Adaptation và \textbf{+13.4\%} so với Simple Retrain trên kịch bản Stepping Drift, khẳng định giá trị của chiến lược thích ứng theo loại drift.
 \end{enumerate}
 
 Kết quả nghiên cứu cho thấy rằng việc chuyển dịch từ các mô hình tĩnh sang các hệ thống thích ứng (adaptive systems) là xu hướng cần thiết. Với kiến trúc đề xuất và những hiểu biết thu được, hệ thống có khả năng mở rộng để đối mặt với những thách thức phức tạp hơn của dữ liệu luồng trong tương lai, hướng tới các ứng dụng AI vận hành bền vững và tin cậy.

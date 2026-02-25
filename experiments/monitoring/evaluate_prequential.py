@@ -179,10 +179,8 @@ from data.generators.monitoring_generators import (
     generate_sea_concepts,
     generate_mixed_drift_dataset,
     generate_rotating_hyperplane,
+    generate_joint_drift_stream,
 )
-
-# Import rigorous P(X) drift generator for Real Drift evaluation
-from data.generators.drift_generators import generate_mixed_stream_rigorous
 
 
 def generate_synthetic_stream(
@@ -195,86 +193,26 @@ def generate_synthetic_stream(
     """
     Wrapper for drift stream generators.
     
-    IMPORTANT: For unsupervised methods like SE-CDT (MMD-based), we need Real Drift
-    that changes P(X), not Virtual Drift that only changes P(Y|X).
+    Uses generate_joint_drift_stream (Approach B) for all standard drift types.
+    This creates JOINT drift: P(X) shift (detectable by SE-CDT/MMD) + 
+    P(Y|X) rotation (causing accuracy drop requiring adaptation).
     
-    - generate_sea_concepts: Virtual Drift (only P(Y|X) changes) - NOT suitable for SE-CDT
-    - generate_mixed_stream_rigorous: Real Drift (P(X) changes) - SUITABLE for SE-CDT
+    For 'mixed' mode, uses generate_mixed_drift_dataset which has a 
+    hard-coded 4-segment structure with sudden + gradual + recurrent.
     """
     if drift_type == "mixed":
         return generate_mixed_drift_dataset(n_samples, random_seed)
     
-    elif drift_type == "sudden":
-        # Use P(X) drift generator instead of SEA (which is virtual drift only)
-        # This creates actual mean shift in feature space that SE-CDT can detect
-        # ENABLE supervised_mode=True to creating Real Drift (P(Y|X) change) so accuracy drops
-        events = [
-            {"type": "Sudden", "pos": (i + 1) * (n_samples // (n_drifts + 1)), "width": 0, "magnitude": 3.0}
-            for i in range(n_drifts)
-        ]
-        X, y, concepts = generate_mixed_stream_rigorous(
-            events, length=n_samples, n_features=n_features, seed=random_seed, supervised_mode=True
-        )
-        drift_points = [e["pos"] for e in events]
-        return X, y, drift_points, ["sudden"] * len(drift_points)
-
-    elif drift_type == "stepping":
-        # Cumulative Sudden Drift (Staircase) - Good for rigorous testing
-        # Each drift adds +3.0 to mean, moving further away
-        events = [
-            {"type": "Stepping", "pos": (i + 1) * (n_samples // (n_drifts + 1)), "width": 0, "magnitude": 3.0}
-            for i in range(n_drifts)
-        ]
-        X, y, concepts = generate_mixed_stream_rigorous(
-            events, length=n_samples, n_features=n_features, seed=random_seed, supervised_mode=True
-        )
-        drift_points = [e["pos"] for e in events]
-        return X, y, drift_points, ["sudden"] * len(drift_points)  # Classify as sudden for adaptation logic
-    
-    elif drift_type == "gradual":
-        # Use P(X) drift generator with gradual transition
-        # Creates smooth mean shift over transition window
-        # Use larger magnitude (3.0) for gradual drift to be detectable despite mixing
-        transition_width = n_samples // (n_drifts + 1) // 3  # ~1/3 of segment
-        events = [
-            {"type": "Gradual", "pos": (i + 1) * (n_samples // (n_drifts + 1)), 
-             "width": transition_width, "magnitude": 3.0}  # Higher magnitude for gradual
-            for i in range(n_drifts)
-        ]
-        X, y, concepts = generate_mixed_stream_rigorous(
-            events, length=n_samples, n_features=n_features, seed=random_seed, supervised_mode=True
-        )
-        drift_points = [e["pos"] for e in events]
-        return X, y, drift_points, ["gradual"] * len(drift_points)
-    
-    elif drift_type == "incremental":
-        # Use P(X) drift generator with incremental (continuous) transition
-        transition_width = n_samples // (n_drifts + 1) // 2  # ~1/2 of segment
-        events = [
-            {"type": "Incremental", "pos": (i + 1) * (n_samples // (n_drifts + 1)), "width": transition_width}
-            for i in range(n_drifts)
-        ]
-        X, y, concepts = generate_mixed_stream_rigorous(
-            events, length=n_samples, n_features=n_features, seed=random_seed, supervised_mode=True
-        )
-        drift_points = [e["pos"] for e in events]
-        return X, y, drift_points, ["incremental"] * len(drift_points)
-    
-    elif drift_type == "recurrent":
-        # Use mixed dataset which includes recurrent drift
-        return generate_mixed_drift_dataset(n_samples, random_seed)
-    
-    else:
-        # Default fallback: use sudden P(X) drift
-        events = [
-            {"type": "Sudden", "pos": (i + 1) * (n_samples // (n_drifts + 1)), "width": 0, "magnitude": 3.0}
-            for i in range(n_drifts)
-        ]
-        X, y, concepts = generate_mixed_stream_rigorous(
-            events, length=n_samples, n_features=n_features, seed=random_seed, supervised_mode=True
-        )
-        drift_points = [e["pos"] for e in events]
-        return X, y, drift_points, ["sudden"] * len(drift_points)
+    # All other types: use the joint drift generator (Approach B)
+    return generate_joint_drift_stream(
+        n_samples=n_samples,
+        n_drifts=n_drifts,
+        n_features=n_features,
+        drift_type=drift_type,
+        drift_magnitude=3.0,
+        noise=0.05,
+        random_seed=random_seed,
+    )
 
 
 # ... (Configuration and imports preserved) ...
@@ -422,55 +360,65 @@ def evaluate_with_adaptation(
                     drift_detected = False
                     continue
 
-                # Prepare data
-                adapt_start = max(0, len(buffer) - ADAPTATION_WINDOW)
-                adapt_data = list(buffer)[adapt_start:]
-                adapt_X = np.array([item["x"] for item in adapt_data])
-                adapt_y = np.array([item["y"] for item in adapt_data])
-
                 # 2. SIMPLE RETRAIN
                 strategy_used = "unknown"
                 if mode == AdaptationMode.SIMPLE:
+                    # Prepare standard window
+                    adapt_start = max(0, len(buffer) - ADAPTATION_WINDOW)
+                    adapt_data = list(buffer)[adapt_start:]
+                    adapt_X = np.array([item["x"] for item in adapt_data])
+                    adapt_y = np.array([item["y"] for item in adapt_data])
                     # Naively retrain on recent window
-                    # Check for single-class issue (common with extreme drift)
                     if len(np.unique(adapt_y)) < 2:
-                        # Skip retraining if only one class is present
-                        # We keep the old model (even if it's bad) to avoid crashing
                         strategy_used = "simple_skipped"
                     else:
-                        # Force a new model instance to be sure
                         model = create_model()
                         model.fit(adapt_X, adapt_y)
                         strategy_used = "simple_retrain"
 
-                # 3. TYPE SPECIFIC
+                # 3. TYPE SPECIFIC — each type uses a DIFFERENT data window and strategy
                 elif mode == AdaptationMode.TYPE_SPECIFIC:
-                    # Use the type detected by SE-CDT
                     drift_type = current_drift_type
                     print(f"    [{mode}] Adapting for: {drift_type}")
 
-                    if (
-                        drift_type == "Sudden" or drift_type == "TCD"
-                    ):  # Handle capitalization variations
+                    if drift_type == "Sudden" or drift_type == "TCD":
+                        # SUDDEN: Clean break. Use SMALL recent window (post-drift only)
+                        # Rationale: old data is from a dead concept, using it hurts
+                        sudden_window = min(250, len(buffer))
+                        adapt_data = list(buffer)[-sudden_window:]
+                        adapt_X = np.array([item["x"] for item in adapt_data])
+                        adapt_y = np.array([item["y"] for item in adapt_data])
                         model = adapt_sudden_drift(model_factory, adapt_X, adapt_y, current_model=model)
                         strategy_used = "sudden"
+
+                    elif drift_type == "Blip":
+                        # BLIP: Temporary anomaly — do NOT retrain
+                        print(f"    [{mode}] Blip detected - Ignoring adaptation")
+                        strategy_used = "blip_ignored"
+
+                    elif drift_type == "Gradual":
+                        # GRADUAL: Transition in progress. Use FULL buffer with recency weighting
+                        adapt_data = list(buffer)
+                        adapt_X = np.array([item["x"] for item in adapt_data])
+                        adapt_y = np.array([item["y"] for item in adapt_data])
+                        model = adapt_gradual_drift(model, adapt_X, adapt_y)
+                        strategy_used = "gradual"
+
                     elif drift_type == "Recurrent":
-                        # Try to load from cache
+                        adapt_start = max(0, len(buffer) - ADAPTATION_WINDOW)
+                        adapt_data = list(buffer)[adapt_start:]
+                        adapt_X = np.array([item["x"] for item in adapt_data])
+                        adapt_y = np.array([item["y"] for item in adapt_data])
                         model = adapt_recurrent_drift(
                             model_factory, model, adapt_X, adapt_y, cache_dir=cache_dir
                         )
                         strategy_used = "recurrent"
-                    elif drift_type == "Gradual":
-                        # Use weighted approach or wait?
-                        # For now, standard adapt
-                        model = adapt_gradual_drift(model, adapt_X, adapt_y)
-                        strategy_used = "gradual"
-                    elif drift_type == "Blip":
-                        # Blip: Do nothing or filter
-                        print(f"    [{mode}] Blip detected - Ignoring adaptation")
-                        strategy_used = "blip_ignored"
-                        # We don't update model for Blip
+
                     else:
+                        # INCREMENTAL: Continuous shift. Keep old model, warm-start update on full buffer
+                        adapt_data = list(buffer)
+                        adapt_X = np.array([item["x"] for item in adapt_data])
+                        adapt_y = np.array([item["y"] for item in adapt_data])
                         model = adapt_incremental_drift(model, adapt_X, adapt_y)
                         strategy_used = "incremental"
 
@@ -484,6 +432,14 @@ def evaluate_with_adaptation(
                 )
                 drift_detected = False
                 samples_since_drift = 0
+
+                # ADWIN-style buffer reset: discard pre-drift data
+                # After adaptation, old data belongs to a dead concept.
+                # Keep only recent samples as new reference (ADWIN shrink).
+                keep_n = min(200, len(buffer))
+                recent = list(buffer)[-keep_n:]
+                buffer.clear()
+                buffer.extend(recent)
 
     return accuracy_history, drift_detections, adaptations, classification_times
 
