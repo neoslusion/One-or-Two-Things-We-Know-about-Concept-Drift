@@ -515,3 +515,222 @@
 2026-02-26 01:34:35 | INFO |   Completed Mixed_A (seed=0)
 2026-02-26 01:34:35 | INFO | Generated supervised stream with P(Y|X) change: sudden
 2026-02-26 01:34:37 | INFO |   Completed Mixed_A (seed=1)
+2026-03-01 17:36:15 | INFO | Starting Quick Validation with 5 scenarios × 5 seeds...
+2026-03-01 17:36:15 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-01 17:36:16 | INFO |   Completed Repeated_Sudden (seed=0)
+2026-03-01 17:36:16 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-01 17:36:17 | INFO |   Completed Repeated_Sudden (seed=1)
+2026-03-01 17:36:18 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-01 17:36:19 | INFO |   Completed Repeated_Sudden (seed=2)
+2026-03-01 17:36:19 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-01 17:36:20 | INFO |   Completed Repeated_Sudden (seed=3)
+2026-03-01 17:36:20 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-01 17:36:21 | INFO |   Completed Repeated_Sudden (seed=4)
+2026-03-01 17:36:21 | INFO | Generated supervised stream with P(Y|X) change: gradual
+2026-03-01 17:36:23 | INFO |   Completed Repeated_Gradual (seed=0)
+2026-03-01 17:36:23 | INFO | Generated supervised stream with P(Y|X) change: gradual
+2026-03-01 17:36:24 | INFO |   Completed Repeated_Gradual (seed=1)
+2026-03-01 17:36:24 | INFO | Generated supervised stream with P(Y|X) change: gradual
+2026-03-01 17:36:26 | INFO |   Completed Repeated_Gradual (seed=2)
+2026-03-01 17:36:26 | INFO | Generated supervised stream with P(Y|X) change: gradual
+2026-03-01 17:36:27 | INFO |   Completed Repeated_Gradual (seed=3)
+2026-03-01 17:36:27 | INFO | Generated supervised stream with P(Y|X) change: gradual
+2026-03-01 17:36:29 | INFO |   Completed Repeated_Gradual (seed=4)
+2026-03-01 17:36:29 | INFO | Generated supervised stream with P(Y|X) change: incremental
+2026-03-01 17:36:30 | INFO |   Completed Repeated_Incremental (seed=0)
+2026-03-01 17:36:31 | INFO | Generated supervised stream with P(Y|X) change: incremental
+2026-03-01 17:36:32 | INFO |   Completed Repeated_Incremental (seed=1)
+2026-03-01 17:36:32 | INFO | Generated supervised stream with P(Y|X) change: incremental
+2026-03-01 17:36:33 | INFO |   Completed Repeated_Incremental (seed=2)
+2026-03-01 17:36:34 | INFO | Generated supervised stream with P(Y|X) change: incremental
+2026-03-01 17:36:35 | INFO |   Completed Repeated_Incremental (seed=3)
+2026-03-01 17:36:35 | INFO | Generated supervised stream with P(Y|X) change: incremental
+2026-03-01 17:36:34 | INFO |   Completed Repeated_Incremental (seed=4)
+2026-03-01 17:36:34 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-01 17:36:36 | INFO |   Completed Mixed_A (seed=0)
+2026-03-01 17:36:36 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-01 17:36:37 | INFO |   Completed Mixed_A (seed=1)
+2026-03-01 17:36:37 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-01 17:36:38 | INFO |   Completed Mixed_A (seed=2)
+2026-03-01 17:36:39 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-01 17:36:40 | INFO |   Completed Mixed_A (seed=3)
+2026-03-01 17:36:40 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-01 17:36:41 | INFO |   Completed Mixed_A (seed=4)
+2026-03-01 17:36:41 | INFO | Generated supervised stream with P(Y|X) change: blip
+2026-03-01 17:36:42 | INFO |   Completed Mixed_B (seed=0)
+2026-03-01 17:36:42 | INFO | Generated supervised stream with P(Y|X) change: blip
+2026-03-01 17:36:44 | INFO |   Completed Mixed_B (seed=1)
+2026-03-01 17:36:44 | INFO | Generated supervised stream with P(Y|X) change: blip
+2026-03-01 17:36:45 | INFO |   Completed Mixed_B (seed=2)
+2026-03-01 17:36:45 | INFO | Generated supervised stream with P(Y|X) change: blip
+2026-03-01 17:36:47 | INFO |   Completed Mixed_B (seed=3)
+2026-03-01 17:36:47 | INFO | Generated supervised stream with P(Y|X) change: blip
+2026-03-01 17:36:49 | INFO |   Completed Mixed_B (seed=4)
+2026-03-02 00:33:46 | INFO | Starting Quick Validation with 5 scenarios × 5 seeds...
+2026-03-02 00:33:47 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-02 00:33:48 | INFO |   Completed Repeated_Sudden (seed=0)
+2026-03-02 00:33:48 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-02 00:33:49 | INFO |   Completed Repeated_Sudden (seed=1)
+2026-03-02 00:33:49 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-02 00:33:51 | INFO |   Completed Repeated_Sudden (seed=2)
+2026-03-02 00:33:51 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-02 00:33:52 | INFO |   Completed Repeated_Sudden (seed=3)
+2026-03-02 00:33:52 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-02 00:33:54 | INFO |   Completed Repeated_Sudden (seed=4)
+2026-03-02 00:33:54 | INFO | Generated supervised stream with P(Y|X) change: gradual
+2026-03-02 00:33:55 | INFO |   Completed Repeated_Gradual (seed=0)
+2026-03-02 00:33:55 | INFO | Generated supervised stream with P(Y|X) change: gradual
+2026-03-02 00:33:56 | INFO |   Completed Repeated_Gradual (seed=1)
+2026-03-02 00:33:56 | INFO | Generated supervised stream with P(Y|X) change: gradual
+2026-03-02 00:33:58 | INFO |   Completed Repeated_Gradual (seed=2)
+2026-03-02 00:33:58 | INFO | Generated supervised stream with P(Y|X) change: gradual
+2026-03-02 00:33:59 | INFO |   Completed Repeated_Gradual (seed=3)
+2026-03-02 00:33:59 | INFO | Generated supervised stream with P(Y|X) change: gradual
+2026-03-02 00:34:01 | INFO |   Completed Repeated_Gradual (seed=4)
+2026-03-02 00:34:01 | INFO | Generated supervised stream with P(Y|X) change: incremental
+2026-03-02 00:34:02 | INFO |   Completed Repeated_Incremental (seed=0)
+2026-03-02 00:34:03 | INFO | Generated supervised stream with P(Y|X) change: incremental
+2026-03-02 00:34:04 | INFO |   Completed Repeated_Incremental (seed=1)
+2026-03-02 00:34:04 | INFO | Generated supervised stream with P(Y|X) change: incremental
+2026-03-02 00:34:03 | INFO |   Completed Repeated_Incremental (seed=2)
+2026-03-02 00:34:03 | INFO | Generated supervised stream with P(Y|X) change: incremental
+2026-03-02 00:34:05 | INFO |   Completed Repeated_Incremental (seed=3)
+2026-03-02 00:34:05 | INFO | Generated supervised stream with P(Y|X) change: incremental
+2026-03-02 00:34:06 | INFO |   Completed Repeated_Incremental (seed=4)
+2026-03-02 00:34:06 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-02 00:34:08 | INFO |   Completed Mixed_A (seed=0)
+2026-03-02 00:34:08 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-02 00:34:09 | INFO |   Completed Mixed_A (seed=1)
+2026-03-02 00:34:09 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-02 00:34:11 | INFO |   Completed Mixed_A (seed=2)
+2026-03-02 00:34:11 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-02 00:34:12 | INFO |   Completed Mixed_A (seed=3)
+2026-03-02 00:34:12 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-02 00:34:14 | INFO |   Completed Mixed_A (seed=4)
+2026-03-02 00:34:14 | INFO | Generated supervised stream with P(Y|X) change: blip
+2026-03-02 00:34:15 | INFO |   Completed Mixed_B (seed=0)
+2026-03-02 00:34:15 | INFO | Generated supervised stream with P(Y|X) change: blip
+2026-03-02 00:34:17 | INFO |   Completed Mixed_B (seed=1)
+2026-03-02 00:34:17 | INFO | Generated supervised stream with P(Y|X) change: blip
+2026-03-02 00:34:18 | INFO |   Completed Mixed_B (seed=2)
+2026-03-02 00:34:18 | INFO | Generated supervised stream with P(Y|X) change: blip
+2026-03-02 00:34:20 | INFO |   Completed Mixed_B (seed=3)
+2026-03-02 00:34:20 | INFO | Generated supervised stream with P(Y|X) change: blip
+2026-03-02 00:34:21 | INFO |   Completed Mixed_B (seed=4)
+2026-03-02 00:35:56 | INFO | Starting Quick Validation with 5 scenarios × 5 seeds...
+2026-03-02 00:35:57 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-02 00:35:58 | INFO |   Completed Repeated_Sudden (seed=0)
+2026-03-02 00:35:58 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-02 00:36:00 | INFO |   Completed Repeated_Sudden (seed=1)
+2026-03-02 00:36:00 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-02 00:36:01 | INFO |   Completed Repeated_Sudden (seed=2)
+2026-03-02 00:36:01 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-02 00:36:03 | INFO |   Completed Repeated_Sudden (seed=3)
+2026-03-02 00:36:03 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-02 00:36:04 | INFO |   Completed Repeated_Sudden (seed=4)
+2026-03-02 00:36:04 | INFO | Generated supervised stream with P(Y|X) change: gradual
+2026-03-02 00:36:03 | INFO |   Completed Repeated_Gradual (seed=0)
+2026-03-02 00:36:03 | INFO | Generated supervised stream with P(Y|X) change: gradual
+2026-03-02 00:36:05 | INFO |   Completed Repeated_Gradual (seed=1)
+2026-03-02 00:36:05 | INFO | Generated supervised stream with P(Y|X) change: gradual
+2026-03-02 00:36:06 | INFO |   Completed Repeated_Gradual (seed=2)
+2026-03-02 00:36:06 | INFO | Generated supervised stream with P(Y|X) change: gradual
+2026-03-02 00:36:07 | INFO |   Completed Repeated_Gradual (seed=3)
+2026-03-02 00:36:08 | INFO | Generated supervised stream with P(Y|X) change: gradual
+2026-03-02 00:36:09 | INFO |   Completed Repeated_Gradual (seed=4)
+2026-03-02 00:36:09 | INFO | Generated supervised stream with P(Y|X) change: incremental
+2026-03-02 00:36:11 | INFO |   Completed Repeated_Incremental (seed=0)
+2026-03-02 00:36:11 | INFO | Generated supervised stream with P(Y|X) change: incremental
+2026-03-02 00:36:13 | INFO |   Completed Repeated_Incremental (seed=1)
+2026-03-02 00:36:13 | INFO | Generated supervised stream with P(Y|X) change: incremental
+2026-03-02 00:36:14 | INFO |   Completed Repeated_Incremental (seed=2)
+2026-03-02 00:36:14 | INFO | Generated supervised stream with P(Y|X) change: incremental
+2026-03-02 00:36:16 | INFO |   Completed Repeated_Incremental (seed=3)
+2026-03-02 00:36:16 | INFO | Generated supervised stream with P(Y|X) change: incremental
+2026-03-02 00:36:17 | INFO |   Completed Repeated_Incremental (seed=4)
+2026-03-02 00:36:18 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-02 00:36:19 | INFO |   Completed Mixed_A (seed=0)
+2026-03-02 00:36:19 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-02 00:36:21 | INFO |   Completed Mixed_A (seed=1)
+2026-03-02 00:36:21 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-02 00:36:23 | INFO |   Completed Mixed_A (seed=2)
+2026-03-02 00:36:23 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-02 00:36:24 | INFO |   Completed Mixed_A (seed=3)
+2026-03-02 00:36:24 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-02 00:36:26 | INFO |   Completed Mixed_A (seed=4)
+2026-03-02 00:36:26 | INFO | Generated supervised stream with P(Y|X) change: blip
+2026-03-02 00:36:27 | INFO |   Completed Mixed_B (seed=0)
+2026-03-02 00:36:27 | INFO | Generated supervised stream with P(Y|X) change: blip
+2026-03-02 00:36:29 | INFO |   Completed Mixed_B (seed=1)
+2026-03-02 00:36:29 | INFO | Generated supervised stream with P(Y|X) change: blip
+2026-03-02 00:36:31 | INFO |   Completed Mixed_B (seed=2)
+2026-03-02 00:36:31 | INFO | Generated supervised stream with P(Y|X) change: blip
+2026-03-02 00:36:32 | INFO |   Completed Mixed_B (seed=3)
+2026-03-02 00:36:32 | INFO | Generated supervised stream with P(Y|X) change: blip
+2026-03-02 00:36:34 | INFO |   Completed Mixed_B (seed=4)
+2026-03-02 01:00:38 | INFO | Starting Quick Validation with 5 scenarios × 3 seeds...
+2026-03-02 01:00:38 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-02 01:00:40 | INFO |   Completed Repeated_Sudden (seed=0)
+2026-03-02 01:00:40 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-02 01:00:41 | INFO |   Completed Repeated_Sudden (seed=1)
+2026-03-02 01:00:41 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-02 01:00:42 | INFO |   Completed Repeated_Sudden (seed=2)
+2026-03-02 01:00:42 | INFO | Generated supervised stream with P(Y|X) change: gradual
+2026-03-02 01:00:43 | INFO |   Completed Repeated_Gradual (seed=0)
+2026-03-02 01:00:43 | INFO | Generated supervised stream with P(Y|X) change: gradual
+2026-03-02 01:00:45 | INFO |   Completed Repeated_Gradual (seed=1)
+2026-03-02 01:00:45 | INFO | Generated supervised stream with P(Y|X) change: gradual
+2026-03-02 01:00:46 | INFO |   Completed Repeated_Gradual (seed=2)
+2026-03-02 01:00:46 | INFO | Generated supervised stream with P(Y|X) change: incremental
+2026-03-02 01:00:48 | INFO |   Completed Repeated_Incremental (seed=0)
+2026-03-02 01:00:48 | INFO | Generated supervised stream with P(Y|X) change: incremental
+2026-03-02 01:00:49 | INFO |   Completed Repeated_Incremental (seed=1)
+2026-03-02 01:00:49 | INFO | Generated supervised stream with P(Y|X) change: incremental
+2026-03-02 01:00:50 | INFO |   Completed Repeated_Incremental (seed=2)
+2026-03-02 01:00:51 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-02 01:00:52 | INFO |   Completed Mixed_A (seed=0)
+2026-03-02 01:00:52 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-02 01:00:53 | INFO |   Completed Mixed_A (seed=1)
+2026-03-02 01:00:53 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-02 01:00:54 | INFO |   Completed Mixed_A (seed=2)
+2026-03-02 01:00:54 | INFO | Generated supervised stream with P(Y|X) change: blip
+2026-03-02 01:00:56 | INFO |   Completed Mixed_B (seed=0)
+2026-03-02 01:00:56 | INFO | Generated supervised stream with P(Y|X) change: blip
+2026-03-02 01:00:57 | INFO |   Completed Mixed_B (seed=1)
+2026-03-02 01:00:57 | INFO | Generated supervised stream with P(Y|X) change: blip
+2026-03-02 01:00:59 | INFO |   Completed Mixed_B (seed=2)
+2026-03-02 01:34:55 | INFO | Starting Quick Validation with 5 scenarios × 3 seeds...
+2026-03-02 01:34:55 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-02 01:34:56 | INFO |   Completed Repeated_Sudden (seed=0)
+2026-03-02 01:34:56 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-02 01:35:21 | INFO | Starting Quick Validation with 5 scenarios × 3 seeds...
+2026-03-02 01:35:21 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-02 01:35:22 | INFO |   Completed Repeated_Sudden (seed=0)
+2026-03-02 01:35:22 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-02 01:35:23 | INFO |   Completed Repeated_Sudden (seed=1)
+2026-03-02 01:35:23 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-02 01:35:25 | INFO |   Completed Repeated_Sudden (seed=2)
+2026-03-02 01:35:25 | INFO | Generated supervised stream with P(Y|X) change: gradual
+2026-03-02 01:35:26 | INFO |   Completed Repeated_Gradual (seed=0)
+2026-03-02 01:35:26 | INFO | Generated supervised stream with P(Y|X) change: gradual
+2026-03-02 01:35:28 | INFO |   Completed Repeated_Gradual (seed=1)
+2026-03-02 01:35:28 | INFO | Generated supervised stream with P(Y|X) change: gradual
+2026-03-02 01:35:29 | INFO |   Completed Repeated_Gradual (seed=2)
+2026-03-02 01:35:29 | INFO | Generated supervised stream with P(Y|X) change: incremental
+2026-03-02 01:35:31 | INFO |   Completed Repeated_Incremental (seed=0)
+2026-03-02 01:35:31 | INFO | Generated supervised stream with P(Y|X) change: incremental
+2026-03-02 01:35:32 | INFO |   Completed Repeated_Incremental (seed=1)
+2026-03-02 01:35:33 | INFO | Generated supervised stream with P(Y|X) change: incremental
+2026-03-02 01:35:34 | INFO |   Completed Repeated_Incremental (seed=2)
+2026-03-02 01:35:34 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-02 01:35:35 | INFO |   Completed Mixed_A (seed=0)
+2026-03-02 01:35:35 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-02 01:35:37 | INFO |   Completed Mixed_A (seed=1)
+2026-03-02 01:35:37 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-02 01:35:38 | INFO |   Completed Mixed_A (seed=2)
+2026-03-02 01:35:38 | INFO | Generated supervised stream with P(Y|X) change: blip
+2026-03-02 01:35:39 | INFO |   Completed Mixed_B (seed=0)
+2026-03-02 01:35:39 | INFO | Generated supervised stream with P(Y|X) change: blip
+2026-03-02 01:35:41 | INFO |   Completed Mixed_B (seed=1)
+2026-03-02 01:35:41 | INFO | Generated supervised stream with P(Y|X) change: blip
+2026-03-02 01:35:42 | INFO |   Completed Mixed_B (seed=2)

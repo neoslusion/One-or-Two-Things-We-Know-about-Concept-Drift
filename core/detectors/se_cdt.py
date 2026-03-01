@@ -97,9 +97,9 @@ class SE_CDT:
         """
         PROPER implementation using ShapeDD + ADW-MMD with p-value.
         
-        Enhanced with Growth process (CDT-MSW Algorithm 2):
+        Pipeline:
         1. Detection: ShapeDD + ADW-MMD finds drift candidates
-        2. Growth: MMD variance measures drift length → TCD vs PCD
+        2. Growth: Width Ratio analysis measures drift length → TCD vs PCD
         3. Classification: Shape + temporal features → subcategory
         """
         # 1. Detection Step (PROPER ShapeDD + ADW-MMD)
@@ -145,37 +145,27 @@ class SE_CDT:
         """
         Growth process (CDT-MSW Algorithm 2, adapted for unsupervised MMD).
         
-        Determines drift length using the MMD signal's Width Ratio (WR) as a
-        proxy for how long the distribution transition lasted.
-        
-        Limitation: In unsupervised mode, the MMD signal resolution (~52 points
-        for a 750-sample buffer) is too coarse to reliably measure drift duration.
-        The WR feature provides a rough approximation:
-        - WR < 0.12: Very narrow peak → TCD (instant change)
-        - WR >= 0.12: Wider peak → potentially PCD (gradual change)
-        
-        This is a simplified adaptation of CDT-MSW's Growth process, which
-        uses accuracy variance (requiring labels) for precise drift length
-        measurement. Future work could improve this with multi-scale MMD analysis.
+        Measures the Width Ratio (WR) of the dominant MMD peak to distinguish:
+        - TCD (WR < 0.12): Sharp, narrow peak → sudden change
+        - PCD (WR >= 0.12): Wide peak → gradual change
         
         Parameters:
         -----------
         data_window : np.ndarray
-            Raw data buffer (kept for API compatibility).
+            Raw data buffer.
         mmd_trace : np.ndarray, optional
-            The MMD trace from ShapeDD detection.
+            Pre-computed MMD trace from detection step.
             
         Returns:
         --------
         drift_length : int
-            1 = TCD, >1 = PCD.
+            1 = TCD (sharp change), >1 = PCD (gradual change).
         """
+        from scipy.signal import find_peaks, peak_widths
+        
         if mmd_trace is None or len(mmd_trace) < 10:
             return 1
         
-        from scipy.signal import find_peaks, peak_widths
-        
-        # Smooth and find peaks
         sigma_s = gaussian_filter1d(mmd_trace, sigma=4)
         threshold = np.mean(sigma_s) + 0.3 * np.std(sigma_s)
         peaks, properties = find_peaks(sigma_s, height=threshold)
@@ -183,20 +173,15 @@ class SE_CDT:
         if len(peaks) == 0:
             return 1
         
-        # Compute FWHM of the main peak
         best_peak_idx = np.argmax(properties['peak_heights'])
         widths, _, _, _ = peak_widths(sigma_s, [peaks[best_peak_idx]], rel_height=0.5)
         fwhm = widths[0]
         wr = fwhm / (2 * self.l1)
         
-        # WR-based drift length estimation
-        # WR < 0.12: Very sharp peak → TCD (drift_length = 1)
-        # WR >= 0.12: Wider peak → PCD (drift_length proportional to width)
         if wr < 0.12:
-            return 1
+            return 1  # TCD
         else:
-            # Estimate drift_length from peak width
-            return max(2, int(fwhm / 3))
+            return max(2, int(fwhm / 3))  # PCD
 
     def extract_features(self, sigma_signal: np.ndarray) -> Dict[str, float]:
         """

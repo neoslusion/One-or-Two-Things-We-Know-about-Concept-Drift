@@ -425,27 +425,58 @@ def run_mixed_experiment(params):
     
 
     # 2. SE Classification - use UNSUPERVISED stream
-    # IMPORTANT: Use STANDARD MMD for classification (better signal preservation)
-    # ADW-MMD is too aggressive and suppresses weak signals from continuous drift
+    # Use SE_CDT.monitor() to run full pipeline: Detection + Growth + Classification
     t0 = time.time()
     mmd_sig = compute_mmd_sequence(X_unsup, WINDOW_SIZE, step=10, use_standard=True)
     se = SE_CDT(WINDOW_SIZE)
     
     se_classifications = []
     for evt in events:
-        target_idx = evt['pos'] // 10
-        # Check if we have enough signal
-        if target_idx + 50 < len(mmd_sig):
-            slice_start = max(0, target_idx - 50)
-            slice_end = target_idx + 50
-            sig_slice = mmd_sig[slice_start:slice_end]
+        # Extract a data window centered around the drift event
+        evt_pos = evt['pos']
+        half_window = 750  # ~1500 samples total for reliable traces
+        win_start = max(0, evt_pos - half_window)
+        win_end = min(len(X_unsup), evt_pos + half_window)
+        data_window = X_unsup[win_start:win_end]
+        
+        if len(data_window) >= 500:  # Minimum for reliable analysis
+            # Full pipeline: detect + growth (single-scale WR) + classify
+            res_se = se.monitor(data_window)
             
-            res_se = se.classify(sig_slice)
-            se_classifications.append({
-                "gt_type": evt['type'],
-                "pred": res_se.subcategory,
-                "features": res_se.features
-            })
+            if res_se.is_drift:
+                se_classifications.append({
+                    "gt_type": evt['type'],
+                    "pred": res_se.subcategory,
+                    "features": res_se.features
+                })
+            else:
+                # Detection missed — fallback to direct classify on MMD signal
+                target_idx = evt_pos // 10
+                if target_idx + 50 < len(mmd_sig):
+                    slice_start = max(0, target_idx - 50)
+                    slice_end = target_idx + 50
+                    sig_slice = mmd_sig[slice_start:slice_end]
+                    
+                    res_se = se.classify(sig_slice)
+                    se_classifications.append({
+                        "gt_type": evt['type'],
+                        "pred": res_se.subcategory,
+                        "features": res_se.features
+                    })
+        else:
+            # Window too small — fallback to direct classify on MMD signal
+            target_idx = evt_pos // 10
+            if target_idx + 50 < len(mmd_sig):
+                slice_start = max(0, target_idx - 50)
+                slice_end = target_idx + 50
+                sig_slice = mmd_sig[slice_start:slice_end]
+                
+                res_se = se.classify(sig_slice)
+                se_classifications.append({
+                    "gt_type": evt['type'],
+                    "pred": res_se.subcategory,
+                    "features": res_se.features
+                })
     dt_se = time.time() - t0
     
     # 3. SE Detection with BOTH MMD variants - use UNSUPERVISED stream

@@ -202,6 +202,13 @@ Công thức của SE-CDT được mô tả như sau:
 		\STATE Tính đặc trưng hình học: $n_p \leftarrow |P|$, WR, CV, SNR, PPR, DPAR
 		\STATE Tính đặc trưng thời gian: LTS, SDS, MS
 		\STATE
+		\STATE \textbf{--- Bước 0: Growth Process (CDT-MSW Algorithm 2) ---}
+		\STATE $\text{drift\_length} \leftarrow \text{GrowthProcess}(\sigma_s)$ \COMMENT{WR-based estimation}
+		\IF{drift\_length $> 1$}
+		\STATE Phân loại Incremental/Gradual dựa trên LTS, MS, SDS \COMMENT{xem Bước 4}
+		\RETURN \textbf{PCD} (Incremental hoặc Gradual)
+		\ENDIF
+		\STATE
 		\STATE \textbf{--- Bước 1: Blip (TCD) ---}
 		\IF{$n_p = 2$ AND (PPR $< 0.20$ AND DPAR $> 0.65$)}
 		\RETURN \textbf{BLIP} (TCD)
@@ -210,9 +217,9 @@ Công thức của SE-CDT được mô tả như sau:
 		\IF{$n_p \leq 3$ AND WR $< 0.15$ AND SNR $> 2.0$}
 		\RETURN \textbf{SUDDEN} (TCD)
 		\ENDIF
-		\STATE \textbf{--- Bước 3: Recurrent (PCD) ---}
+		\STATE \textbf{--- Bước 3: Recurrent (TCD) ---}
 		\IF{$n_p \geq 4$ AND CV $< 0.3$ AND LTS $< 0.5$}
-		\RETURN \textbf{RECURRENT} (PCD)
+		\RETURN \textbf{RECURRENT} (TCD)
 		\ENDIF
 		\STATE \textbf{--- Bước 4: Incremental vs Gradual (PCD) ---}
 		\IF{LTS $> 0.5$ OR (MS $> 0.6$ AND LTS $> 0.3$) OR (SDS $> 0.12$ AND LTS $> 0.3$) OR $n_p \geq 7$}
