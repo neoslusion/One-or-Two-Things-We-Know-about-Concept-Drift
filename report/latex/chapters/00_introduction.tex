@@ -32,9 +32,9 @@ Một trong những thách thức quan trọng là xử lý hiện tượng trô
 Đối với các ứng dụng học máy trong môi trường sản xuất công nghiệp như IoT,
 việc phát hiện drift trong thời gian thực hoặc gần thời gian thực là yêu cầu
 bắt buộc để đảm bảo chất lượng và độ tin cậy của hệ thống~\cite{jourdan2023process}.
-Tuy nhiên, việc hiện thực hóa một hệ thống như vậy đối mặt với ba thách thức kỹ thuật trọng yếu. Thứ nhất là yêu cầu về độ trễ thấp trong phát hiện điểm trôi dạt (\textit{short detection delay}). Thứ hai là khả năng phân loại chính xác các loại trôi dạt (sudden, gradual, incremental, recurrent) để xác định chiến lược thích ứng phù hợp. Cuối cùng là cơ chế cập nhật mô hình nhanh chóng mà không làm gián đoạn dịch vụ và không yêu cầu nhãn thật liên tục (\textit{unsupervised adaptation}).
+Tuy nhiên, việc hiện thực hóa một hệ thống như vậy đối mặt với ba thách thức kỹ thuật trọng yếu. Thứ nhất là yêu cầu về độ trễ thấp trong phát hiện thời điểm trôi dạt xảy ra. Thứ hai là có khả năng phân loại các loại trôi dạt (sudden, gradual, incremental, recurrent) để xác định chiến lược thích ứng phù hợp cho mô hình. Cuối cùng là cơ chế cập nhật mô hình nhanh chóng mà không làm gián đoạn hoạt động của mô hình.
 
-Từ những thách thức trên, đề tài này đặt ra những mục tiêu nghiên cứu và phát triển một hệ thống tự động phát hiện và thích ứng với hiện tượng trôi dạt khái niệm trong môi trường luồng dữ liệu thời gian thực.
+Từ những thách thức trên, đề tài này đặt ra những mục tiêu nghiên cứu và phát triển một hệ thống tự động phát hiện và thích ứng với hiện tượng trôi dạt khái niệm trong môi trường luồng dữ liệu thời gian thực, đặc biệt là trong môi trường không giám sát.
 \section{Mục tiêu đề tài}
 
 \subsection{Khảo sát các phương pháp phát hiện drift}
@@ -47,15 +47,15 @@ từ đó xác định hướng cải tiến phù hợp.
 Dựa trên cơ sở lý thuyết và kết quả đánh giá hiệu năng, nghiên cứu tích hợp kỹ thuật \textbf{IDW-MMD (Inverse Density-Weighted MMD)} vào phương pháp ShapeDD. Mục tiêu là giải quyết các hạn chế về chi phí tính toán và độ nhạy của phương pháp gốc. IDW-MMD sử dụng cơ chế trọng số nghịch biến với mật độ để giảm độ dao động kết quả, cho phép đạt độ chính xác cao với số lượng mẫu ít hơn.
 
 \subsection{Đề xuất phương pháp phân loại drift SE-CDT}
-Lấy cảm hứng từ ý tưởng phân loại loại drift của CDT-MSW (Concept Drift Type identification based on Multi-Sliding Windows~\cite{guo2022cdtmsw}, sẽ được trình bày chi tiết ở Mục~\ref{sec:cdt-msw-theory}), luận văn đề xuất phương pháp mới \textbf{SE-CDT} (ShapeDD-Enhanced Concept Drift Type Identification). Khác với CDT-MSW gốc yêu cầu nhãn (labels) để tính accuracy ratio, SE-CDT thay thế hoàn toàn cơ chế này bằng các đặc trưng hình học từ tín hiệu drift magnitude $\sigma(t)$ của ShapeDD.
-Phương pháp này có khả năng: (1) phát hiện chính xác thời điểm xảy ra \textit{drift} nhờ ShapeDD, và (2) sử dụng thông tin đó để trích xuất cửa sổ dữ liệu chính xác cho việc phân loại loại \textit{drift}, từ đó đưa ra chiến lược thích ứng tối ưu.
+Lấy cảm hứng từ ý tưởng phân loại loại drift của CDT-MSW (Concept Drift Type identification based on Multi-Sliding Windows~\cite{guo2022cdtmsw}, sẽ được trình bày chi tiết ở Mục~\ref{sec:cdt-msw-theory}), luận văn đề xuất cách tiếp cận mới \textbf{SE-CDT} (ShapeDD-Enhanced Concept Drift Type Identification). Khác với CDT-MSW gốc yêu cầu nhãn (labels) để tính và tận dụng accuracy ratio để xác định và phân loại, SE-CDT thay thế hoàn toàn cơ chế này bằng các đặc trưng hình học từ tín hiệu MMD.
+Phương pháp này có khả năng: (1) phát hiện chính xác thời điểm xảy ra \textit{drift} nhờ ShapeDD, và (2) sử dụng thông tin đó để trích xuất cửa sổ dữ liệu chính xác cho việc phân loại loại \textit{drift}, từ đó đưa ra chiến lược thích ứng phù hợp.
 
 \subsection{Tối ưu hóa tham số}
 Tiến hành thử nghiệm và tùy chỉnh các tham số của phương pháp
 để đảm bảo hiệu quả với các kiểu dữ liệu và loại \textit{drift} khác nhau.
 
 \subsection{Triển khai và đánh giá}
-Thiết kế kiến trúc hệ thống trên môi trường dữ liệu \textit{streaming real-time} sử dụng Apache Kafka. Thực hiện mô phỏng và đánh giá hiệu năng trong các kịch bản thử nghiệm để kiểm chứng tính khả thi của giải pháp đề xuất. (Lưu ý: Việc triển khai production thực tế và đánh giá hiệu năng chịu tải quy mô lớn là hướng phát triển tương lai).
+Thiết kế kiến trúc hệ thống trên môi trường dữ liệu streaming real-time bằng Apache Kafka. Thực hiện mô phỏng và đánh giá hiệu năng trong các kịch bản thử nghiệm để kiểm chứng tính khả thi của giải pháp đề xuất. (Lưu ý: Việc triển khai production thực tế và đánh giá hiệu năng chịu tải quy mô lớn là hướng phát triển tương lai).
 
 \section{Phạm vi đề tài và đối tượng nghiên cứu}
 \subsection{Phạm vi đề tài}
