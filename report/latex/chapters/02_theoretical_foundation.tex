@@ -7,41 +7,35 @@
 
 \section{Khái niệm về concept drift và phân loại}
 
-\subsection{Khái niệm về concept drift}
+\subsection{Khái niệm về Concept Drift}
+Concept drift (trôi dạt khái niệm) đề cập đến những sự thay đổi không thể dự đoán trước trong phân phối thống kê của dữ liệu theo thời gian~\cite{schlimmer1986incremental}. Hiện tượng này đặc biệt phổ biến trong các môi trường vận hành liên tục và năng động như hệ thống IoT~\cite{ramakrishnan2014enabling} hay các quy trình công nghiệp, nơi môi trường thu thập dữ liệu luôn biến động.
 
-Concept drift, hay còn gọi là sự trôi dạt khái niệm, đề cập đến những thay đổi trong phân phối dữ liệu được tạo ra,
-đặc biệt là trong môi trường động và thay đổi theo thời gian, chẳng hạn như trong ứng dụng về IoT~\cite{ramakrishnan2014enabling}
-hoặc trong công nghiệp nơi dữ liệu luôn được tạo ra theo thời gian và thay đổi liên tục tùy theo môi trường làm việc khác nhau.
-Cụ thể hơn, concept drift là một vấn đề trong đó các mối quan hệ thống kê giữa các giá trị đầu vào và giá trị mục tiêu bị thay
-đổi theo thời gian theo cách không thể dự đoán được~\cite{schlimmer1986incremental}.
+Về mặt toán học, concept drift được định nghĩa là sự thay đổi của phân phối xác suất liên hợp (joint probability distribution) giữa dữ liệu đầu vào $X$ và nhãn mục tiêu $y$ tại hai thời điểm khác nhau $t$ và $t+1$. Nghĩa là: 
+\begin{equation}
+    P_t(X, y) \neq P_{t+1}(X, y)
+\end{equation}
+Trong môi trường thực tế, sự thay đổi này làm cho các mô hình học máy được huấn luyện trên dữ liệu lịch sử trở nên lỗi thời, dẫn đến sự suy giảm nghiêm trọng về hiệu suất dự đoán so với khi được đánh giá trên tập thử nghiệm tĩnh.
 
-Concept drift có thể dẫn đến hiệu suất giảm trong quá trình vận hành thực tế của mô hình học máy, do bản
-chất của dữ liệu đầu vào đã bị thay đổi so với khi mô hình học máy được huấn luyện, điều này trái ngược với hiệu
-suất được đánh giá trên tập dữ liệu thử nghiệm tĩnh trong quá trình phát triển.
-\subsection{Phân loại các loại concept drift}
-Có nhiều loại trôi dạt khác nhau, tùy thuộc vào các yếu tố dữ liệu đang thay đổi. Các loại chính của concept drift bao gồm~\cite{sciencedirect2024drift, hovakimyan2024evolving} như sau:
+\subsection{Phân loại các loại Concept Drift}
+Theo định lý Bayes, xác suất liên hợp có thể được phân rã thành $P(X, y) = P(X) \times P(y|X)$. Dựa vào sự thay đổi của các thành phần này, concept drift được chia thành các nhóm chính như sau~\cite{sciencedirect2024drift, hovakimyan2024evolving}:
 
-Phân loại theo sự thay đổi phân phối:
-\textbf{Sự trôi dạt ảo (Virtual Drift):} Còn được gọi là sự dịch chuyển biến phụ (covariate shift), đề cập đến tình huống
-mà sự thay đổi xảy ra trong phân phối các trường hợp đầu vào $P(X)$, trong khi xác suất hậu nghiệm của các giá trị mục tiêu $P(Y|X)$ vẫn không đổi~\cite{moreno2012unifying}.
+\subsubsection{Phân loại theo sự thay đổi phân phối}
+\begin{itemize}
+    \item \textbf{Sự trôi dạt ảo (Virtual Drift / Covariate Shift):} Đề cập đến tình huống phân phối của các đặc trưng đầu vào $P(X)$ thay đổi, nhưng xác suất hậu nghiệm của lớp mục tiêu $P(y|X)$ (tức là ranh giới quyết định) vẫn không đổi~\cite{moreno2012unifying}. Dù dữ liệu đầu vào biến đổi, mô hình có thể không bị giảm hiệu suất nghiêm trọng nếu ranh giới quyết định vẫn bao quát được.
+    
+    \item \textbf{Sự trôi dạt thực (Real Concept Drift):} Là sự thay đổi trực tiếp trong xác suất hậu nghiệm $P(y|X)$. Sự thay đổi này làm sai lệch ranh giới quyết định ban đầu và bắt buộc phải cập nhật lại mô hình học máy. Ví dụ điển hình là sự thay đổi trong sở thích của người dùng đối với các chủ đề tin tức: cùng một đặc trưng người dùng $X$, nhưng hành vi click $y$ đã thay đổi~\cite{gama2014survey}.
+\end{itemize}
 
-\textbf{Sự trôi dạt thực (Real Drift):} Sự thay đổi trong xác suất hậu nghiệm của các giá trị mục tiêu (tức là các lớp) $P(Y|X)$
-được gọi là sự trôi dạt thực. Sự trôi dạt thực có thể không ảnh hưởng đến sự phân phối các trường hợp đầu vào $P(X)$.
-Ví dụ, có thể đề cập đến sự thay đổi trong sở thích của người dùng khi họ theo dõi các kênh tin tức phát trực tuyến,
-trong khi sự phân phối các mục tin tức nhận được thường không thay đổi~\cite{gama2014survey}.
-
-Phân loại theo mô hình thay đổi theo thời gian:
-\textbf{Sự trôi dạt đột ngột (Sudden Drift / Abrupt Drift):} Biểu thị trường hợp khi sự phân phối dữ liệu thay đổi đột ngột tại một thời điểm cụ thể.
-Drift đột ngột dễ nhận biết nhưng đòi hỏi cơ chế phát hiện và thích ứng nhanh để tránh suy giảm hiệu suất nghiêm trọng~\cite{basseville1993detection}.
-
-\textbf{Sự trôi dạt dần dần (Gradual Drift):} Sự trôi dạt dần dần biểu thị trường hợp khi sự phân phối dữ liệu thay đổi dần dần theo thời
-gian qua một khoảng thời gian chuyển tiếp. Trong giai đoạn chuyển tiếp này, dữ liệu có thể đến từ cả phân phối cũ và phân phối mới với tỷ lệ thay đổi dần~\cite{gama2014survey}.
-
-\textbf{Sự trôi dạt tăng dần (Incremental Drift):} Thể hiện sự tiến hóa dần dần của phân phối dữ liệu theo từng bước nhỏ liên tục.
-Ví dụ như sự tiến hóa dần dần của hệ thống đề xuất người dùng ngày càng tiến hóa và nhiều hơn dựa trên sự thay đổi sở thích của người dùng theo thời gian~\cite{hovakimyan2024evolving}.
-
-\textbf{Sự trôi dạt lặp lại (Recurrent Drift):} Trôi dạt lặp lại là khi dữ liệu quay trở lại trạng thái cũ sau một thời gian, hoặc lặp lại theo chu kỳ.
-Những thay đổi trong dữ liệu không phải mới mà đã từng xảy ra trước đó. Ví dụ như xu hướng thời trang thay đổi theo mùa, tuần hoàn theo từng năm~\cite{hovakimyan2024evolving}.
+\subsubsection{Phân loại theo tốc độ và mô hình thay đổi}
+\begin{itemize}
+    \item \textbf{Sự trôi dạt đột ngột (Abrupt / Sudden Drift):} Phân phối dữ liệu được thay thế bằng một phân phối hoàn toàn mới gần như ngay lập tức tại một thời điểm $t$. Loại này dễ phát hiện nhưng đòi hỏi cơ chế thích ứng cực nhanh (ví dụ: cảm biến hỏng hoặc đại dịch COVID-19 bùng phát)~\cite{basseville1993detection}.
+    
+    \item \textbf{Sự trôi dạt tiệm tiến (Gradual Drift):} Quá trình chuyển đổi diễn ra qua một giai đoạn xen kẽ. Trong giai đoạn này, dữ liệu từ cả khái niệm cũ và khái niệm mới cùng xuất hiện, nhưng xác suất xuất hiện của khái niệm mới tăng dần lên cho đến khi thay thế hoàn toàn khái niệm cũ~\cite{gama2014survey}.
+    
+    \item \textbf{Sự trôi dạt tăng dần (Incremental Drift):} Khái niệm cũ tiến hóa thành khái niệm mới thông qua một chuỗi các khái niệm trung gian (intermediate concepts). Sự thay đổi diễn ra liên tục, đơn điệu với biên độ nhỏ, ví dụ như hiệu suất của cảm biến giảm dần theo thời gian do hao mòn vật lý~\cite{hovakimyan2024evolving}.
+    
+    \item \textbf{Sự trôi dạt lặp lại (Recurrent Drift):} Xảy ra khi một khái niệm cũ đã từng biến mất nay xuất hiện trở lại sau một khoảng thời gian không xác định (ví dụ: thói quen mua sắm thay đổi theo mùa hoặc chu kỳ kinh tế)~\cite{hovakimyan2024evolving}.
+\end{itemize}
 
 \begin{figure}[H]
 	\centering

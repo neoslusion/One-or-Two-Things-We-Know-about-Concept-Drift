@@ -5,17 +5,17 @@
 
 \section{Động lực và tổng quan cách tiếp cận}
 
-Mặc dù ShapeDD gốc thể hiện nhiều ưu điểm về độ chính xác định vị và khả năng khử nhiễu, việc áp dụng phương pháp này trong các hệ thống thời gian thực (real-time) quy mô lớn gặp phải hai thách thức chính:
+Mặc dù ShapeDD gốc thể hiện nhiều ưu điểm về độ chính xác định vị và khả năng khử nhiễu, việc áp dụng phương pháp này trong các hệ thống thời gian thực quy mô lớn gặp phải hai thách thức chính:
 
 \begin{enumerate}
-	\item \textbf{Chi phí tính toán cao:} Việc sử dụng kiểm định hoán vị (permutation test) với số lượng lớn (thường là 2500 lần) để ước lượng p-value tạo ra nút thắt cổ chai về hiệu năng, giới hạn thông lượng xử lý.
+	\item \textbf{Chi phí tính toán cao:} Việc sử dụng kiểm định hoán vị (permutation test) với số lượng lớn (thường là 2500 lần) để ước lượng p-value tạo ra nghẽn cổ chai về hiệu năng, giới hạn thông lượng xử lý.
 	\item \textbf{Độ nhạy với tham số:} Hiệu suất của ShapeDD phụ thuộc nhiều vào việc lựa chọn độ rộng hạt nhân (kernel bandwidth) và kích thước cửa sổ, làm giảm khả năng tổng quát hóa trên các luồng dữ liệu có đặc tính drift đa dạng.
 	\item \textbf{Thiếu cơ chế thích ứng:} Phát hiện drift chỉ là bước đầu; hệ thống cần một cơ chế để tự động cập nhật mô hình một cách phù hợp với bản chất của sự thay đổi (đột ngột hay dần dần)~\cite{yuan2022advances}.
 \end{enumerate}
 
 Để giải quyết các thách thức trên, luận văn xây dựng hệ thống \textbf{SE-CDT-Stream} --- một framework tích hợp kết hợp các phương pháp MMD tiên tiến với kiến trúc streaming, bao gồm ba tầng xử lý chính:
 \begin{itemize}
-	\item \textbf{Tầng thuật toán:} Cải tiến ShapeDD bằng cách tích hợp \textit{IDW-MMD (Inverse Density-Weighted MMD)} với phân phối tiệm cận để giảm phương sai và chi phí tính toán, loại bỏ nhu cầu permutation test tốn kém.
+	\item \textbf{Tầng thuật toán:} Cải tiến ShapeDD bằng cách tích hợp \textit{IDW-MMD (Inverse Density-Weighted MMD)} với tên gọi là đề xuất là ShapeDD-IDW với phân phối tiệm cận để giảm phương sai và chi phí tính toán, loại bỏ nhu cầu permutation test tốn kém.
 	\item \textbf{Tầng chiến lược:} Xây dựng khung thích ứng thông minh, sử dụng kết quả phân loại từ \textit{SE-CDT} để kích hoạt chiến lược cập nhật mô hình tối ưu (Reset, Incremental, hoặc Reuse)~\cite{gama2014survey, lu2018learning}.
 	\item \textbf{Tầng kiến trúc:} Đề xuất triển khai hệ thống trên nền tảng \textit{Apache Kafka}, đảm bảo khả năng xử lý luồng dữ liệu phân tán, độ trễ thấp và khả năng chịu lỗi.
 \end{itemize}
@@ -25,13 +25,12 @@ Mặc dù ShapeDD gốc thể hiện nhiều ưu điểm về độ chính xác 
 \subsection{Inverse Density-Weighted MMD (IDW-MMD): Tối ưu hóa hiệu suất và độ chính xác}
 \label{sec:idw-mmd}
 
-Trong các hệ thống học máy xử lý trên dòng dữ liệu, concept drift xảy ra khi các đặc tính thống kê của biến mục tiêu thay đổi đột ngột hoặc từ từ theo thời gian. Các phương pháp MMD truyền thống thường gặp khó khăn về chi phí tính toán khi áp dụng cho dữ liệu lớn.
-
 \subsubsection{Vấn đề của ước lượng MMD truyền thống}
 Trong phương pháp gốc, thống kê MMD được tính toán dựa trên trọng số đều (uniform weights), coi vai trò của mọi điểm dữ liệu trong cửa sổ là như nhau. Nhắc lại từ Chương~\ref{chap:theoretical-foundation}, công thức MMD chuẩn có dạng:
 \begin{equation}
 	\text{MMD}^2_{\text{uniform}}(X, Y) = \frac{1}{n^2}\sum_{i,j} k(x_i, x_j) + \frac{1}{m^2}\sum_{p,q} k(y_p, y_q) - \frac{2}{nm}\sum_{i,p} k(x_i, y_p)
 \end{equation}
+trong đó các tổng chạy qua \textit{tất cả} cặp chỉ số (kể cả $i=j$), tức là ước lượng dạng V-statistic (có bias nhỏ do bao gồm số hạng tự tương quan $k(x_i, x_i)$).
 
 Phương pháp này có hai vấn đề chính:
 \begin{enumerate}
@@ -42,29 +41,29 @@ Phương pháp này có hai vấn đề chính:
 Vấn đề cốt lõi: Phương pháp uniform coi tất cả điểm dữ liệu quan trọng như nhau. Nhưng thực tế, drift thường xuất hiện đầu tiên ở \textbf{biên phân phối} (nơi có ít điểm) chứ không phải ở vùng trung tâm đông đúc.
 
 \subsubsection{Ý tưởng cải tiến: Dùng trọng số thay đổi theo vị trí}
-Thay vì dùng trọng số đều, luận văn đề xuất gán trọng số khác nhau cho từng điểm dựa trên vị trí của nó trong phân phối. Cụ thể: \textit{điểm ở vùng thưa (biên) được cho trọng số cao hơn điểm ở vùng đông (trung tâm).}
+Thay vì dùng trọng số đều, luận văn đề xuất gán trọng số khác nhau cho từng điểm dựa trên vị trí của nó trong phân phối. Cụ thể rằng các điểm ở vùng thưa (biên) được cho trọng số cao hơn điểm ở vùng đông (trung tâm).
 
 MMD có trọng số có dạng tổng quát:
 \begin{equation}
 	\text{MMD}^2_{\text{weighted}}(X, Y) = \sum_{i,j} w_i w_j k(x_i, x_j) + \sum_{p,q} v_p v_q k(y_p, y_q) - 2\sum_{i,p} w_i v_p k(x_i, y_p)
 \end{equation}
-trong đó $w_i$ và $v_p$ là trọng số của từng điểm (thỏa mãn $\sum_i w_i = 1$, $\sum_p v_p = 1$). Từ đó câu hỏi được đặt ra: Làm sao tính $w_i$ để phát hiện drift hiệu quả?
+trong đó $w_i$ và $v_p$ là trọng số của từng điểm (thỏa mãn $\sum_i w_i = 1$, $\sum_p v_p = 1$). Từ đó câu hỏi được đặt ra đó chính là làm sao tính $w_i$ để phát hiện drift hiệu quả?
 
 \subsubsection{Giải pháp đề xuất: Trọng số nghịch biến mật độ (Inverse Density Weighting)}
-Luận văn đề xuất phương pháp \textbf{IDW-MMD} (Inverse Density-Weighted MMD), một \textbf{heuristic mới do luận văn xây dựng}, lấy động lực từ ý tưởng weighted MMD trong ``Optimally-Weighted MMD'' của Bharti et al.~\cite{bharti2023owmmd}.
+Luận văn đề xuất phương pháp \textbf{IDW-MMD} (Inverse Density-Weighted MMD), một cách tiếp cận heuristic mới, lấy động lực từ ý tưởng weighted MMD trong Optimally-Weighted MMD của Bharti et al.~\cite{bharti2023owmmd}.
 
-\textbf{Lưu ý quan trọng:} Phương pháp của Bharti et al. (2023) được thiết kế cho bài toán suy luận thống kê (likelihood-free inference) và đề xuất trọng số tối ưu phức tạp, \textbf{không liên quan đến bài toán drift detection}. Luận văn này chỉ kế thừa ý tưởng ``gán trọng số cho từng điểm dữ liệu trong MMD'' và đề xuất một \textbf{heuristic đơn giản riêng} --- trọng số nghịch biến với căn bậc hai của mật độ kernel --- để phù hợp với bài toán drift detection trong streaming.
+Phương pháp của Bharti et al. được thiết kế cho bài toán suy luận thống kê (likelihood-free inference) và đề xuất trọng số tối ưu phức tạp và không liên quan đến bài toán drift detection. Luận văn này chỉ kế thừa ý tưởng ``gán trọng số cho từng điểm dữ liệu trong MMD'' và áp dụng một heuristic đơn giản hơn --- trọng số nghịch biến với căn bậc hai của mật độ kernel --- để phù hợp với bài toán drift detection.
 
-Cụ thể, trọng số $w_i$ được tính dựa trên mật độ cục bộ (local density):
+Cụ thể, trọng số $w_i$ được tính dựa trên mật độ cục bộ (local density), chỉ tính các cặp điểm khác nhau (off-diagonal) để tránh bias tự tương quan:
 \begin{equation}
-	w_i \propto \frac{1}{\sqrt{\sum_{j} k(x_i, x_j)} + \epsilon} \quad \text{(Inverse Density Weighting)}
+	w_i \propto \frac{1}{\sqrt{\sum_{j \neq i} k(x_i, x_j)} + \epsilon} \quad \text{(Inverse Density Weighting)}
 \end{equation}
 trong đó $\epsilon$ là một hằng số nhỏ (ví dụ $\epsilon = 0.5$) để đảm bảo tính ổn định số học (numerical stability).
 
 \textbf{Cách hiểu đơn giản:}
 \begin{itemize}
-	\item \textbf{Điểm ở vùng đông (trung tâm):} $\sum_{j} k(x_i, x_j)$ lớn (nhiều điểm lân cận) $\Rightarrow$ trọng số $w_i$ nhỏ.
-	\item \textbf{Điểm ở vùng thưa (biên):} $\sum_{j} k(x_i, x_j)$ nhỏ (ít điểm lân cận) $\Rightarrow$ trọng số $w_i$ lớn.
+	\item \textbf{Điểm ở vùng đông (trung tâm):} $\sum_{j \neq i} k(x_i, x_j)$ lớn (nhiều điểm lân cận) $\Rightarrow$ trọng số $w_i$ nhỏ.
+	\item \textbf{Điểm ở vùng thưa (biên):} $\sum_{j \neq i} k(x_i, x_j)$ nhỏ (ít điểm lân cận) $\Rightarrow$ trọng số $w_i$ lớn.
 \end{itemize}
 Lý do: Drift thường xuất hiện đầu tiên ở biên phân phối, nên cần tăng độ nhạy tại các điểm này.
 
@@ -75,47 +74,54 @@ Lý do: Drift thường xuất hiện đầu tiên ở biên phân phối, nên 
 	\item Kết quả thực nghiệm cho thấy $1/\sqrt{d_i}$ ổn định nhất (xem Chương~\ref{chap:experiments}).
 \end{itemize}
 
-Dựa trên những phân tích trên, luận văn đề xuất công thức IDW-MMD hoàn chỉnh:
-\begin{equation}
-	\text{MMD}^2_{\text{IDW}} = \underbrace{\sum_{i,j} w_i w_j k(x_i, x_j)}_{\text{Weighted } XX} + \underbrace{\sum_{p,q} v_p v_q k(y_p, y_q)}_{\text{Weighted } YY} - 2\underbrace{\sum_{i,p} \frac{1}{nm} k(x_i, y_p)}_{\text{Uniform } XY}
+Dựa trên những phân tích trên, luận văn đề xuất công thức IDW-MMD hoàn chỉnh như sau. Gọi $W^{XX}_{ij}$ và $W^{YY}_{pq}$ là các ma trận trọng số đã được chuẩn hóa theo U-statistic style (loại trừ đường chéo, sao cho $\sum_{i \neq j} W^{XX}_{ij}=1$ và $\sum_{p \neq q} W^{YY}_{pq}=1$), với $W^{XX}_{ij} \propto \tilde{w}_i \tilde{w}_j$ và $\tilde{w}_i = 1/(\sqrt{d(x_i)}+\epsilon)$, $d(x_i) = \sum_{j \neq i} k(x_i, x_j)$:
+\begin{equation}	
+	\text{MMD}^2_{\text{IDW}}(X, Y) = \underbrace{\sum_{i \neq j} W^{XX}_{ij}\, k(x_i, x_j)}_{\text{Weighted } XX} + \underbrace{\sum_{p \neq q} W^{YY}_{pq}\, k(y_p, y_q)}_{\text{Weighted } YY} - 2\underbrace{\sum_{i=1}^n \sum_{p=1}^m \frac{1}{nm} k(x_i, y_p)}_{\text{Uniform } XY}
 \end{equation}
 
-\textbf{Lưu ý quan trọng:} Cross-term (số hạng thứ 3) vẫn dùng trọng số đều $1/(nm)$, không dùng weighted. \textit{Tại sao?}
+\textbf{Lưu ý quan trọng về thiết kế Cross-term}: Khác với phương pháp gán trọng số toàn cục, thành phần Cross-term của hai cửa sổ vẫn dùng trọng số đều $1/(nm)$. Quyết định này có ý nghĩa rằng là:
 \begin{itemize}
-	\item Cross-term đo độ tương đồng \textbf{giữa hai cửa sổ}. Nếu dùng weighted cho cả hai cửa sổ, sẽ khuếch đại cả tín hiệu lẫn nhiễu.
-	\item Giữ cross-term uniform giúp nó làm "điểm neo" (anchor), đảm bảo phản ánh đúng mức độ chồng chéo giữa hai phân phối.
-	\item Kết quả: IDW-MMD vừa nhạy với drift (do weighted XX và YY) vừa ổn định (do uniform XY).
+	\item Đóng vai trò là "điểm neo" (anchor) hình học. Việc dùng trọng số nghịch biến mật độ cho Cross-term có nguy cơ khuếch đại khoảng cách giả tạo ngay cả khi hai phân phối giống hệt nhau nhưng chứa nhiễu. 
+	\item Đảm bảo IDW-MMD vừa khuếch đại được độ nhạy với các điểm trôi dạt mới xuất hiện ở biên (thông qua Weighted XX và YY), vừa giữ được tính ổn định và tính so sánh khách quan về mức độ chồng chéo giữa hai cửa sổ (thông qua Uniform XY).
+	\item \textbf{Lưu ý về bias có hệ thống (systematic bias):} Do XX và YY dùng trọng số IDW còn XY dùng trọng số đồng đều, $\text{MMD}^2_{\text{IDW}}$ không bằng 0 ngay cả khi $P = Q$ (không có drift). Tức là đây là một \textit{heuristic statistic}, không phải proper two-sample test statistic trong nghĩa cổ điển. Trong thực nghiệm, ngưỡng phát hiện (detection threshold) cần được hiệu chỉnh (calibrate) để bù cho bias này, ví dụ thông qua permutation test một lần trên dữ liệu tham chiếu hoặc asymptotic p-value được điều chỉnh.
 \end{itemize}
 
-\subsubsection{Tại sao IDW-MMD giảm phương sai?}
-Khi dùng MMD chuẩn (uniform weights), tất cả các cặp điểm đóng góp ngang nhau vào kết quả. Vấn đề: Các điểm ở vùng đông đúc thường "giống nhau" (highly correlated), dẫn đến kết quả dao động nhiều. IDW-MMD khắc phục bằng hai cách:
+\subsubsection{Tại sao IDW-MMD cải thiện hiệu năng phát hiện? (Signal-to-Noise Ratio)}
+Khi dùng MMD chuẩn (uniform weights), tất cả các cặp điểm đóng góp ngang nhau vào kết quả. Điều này dẫn đến việc tín hiệu trôi dạt (concept drift signal) dễ bị "chìm" vào lượng lớn các điểm dữ liệu không thay đổi ở trung tâm phân phối. IDW-MMD khắc phục điều này bằng cách tăng \textbf{Tỷ lệ tín hiệu trên nhiễu (Signal-to-Noise Ratio - SNR)} và \textbf{Sức mạnh kiểm định (Test Power)} thông qua hai cơ chế:
 \begin{enumerate}
-	\item \textbf{Giảm ảnh hưởng của vùng đông:} Các điểm ở trung tâm (có nhiều láng giềng) được cho trọng số thấp. Do chúng correlation cao với nhau, giảm trọng số giúp giảm độ dao động.
-	\item \textbf{Tăng tín hiệu từ vùng biên:} Các điểm ở biên chứa thông tin quan trọng về sự khác biệt. Tăng trọng số cho chúng giúp tín hiệu drift rõ hơn so với nhiễu nền.
+	\item \textbf{Giảm sự thống trị của vùng lõi (Dense regions):} Các điểm ở vùng trung tâm có mật độ láng giềng cao sẽ bị giảm trọng số. Việc này giúp thuật toán không bị "thao túng" bởi các vùng dữ liệu ổn định và có tính tương quan cao (highly correlated).
+	\item \textbf{Khuếch đại tín hiệu vùng biên (Tail/Boundary regions):} Trôi dạt khái niệm (đặc biệt là gradual/incremental drift) thường bắt đầu từ sự dịch chuyển ở các vùng biên. Bằng cách gán trọng số lớn hơn (nghịch biến với căn bậc hai của mật độ) cho các điểm thưa thớt, IDW-MMD hoạt động như một "kính lúp", làm nổi bật sự thay đổi phân phối ngay từ những dấu hiệu đầu tiên.
 \end{enumerate}
 
-\textbf{Kết quả thực tế:} Độ lệch chuẩn (standard deviation) của $\widehat{\text{MMD}}^2_{\text{IDW}}$ giảm khoảng 30\% so với uniform MMD trên dữ liệu không có drift. Nhờ vậy, có thể dùng asymptotic p-value (nhanh) thay vì permutation test (chậm) mà vẫn đảm bảo độ chính xác.
-
 \subsubsection{Quy trình tính toán}
-Luận văn cài đặt IDW-MMD như sau:
+Luận văn đề xuất cài đặt IDW-MMD theo thuật toán cụ thể như sau. Lưu ý rằng mật độ cục bộ (local density) được tính độc lập trong từng cửa sổ để phản ánh đúng cấu trúc nội tại của phân phối đó trước khi so sánh chéo:
 
 \begin{algorithm}[H]
 	\caption{Inverse Density-Weighted MMD (IDW-MMD)}
 	\label{alg:adw_mmd}
 	\begin{algorithmic}[1]
-		\REQUIRE Reference window $X_{ref}$, test window $X_{test}$, kernel $k(\cdot, \cdot)$
+		\REQUIRE Reference window $X = \{x_1, ..., x_n\}$, Test window $Y = \{y_1, ..., y_m\}$, kernel $k(\cdot, \cdot)$, stability constant $\epsilon$ (default $0.5$)
 		\ENSURE IDW-MMD Statistic $\widehat{\text{MMD}}^2_{\text{IDW}}$
-		\STATE Combine samples: $Z = X_{ref} \cup X_{test}$
-		\STATE Compute Kernel Matrix $K$ on $Z$
-		\STATE \textbf{1. Compute Inverse Density Weights}
-		\FOR{each sample $z_i \in Z$}
-		\STATE Calculate local density: $d_i = \sum_{j} K_{ij}$
-		\STATE Assign inverse-sqrt weight: $w_i \propto \frac{1}{\sqrt{d_i} + \epsilon}$ \COMMENT{$\epsilon=0.5$ for stability}
+		
+		\STATE \textbf{1. Compute Inverse Density Weights for Reference Window}
+		\FOR{each sample $x_i \in X$}
+		\STATE Calculate off-diagonal local density: $d(x_i) = \sum_{j \neq i} k(x_i, x_j)$ \COMMENT{Exclude self-similarity $k(x_i,x_i)$}
+		\STATE Assign raw weight: $\tilde{w}_i = \frac{1}{\sqrt{d(x_i)} + \epsilon}$ 
 		\ENDFOR
-		\STATE Normalize weights: $\sum_{i \in X_{ref}} w_i = 1$, $\sum_{j \in X_{test}} w_j = 1$
-		\STATE \textbf{2. Compute Weighted Statistic}
-		\STATE $\widehat{\text{MMD}}^2_{\text{IDW}} = \sum_{i,j} w_i w_j k(x_i, x_j) + \sum_{p,q} w_p w_q k(y_p, y_q) - \frac{2}{mn} \sum_{i,p} k(x_i, y_p)$
-		\COMMENT{Cross-term sử dụng uniform weights $(1/mn)$ để ổn định ước lượng}
+		\STATE Build weight matrix: $\widetilde{W}^{XX}_{ij} = \tilde{w}_i \tilde{w}_j$ for $i \neq j$, else $0$
+		\STATE Normalize: $W^{XX}_{ij} = \widetilde{W}^{XX}_{ij} \,/\, \sum_{i \neq j} \widetilde{W}^{XX}_{ij}$ (ensure $\sum_{i,j} W^{XX}_{ij} = 1$)
+		
+		\STATE \textbf{2. Compute Inverse Density Weights for Test Window}
+		\FOR{each sample $y_p \in Y$}
+		\STATE Calculate off-diagonal local density: $d(y_p) = \sum_{q \neq p} k(y_p, y_q)$
+		\STATE Assign raw weight: $\tilde{v}_p = \frac{1}{\sqrt{d(y_p)} + \epsilon}$ 
+		\ENDFOR
+		\STATE Build weight matrix: $\widetilde{W}^{YY}_{pq} = \tilde{v}_p \tilde{v}_q$ for $p \neq q$, else $0$
+		\STATE Normalize: $W^{YY}_{pq} = \widetilde{W}^{YY}_{pq} \,/\, \sum_{p \neq q} \widetilde{W}^{YY}_{pq}$ (ensure $\sum_{p,q} W^{YY}_{pq} = 1$)
+		
+		\STATE \textbf{3. Compute Weighted MMD Statistic}
+		\STATE $\widehat{\text{MMD}}^2_{\text{IDW}} = \sum_{i,j} W^{XX}_{ij} k(x_i, x_j) + \sum_{p,q} W^{YY}_{pq} k(y_p, y_q) - \dfrac{2}{nm} \sum_{i=1}^n\sum_{p=1}^m k(x_i, y_p)$
+		\COMMENT{Cross-term dùng uniform weights $(1/nm)$ --- đóng vai trò điểm neo (anchor) để ổn định ước lượng. Diagonal bị loại trừ ở XX và YY để tránh bias tự tương quan (U-statistic style).}
 		\RETURN $\widehat{\text{MMD}}^2_{\text{IDW}}$
 	\end{algorithmic}
 \end{algorithm}
