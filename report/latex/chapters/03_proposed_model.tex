@@ -166,6 +166,8 @@ Sau khi tích hợp IDW-MMD với phân phối tiệm cận, hệ thống có th
 
 Lấy ý tưởng từ cơ chế hoạt động của CDT-MSW được trình bày ở phần trước, tuy nhiên, phương pháp CDT-MSW gốc~\cite{guo2022cdtmsw} yêu cầu \textit{labels} để tính toán accuracy ratio, điều này không phù hợp trong môi trường với dữ liệu không giám sát - điều mà luận văn này hướng tới. Luận văn đề xuất \textbf{SE-CDT} (ShapeDD-Enhanced Concept Drift Type), một phương pháp thay thế sử dụng cơ chế tín hiệu drift magnitude $\sigma(t)$ từ ShapeDD để phát hiện và phân loại drift.
 
+\textbf{Ghi chú về signal đầu vào:} Tín hiệu drift magnitude $\sigma(t)$ được tạo ra từ thuật toán ShapeDD-IDW (sử dụng IDW-MMD để phát hiện drift nhanh và chính xác). Tuy nhiên, để tính toán các đặc trưng phân loại (geometric và temporal features), SE-CDT chỉ phân tích hình dạng và động học của signal này, mà không phụ thuộc vào cơ chế weighting cụ thể. Trong phiên bản tương lai, có thể tối ưu hóa thêm bằng cách chạy song song một sliding window standard MMD để tạo signal riêng cho SE-CDT, nhằm giảm mất thông tin từ cơ chế IDW; tuy nhiên, phiên bản hiện tại sử dụng chung một signal để cân bằng hiệu suất tính toán và độ nhạy phát hiện.
+
 \subsection{Cơ sở lý thuyết}
 Theo phân loại của CDT-MSW, drift được chia thành hai loại chính là:
 \begin{itemize}
@@ -208,9 +210,9 @@ Công thức của SE-CDT được mô tả như sau:
 		\STATE Tính đặc trưng hình học: $n_p \leftarrow |P|$, WR, CV, SNR, PPR, DPAR
 		\STATE Tính đặc trưng thời gian: LTS, SDS, MS
 		\STATE
-		\STATE \textbf{--- Bước 0: Growth Process (CDT-MSW Algorithm 2) ---}
-		\STATE $\text{drift\_length} \leftarrow \text{GrowthProcess}(\sigma_s)$ \COMMENT{WR-based estimation}
-		\IF{drift\_length $> 1$}
+		\STATE \textbf{--- Bước 0: Growth Process (Unsupervised Adaptation) ---}
+		\STATE $\text{drift\_length} \leftarrow \text{EstimateDriftDuration}(\sigma_s, \text{WR-based})$ \COMMENT{Adapt từ CDT-MSW cho unsupervised}
+		\IF{drift\_length $> 1$} \COMMENT{Nếu drift diễn ra trên nhiều time steps}
 		\STATE Phân loại Incremental/Gradual dựa trên LTS, MS, SDS \COMMENT{xem Bước 4}
 		\RETURN \textbf{PCD} (Incremental hoặc Gradual)
 		\ENDIF
@@ -227,11 +229,11 @@ Công thức của SE-CDT được mô tả như sau:
 		\IF{$n_p \geq 4$ AND CV $< 0.3$ AND LTS $< 0.5$}
 		\RETURN \textbf{RECURRENT} (TCD)
 		\ENDIF
-		\STATE \textbf{--- Bước 4: Incremental vs Gradual (PCD) ---}
+		\STATE \textbf{--- Bước 4: Phân loại PCD: Incremental vs Gradual ---}
 		\IF{LTS $> 0.5$ OR (MS $> 0.6$ AND LTS $> 0.3$) OR (SDS $> 0.12$ AND LTS $> 0.3$) OR $n_p \geq 7$}
-		\RETURN \textbf{INCREMENTAL} (PCD)
+		\RETURN \textbf{INCREMENTAL} (PCD) \COMMENT{Drift có xu hướng tuyến tính rõ ràng hoặc bước nhảy}
 		\ELSE
-		\RETURN \textbf{GRADUAL} (PCD)
+		\RETURN \textbf{GRADUAL} (PCD) \COMMENT{Mặc định: Gradual --- drift mịn, không có bước nhảy rõ ràng}
 		\ENDIF
 	\end{algorithmic}
 \end{algorithm}
@@ -255,14 +257,15 @@ Công thức của SE-CDT được mô tả như sau:
 \end{itemize}
 
 \subsection{Giải thích lựa chọn ngưỡng}
-Các ngưỡng trong Algorithm~\ref{alg:se-cdt} được xác định qua phân tích thực nghiệm trên synthetic datasets và tinh chỉnh qua nhiều vòng lặp:
+Các ngưỡng trong Algorithm~\ref{alg:se-cdt} được xác định qua phân tích thực nghiệm trên synthetic datasets (với cửa sổ chuẩn $n, m \approx 200$) và tinh chỉnh qua nhiều vòng lặp:
 \begin{itemize}
 	\item \textbf{Blip:} $n_p = 2$, PPR $< 0.20$, DPAR $> 0.65$. Blip drift tạo hai peaks gần nhau (PPR thấp) với biên độ tương đương (DPAR cao), phản ánh mẫu ``drift rồi quay lại''.
-	\item \textbf{Sudden:} $n_p \leq 3$, WR $< 0.15$, SNR $> 2.0$. Sudden drift tạo peak sắc nét (WR thấp) với tỉ lệ tín hiệu/nhiễu cao (SNR $> 2$). Ngưỡng WR $= 0.15$ cho phép FWHM $< 30\%$ window size.
+	\item \textbf{Sudden:} $n_p \leq 3$, WR $< 0.15$, SNR $> 2.0$. Sudden drift tạo peak sắc nét (WR thấp) với tỉ lệ tín hiệu/nhiễu cao (SNR $> 2$). Ngưỡng WR $= 0.15$ cho phép FWHM $< 30\%$ độ dài tín hiệu.
 	\item \textbf{Recurrent:} $n_p \geq 4$, CV $< 0.3$, LTS $< 0.5$. Nhiều peaks đều đặn (CV thấp) mà \textit{không} có xu hướng tuyến tính (LTS thấp, để tránh nhầm với Incremental).
 	\item \textbf{Incremental vs Gradual:} Phân biệt bằng đặc trưng thời gian. Incremental có xu hướng tuyến tính mạnh (LTS $> 0.5$) hoặc tính đơn điệu cao (MS $> 0.6$). Gradual có tín hiệu dao động (LTS, MS thấp).
 \end{itemize}
-\textit{Ghi chú: Các ngưỡng được tối ưu trên synthetic data và có thể cần điều chỉnh cho từng domain cụ thể. Xem bảng kèm theo mã nguồn để biết giá trị chính xác.}
+
+\textbf{Cảnh báo về phụ thuộc window size:} Các ngưỡng hình học như WR, SNR, PPR phụ thuộc vào độ dài của tín hiệu drift magnitude $\sigma(t)$ (cụ thể là độ dài của sliding window trong ShapeDD). Nếu cửa sổ được thay đổi so với cài đặt chuẩn ($n, m \approx 200$), các ngưỡng này cần được hiệu chỉnh lại theo tỉ lệ. \\textit{Ghi chú: Các ngưỡng được tối ưu trên synthetic data và có thể cần điều chỉnh cho từng domain cụ thể. Bảng mapping ngưỡng cho các window size khác nhau được cung cấp kèm theo mã nguồn. Đối với ứng dụng thực tế, khuyến nghị chạy tinh chỉnh (hyperparameter tuning) trên dữ liệu domain-specific.}
 
 \textbf{Lưu ý về biến thể IDW-MMD:}
 Luận văn cũng thử nghiệm sử dụng IDW-MMD (trọng số nghịch mật độ) thay cho standard MMD trong SE-CDT. Tuy nhiên, kết quả cho thấy IDW-MMD không phù hợp cho classification do cơ chế giảm phương sai có xu hướng loại bỏ những thay đổi nhỏ (coi là noise). IDW-MMD phù hợp hơn cho drift \textit{detection} (nhị phân: có/không có drift), nhưng standard MMD tốt hơn cho \textit{classification} (phân loại loại drift). Chi tiết thử nghiệm và so sánh định lượng được trình bày ở Chương~\ref{chap:experiments}.
