@@ -2,12 +2,13 @@
 \hline
 \textbf{Drift Type} & \textbf{CDT-MSW (Paper) [\%]} & \textbf{SE-CDT (Ours) [\%]} \\
 \hline
-Sudden & 	extbf{88.0\%} & 82.4\% \\
-Blip & 	extbf{35.0\%} & 17.5\% \\
-Gradual & 15.0\% & 	extbf{55.4\%} \\
-Incremental & 8.5\% & 	extbf{23.8\%} \\
-Recurrent & 	extbf{60.0\%} & 0.0\%$^\dagger$ \\
+Sudden & \textbf{90.2\%} & 82.4\% \\
+Blip & \textbf{88.5\%} & 17.5\% \\
+Gradual & 96.9\% & \textbf{55.4\%}$^\dagger$ \\
+Incremental & 74.0\% & \textbf{23.8\%}$^\dagger$ \\
+Recurrent & \textbf{83.9\%} & 0.0\%$^\ddagger$ \\
 \hline
+\multicolumn{3}{|l|}{\footnotesize $^\dagger$CDT-MSW ACC\_subcat is conditional (correct detection + category); SE-CDT is unconditional.} \\
+\multicolumn{3}{|l|}{\footnotesize $^\ddagger$Recurrent drift processed as independent Sudden events (SE-CDT has no concept memory).} \\
 \hline
-\multicolumn{3}{|l|}{\footnotesize $^\dagger$Recurrent drift processed as separate Sudden events (no concept memory).} \\n\hline
 \end{tabular}

@@ -119,17 +119,24 @@ def generate_standard_table(headers, data, align=None):
     Args:
         headers: List of column headers
         data: List of lists (rows)
-        align: Column alignment string (e.g., '|l|c|c|')
+        align: Column alignment string (e.g., '|l|c|c|'). If None, auto-detects:
+               first column gets left-alignment (|l|), remaining columns centered (|c|).
     """
     if align is None:
-        align = "|" + "|".join(["c"] * len(headers)) + "|"
+        # Auto-align: first column left (label column), rest centered
+        if len(headers) > 1:
+            align = "|l|" + "|".join(["c"] * (len(headers) - 1)) + "|"
+        else:
+            align = "|c|"
     
     lines = []
     lines.append(f"\\begin{{tabular}}{{{align}}}")
     lines.append("\\hline")
     
-    # Header row
-    header_line = " & ".join([f"\\textbf{{{escape_latex(h)}}}" for h in headers])
+    # Header row: escape only plain-text headers; skip if header already contains LaTeX
+    header_line = " & ".join(
+        [f"\\textbf{{{h}}}" if "\\" in h else f"\\textbf{{{escape_latex(h)}}}" for h in headers]
+    )
     lines.append(header_line + " \\\\")
     lines.append("\\hline")
     

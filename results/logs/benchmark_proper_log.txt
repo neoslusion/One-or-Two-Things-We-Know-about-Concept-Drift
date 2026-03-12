@@ -734,3 +734,141 @@
 2026-03-02 01:35:41 | INFO |   Completed Mixed_B (seed=1)
 2026-03-02 01:35:41 | INFO | Generated supervised stream with P(Y|X) change: blip
 2026-03-02 01:35:42 | INFO |   Completed Mixed_B (seed=2)
+2026-03-12 19:52:57 | INFO | Starting Comprehensive Benchmark with 50 tasks...
+2026-03-12 19:52:57 | INFO | Generated supervised stream with P(Y|X) change: blip
+2026-03-12 19:52:57 | INFO | Generated supervised stream with P(Y|X) change: blip
+2026-03-12 19:52:57 | INFO | Generated supervised stream with P(Y|X) change: blip
+2026-03-12 19:52:57 | INFO | Generated supervised stream with P(Y|X) change: blip
+2026-03-12 19:52:57 | INFO | Generated supervised stream with P(Y|X) change: blip
+2026-03-12 19:52:57 | INFO | Generated supervised stream with P(Y|X) change: blip
+2026-03-12 19:52:57 | INFO | Generated supervised stream with P(Y|X) change: blip
+2026-03-12 19:52:57 | INFO | Generated supervised stream with P(Y|X) change: blip
+2026-03-12 19:52:57 | INFO | Generated supervised stream with P(Y|X) change: blip
+2026-03-12 19:52:57 | INFO | Generated supervised stream with P(Y|X) change: blip
+2026-03-12 19:53:29 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-12 19:53:30 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-12 19:53:30 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-12 19:53:32 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-12 19:53:32 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-12 19:53:35 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-12 19:53:36 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-12 19:53:36 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-12 19:53:37 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-12 19:53:38 | INFO | Generated supervised stream with P(Y|X) change: gradual
+2026-03-12 19:53:38 | INFO | Generated supervised stream with P(Y|X) change: gradual
+2026-03-12 19:53:38 | INFO | Generated supervised stream with P(Y|X) change: gradual
+2026-03-12 19:53:40 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-12 19:53:41 | INFO | Generated supervised stream with P(Y|X) change: gradual
+2026-03-12 19:53:43 | INFO | Generated supervised stream with P(Y|X) change: gradual
+2026-03-12 19:53:44 | INFO | Generated supervised stream with P(Y|X) change: gradual
+2026-03-12 19:54:16 | INFO | Generated supervised stream with P(Y|X) change: incremental
+2026-03-12 19:54:20 | INFO | Generated supervised stream with P(Y|X) change: incremental
+2026-03-12 19:54:23 | INFO | Generated supervised stream with P(Y|X) change: incremental
+2026-03-12 19:54:25 | INFO | Generated supervised stream with P(Y|X) change: gradual
+2026-03-12 19:54:25 | INFO | Generated supervised stream with P(Y|X) change: incremental
+2026-03-12 19:54:26 | INFO | Generated supervised stream with P(Y|X) change: incremental
+2026-03-12 19:54:31 | INFO | Generated supervised stream with P(Y|X) change: incremental
+2026-03-12 19:54:35 | INFO | Generated supervised stream with P(Y|X) change: gradual
+2026-03-12 19:54:36 | INFO | Generated supervised stream with P(Y|X) change: incremental
+2026-03-12 19:54:40 | INFO | Generated supervised stream with P(Y|X) change: incremental
+2026-03-12 19:54:42 | INFO | Generated supervised stream with P(Y|X) change: gradual
+2026-03-12 19:54:46 | INFO | Generated supervised stream with P(Y|X) change: gradual
+2026-03-12 19:54:51 | INFO | Generated supervised stream with P(Y|X) change: incremental
+2026-03-12 19:54:51 | INFO | Generated supervised stream with P(Y|X) change: incremental
+2026-03-12 19:54:59 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-12 19:55:01 | INFO | Processed 5/50 tasks...
+2026-03-12 19:55:01 | INFO | Processed 10/50 tasks...
+2026-03-12 19:55:01 | INFO | Processed 15/50 tasks...
+2026-03-12 19:55:01 | INFO | Processed 20/50 tasks...
+2026-03-12 19:55:01 | INFO | Processed 25/50 tasks...
+2026-03-12 19:55:01 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-12 19:55:05 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-12 19:55:07 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-12 19:55:07 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-12 19:55:07 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-12 19:55:11 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-12 19:55:13 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-12 19:55:14 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-12 19:55:16 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-12 19:55:18 | INFO | Processed 30/50 tasks...
+2026-03-12 19:55:19 | INFO | Processed 35/50 tasks...
+2026-03-12 19:55:19 | INFO | Processed 40/50 tasks...
+2026-03-12 19:55:19 | INFO | Processed 45/50 tasks...
+2026-03-12 19:55:20 | INFO | Processed 50/50 tasks...
+2026-03-12 19:55:20 | INFO | Benchmark Complete. Results saved to /home/lpd1hc/sandboxes/One-or-Two-Things-We-Know-about-Concept-Drift/results/raw/benchmark_proper_results.pkl
+2026-03-12 19:55:20 | INFO | Aggregate Table generated at: /home/lpd1hc/sandboxes/One-or-Two-Things-We-Know-about-Concept-Drift/results/tables/table_se_cdt_aggregate.tex
+2026-03-12 19:55:20 | INFO | Generating FAIR COMPARISON table...
+2026-03-12 19:55:20 | INFO | Fair comparison table saved to: /home/lpd1hc/sandboxes/One-or-Two-Things-We-Know-about-Concept-Drift/results/tables/fair_comparison.tex
+2026-03-12 19:55:20 | INFO | Generating by-drift-type accuracy table...
+2026-03-12 19:55:20 | INFO | By-drift-type table saved to: /home/lpd1hc/sandboxes/One-or-Two-Things-We-Know-about-Concept-Drift/results/tables/table_cdt_msw_vs_se_cdt_by_drift_type.tex
+2026-03-12 19:55:20 | INFO | Starting SUPERVISED CDT_MSW Benchmark...
+2026-03-12 19:55:24 | INFO | Supervised comparison complete.
+2026-03-12 19:56:19 | INFO | Starting Comprehensive Benchmark with 50 tasks...
+2026-03-12 19:56:19 | INFO | Generated supervised stream with P(Y|X) change: blip
+2026-03-12 19:56:19 | INFO | Generated supervised stream with P(Y|X) change: blip
+2026-03-12 19:56:19 | INFO | Generated supervised stream with P(Y|X) change: blip
+2026-03-12 19:56:19 | INFO | Generated supervised stream with P(Y|X) change: blip
+2026-03-12 19:56:19 | INFO | Generated supervised stream with P(Y|X) change: blip
+2026-03-12 19:56:19 | INFO | Generated supervised stream with P(Y|X) change: blip
+2026-03-12 19:56:19 | INFO | Generated supervised stream with P(Y|X) change: blip
+2026-03-12 19:56:19 | INFO | Generated supervised stream with P(Y|X) change: blip
+2026-03-12 19:56:19 | INFO | Generated supervised stream with P(Y|X) change: blip
+2026-03-12 19:56:19 | INFO | Generated supervised stream with P(Y|X) change: blip
+2026-03-12 19:56:50 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-12 19:56:53 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-12 19:56:55 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-12 19:56:56 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-12 19:56:58 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-12 19:56:59 | INFO | Generated supervised stream with P(Y|X) change: gradual
+2026-03-12 19:56:59 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-12 19:57:00 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-12 19:57:01 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-12 19:57:02 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-12 19:57:03 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-12 19:57:03 | INFO | Generated supervised stream with P(Y|X) change: gradual
+2026-03-12 19:57:03 | INFO | Generated supervised stream with P(Y|X) change: gradual
+2026-03-12 19:57:05 | INFO | Generated supervised stream with P(Y|X) change: gradual
+2026-03-12 19:57:06 | INFO | Generated supervised stream with P(Y|X) change: gradual
+2026-03-12 19:57:07 | INFO | Generated supervised stream with P(Y|X) change: gradual
+2026-03-12 19:57:46 | INFO | Generated supervised stream with P(Y|X) change: incremental
+2026-03-12 19:57:47 | INFO | Generated supervised stream with P(Y|X) change: incremental
+2026-03-12 19:57:48 | INFO | Generated supervised stream with P(Y|X) change: incremental
+2026-03-12 19:57:49 | INFO | Generated supervised stream with P(Y|X) change: incremental
+2026-03-12 19:57:54 | INFO | Generated supervised stream with P(Y|X) change: gradual
+2026-03-12 19:58:01 | INFO | Generated supervised stream with P(Y|X) change: gradual
+2026-03-12 19:58:03 | INFO | Generated supervised stream with P(Y|X) change: gradual
+2026-03-12 19:58:04 | INFO | Generated supervised stream with P(Y|X) change: incremental
+2026-03-12 19:58:08 | INFO | Generated supervised stream with P(Y|X) change: incremental
+2026-03-12 19:58:14 | INFO | Generated supervised stream with P(Y|X) change: gradual
+2026-03-12 19:58:15 | INFO | Processed 5/50 tasks...
+2026-03-12 19:58:15 | INFO | Processed 10/50 tasks...
+2026-03-12 19:58:15 | INFO | Processed 15/50 tasks...
+2026-03-12 19:58:15 | INFO | Processed 20/50 tasks...
+2026-03-12 19:58:20 | INFO | Generated supervised stream with P(Y|X) change: incremental
+2026-03-12 19:58:22 | INFO | Generated supervised stream with P(Y|X) change: incremental
+2026-03-12 19:58:23 | INFO | Generated supervised stream with P(Y|X) change: incremental
+2026-03-12 19:58:23 | INFO | Generated supervised stream with P(Y|X) change: incremental
+2026-03-12 19:58:24 | INFO | Processed 25/50 tasks...
+2026-03-12 19:58:28 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-12 19:58:30 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-12 19:58:33 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-12 19:58:34 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-12 19:58:35 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-12 19:58:35 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-12 19:58:36 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-12 19:58:39 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-12 19:58:40 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-12 19:58:44 | INFO | Generated supervised stream with P(Y|X) change: sudden
+2026-03-12 19:58:49 | INFO | Processed 30/50 tasks...
+2026-03-12 19:58:49 | INFO | Processed 35/50 tasks...
+2026-03-12 19:58:49 | INFO | Processed 40/50 tasks...
+2026-03-12 19:58:49 | INFO | Processed 45/50 tasks...
+2026-03-12 19:58:50 | INFO | Processed 50/50 tasks...
+2026-03-12 19:58:50 | INFO | Benchmark Complete. Results saved to /home/lpd1hc/sandboxes/One-or-Two-Things-We-Know-about-Concept-Drift/results/raw/benchmark_proper_results.pkl
+2026-03-12 19:58:50 | INFO | Aggregate Table generated at: /home/lpd1hc/sandboxes/One-or-Two-Things-We-Know-about-Concept-Drift/results/tables/table_se_cdt_aggregate.tex
+2026-03-12 19:58:50 | INFO | Generating FAIR COMPARISON table...
+2026-03-12 19:58:50 | INFO | Fair comparison table saved to: /home/lpd1hc/sandboxes/One-or-Two-Things-We-Know-about-Concept-Drift/results/tables/fair_comparison.tex
+2026-03-12 19:58:50 | INFO | Generating by-drift-type accuracy table...
+2026-03-12 19:58:50 | INFO | By-drift-type table saved to: /home/lpd1hc/sandboxes/One-or-Two-Things-We-Know-about-Concept-Drift/results/tables/table_cdt_msw_vs_se_cdt_by_drift_type.tex
+2026-03-12 19:58:50 | INFO | Starting SUPERVISED CDT_MSW Benchmark...
+2026-03-12 19:58:54 | INFO | Supervised comparison complete.

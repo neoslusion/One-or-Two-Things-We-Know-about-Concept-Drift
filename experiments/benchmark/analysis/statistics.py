@@ -136,8 +136,10 @@ def run_nemenyi_posthoc(df_results, metric='f1_score', output_dir=None):
     avg_ranks = ranks.mean().sort_values()
 
     k, n = len(pivot_df.columns), len(pivot_df)
-    q_alpha_table = {2: 1.960, 3: 2.343, 4: 2.569, 5: 2.728, 6: 2.850}
-    q_alpha = q_alpha_table.get(k, 3.0)
+    # Critical values from Demšar (2006), Table I (α=0.05, two-tailed Studentized range)
+    q_alpha_table = {2: 1.960, 3: 2.343, 4: 2.569, 5: 2.728, 6: 2.850,
+                     7: 2.949, 8: 3.031, 9: 3.102, 10: 3.164}
+    q_alpha = q_alpha_table.get(k, 3.031 + (k - 8) * 0.060)  # linear approx for k>10
     cd = q_alpha * np.sqrt(k * (k + 1) / (6 * n))
 
     if output_dir:
@@ -147,7 +149,9 @@ def run_nemenyi_posthoc(df_results, metric='f1_score', output_dir=None):
     return {
         'pvalue_matrix': nemenyi_result,
         'average_ranks': avg_ranks,
-        'critical_difference': cd
+        'critical_difference': cd,
+        'n_datasets': n,
+        'n_methods': k,
     }
 
 def plot_critical_difference_diagram(df_results, metric='f1_score', output_path=None):
@@ -160,7 +164,10 @@ def plot_critical_difference_diagram(df_results, metric='f1_score', output_path=
     avg_ranks = ranks.mean().sort_values()
 
     k, n = len(pivot_df.columns), len(pivot_df)
-    q_alpha = 3.0 # Simple default
+    # Critical values from Demšar (2006), Table I (α=0.05)
+    q_alpha_table = {2: 1.960, 3: 2.343, 4: 2.569, 5: 2.728, 6: 2.850,
+                     7: 2.949, 8: 3.031, 9: 3.102, 10: 3.164}
+    q_alpha = q_alpha_table.get(k, 3.031 + (k - 8) * 0.060)
     cd = q_alpha * np.sqrt(k * (k + 1) / (6 * n))
 
     fig, ax = plt.subplots(figsize=(10, 4))
@@ -199,6 +206,16 @@ def generate_statistical_latex_table(nemenyi_results, output_dir):
     """Generate standardized LaTeX table for statistical results."""
     avg_ranks = nemenyi_results['average_ranks']
     cd = nemenyi_results['critical_difference']
+
+    # Sanity check: cd should be > q_alpha (i.e. > ~3.0 for k=8)
+    # If it equals q_alpha something went wrong upstream; recompute from avg_ranks
+    k = len(avg_ranks)
+    n = nemenyi_results.get('n_datasets', None)
+    if n is not None and cd < 2.0:  # clearly wrong
+        q_alpha_table = {2: 1.960, 3: 2.343, 4: 2.569, 5: 2.728, 6: 2.850,
+                         7: 2.949, 8: 3.031, 9: 3.102, 10: 3.164}
+        q = q_alpha_table.get(k, 3.031 + (k - 8) * 0.060)
+        cd = q * np.sqrt(k * (k + 1) / (6 * n))
 
     latex = r"""\begin{tabular}{|l|c|c|}
 \hline

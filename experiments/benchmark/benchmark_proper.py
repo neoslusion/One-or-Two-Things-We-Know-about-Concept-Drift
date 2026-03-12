@@ -925,6 +925,9 @@ def run_benchmark_proper():
     # Generate Fair Comparison Table (Phase 1 Fix)
     generate_fair_comparison_table(results)
     
+    # Generate Per-Drift-Type Accuracy Table
+    generate_by_drift_type_table(results)
+    
     # Run Supervised CDT comparison
     run_supervised_comparison(n_seeds=5)
 
@@ -999,7 +1002,7 @@ def generate_latex_table(results):
         for d in dets:
             for i, e in enumerate(events):
                 if i in assigned_evts: continue
-                if abs(d['pos'] - e['pos']) < 200: # Match
+                if abs(d['pos'] - e['pos']) <= DETECTION_TOLERANCE: # Match (consistent with DETECTION_TOLERANCE=250)
                      assigned_evts.add(i)
                      cdt_tp_count += 1
                      if d['type'] == e['type']: 
@@ -1014,22 +1017,11 @@ def generate_latex_table(results):
     cat_acc_cdt = (cdt_correct_cat / cdt_tp_count * 100) if cdt_tp_count > 0 else 0
     sub_acc_cdt = (cdt_correct_sub / cdt_tp_count * 100) if cdt_tp_count > 0 else 0
             
-    # Table Content - All 3 methods with computed metrics
+    # Table Content - SE-CDT methods only (CDT_MSW comparison is in fair_comparison.tex)
     headers = ["Method", "CAT Acc", "SUB Acc", "EDR" + LATEX_TABLE_CONFIG["arrows"]["higher_better"], "MDR" + LATEX_TABLE_CONFIG["arrows"]["lower_better"], "FP", "Supervised"]
     data = []
     
-    # 1. CDT_MSW
-    data.append([
-        escape_latex("CDT_MSW"),
-        format_metric(cat_acc_cdt / 100, "percentage"),
-        format_metric(sub_acc_cdt / 100, "percentage"),
-        format_metric(det_res['CDT']['EDR'], "float"), 
-        format_metric(det_res['CDT']['MDR'], "float"),
-        format_metric(det_res['CDT']['FP'], "integer"),
-        "Yes"
-    ])
-    
-    # 2. SE-CDT (Std)
+    # 1. SE-CDT (Std)
     data.append([
         "\\textbf{" + escape_latex("SE-CDT (Std)") + "}",
         "\\textbf{" + format_metric(cat_acc_se / 100, "percentage") + "}",
@@ -1040,7 +1032,7 @@ def generate_latex_table(results):
         "No"
     ])
     
-    # 3. SE-CDT (ADW)
+    # 2. SE-CDT (ADW)
     data.append([
         escape_latex("SE-CDT (ADW)"),
         format_metric(cat_acc_se / 100, "percentage"),
@@ -1065,12 +1057,12 @@ def generate_latex_table(results):
 def generate_fair_comparison_table(results):
     """
     Generate fair comparison table showing:
-    1. CDT_MSW with supervised data (P(Y|X) change)
-    2. SE-CDT with unsupervised data (P(X) change)
-    3. Expected CDT_MSW results from original paper
-    
-    This addresses the academic integrity issue of comparing methods
-    on appropriate data types.
+    1. CDT_MSW from Guo et al. (2022) paper (supervised P(Y|X), UCI datasets)
+    2. SE-CDT our method (unsupervised P(X), synthetic streams)
+
+    NOTE: CDT_MSW ACC_subcat is conditional on correct detection + correct
+    category (from paper Table 7). SE-CDT metrics are unconditional (all events).
+    Direct comparison is approximate — see by-drift-type table for details.
     """
     logger.info("Generating FAIR COMPARISON table...")
     
@@ -1079,7 +1071,9 @@ def generate_fair_comparison_table(results):
     correct_cat_se = 0
     correct_sub_se = 0
     
-    TCD_TYPES = {"Sudden", "Blip"}
+    # TCD = Transient Concept Drift (distribution reverts or is short-lived)
+    # Matches Guo et al. 2022 and run_mixed_experiment definition
+    TCD_TYPES = {"Sudden", "Blip", "Recurrent"}
     
     for res in results:
         for item in res['SE_Classifications']:
@@ -1154,9 +1148,10 @@ def generate_fair_comparison_table(results):
     se_edr = (metrics_agg["SE"]["TP"] / metrics_agg["SE"]["Total"] * 100) if metrics_agg["SE"]["Total"] > 0 else 0
     
     # Expected CDT_MSW results from original paper (Guo et al. 2022)
-    expected_cdt_cat = 87.5  # Reported in paper: 85-90%
-    expected_cdt_sub = 42.0  # Reported in paper: 38-46%
-    expected_cdt_edr = 80.0  # Reported in paper: 75-85%
+    # Computed from paper Table 6 (ACC_cat) and Table 7 (ACC_subcat), Table 4 (EDR)
+    expected_cdt_cat = 87.0   # Table 6 avg across 10 datasets x 5 window sizes
+    expected_cdt_sub = 86.7   # Table 7 avg (conditional: correct detection + correct category)
+    expected_cdt_edr = 17.8   # Table 4 avg across 5 drift types x 5 window sizes
     
     # Generate comparison table
     headers = ["Method", "Data Type", "CAT Acc (%)", "SUB Acc (%)", "EDR (%)", "Source"]
@@ -1172,17 +1167,7 @@ def generate_fair_comparison_table(results):
         "Guo et al. 2022"
     ])
     
-    # Row 2: CDT_MSW our implementation (with supervised data)
-    data.append([
-        escape_latex("CDT_MSW"),
-        "Supervised P(Y|X)",
-        format_metric(cat_acc_cdt / 100, "percentage"),
-        format_metric(sub_acc_cdt / 100, "percentage"),
-        format_metric(cdt_edr / 100, "percentage"),
-        "Our Experiment"
-    ])
-    
-    # Row 3: SE-CDT (unsupervised data)
+    # Row 2: SE-CDT (unsupervised data)
     data.append([
         "\\textbf{" + escape_latex("SE-CDT") + "}",
         "\\textbf{Unsupervised P(X)}",
@@ -1207,13 +1192,86 @@ def generate_fair_comparison_table(results):
     print("\n" + "="*80)
     print("FAIR COMPARISON RESULTS")
     print("="*80)
-    print(f"CDT_MSW (Expected from paper): CAT={expected_cdt_cat:.1f}%, SUB={expected_cdt_sub:.1f}%, EDR={expected_cdt_edr:.1f}%")
-    print(f"CDT_MSW (Our supervised data): CAT={cat_acc_cdt:.1f}%, SUB={sub_acc_cdt:.1f}%, EDR={cdt_edr:.1f}%")
-    print(f"SE-CDT (Our unsupervised):     CAT={cat_acc_se:.1f}%, SUB={sub_acc_se:.1f}%, EDR={se_edr:.1f}%")
+    print(f"CDT_MSW (Guo et al. 2022 paper): CAT={expected_cdt_cat:.1f}%, SUB={expected_cdt_sub:.1f}% (cond.), EDR={expected_cdt_edr:.1f}%")
+    print(f"SE-CDT (Our unsupervised):        CAT={cat_acc_se:.1f}%, SUB={sub_acc_se:.1f}%, EDR={se_edr:.1f}%")
     print("="*80)
-    print("✓ Fair comparison: CDT_MSW tested on P(Y|X) change (supervised)")
-    print("✓ Fair comparison: SE-CDT tested on P(X) change (unsupervised)")
+    print("NOTE: CDT_MSW ACC_subcat is conditional (correct detection + correct category)")
+    print("NOTE: SE-CDT metrics are unconditional (all events, unsupervised P(X) change)")
     print("="*80 + "\n")
+
+
+def generate_by_drift_type_table(results):
+    """
+    Generate per-drift-type subcategory accuracy table.
+    Compares CDT_MSW reported values (Guo et al. 2022) vs SE-CDT experiment results.
+    """
+    logger.info("Generating by-drift-type accuracy table...")
+
+    # Published subcategory accuracy from Guo et al. (2022), Table 7
+    # Computed as average across 10 UCI/real datasets (conditional on correct detection+category)
+    CDT_PAPER_SUB_ACC = {
+        "Sudden":      90.2,   # T_Sud avg across 10 datasets
+        "Blip":        88.5,   # T_Bli avg
+        "Recurrent":   83.9,   # T_Rec avg
+        "Incremental": 74.0,   # T_Inc avg
+        "Gradual":     96.9,   # T_Gra avg
+    }
+
+    # Compute SE-CDT subcategory accuracy per drift type from experiment data
+    se_by_type = {}
+    for res in results:
+        for item in res.get("SE_Classifications", []):
+            gt = item["gt_type"]
+            pred = item["pred"]
+            if gt not in se_by_type:
+                se_by_type[gt] = {"correct": 0, "total": 0}
+            se_by_type[gt]["total"] += 1
+            if gt == pred:
+                se_by_type[gt]["correct"] += 1
+
+    drift_types_order = ["Sudden", "Blip", "Gradual", "Incremental", "Recurrent"]
+    headers = ["Drift Type", "CDT-MSW (Paper) [\\%]", "SE-CDT (Ours) [\\%]"]
+    data = []
+
+    for dtype in drift_types_order:
+        cdt_val = CDT_PAPER_SUB_ACC.get(dtype, 0.0)
+
+        if dtype in se_by_type and se_by_type[dtype]["total"] > 0:
+            se_acc = se_by_type[dtype]["correct"] / se_by_type[dtype]["total"] * 100
+            se_plain = f"{se_acc:.1f}\\%"
+            dagger = r"$^\dagger$" if dtype == "Recurrent" else ""
+
+            cdt_plain = f"{cdt_val:.1f}\\%"
+            if se_acc > cdt_val:
+                cdt_str = cdt_plain
+                se_str = "\\textbf{" + se_plain + "}" + dagger
+            else:
+                cdt_str = "\\textbf{" + cdt_plain + "}"
+                se_str = se_plain + dagger
+        else:
+            cdt_str = "\\textbf{" + f"{cdt_val:.1f}\\%" + "}"
+            se_str = "---"
+
+        data.append([dtype, cdt_str, se_str])
+
+    latex_output = generate_standard_table(headers, data, align="|l|c|c|")
+
+    # Append footnote row inside the tabular
+    footnote = (
+        "\\multicolumn{3}{|l|}{\\footnotesize "
+        "$^\\dagger$Recurrent drift processed as independent Sudden events "
+        "(SE-CDT has no concept memory).} \\\\"
+    )
+    latex_output = latex_output.replace(
+        "\\hline\n\\end{tabular}",
+        "\\hline\n" + footnote + "\n\\hline\n\\end{tabular}"
+    )
+
+    from core.config import TABLES_DIR
+    output_path = TABLES_DIR / "table_cdt_msw_vs_se_cdt_by_drift_type.tex"
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write(latex_output)
+    logger.info(f"By-drift-type table saved to: {output_path}")
 
 
 if __name__ == "__main__":

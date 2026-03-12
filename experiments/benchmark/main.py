@@ -291,17 +291,49 @@ def run_benchmark():
 
 def main():
     """Main entry point for the benchmark."""
+    import argparse
+    import pickle
+
+    # Parse --tables-only flag (unknown args forwarded from root main.py dispatcher)
+    arg_parser = argparse.ArgumentParser(add_help=False)
+    arg_parser.add_argument(
+        "--tables-only", action="store_true",
+        help="Skip expensive benchmark run; load cached results.pkl and regenerate tables/figures only"
+    )
+    known_args, _ = arg_parser.parse_known_args()
+
+    pkl_path = DETECTION_BENCHMARK_OUTPUTS["results_pkl"]
+
     print("\n" + "="*80)
     print("DRIFT DETECTION BENCHMARK")
     print("="*80)
-    print("Comprehensive evaluation of concept drift detection methods")
-    print("="*80 + "\n")
 
-    # Run benchmark
-    all_results, dataset_summaries = run_benchmark()
+    if known_args.tables_only and pkl_path.exists():
+        print(f"[--tables-only] Loading cached results from {pkl_path} ...")
+        with open(pkl_path, "rb") as fh:
+            all_results = pickle.load(fh)
+        print(f"Loaded {len(all_results)} cached experiment results.")
+    else:
+        if known_args.tables_only:
+            print(f"[--tables-only] No cache found at {pkl_path}. Running full benchmark...")
+        else:
+            print("Comprehensive evaluation of concept drift detection methods")
+        print("="*80 + "\n")
+
+        all_results, dataset_summaries = run_benchmark()
+
+        if len(all_results) == 0:
+            print("No results generated. Exiting.")
+            return
+
+        # Save to pkl so subsequent runs can use --tables-only
+        print(f"\nCaching results to {pkl_path} ...")
+        with open(pkl_path, "wb") as fh:
+            pickle.dump(all_results, fh)
+        print("Cache saved.")
 
     if len(all_results) == 0:
-        print("No results generated. Exiting.")
+        print("No results. Exiting.")
         return
 
     # ========================================================================
