@@ -10,10 +10,9 @@
 \usepackage{graphicx}
 \usepackage{amsmath,amssymb,amsthm}
 
-% warning notes
-\usepackage{todonotes}
 
 % Code and text alignment
+\usepackage{xcolor}   % must be loaded before any \colorlet / \definecolor / \textcolor in the preamble
 \usepackage{listings}
 \usepackage{ragged2e}
 
@@ -111,7 +110,7 @@
 \newtheorem{remark}[theorem]{Nhận xét}
 
 \usepackage{algorithm}
-\usepackage{algorithmic}
+\usepackage{algpseudocode} % IEEE-standard algorithmic layout (algorithmicx)
 \usepackage{url}
 \usepackage[sort,numbers]{natbib}
 \usepackage{hyperref}
@@ -126,7 +125,6 @@
 \usepackage{caption}
 \usepackage{subcaption}
 \usepackage{enumitem}
-\usepackage{xcolor}
 \usepackage{indentfirst}
 \usepackage{times} % Times New Roman font
 \usepackage{anyfontsize} % For custom font sizes

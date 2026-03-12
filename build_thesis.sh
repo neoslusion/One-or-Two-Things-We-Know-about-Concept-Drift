@@ -150,7 +150,7 @@ check_output() {
 show_stats() {
     cd "$LATEX_DIR"
     if [ -f "$TARGET_NAME.log" ]; then
-        local pages=$(grep -o "Output written on $TARGET_NAME.pdf ([0-9]* pages" "$TARGET_NAME.log" | grep -o "[0-9]*" | head -1)
+        local pages=$(grep -o "Output written on $TARGET_NAME.pdf ([0-9]* pages" "$TARGET_NAME.log" | grep -o "([0-9]*" | grep -o "[0-9]*")
         local warnings=$(grep -c "Warning" "$TARGET_NAME.log" 2>/dev/null || echo "0")
         local errors=$(grep -c "Error" "$TARGET_NAME.log" 2>/dev/null || echo "0")
         

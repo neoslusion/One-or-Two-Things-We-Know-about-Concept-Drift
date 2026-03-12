@@ -379,36 +379,27 @@ Tín hiệu shape được tính bằng convolution:
 	\caption{Shape-based Drift Detector (ShapeDD)}
 	\label{alg:shapedd_theory}
 	\begin{algorithmic}[1]
-		\REQUIRE Stream $S$, window size $l_1$, bandwidth $\sigma$, significance $\alpha$
-		\ENSURE Drift points $D$
-		\STATE $D \leftarrow \emptyset$
-		\STATE Initialize sliding window $W$ of size $2l_1$
-		\FOR{each new sample $x_t$ in $S$}
-		\STATE Update $W$
-		\IF{$|W| = 2l_1$}
-		\STATE \textbf{1. Compute Kernel Matrix $K$}
-		\STATE $\sigma \leftarrow \text{median\_heuristic}(W)$
-		\STATE $K_{ij} \leftarrow \exp(-\|x_i - x_j\|^2 / 2\sigma^2)$
-
-		\STATE \textbf{2. Compute Weighted MMD}
-		\STATE Define weights $w(t)$ (contrast function)
-		\STATE $\text{MMD}^2_t \leftarrow \sum_{i,j} w_i w_j K_{ij}$
-
-		\STATE \textbf{3. Shape Detection}
-		\STATE $\text{shape}_t \leftarrow (h' * \text{MMD}^2)(t)$
-		\IF{$\text{sign}(\text{shape}_t) \neq \text{sign}(\text{shape}_{t-1})$}
-		\STATE $t_c \leftarrow \text{candidate}(t)$
-
-		\STATE \textbf{4. Permutation Test}
-		\STATE Compute p-value using $N_{perm}$ permutations
-		\IF{p-value $< \alpha$}
-		\STATE $D \leftarrow D \cup \{t_c\}$
-		\STATE \textbf{Output:} Drift detected at $t_c$
-		\ENDIF
-		\ENDIF
-		\ENDIF
-		\ENDFOR
-		\RETURN $D$
+		\Require Stream $S$, window size $l_1$, bandwidth $\sigma$, significance level $\alpha$
+		\Ensure Set of detected drift points $D$
+		\State $D \leftarrow \emptyset$
+		\State Initialize sliding window $W$ of size $2l_1$
+		\For{each new sample $x_t$ in $S$}
+			\State Update $W$ with $x_t$
+			\If{$|W| = 2l_1$}
+				\State $\sigma \leftarrow \text{MedianHeuristic}(W)$ \Comment{estimate kernel bandwidth}
+				\State $K_{ij} \leftarrow \exp\!\left(-\|x_i - x_j\|^2 / 2\sigma^2\right)$ for all $i,j$ \Comment{compute kernel matrix}
+				\State Define contrast weights $w(t)$ and compute $\text{MMD}^2_t \leftarrow \sum_{i,j} w_i w_j K_{ij}$
+				\State $\text{shape}_t \leftarrow (h' * \text{MMD}^2)(t)$ \Comment{convolve with derivative of smoothing kernel}
+				\If{$\operatorname{sign}(\text{shape}_t) \neq \operatorname{sign}(\text{shape}_{t-1})$} \Comment{sign change $\Rightarrow$ drift candidate}
+					\State $t_c \leftarrow t$
+					\State Compute p-value via $N_{\text{perm}}$ permutations of the kernel matrix
+					\If{$\text{p-value} < \alpha$}
+						\State $D \leftarrow D \cup \{t_c\}$ \Comment{drift confirmed at $t_c$}
+					\EndIf
+				\EndIf
+			\EndIf
+		\EndFor
+		\Return $D$
 	\end{algorithmic}
 \end{algorithm}
 
