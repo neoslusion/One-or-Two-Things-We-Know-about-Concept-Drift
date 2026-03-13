@@ -350,14 +350,14 @@ Trong đó:
 
 Việc định danh danh mục (category) dựa trên mức độ ổn định của phân phối dữ liệu được đánh giá qua ngưỡng $d$ (drift length detection parameter) [2]:
 \begin{itemize}
-    \item Nếu $r_{t+1,R}^2 \le d$ (ổn định ngay lập tức): Độ dài trôi $m=1$. Danh mục được phân loại là \textbf{Trôi dạt Khái niệm Tức thời} (Transient Concept Drift - TCD) [2].
-    \item Nếu $r_{t+i,R}^2 > d$ (chưa ổn định): $W_R$ tiếp tục trượt về phía trước với bước trượt là $s$. Quá trình kết thúc khi đạt trạng thái $r_{t+m,R}^2 \le d$. Lúc này độ dài trôi $m > 1$, và danh mục được phân loại là \textbf{Trôi dạt Khái niệm Tiệm tiến} (Progressive Concept Drift - PCD) [2].
+    \item Nếu $r_{t+1,R}^2 \le d$ (ổn định ngay lập tức): Độ dài trôi $m=1$. Danh mục được phân loại là \textbf{Trôi dạt Khái niệm Tức thời} (Transient Concept Drift - TCD).
+    \item Nếu $r_{t+i,R}^2 > d$ (chưa ổn định): $W_R$ tiếp tục trượt về phía trước với bước trượt là $s$. Quá trình kết thúc khi đạt trạng thái $r_{t+m,R}^2 \le d$. Lúc này độ dài trôi $m > 1$, và danh mục được phân loại là \textbf{Trôi dạt Khái niệm Tiệm tiến} (Progressive Concept Drift - PCD).
 \end{itemize}
 
-Đồng thời trong quá trình $W_R$ trượt đi, các cửa sổ cơ bản $W_A$ và $W_B$ dần dần phát triển (grow) thành các \textbf{cửa sổ tổng hợp} (composite windows) $W_A^{\prime}$ và $W_B^{\prime}$. Kích thước cuối cùng của chúng bằng $m$ lần kích thước cửa sổ cơ bản ($ms$) [2].
+Đồng thời trong quá trình $W_R$ trượt đi, các cửa sổ cơ bản $W_A$ và $W_B$ dần dần phát triển (grow) thành các \textbf{cửa sổ tổng hợp} (composite windows) $W_A^{\prime}$ và $W_B^{\prime}$. Kích thước cuối cùng của chúng bằng $m$ lần kích thước cửa sổ cơ bản ($ms$).
 
 \subsubsection*{Đánh giá độ chính xác ước lượng vùng Drift đối với nhóm PCD}
-Khả năng ước lượng độ dài trôi dạt của thuật toán được đánh giá qua 3 chỉ số [6], [7], [8], [4]:
+Khả năng ước lượng độ dài trôi dạt của thuật toán được đánh giá qua 3 chỉ số sau:
 \begin{itemize}
     \item \textbf{LLR (Drift Length Loss Rate):} Tỷ lệ độ dài trôi dạt bị mất (do phát hiện trễ ở điểm bắt đầu hoặc kết thúc sớm). Mục tiêu: LLR càng thấp càng tốt.
     \item \textbf{LOR (Drift Length Overflow Rate):} Tỷ lệ độ dài trôi dạt bị ước lượng dư thừa (vượt quá độ dài thực tế). Mục tiêu: LOR càng thấp càng tốt.
@@ -375,10 +375,10 @@ Trong đó [1]:
     \item $a^{i A^{\prime}}_0$ là độ chính xác trên cửa sổ trượt $W'_A$ sau khi trượt đến bước thứ $i$.
 \end{itemize}
 
-Quá trình trượt kết thúc sau $k$ bước ($k$ là tham số dừng theo dõi) [6]. Tập hợp các giá trị $\tilde{P}^{i}_{\text{tra}}$ tạo thành một \textbf{Đường cong TFR} (TFR curve). Hình dáng của đường cong này qua 4 giai đoạn (tương ứng với vị trí tương đối của $W_A^{\prime}$ và $W_B^{\prime}$) được dùng để định danh tiểu loại trôi dạt [2]:
+Quá trình trượt kết thúc sau $k$ bước ($k$ là tham số dừng theo dõi) [6]. Tập hợp các giá trị $\tilde{P}^{i}_{\text{tra}}$ tạo thành một \textbf{Đường cong TFR} (TFR curve). Hình dáng của đường cong này qua 4 giai đoạn (tương ứng với vị trí tương đối của $W_A^{\prime}$ và $W_B^{\prime}$) được dùng để xác định loại trôi dạt:
 
 \subsubsection*{Phân biệt nhóm TCD (Sudden, Blip, Recurrent)}
-Đối với nhóm TCD, đường cong TFR thể hiện các đặc trưng rõ rệt [3]:
+Đối với nhóm TCD, đường cong TFR thể hiện các đặc trưng rõ rệt theo từng loại:
 \begin{itemize}
     \item \textbf{Sudden drift (Đột ngột):} Ở giai đoạn đầu, TFR nhỏ hơn 1 (do $W'_B$ chứa dữ liệu mới, $W'_A$ chứa dữ liệu cũ). Sau đó, TFR tăng dần lên gần mức 1 và duy trì ổn định ở các giai đoạn sau khi $W'_A$ hoàn toàn tiến vào vùng khái niệm mới.
     \item \textbf{Blip (Nhiễu cục bộ):} TFR tương tự Sudden ở hai giai đoạn đầu. Tuy nhiên, ở giai đoạn 3, do dữ liệu trong $W'_A$ khôi phục lại phân phối cũ ngay lập tức, TFR giảm đột ngột xuống dưới 1 và duy trì ở mức này.
@@ -386,14 +386,14 @@ Quá trình trượt kết thúc sau $k$ bước ($k$ là tham số dừng theo 
 \end{itemize}
 
 \subsubsection*{Phân biệt nhóm PCD (Incremental và Gradual) bằng đường cong MTFR}
-Đối với nhóm PCD, vì kích thước cửa sổ tổng hợp $W_A^{\prime}$ và $W_B^{\prime}$ lớn (bằng $m \times s$), sự khác biệt tín hiệu giữa Incremental và Gradual bị pha loãng [4]. Do đó, thuật toán tính toán thêm một đường cong \textbf{Micro TFR (MTFR)} để khuếch đại sự khác biệt này:
+Đối với nhóm PCD, vì kích thước cửa sổ tổng hợp $W_A^{\prime}$ và $W_B^{\prime}$ lớn (bằng $m \times s$), sự khác biệt tín hiệu giữa Incremental và Gradual bị pha loãng. Do đó, thuật toán tính toán thêm một đường cong \textbf{Micro TFR (MTFR)} để khuếch đại sự khác biệt này:
 \begin{itemize}
-    \item \textbf{MTFR} được tính bằng tỷ lệ độ chính xác kiểm thử (testing accuracy) của riêng \emph{cửa sổ cơ bản đầu tiên} nằm trong $W_B^{\prime}$ so với \emph{cửa sổ cơ bản đầu tiên} nằm trong $W_A^{\prime}$ trong suốt quá trình theo dõi [4, 5].
-    \item \textbf{Đặc trưng Incremental/Gradual:} Thay vì biến đổi sắc nét như TCD, đường cong giá trị của nhóm này sẽ chuyển tiếp từ từ (slowly transition) từ mức nhỏ hơn 1 sang lớn hơn 1 dựa trên sự thay đổi phân phối tiệm tiến của chúng [7]. Dựa vào sự biến thiên của MTFR ở các giai đoạn giữa, thuật toán sẽ tách biệt được Incremental và Gradual.
+    \item \textbf{MTFR} được tính bằng tỷ lệ độ chính xác kiểm thử (testing accuracy) của riêng \emph{cửa sổ cơ bản đầu tiên} nằm trong $W_B^{\prime}$ so với \emph{cửa sổ cơ bản đầu tiên} nằm trong $W_A^{\prime}$ trong suốt quá trình theo dõi.
+    \item \textbf{Đặc trưng Incremental/Gradual:} Thay vì biến đổi sắc nét như TCD, đường cong giá trị của nhóm này sẽ chuyển tiếp từ từ (slowly transition) từ mức nhỏ hơn 1 sang lớn hơn 1 dựa trên sự thay đổi phân phối tiệm tiến của chúng. Dựa vào sự biến thiên của MTFR ở các giai đoạn giữa, thuật toán sẽ tách biệt được Incremental và Gradual.
 \end{itemize}
 
 \subsection{Đánh giá khả năng nhận dạng loại trôi dạt}
-Khả năng phân loại chính xác các loại trôi dạt của hệ thống được đánh giá khách quan bằng hai chỉ số [8, 9]:
+Khả năng phân loại chính xác các loại trôi dạt của hệ thống được đánh giá khách quan bằng hai chỉ số:
 \begin{itemize}
     \item \textbf{ACC$_{\text{cat}}$} (Drift Category Accuracy): Độ chính xác nhận dạng danh mục chính (TCD so với PCD).
     \begin{equation}
@@ -423,20 +423,6 @@ và \textbf{Tracking Flow Ratio} (Công thức~\ref{eq:tfr}), cùng với các c
 trình phân loại (Công thức~\ref{eq:acc-cat}--\ref{eq:acc-subcat}). Cơ chế này cho phép mô hình không chỉ phát hiện thời điểm drift xảy ra,
 mà còn hiểu được bản chất của sự thay đổi (nhanh, chậm, tuyến tính hay lặp lại), từ đó cung cấp thông tin đầu vào
 quan trọng cho \textbf{giai đoạn cập nhật mô hình thích ứng} được trình bày trong Mục~\ref{sec:model_adaptation_strategies}.
-
-% \subsection{Phạm vi nghiên cứu của luận văn}
-
-% Mặc dù phương pháp CDT\_MSW có khả năng phân loại tất cả 5 loại drift (sudden, gradual, incremental, recurrent, blip), 
-% luận văn này \textbf{tập trung đánh giá chuyên sâu sudden drift detection và adaptation}. Lý do:
-
-% \begin{itemize}
-%     \item \textbf{Tầm quan trọng thực tế}: Sudden drift xảy ra phổ biến nhất trong production systems (system failures, policy changes, equipment malfunctions) và có tính critical cao cho safety-critical applications
-%     \item \textbf{Nền tảng lý thuyết vững chắc}: ShapeDD's Triangle Shape Property (Theorem 2.1) được chứng minh rigorous cho abrupt drift. Gradual/incremental drift không có closed-form characterization tương tự
-%     \item \textbf{Chất lượng nghiên cứu}: Deep analysis of one drift type thoroughly với statistical rigor > shallow coverage của multiple types
-%     \item \textbf{Framework extensible}: Architecture đã được thiết kế để support tất cả drift types - các types khác có thể được nghiên cứu trong future work với minimal code changes
-% \end{itemize}
-
-% Do đó, CDT\_MSW được giới thiệu như một \textit{phương pháp lý thuyết} hỗ trợ drift type identification, nhưng \textit{đánh giá thực nghiệm} của luận văn tập trung vào sudden drift scenarios. Implementation của adaptation strategies (Section~\ref{sec:model_adaptation_strategies}) cũng được thiết kế với architecture support cho tất cả 5 types, nhưng \textit{thorough evaluation chỉ cho sudden drift strategy}.
 
 \section{Các chiến lược cập nhật mô hình thích ứng}
 \label{sec:model_adaptation_strategies}
