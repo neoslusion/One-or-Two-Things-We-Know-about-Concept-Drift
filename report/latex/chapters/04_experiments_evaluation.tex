@@ -118,7 +118,7 @@ Bảng~\ref{tab:comprehensive_performance} so sánh hiệu suất của \textbf{
 	\label{fig:critical_difference}
 \end{figure}
 
-Kết quả kiểm định Friedman cho thấy MMD cơ bản có thứ hạng trung bình tốt nhất (3.64), tiếp theo là IDW-MMD (3.91). SE-CDT xếp hạng 4 (4.50) với Critical Difference = 3.17. Điều này cho thấy không có sự khác biệt thống kê có ý nghĩa lớn về F1 giữa các phương pháp top, nhưng \textbf{SE-CDT/ ShapeDD-IDW có sự khác biệt ở chỉ số FP = 0} --- yếu tố quan trọng trong môi trường production.
+Kết quả kiểm định Friedman cho thấy MMD cơ bản có thứ hạng trung bình tốt nhất (3.64), tiếp theo là IDW-MMD (3.91). SE-CDT xếp hạng 4 (4.50). Với ngưỡng Critical Difference CD = 3.17 ($\alpha = 0.05$), hai phương pháp được coi là \textit{không khác biệt thống kê} khi khoảng cách thứ hạng nhỏ hơn CD. Khoảng cách giữa SE-CDT và phương pháp dẫn đầu (MMD) là $4.50 - 3.64 = 0.86 < 3.17$, do đó không tồn tại sự khác biệt có ý nghĩa thống kê về F1 giữa các phương pháp nhóm dẫn đầu. Điều quan trọng hơn là \textbf{SE-CDT/ ShapeDD-IDW đạt FP = 0} --- yếu tố không được phản ánh trong F1 nhưng có giá trị thực tiễn lớn trong môi trường production.
 
 \subsection{Đánh giá chi tiết trên từng loại dữ liệu}
 

@@ -26,8 +26,7 @@ hiệu suất mô hình suy giảm dần theo thời gian --- đôi khi đột n
 theo các điều kiện mới.
 
 \section{Tổng quan về bài toán}
-Việc xử lý và phân tích dữ liệu đang trở thành một thách thức lớn do tính phức tạp và sự biến động của dữ liệu trong bối cảnh hiện nay.
-Một trong những thách thức quan trọng là xử lý hiện tượng trôi dạt khái niệm (concept drift). Hiện tượng này xảy ra khi phân phối dữ liệu đầu vào $P(X)$ hoặc mối quan hệ $P(y|X)$ thay đổi theo thời gian, làm suy giảm hiệu suất của các mô hình học máy và hệ thống ra quyết định tự động.
+Bài toán đặt ra có thể phát biểu chính xác hơn như sau: concept drift có thể xảy ra ở hai cấp độ --- (1) phân phối đầu vào $P(X)$ thay đổi (covariate shift), hoặc (2) mối quan hệ $P(y|X)$ thay đổi trong khi $P(X)$ giữ nguyên (real concept drift). Luận văn này tập trung vào hướng không giám sát, tức là phát hiện sự thay đổi $P(X)$ mà không cần nhãn --- hướng phù hợp nhất với môi trường sản xuất công nghiệp thực tế.
 
 Đối với các ứng dụng học máy trong môi trường sản xuất công nghiệp như IoT,
 việc phát hiện drift trong thời gian thực hoặc gần thời gian thực là yêu cầu

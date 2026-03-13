@@ -8,7 +8,7 @@
 Mặc dù ShapeDD gốc thể hiện nhiều ưu điểm về độ chính xác định vị và khả năng khử nhiễu, việc áp dụng phương pháp này trong các hệ thống thời gian thực quy mô lớn gặp phải ba thách thức chính:
 
 \begin{enumerate}
-	\item \textbf{Chi phí tính toán cao:} Việc sử dụng kiểm định hoán vị (permutation test) với số lượng lớn (thường là 2500 lần) để ước lượng p-value tạo ra nghẽn cổ chai về hiệu năng, giới hạn thông lượng xử lý.
+	\item \textbf{Chi phí tính toán cao:} Việc sử dụng kiểm định hoán vị với số lượng lớn (thường là 2500 lần để đảm kết quả có ý nghĩa về mặt thống kê) để ước lượng p-value tạo ra nghẽn cổ chai về hiệu năng, giới hạn tốc độ xử lý.
 	\item \textbf{Độ nhạy với tham số:} Hiệu suất của ShapeDD phụ thuộc nhiều vào việc lựa chọn độ rộng hạt nhân (kernel bandwidth) và kích thước cửa sổ, làm giảm khả năng tổng quát hóa trên các luồng dữ liệu có đặc tính drift đa dạng.
 	\item \textbf{Thiếu cơ chế thích ứng:} Phát hiện drift chỉ là bước đầu; hệ thống cần một cơ chế để tự động cập nhật mô hình một cách phù hợp với bản chất của sự thay đổi (đột ngột hay dần dần)~\cite{yuan2022advances}.
 \end{enumerate}
@@ -26,11 +26,11 @@ Mặc dù ShapeDD gốc thể hiện nhiều ưu điểm về độ chính xác 
 \label{sec:idw-mmd}
 
 \subsubsection{Vấn đề của ước lượng MMD truyền thống}
-Trong phương pháp gốc, thống kê MMD được tính toán dựa trên trọng số đều (uniform weights), coi vai trò của mọi điểm dữ liệu trong cửa sổ là như nhau. Nhắc lại từ Chương~\ref{chap:theoretical-foundation}, công thức MMD chuẩn có dạng:
+Trong phương pháp gốc, thống kê MMD được tính toán dựa trên trọng số đều, coi vai trò của mọi điểm dữ liệu trong cửa sổ là như nhau. Nhắc lại từ Chương~\ref{chap:theoretical-foundation}, công thức MMD chuẩn có dạng:
 \begin{equation}
 	\text{MMD}^2_{\text{uniform}}(X, Y) = \frac{1}{n^2}\sum_{i,j} k(x_i, x_j) + \frac{1}{m^2}\sum_{p,q} k(y_p, y_q) - \frac{2}{nm}\sum_{i,p} k(x_i, y_p)
 \end{equation}
-trong đó các tổng chạy qua \textit{tất cả} cặp chỉ số (kể cả $i=j$), tức là ước lượng dạng V-statistic (có bias nhỏ do bao gồm số hạng tự tương quan $k(x_i, x_i)$).
+trong đó các tổng chạy qua \textit{tất cả} cặp chỉ số, kể cả $i=j$. Với kernel RBF, thành phần tự đối sánh $k(x_i, x_i) = 1$, nghĩa là mỗi điểm đều đóng góp một giá trị bằng 1 vào tổng --- làm giá trị MMD cao hơn thực tế một chút. Hạn chế này sẽ được khắc phục trong IDW-MMD (Mục~\ref{sec:idw-mmd}) bằng cách loại trừ các cặp điểm trùng nhau khỏi phép tính.
 
 Phương pháp này có hai vấn đề chính:
 \begin{enumerate}
@@ -52,7 +52,7 @@ trong đó $w_i$ và $v_p$ là trọng số của từng điểm (thỏa mãn $\
 \subsubsection{Giải pháp đề xuất: Trọng số nghịch biến mật độ (Inverse Density Weighting)}
 Luận văn đề xuất phương pháp \textbf{IDW-MMD} (Inverse Density-Weighted MMD), một cách tiếp cận heuristic mới, lấy động lực từ ý tưởng weighted MMD trong Optimally-Weighted MMD của Bharti et al.~\cite{bharti2023owmmd}.
 
-Phương pháp của Bharti et al. được thiết kế cho bài toán suy luận thống kê (likelihood-free inference) và đề xuất trọng số tối ưu phức tạp và không liên quan đến bài toán drift detection. Luận văn này chỉ kế thừa ý tưởng ``gán trọng số cho từng điểm dữ liệu trong MMD'' và áp dụng một heuristic đơn giản hơn --- trọng số nghịch biến với căn bậc hai của mật độ kernel --- để phù hợp với bài toán drift detection.
+Phương pháp của Bharti et al. được thiết kế cho bài toán suy luận thống kê và đề xuất trọng số tối ưu phức tạp và không liên quan đến bài toán drift detection. Luận văn này chỉ kế thừa ý tưởng ``gán trọng số cho từng điểm dữ liệu trong MMD'' và áp dụng một heuristic đơn giản hơn --- trọng số nghịch biến với căn bậc hai của mật độ kernel --- để phù hợp với bài toán drift detection.
 
 Cụ thể, trọng số $w_i$ được tính dựa trên mật độ cục bộ (local density), chỉ tính các cặp điểm khác nhau (off-diagonal) để tránh bias tự tương quan:
 \begin{equation}
@@ -79,12 +79,9 @@ Dựa trên những phân tích trên, luận văn đề xuất công thức IDW
 	\text{MMD}^2_{\text{IDW}}(X, Y) = \underbrace{\sum_{i \neq j} W^{XX}_{ij}\, k(x_i, x_j)}_{\text{Weighted } XX} + \underbrace{\sum_{p \neq q} W^{YY}_{pq}\, k(y_p, y_q)}_{\text{Weighted } YY} - 2\underbrace{\sum_{i=1}^n \sum_{p=1}^m \frac{1}{nm} k(x_i, y_p)}_{\text{Uniform } XY}
 \end{equation}
 
-\textbf{Lưu ý quan trọng về thiết kế Cross-term}: Khác với phương pháp gán trọng số toàn cục, thành phần Cross-term của hai cửa sổ vẫn dùng trọng số đều $1/(nm)$. Quyết định này có ý nghĩa rằng là:
-\begin{itemize}
-	\item Đóng vai trò là "điểm neo" (anchor) hình học. Việc dùng trọng số nghịch biến mật độ cho Cross-term có nguy cơ khuếch đại khoảng cách giả tạo ngay cả khi hai phân phối giống hệt nhau nhưng chứa nhiễu. 
-	\item Đảm bảo IDW-MMD vừa khuếch đại được độ nhạy với các điểm trôi dạt mới xuất hiện ở biên (thông qua Weighted XX và YY), vừa giữ được tính ổn định và tính so sánh khách quan về mức độ chồng chéo giữa hai cửa sổ (thông qua Uniform XY).
-	\item \textbf{Lưu ý về bias có hệ thống (systematic bias):} Do XX và YY dùng trọng số IDW còn XY dùng trọng số đồng đều, $\text{MMD}^2_{\text{IDW}}$ không bằng 0 ngay cả khi $P = Q$ (không có drift). Tức là đây là một \textit{heuristic statistic}, không phải proper two-sample test statistic trong nghĩa cổ điển. Trong thực nghiệm, ngưỡng phát hiện (detection threshold) cần được hiệu chỉnh để bù cho bias này, ví dụ thông qua permutation test một lần trên dữ liệu tham chiếu hoặc asymptotic p-value được điều chỉnh.
-\end{itemize}
+\textbf{Lý do Cross-term dùng trọng số đều}: Thành phần so sánh chéo giữa hai cửa sổ giữ nguyên trọng số đồng nhất $1/(nm)$ vì đây là số hạng đo sự ``chồng chéo'' giữa hai phân phối --- việc gán trọng số IDW cho nó sẽ tạo ra khoảng cách giả tạo ngay cả khi hai cửa sổ có cùng phân phối, chỉ do cấu trúc mật độ cục bộ khác nhau. Nói cách khác, Cross-term đóng vai trò ``neo'' trung lập, còn Weighted XX và YY đóng vai trò ``kính lúp'' khuếch đại tín hiệu biên.
+
+\textbf{Ghi chú kỹ thuật}: Do thiết kế này, $\text{MMD}^2_{\text{IDW}}$ mang một bias dương nhỏ ngay cả khi $P = Q$ --- đây là đặc điểm đã biết và được xử lý thông qua asymptotic p-value (Mục~\ref{sec:idw-mmd}), cho phép ngưỡng phát hiện được hiệu chỉnh tự động mà không cần permutation test.
 
 \subsubsection{Tại sao IDW-MMD cải thiện hiệu năng phát hiện?}
 Khi dùng MMD chuẩn (uniform weights), tất cả các cặp điểm đóng góp ngang nhau vào kết quả. Điều này dẫn đến việc tín hiệu trôi dạt (concept drift signal) dễ bị "chìm" vào lượng lớn các điểm dữ liệu không thay đổi ở trung tâm phân phối. IDW-MMD khắc phục điều này bằng cách tăng Tỷ lệ tín hiệu trên nhiễu (Signal-to-Noise Ratio - SNR) và Sức mạnh kiểm định thông qua hai cơ chế:
