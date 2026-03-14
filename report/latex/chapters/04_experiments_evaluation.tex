@@ -209,9 +209,9 @@ Phần này đánh giá hiệu quả của \textbf{Classification Module} (SE-CD
 
 \textbf{Cấu hình thực nghiệm như sau:}
 \begin{itemize}
-	\item \textbf{Dữ liệu:} Dataset tổng hợp với độ dài $T = 8,000$ mẫu.
+	\item \textbf{Dữ liệu:} Dataset tổng hợp với độ dài 10,000--12,000 mẫu tùy kịch bản.
 	\item \textbf{Kịch bản Drift:} Bao gồm đầy đủ 5 loại drift: Sudden, Gradual, Incremental, Recurrent (A-B-A), và Blip.
-	\item \textbf{Số lượng test case:} 17 configurations $\times$ 10 runs = 170 kịch bản kiểm thử.
+	\item \textbf{Số lượng test case:} 5 kịch bản $\times$ 10 seeds = 50 luồng kiểm thử (mỗi luồng chứa 10 sự kiện drift).
 	\item \textbf{Tham số ShapeDD:} Window size $W=50$, Stride $s=10$.
 	\item \textbf{Ground Truth:} Loại drift được gán nhãn thủ công tại các điểm thay đổi để tính Accuracy. \textit{Lưu ý:} Kết quả phân loại (CAT, SUB) được đo trong điều kiện \textbf{oracle mode} --- SE-CDT được cung cấp vị trí drift ground-truth để phân loại, không phụ thuộc vào việc detection module có tự phát hiện được hay không. Đây là điều kiện tốt nhất có thể để đánh giá năng lực phân loại độc lập với năng lực phát hiện.
 \end{itemize}
@@ -227,8 +227,6 @@ Trong quá trình phát triển SE-CDT, luận văn đã thử nghiệm cả hai
 	\item \textbf{IDW-MMD:} CAT Accuracy 20.0\%, bỏ lỡ \textit{tất cả} các điểm drift Gradual/Incremental (MDR = 1.0).
 	\item \textbf{Standard MMD:} CAT Accuracy 85.8\%, phát hiện tốt cả 5 loại drift.
 \end{itemize}
-
-\textit{Lưu ý: 85.8\% là kết quả đo trên tập kiểm thử sơ bộ (quick validation) để lựa chọn biến thể MMD. Kết quả cuối cùng \textbf{78.2\%} trong Bảng~\ref{tab:se-cdt-results} được đo trên benchmark đầy đủ (170 kịch bản, oracle mode, $\tau=0.015$) --- chế độ khắt khe hơn với nhiều cấu hình drift đa dạng hơn. Sự chênh lệch phản ánh độ khó gia tăng khi đánh giá trên toàn bộ benchmark thay vì tập sơ bộ.}
 
 \textbf{Lý do:} IDW-MMD sử dụng trọng số nghịch biến với mật độ ($w_{i} \propto 1/\sqrt{d_i}$). Cơ chế này tập trung vào các điểm outlier vùng biên để bắt sudden drift, nhưng lại vô tình "lọc bỏ" các tín hiệu thay đổi nhỏ, đồng đều của gradual drift (vốn thường diễn ra trong vùng mật độ cao). Ngược lại, Standard MMD tính toán bình đẳng trên toàn bộ mẫu, do đó bảo toàn được cấu trúc của các tín hiệu drift diễn ra từ từ.
 $\rightarrow$ \textbf{Quyết định thiết kế:} Hệ thống sử dụng mô hình lai: \textit{Detection Module} dùng IDW-MMD (tối ưu độ nhạy biên), còn \textit{Classification Module} dùng Standard MMD (giữ lại thông tin toàn cục).
@@ -354,8 +352,8 @@ Thực nghiệm đánh giá khả năng thích ứng (Code: \texttt{monitoring/e
 	\item \textbf{Cấu hình tham số:}
 	\begin{itemize}
 		\item SE-CDT threshold $\tau = 0.015$ (đã hiệu chỉnh).
-		\item Window size $W = 250$.
-		\item Classifier: RandomForest (n=10) hoặc Hoeffding Tree.
+		\item Cửa sổ tham chiếu ShapeDD $W_{\text{ref}} = 50$.
+		\item Classifier: Logistic Regression (\texttt{scikit-learn}, \texttt{max\_iter=1000}).
 	\end{itemize}
 	\item \textbf{Metric:} Prequential Accuracy (độ chính xác cuốn chiếu) để đo lường khả năng phục hồi tức thời.
 \end{itemize}
