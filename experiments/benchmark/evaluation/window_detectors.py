@@ -55,6 +55,14 @@ def evaluate_drift_detector(
 ):
     """
     Unified sliding window evaluation for ALL drift detectors.
+
+    NOTE ON TIMING
+    --------------
+    ``runtime_s`` in the returned dict is measured with ``time.process_time()``,
+    which counts the CPU time consumed by *this process only* (user + system).
+    In a parallel benchmark (joblib multiprocessing) each worker is a separate
+    process, so the value is unaffected by co-running workers and gives a fair
+    algorithmic comparison.  It is *not* wall-clock elapsed time.
     """
     if chunk_size is None:
         chunk_size = CHUNK_SIZE  # e.g., 300
@@ -71,6 +79,19 @@ def evaluate_drift_detector(
     if verbose:
         print(
             f"  {method_name}: {len(windows)} windows, size={chunk_size}, overlap={overlap}"
+        )
+
+    # ------------------------------------------------------------------ #
+    # Pre-initialise stateful / reusable detector objects ONCE before the  #
+    # window loop so we avoid redundant construction overhead per window.   #
+    # ------------------------------------------------------------------ #
+    _se_cdt = None
+    if method_name == "SE_CDT":
+        _se_cdt = SE_CDT(
+            window_size=SHAPE_L1,
+            l2=SHAPE_L2,
+            alpha=0.05,
+            use_proper=True,
         )
 
     for window_idx, (window, center_idx) in enumerate(zip(windows, window_centers)):
@@ -100,14 +121,9 @@ def evaluate_drift_detector(
             
             elif method_name == "SE_CDT":
                 # SE-CDT: Unified Detector-Classifier
-                # Returns both detection AND drift type classification
-                detector = SE_CDT(
-                    window_size=SHAPE_L1, 
-                    l2=SHAPE_L2, 
-                    alpha=0.05, 
-                    use_proper=True
-                )
-                result = detector.monitor(window)
+                # Returns both detection AND drift type classification.
+                # The detector object is created ONCE before this loop (see above).
+                result = _se_cdt.monitor(window)
                 trigger = result.is_drift
 
             # === Baseline Methods ===

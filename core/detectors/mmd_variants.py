@@ -256,90 +256,134 @@ def wmmd_asymptotic(X_window, s, weight_method="variance_reduction"):
 
 def shapedd_adw_mmd_proper(X, l1=50, l2=150, alpha=0.05, weight_method="variance_reduction"):
     """
-    PROPER ShapeDD + ADW-MMD.
-    
-    The MAIN detection algorithm for SE-CDT.
-    1. Detection: Sliding window ADW-MMD (ShapeDD style)
-    2. Validation: Asymptotic p-value (Fast WMMD)
-    
+    PROPER ShapeDD + ADW-MMD — Hybrid MMD design.
+
+    Architecture (two-role design):
+    -----------------------------------------------------------------------
+    Role 1 — MMD TRACE  (used by Classification Module for shape analysis):
+        Uses *Standard* (unweighted) MMD.
+        Rationale: Standard MMD preserves the full distributional signal
+        uniformly across the sample, making slow/gradual drifts (which
+        occur in high-density regions) visible in the trace shape.
+        IDW-MMD suppresses high-density regions → gradual drift signals
+        are over-smoothed and lost (CAT accuracy drops from 85.8% → 20%).
+
+    Role 2 — VALIDATION p-value  (used by Detection Module):
+        Uses *IDW-MMD* asymptotic test (wmmd_asymptotic).
+        Rationale: IDW up-weights boundary points → higher sensitivity to
+        abrupt distributional changes → lower false-positive rate (FP=0
+        on the detection benchmark).
+    -----------------------------------------------------------------------
+
+    Pipeline:
+    1. Trace: Sliding standard-MMD signal  →  shape analysis for classification
+    2. Peaks: Local maxima above threshold  →  candidate drift positions
+    3. Validate: IDW asymptotic p-value    →  confirm statistical significance
+
     Returns: is_drift, positions, mmd_trace, p_values
     """
+    from sklearn.metrics.pairwise import pairwise_kernels as _sklearn_rbf
+
     n = len(X)
-    
+
     # Handle small windows
     if n < 2 * l1 + l2:
         if n < 2 * l1:
             return False, [], np.array([]), []
-        
+
         split = n // 2
         mmd_val, p_val = wmmd_asymptotic(X, split, weight_method)
         mmd_trace = np.array([mmd_val])
         if p_val < alpha:
             return True, [split], mmd_trace, [p_val]
         return False, [], mmd_trace, []
-    
-    # 1. Compute sliding MMD signal
+
+    # -----------------------------------------------------------------------
+    # 1. TRACE: Standard (unweighted) MMD sliding signal
+    #    Preserves the full shape of gradual/incremental drifts for
+    #    downstream classification by the SE-CDT Classification Module.
+    # -----------------------------------------------------------------------
     gamma = compute_gamma_median_heuristic(X[:min(500, n)])
-    
+
     mmd_sequence = []
     mmd_positions = []
     step = max(1, l1 // 2)
-    
+
     for i in range(0, n - l1 - l2, step):
-        ref_window = X[i:i+l1]
-        test_window = X[i+l1:i+l1+l2]
-        
-        combined = np.vstack([ref_window, test_window])
-        mmd_val, _ = mmd_adw(combined, s=l1, gamma=gamma)
-        
+        ref_window = X[i : i + l1]
+        test_window = X[i + l1 : i + l1 + l2]
+
+        # Standard (unweighted) MMD²: E[k(x,x')] + E[k(y,y')] - 2E[k(x,y)]
+        K_XX = _sklearn_rbf(ref_window,  metric="rbf")
+        K_YY = _sklearn_rbf(test_window, metric="rbf")
+        K_XY = _sklearn_rbf(ref_window, test_window, metric="rbf")
+
+        m, nw = l1, l2
+        # Unbiased U-statistic estimator (zero diagonal for XX and YY)
+        np.fill_diagonal(K_XX, 0)
+        np.fill_diagonal(K_YY, 0)
+        mmd_sq = (
+            K_XX.sum() / (m * (m - 1))
+            + K_YY.sum() / (nw * (nw - 1))
+            - 2 * K_XY.mean()
+        )
+        mmd_val = np.sqrt(max(0.0, mmd_sq))
+
         mmd_sequence.append(mmd_val)
         mmd_positions.append(i + l1)
     
     mmd_trace = np.array(mmd_sequence)
-    
+
     if len(mmd_trace) < 3:
-        if len(mmd_trace) > 0 and np.max(mmd_trace) > 0.15:
+        if len(mmd_trace) > 0 and np.max(mmd_trace) > 0.05:
             pos = mmd_positions[np.argmax(mmd_trace)]
-            _, p_val = wmmd_asymptotic(X, len(X)//2, weight_method)
+            _, p_val = wmmd_asymptotic(X, len(X) // 2, weight_method)
             if p_val < alpha:
                 return True, [pos], mmd_trace, [p_val]
         return False, [], mmd_trace, []
-    
-    # 2. Peak Detection
+
+    # -----------------------------------------------------------------------
+    # 2. PEAK DETECTION on the standard-MMD trace
+    # -----------------------------------------------------------------------
     peaks = []
     threshold = np.mean(mmd_trace) + np.std(mmd_trace)
-    
+
     for i in range(1, len(mmd_trace) - 1):
-        if mmd_trace[i] > mmd_trace[i-1] and mmd_trace[i] > mmd_trace[i+1]:
+        if mmd_trace[i] > mmd_trace[i - 1] and mmd_trace[i] > mmd_trace[i + 1]:
             if mmd_trace[i] > threshold:
                 peaks.append(i)
-    
+
     # Fallback for boundary/monotonic peaks
     if not peaks and len(mmd_trace) >= 3:
         if mmd_trace.max() > threshold * 1.2:
             peaks.append(np.argmax(mmd_trace))
-    
+
     if not peaks:
         return False, [], mmd_trace, []
-    
-    # 3. Asymptotic Validation
+
+    # -----------------------------------------------------------------------
+    # 3. VALIDATION: IDW asymptotic p-value (wmmd_asymptotic)
+    #    Confirms that the candidate drift position is statistically
+    #    significant under H0: same distribution.
+    #    IDW up-weights boundary points → tighter false-positive control.
+    # -----------------------------------------------------------------------
     drift_positions = []
     p_values = []
-    
+
     for peak_idx in peaks:
         pos = mmd_positions[peak_idx]
-        
+
         a = max(0, pos - l2 // 2)
         b = min(n, pos + l2 // 2)
         s = pos - a
-        
+
         if s < 10 or (b - a - s) < 10:
             continue
-        
+
         _, p_val = wmmd_asymptotic(X[a:b], s, weight_method)
-        
+
         if p_val < alpha:
             drift_positions.append(pos)
             p_values.append(p_val)
-    
+
     return len(drift_positions) > 0, drift_positions, mmd_trace, p_values

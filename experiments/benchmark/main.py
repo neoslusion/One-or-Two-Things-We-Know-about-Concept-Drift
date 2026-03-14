@@ -127,6 +127,13 @@ def _process_single_run(run_idx, seed, enabled_datasets, stream_size, chunk_size
     Process a single benchmark run (one seed).
     This function is executed in parallel by joblib.
     """
+    # CRITICAL: Seed numpy's global RNG at the start of each worker so that
+    # permutation-test matrices (gen_window_matrix in mmd.py,
+    # get_time_kernel in dawidd.py) are generated deterministically per run.
+    # Without this, parallel workers have non-deterministic random states,
+    # making permutation p-values non-reproducible across benchmark re-runs.
+    np.random.seed(seed)
+
     # Note: We cannot use the global logger here as it writes to a shared file.
     # We will just return the results.
     print(f"Starting Run {run_idx} (seed={seed})...")

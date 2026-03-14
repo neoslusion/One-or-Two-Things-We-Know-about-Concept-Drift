@@ -12,6 +12,9 @@ from .mmd_variants import HAS_TORCH, DEVICE
 def gen_window_matrix(l1, l2, n_perm, cache=dict()):
     # Convert tuple key to string or robust key if needed, but tuple works for dict
     if (l1, l2, n_perm) not in cache.keys():
+        # NOTE: This uses numpy's global RNG. Call np.random.seed(run_seed)
+        # in each parallel worker *before* the first mmd() call so that the
+        # permutation matrix is reproducible per run (see _process_single_run).
         w = np.array(l1 * [1.0 / l1] + (l2) * [-1.0 / (l2)])
         W = np.array([w] + [np.random.permutation(w) for _ in range(n_perm)])
 

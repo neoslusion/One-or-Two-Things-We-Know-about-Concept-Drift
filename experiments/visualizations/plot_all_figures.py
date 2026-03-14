@@ -168,9 +168,11 @@ def main():
         
         # ====================================================================
         # CATEGORY 6: Legacy/Additional
-        # ====================================================================
-        ("plot_detection.py", "Detection Curve Visualization"),
-        ("plot_detection_realtime.py", "Real-time Detection Demo"),
+        # NOTE: plot_detection.py and plot_detection_realtime.py require
+        # confluent_kafka (Kafka client) which is not part of the thesis
+        # benchmark pipeline. They are excluded here.
+        # ("plot_detection.py", "Detection Curve Visualization"),
+        # ("plot_detection_realtime.py", "Real-time Detection Demo"),
     ]
     
     # Track results

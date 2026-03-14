@@ -3,6 +3,9 @@ from sklearn.metrics.pairwise import pairwise_kernels as apply_kernel
 
 def get_time_kernel(n_size, n_perm, kernel, cache=dict()):
     if (n_size,n_perm,kernel) not in cache.keys():
+        # NOTE: This uses numpy's global RNG. Call np.random.seed(run_seed)
+        # in each parallel worker *before* the first dawidd() call so that
+        # permutation results are reproducible per run (see _process_single_run).
         T = np.linspace(-1,1,n_size).reshape(-1,1)
         H = np.eye(n_size) - (1/n_size) * np.ones((n_size, n_size))
         if kernel == "min":
