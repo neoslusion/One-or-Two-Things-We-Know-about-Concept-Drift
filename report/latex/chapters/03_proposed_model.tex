@@ -128,7 +128,29 @@ Luận văn trình bày IDW-MMD theo thuật toán cụ thể như sau. Lưu ý 
 	\end{tabular}
 \end{table}
 
-IDW-MMD có độ phức tạp $O(n^2)$, tương đương MMD chuẩn, nhưng loại bỏ được chi phí permutation test ($O(n^2 \times N_{perm})$) nhờ sử dụng phân phối tiệm cận để tính p-value --- điều này làm cho phương pháp phù hợp với các ứng dụng thời gian thực.
+IDW-MMD có độ phức tạp $O(n^2)$, tương đương MMD chuẩn, nhưng loại bỏ được chi phí permutation test ($O(n^2 \times N_{perm})$) nhờ sử dụng phân phối tiệm cận để tính p-value.
+
+\textbf{Tính p-value không cần permutation.}
+Ý tưởng cốt lõi: thay vì xáo trộn dữ liệu 2500 lần để ước lượng ``nếu không có drift thì MMD² thường có giá trị bao nhiêu'', ta tính điều đó \textit{trực tiếp} từ lý thuyết thống kê.
+
+MMD² thực chất là \textit{trung bình} của rất nhiều đóng góp từng cặp điểm. Khi không có drift ($H_0: P = Q$), theo Định lý Giới hạn Trung tâm, trung bình đó hội tụ về phân phối chuẩn khi cỡ mẫu lớn~\cite{gretton2012kernel}:
+\begin{equation}
+	\sqrt{n}\cdot\text{MMD}^2_u \ \xrightarrow{d}\ \mathcal{N}(0,\,\sigma^2_0)
+	\quad\text{khi }H_0\text{ đúng.}
+\end{equation}
+
+Thay vì tính đầy đủ $\sigma^2_0$ theo công thức lý thuyết (đòi hỏi duyệt $O(n^2)$ cặp $h(z_i,z_j)$), luận văn dùng xấp xỉ leading-order được đề xuất trong~\cite{gretton2012kernel}: phương sai của MMD² chủ yếu do sự biến thiên của cross-kernel $K_{XY}$ chi phối:
+\begin{equation}
+	\hat{\sigma}^2_0 \approx \frac{4\,\mathrm{Var}(K_{XY})}{\min(n,m)},
+\end{equation}
+trong đó $\mathrm{Var}(K_{XY})$ là phương sai mẫu của ma trận $n \times m$ phần tử $k(x_i, y_j)$ — đã có sẵn sau bước tính kernel. Từ đó z-score và p-value (một đuôi, vì MMD² luôn dương) được tính:
+\begin{equation}
+	z = \frac{\text{MMD}^2_u}{\hat{\sigma}_0}, \qquad
+	\text{p-value} = 1 - \Phi(z),
+\end{equation}
+trong đó $\Phi$ là hàm phân phối tích lũy chuẩn tắc. Nếu p-value $< \alpha$ (thường $\alpha = 0.05$), kết luận có drift.
+
+\textbf{Tại sao hiệu quả?} $\mathrm{Var}(K_{XY})$ chỉ tốn $O(nm)$ --- không cần thêm vòng lặp nào so với bước tính kernel. Ngược lại, permutation test phải tính lại kernel $N_{perm}=2500$ lần, tổng cộng $O(2500 \times n^2)$. Với cửa sổ $n=50$, thời gian xử lý giảm từ $\sim$125ms xuống $\sim$7.6ms mỗi window, tức nhanh hơn 16.5 lần.
 
 \subsubsection{Hạn chế và khi nào nên dùng}
 Mặc dù IDW-MMD cải thiện đáng kể về tốc độ và độ ổn định, phương pháp có hai giới hạn cần lưu ý:
