@@ -101,7 +101,6 @@ def main():
     # Model update consumer (to receive updates from adaptor)
     model_update_conf = {
         'bootstrap.servers': BROKERS,
-        'bootstrap.servers': BROKERS,
         'group.id': f'{group_id}-model-updates',
         'auto.offset.reset': 'earliest',  # Changed from latest to catch all updates
         'enable.auto.commit': True,

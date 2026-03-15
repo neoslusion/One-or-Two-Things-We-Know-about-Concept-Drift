@@ -34,7 +34,7 @@ Hệ thống được đánh giá trên bộ 10 tập dữ liệu tổng hợp (
 	\item \textit{RBF Blips:} Dữ liệu được sinh từ các trọng tâm Gaussian (50 centroids) di chuyển đột ngột và quay lại trạng thái cũ trong thời gian ngắn. Thử thách khả năng phát hiện sự thay đổi tạm thời của các thuật toán.
 \end{itemize}
 
-\paragraph{Nhóm 3: Virtual Drift / Concept Drift thuần túy (Control Group)}
+\paragraph{Nhóm 3: Real Drift / Thay đổi ranh giới quyết định (Control Group)}
 Nhóm này bao gồm các dataset chỉ có sự thay đổi về biên quyết định $P(Y|X)$ trong khi phân phối đầu vào $P(X)$ giữ nguyên (hoặc thay đổi không đáng kể).
 \begin{itemize}
 	\item \textit{Standard SEA:} Thay đổi ngưỡng phân lớp $x_1 + x_2 > \theta$.
@@ -337,7 +337,14 @@ Thực nghiệm đánh giá khả năng thích ứng được thiết lập như
 \begin{itemize}
 	\item \textbf{Môi trường:} Giả lập Streaming Loop (Prequential Evaluation).
 	\item \textbf{Dữ liệu:} Luồng dữ liệu ngắn gọn $T = 5,000$ mẫu tập trung vào các sự kiện drift dày đặc.
-	\item \textbf{Các loại drift thử nghiệm:} Sudden (Stepping \& Alternating), Gradual, và Recurrent.
+	\item \textbf{Các loại drift thử nghiệm:} Sudden (bao gồm Alternating và Stepping/Cumulative) và kịch bản Mixed (kết hợp các loại drift Sudden, Gradual, Recurrent xen kẽ).
+	\item \textbf{Các chiến lược đối sánh (Baselines):}
+	\begin{itemize}
+		\item \textit{No Adaptation:} Không cập nhật mô hình.
+		\item \textit{Periodic Retrain:} Cập nhật mù (blind update) mỗi 500 mẫu.
+		\item \textit{Simple Retrain:} Huấn luyện lại từ đầu trên một cửa sổ dữ liệu gần nhất mỗi khi hệ thống phát hiện \textit{bất kỳ} loại drift nào (không phân biệt loại).
+		\item \textit{Type-Specific (Đề xuất):} Kích hoạt động các chiến lược cập nhật khác nhau (như Full Reset, Incremental Fine-tuning, Recency-weighted, Model Caching) được thiết kế riêng tùy theo \textit{nhãn drift do module SE-CDT phân loại} (như đã trình bày ở Mục 3.4).
+	\end{itemize}
 	\item \textbf{Cấu hình tham số:}
 	\begin{itemize}
 		\item SE-CDT threshold $\tau = 0.015$ (đã hiệu chỉnh).
@@ -378,7 +385,7 @@ Bảng~\ref{tab:prequential-results} tổng hợp kết quả Prequential Accura
 \begin{itemize}
 	\item \textbf{Stepping Drift (+22.14\%):} Đây là kết quả nổi bật nhất. Mô hình tĩnh (``No Adaptation'') giảm mạnh về 56.18\% (gần ngẫu nhiên) do dữ liệu liên tục dịch chuyển xa phân phối ban đầu. Type-Specific Adaptation duy trì 78.32\%, vượt trội so với Simple Retrain (+13.4\%) và Periodic Retrain (+7.6\%). Điều này chứng minh giá trị của việc phát hiện và thích ứng có chọn lọc.
 	\item \textbf{Sudden Drift (+22.71\%):} Với bộ sinh dữ liệu Joint Drift (kết hợp thay đổi $P(X)$ và $P(Y|X)$), No Adaptation giảm về 55.16\%. Type-Specific đạt 77.87\%, vượt trội rõ rệt so với tất cả các baseline.
-	\item \textbf{Mixed scenario (+2.49\%):} Trong môi trường hỗn hợp, Periodic Retrain đạt accuracy cao nhất (87.82\%) nhưng phải chấp nhận 1 FP. Type-Specific đạt 85.58\% với \textbf{0 FP}, cho thấy sự cân bằng tốt giữa hiệu suất và độ tin cậy.
+	\item \textbf{Mixed scenario (+2.49\% so với No Adaptation):} Trong luồng dữ liệu hỗn hợp (bao gồm cả Sudden, Gradual và Recurrent drift nối tiếp nhau), việc áp dụng một chiến lược tĩnh tỏ ra yếu thế. Dù Periodic Retrain đạt accuracy nhỉnh hơn một chút ($87.82\%$ so với $85.58\%$ của Type-Specific), nhưng nó phải trả giá bằng chi phí huấn luyện lại liên tục (1 FP). Ngược lại, chiến lược \textit{Type-Specific} minh chứng được sự ưu việt của khung kiến trúc: nó tự động kích hoạt Caching khi gặp Recurrent, áp dụng trọng số mũ (Exponential weight) khi gặp Gradual, và Reset khi gặp Sudden. Sự linh hoạt này giúp hệ thống đạt $85.58\%$ với \textbf{0 FP} và chi phí huấn luyện được tối ưu hóa theo sự kiện thực tế thay vì cấu hình cứng.
 	\item \textbf{0 False Positives:} Cơ chế reset bộ đệm ADWIN loại bỏ hoàn toàn FP cho Type-Specific, Simple Retrain, và Periodic Retrain trên Stepping và Sudden. No Adaptation không reset bộ đệm nên vẫn có 15 FP.
 \end{itemize}
 

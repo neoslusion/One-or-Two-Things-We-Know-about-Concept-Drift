@@ -63,16 +63,15 @@ Trong môi trường sản xuất công nghiệp, nhãn thật
 định chất lượng cao~\cite{jourdan2023process}. Do đó, nghiên cứu này tập trung vào
 phát hiện concept drift theo hướng \textbf{không giám sát} (unsupervised),
 cụ thể là phát hiện sự thay đổi trong phân phối dữ liệu đầu vào $P(X)$ ---
-còn gọi là \textit{virtual drift} hoặc \textit{data drift}. Việc phát hiện
-sớm sự thay đổi trong $P(X)$ đóng vai trò như tín hiệu cảnh báo, cho phép
-hệ thống kích hoạt các cơ chế kiểm tra hoặc cập nhật mô hình khi cần thiết.
+còn gọi là \textit{covariate shift} hoặc \textit{data drift}. Cách tiếp cận này
+dựa trên giả định rằng khi $P(X)$ thay đổi đáng kể, ranh giới quyết định $P(Y|X)$ cũng thường thay đổi theo (giả định joint drift). Việc phát hiện sớm sự thay đổi trong $P(X)$ đóng vai trò như tín hiệu cảnh báo, cho phép hệ thống kích hoạt các cơ chế kiểm tra hoặc cập nhật mô hình khi cần thiết.
 Cụ thể, luận văn sẽ tập trung vào việc phát triển hệ thống kết hợp các phương pháp sau:
 \begin{itemize}
 	\item Nghiên cứu và cải thiện phương pháp ShapeDD để phát hiện concept drift không giám sát, so sánh với các phương pháp phát hiện drift truyền thống.
 	\item Xây dựng các chiến lược thích ứng mô hình đa dạng tương ứng với từng loại drift được phát hiện.
 	\item Thiết kế và triển khai kiến trúc streaming real-time sử dụng Apache Kafka cho việc xử lý event-driven có khả năng mở rộng.
 	\item Tùy chỉnh và tối ưu hóa các tham số của phương pháp để đảm bảo hiệu quả với các kiểu dữ liệu và hiện tượng trôi dạt khác nhau.
-	\item Đánh giá hiệu năng của hệ thống trên các tập dữ liệu thực tế và các kịch bản drift khác nhau.
+	\item Đánh giá hiệu năng của hệ thống trên các tập dữ liệu tổng hợp đa dạng và các kịch bản drift khác nhau.
 \end{itemize}
 
 \textbf{Phạm vi đánh giá:} Hệ thống được thiết kế và đánh giá trên
@@ -95,13 +94,13 @@ Cách tiếp cận đánh giá bao gồm:
 \subsection{Đối tượng nghiên cứu}
 Đối tượng nghiên cứu của luận văn bao gồm:
 \begin{itemize}
-	\item \textbf{Phương pháp phát hiện drift:} ShapeDD và các phương pháp
-	      truyền thống (ADWIN, DDM, EDDM, Page-Hinkley).
+	\item \textbf{Phương pháp phát hiện drift:} ShapeDD, ShapeDD-IDW (đề xuất), và các phương pháp
+	      so sánh bao gồm MMD, KS-Test, D3, DAWIDD.
 	\item \textbf{Mô hình phân loại drift:} SE-CDT --- phương pháp xác định
-	      loại \textit{drift} dựa trên multi-sliding windows lấy ý tưởng từ CDT-MSW.
-	\item \textbf{Dữ liệu streaming:} Các tập dữ liệu benchmark
-	      (SEA, Hyperplane, Electricity,...) và dữ liệu mô phỏng với
-	      các loại \textit{drift} khác nhau.
-	\item \textbf{Nền tảng xử lý streaming:} Đề xuất sử dụng Apache Kafka cho việc triển khai
-	      hệ thống \textit{real-time}.
+	      loại \textit{drift} dựa trên hình dạng tín hiệu MMD, lấy ý tưởng từ CDT-MSW.
+	\item \textbf{Dữ liệu streaming:} Các tập dữ liệu tổng hợp đa dạng
+	      (Gaussian, multimodal, high-dimensional,...) với các loại \textit{drift} khác nhau
+	      (sudden, gradual, incremental, recurrent, blip).
+	\item \textbf{Nền tảng xử lý streaming:} Apache Kafka cho việc triển khai
+	      hệ thống giám sát \textit{real-time}.
 \end{itemize}
