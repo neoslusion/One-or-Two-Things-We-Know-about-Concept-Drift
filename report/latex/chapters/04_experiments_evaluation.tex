@@ -202,111 +202,121 @@ Kết quả nổi bật: SE-CDT đạt thông lượng $\sim$131,579 mẫu/giây
 \section{Đánh giá SE-CDT phân loại drift không giám sát}
 \label{sec:classification-eval}
 
-Phần này đánh giá hiệu quả của \textbf{Classification Module} (SE-CDT). Khác với các phương pháp supervised yêu cầu labels, SE-CDT hoạt động hoàn toàn không giám sát bằng cách phân tích hình dạng tín hiệu drift magnitude $\sigma(t)$.
-
-\textit{Lưu ý về thuật ngữ:} Trong phần detection (Mục~\ref{sec:detection-eval}), FP chỉ số lần báo động sai trên dữ liệu không có drift. Trong phần này, FP chỉ số lần SE-CDT kích hoạt phân loại --- hai khái niệm hoàn toàn khác nhau và cần phân biệt khi đọc bảng kết quả.
+Phần này đánh giá năng lực của \textbf{Classification Module} (SE-CDT) --- khả năng nhận diện \textit{loại} drift (Sudden, Gradual, Incremental, Recurrent, Blip) dựa trên hình dạng tín hiệu drift magnitude $\sigma(t)$, hoàn toàn không giám sát.
 
 \subsection{Thiết lập thực nghiệm}
+\label{sec:classification-setup}
 
-Bốn chỉ số chính được dùng trong phần này: \textbf{CAT} (Category Accuracy --- phân loại đúng nhóm TCD/PCD), \textbf{SUB} (Subcategory Accuracy --- phân loại đúng một trong 5 loại drift cụ thể), \textbf{EDR} (Event Detection Rate --- tỉ lệ sự kiện drift được nhận diện, tương đương Recall), và \textbf{MDR} (Miss Detection Rate $= 1 - \text{EDR}$, tỉ lệ sự kiện bị bỏ sót).
-
+\paragraph{Hai chế độ đánh giá.}
+Benchmark phân loại sử dụng đồng thời hai chế độ đo lường độc lập, phản ánh hai câu hỏi khác nhau:
 \begin{itemize}
-	\item \textbf{Dữ liệu:} Dataset tổng hợp với độ dài 10,000--12,000 mẫu tùy kịch bản.
-	\item \textbf{Kịch bản Drift:} Bao gồm đầy đủ 5 loại drift: Sudden, Gradual, Incremental, Recurrent (A-B-A), và Blip.
-	\item \textbf{Số lượng test case:} 5 kịch bản $\times$ 10 seeds = 50 luồng kiểm thử (mỗi luồng chứa 10 sự kiện drift).
-	\item \textbf{Tham số ShapeDD:} Window size $W=50$, Stride $s=10$.
-	\item \textbf{Ground Truth:} Loại drift được gán nhãn thủ công tại các điểm thay đổi để tính Accuracy. \textit{Lưu ý:} Kết quả phân loại (CAT, SUB) được đo trong điều kiện \textbf{oracle mode} --- SE-CDT được cung cấp vị trí drift ground-truth để phân loại, không phụ thuộc vào việc detection module có tự phát hiện được hay không. Đây là điều kiện tốt nhất có thể để đánh giá năng lực phân loại độc lập với năng lực phát hiện.
+	\item \textbf{Oracle mode} (đo CAT, SUB): SE-CDT được cung cấp vị trí drift ground-truth và chỉ thực hiện bước phân loại. Chế độ này đánh giá thuần túy năng lực phân biệt hình dạng tín hiệu, tách biệt hoàn toàn khỏi năng lực tự phát hiện.
+	\item \textbf{Real detection mode} (đo EDR, MDR): SE-CDT tự tìm điểm drift từ tín hiệu MMD rồi phân loại --- đánh giá pipeline đầu-cuối. EDR (Event Detection Rate) là tỉ lệ sự kiện drift được nhận diện; MDR (Miss Detection Rate $= 1 - \text{EDR}$) là tỉ lệ bỏ sót.
 \end{itemize}
+Do CAT và SUB được đo ở oracle mode, hai cấu hình SE-CDT (Std) và SE-CDT (IDW) \textit{cho cùng kết quả CAT/SUB} --- sự khác biệt chỉ xuất hiện ở EDR/MDR.
 
-Để tối ưu hóa hiệu suất phân loại, trước khi đưa ra kết quả cuối cùng, luận văn tiến hành hai bước hiệu chỉnh quan trọng: (1) Lựa chọn biến thể MMD phù hợp cho module phân loại, và (2) Hiệu chỉnh ngưỡng phát hiện (Threshold Calibration).
-
-\subsection{Lựa chọn biến thể MMD: Standard vs IDW-MMD}
-\label{sec:mmd-variant-choice}
-
-Trong quá trình phát triển SE-CDT, luận văn đã thử nghiệm cả hai biến thể MMD. Mặc dù IDW-MMD hoạt động tốt cho Detection (F1 = 0.548, tốt nhất trong Mục~\ref{sec:detection-eval}, vì benchmark đó chủ yếu gồm Sudden Drift cường độ mạnh), kết quả thực nghiệm lại chỉ ra nó không phù hợp cho Classification khi benchmark gồm cả Gradual và Incremental Drift.
-
-\begin{itemize}
-	\item \textbf{IDW-MMD:} Bỏ lỡ \textit{tất cả} các điểm drift Gradual/Incremental (MDR = 1.0), CAT Accuracy chỉ đạt 20.0\% (thực nghiệm ablation nội bộ, không hiển thị riêng trong bảng).
-	\item \textbf{Standard MMD:} Phát hiện tốt cả 5 loại drift, trở thành lựa chọn cho Classification Module.
-\end{itemize}
-
-\textbf{Lý do:} IDW-MMD sử dụng trọng số nghịch biến với mật độ ($w_{i} \propto 1/\sqrt{d_i}$). Cơ chế này tập trung vào các điểm outlier vùng biên để bắt sudden drift, nhưng lại vô tình "lọc bỏ" các tín hiệu thay đổi nhỏ, đồng đều của gradual drift (vốn thường diễn ra trong vùng mật độ cao). Ngược lại, Standard MMD tính toán bình đẳng trên toàn bộ mẫu, do đó bảo toàn được cấu trúc của các tín hiệu drift diễn ra từ từ.
-$\rightarrow$ \textbf{Quyết định thiết kế:} Hệ thống sử dụng mô hình lai: \textit{Detection Module} dùng IDW-MMD (tối ưu độ nhạy biên), còn \textit{Classification Module} dùng Standard MMD (giữ lại thông tin toàn cục).
-
-\subsection{Calibration ngưỡng phát hiện}
-\label{sec:secdt-threshold}
-
-Việc lựa chọn ngưỡng ($\tau$) ảnh hưởng trực tiếp đến độ nhạy. Thông qua phân tích sơ bộ trên tập validation riêng biệt (không thuộc benchmark chính):
-\begin{itemize}
-	\item \textbf{Ngưỡng mặc định ($\tau = 0.5$):} Quá cao (conservative), không phát hiện được drift nào trên dữ liệu streaming demo.
-	\item \textbf{Ngưỡng hiệu chỉnh ($\tau = 0.015$):} Cân bằng tốt nhất. Ngưỡng này đủ thấp để bắt được các tín hiệu drift vừa phải (moderate drift) nhưng đủ cao để lọc bỏ nhiễu ngẫu nhiên.
-\end{itemize}
-Do đó, các kết quả phân loại dưới đây sử dụng $\tau = 0.015$.
-
-\subsection{Kết quả phân loại}
-
-Bảng~\ref{tab:se-cdt-results} so sánh hai cấu hình của SE-CDT. Cả hai dùng \textbf{Standard MMD} cho tín hiệu phân loại và đều được đánh giá trong điều kiện oracle mode, nên CAT/SUB \textit{bằng nhau} (78.2\%/49.8\%). Điểm khác biệt nằm ở tín hiệu detection dùng để tìm peak drift:
-\begin{itemize}
-    \item \textbf{SE-CDT (Std):} dùng Standard MMD để tạo tín hiệu detection --- nhạy hơn, bắt được nhiều sự kiện drift (EDR = 94.4\%) nhưng số lần kích hoạt phân loại cao hơn (FP = 1394).
-    \item \textbf{SE-CDT (ADW):} dùng ADW/IDW-MMD để tạo tín hiệu detection --- ít nhạy hơn với gradual drift (EDR = 50.6\%) nhưng chặt chẽ hơn (FP = 171), phù hợp với kết luận ở Mục~\ref{sec:mmd-variant-choice}.
-\end{itemize}
-Trong ngữ cảnh phân loại, ưu tiên là không bỏ sót sự kiện để classify đúng, nên \textbf{SE-CDT (Std)} được chọn làm cấu hình chính.
+\paragraph{Kịch bản thực nghiệm.}
+Benchmark chạy 5 kịch bản tổng hợp (10 seeds mỗi kịch bản = 50 luồng, mỗi luồng chứa 10 sự kiện drift = \textbf{500 sự kiện phân loại}):
 
 \begin{table}[H]
 	\centering
-	\caption{Kết quả phân loại drift type của SE-CDT}
+	\caption{Năm kịch bản benchmark phân loại SE-CDT}
+	\label{tab:classification-scenarios}
+	\begin{tabular}{|l|l|c|}
+		\hline
+		\textbf{Kịch bản} & \textbf{Thành phần drift (xoay vòng)} & \textbf{Độ dài luồng} \\
+		\hline
+		Mixed A        & Sudden $\to$ Gradual $\to$ Recurrent   & $\sim$11,800 mẫu \\
+		Mixed B        & Blip $\to$ Incremental $\to$ Sudden    & $\sim$13,800 mẫu \\
+		Repeated Sudden      & 10 $\times$ Sudden                     & $\sim$9,600 mẫu  \\
+		Repeated Gradual     & 10 $\times$ Gradual                    & $\sim$11,800 mẫu \\
+		Repeated Incremental & 10 $\times$ Incremental                & $\sim$13,800 mẫu \\
+		\hline
+	\end{tabular}
+\end{table}
+
+\paragraph{Cấu hình tham số.}
+\begin{itemize}
+	\item \textbf{Cửa sổ ShapeDD:} $W = 50$, stride $s = 10$.
+	\item \textbf{Tín hiệu phân loại:} Standard MMD --- IDW-MMD bị loại vì bỏ lỡ toàn bộ sự kiện Gradual/Incremental (MDR = 1.0, CAT = 20.0\% trong ablation nội bộ) do cơ chế trọng số nghịch mật độ lọc bỏ tín hiệu drift chậm. Hệ thống dùng mô hình lai: Detection Module dùng IDW-MMD (tối ưu độ nhạy biên), Classification Module dùng Standard MMD (giữ lại thông tin toàn cục).
+	\item \textbf{Ngưỡng phát hiện:} $\tau = 0.015$ (hiệu chỉnh trên tập validation riêng; ngưỡng mặc định $\tau = 0.5$ quá conservative, không bắt được drift nào trong điều kiện streaming).
+\end{itemize}
+
+\paragraph{Hình dạng tín hiệu.}
+Trước khi đọc kết quả số, Hình~\ref{fig:signal_sudden} và Hình~\ref{fig:signal_incremental} minh họa trực quan lý do Sudden drift dễ phân loại hơn Incremental: SE-CDT dựa vào sự khác biệt hình dạng của tín hiệu $\sigma(t)$ để phân biệt các loại drift.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.95\textwidth]{../../results/plots/vis_repeated_sudden_SE.png}
+	\caption[Hình dạng tín hiệu SE-CDT --- Sudden Drift]{Tín hiệu SE-CDT trên kịch bản Repeated Sudden: $\sigma(t)$ tạo đỉnh nhọn, đối xứng tại mỗi điểm drift --- đặc trưng dễ nhận diện bằng height threshold.}
+	\label{fig:signal_sudden}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.95\textwidth]{../../results/plots/vis_repeated_incremental_SE.png}
+	\caption[Hình dạng tín hiệu SE-CDT --- Incremental Drift]{Tín hiệu SE-CDT trên kịch bản Repeated Incremental: $\sigma(t)$ tăng dần theo dạng ramp, không có đỉnh nhọn --- khó phân biệt với Gradual drift, phản ánh độ chính xác subcategory thấp hơn (23.8\%).}
+	\label{fig:signal_incremental}
+\end{figure}
+
+\subsection{Kết quả tổng hợp}
+\label{sec:classification-results}
+
+\textit{Lưu ý về thuật ngữ FP:} Trong phần detection (Mục~\ref{sec:detection-eval}), FP là số lần báo động sai trên dữ liệu không có drift. Ở đây, FP là số lần SE-CDT kích hoạt phân loại tại vị trí không khớp với bất kỳ điểm drift nào trong ground truth --- hai khái niệm hoàn toàn khác nhau.
+
+Bảng~\ref{tab:se-cdt-results} trình bày kết quả tổng hợp trên 500 sự kiện phân loại (50 luồng $\times$ 10 sự kiện). Cả hai cấu hình đều dùng Standard MMD cho tín hiệu phân loại nên CAT/SUB \textit{bằng nhau}; điểm khác biệt nằm ở tín hiệu detection: SE-CDT (Std) dùng Standard MMD --- nhạy hơn với toàn bộ 5 loại drift (EDR = 94.4\%) nhưng FP cao hơn (1394); SE-CDT (IDW) dùng IDW-MMD --- chặt chẽ hơn (FP = 171) nhưng bỏ sót Gradual/Incremental (EDR = 50.6\%). Trong ngữ cảnh phân loại, ưu tiên là không bỏ sót sự kiện, nên \textbf{SE-CDT (Std)} là cấu hình chính.
+
+\begin{table}[H]
+	\centering
+	\caption{Kết quả phân loại drift type của SE-CDT (tổng hợp 500 sự kiện, 5 kịch bản $\times$ 10 seeds)}
 	\label{tab:se-cdt-results}
 	\input{../../results/tables/table_se_cdt_aggregate.tex}
 \end{table}
 
-Để hiểu rõ hơn về lỗi phân loại, Hình~\ref{fig:confusion-5class} và Hình~\ref{fig:confusion-category} trình bày confusion matrices ở hai mức độ chi tiết.
+SE-CDT (Std) đạt \textbf{CAT = 78.2\%} và \textbf{SUB = 49.8\%} ở oracle mode. Hạn chế chính: Recurrent drift được xử lý như chuỗi sự kiện Sudden riêng lẻ (độ chính xác = 0\%) do hệ thống chưa có cơ chế bộ nhớ dài hạn.
+
+\subsection{Phân tích chi tiết theo loại drift}
+\label{sec:classification-by-type}
+
+Bảng~\ref{tab:se-cdt-performance-by-type} và Hình~\ref{fig:confusion-5class}, \ref{fig:confusion-category} phân tích nguồn gốc lỗi phân loại.
+
+\begin{table}[H]
+	\centering
+	\caption{Độ chính xác phân loại theo từng loại drift (oracle mode, SE-CDT Std)}
+	\label{tab:se-cdt-performance-by-type}
+	\input{../../results/tables/table_se_cdt_performance_by_type.tex}
+\end{table}
 
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=0.85\textwidth]{../../results/plots/confusion_matrix_se_cdt.png}
-	\caption[Confusion Matrix - 5 Classes]{
-		\textbf{Confusion Matrix cho 5 loại drift} (oracle mode): Sudden có recall cao nhất (xấp xỉ 81.8\%), trong khi Incremental và Gradual thường bị nhầm lẫn do tín hiệu MMD tương tự nhau.
-	}
+	\caption[Confusion Matrix --- 5 Classes]{Confusion Matrix cho 5 loại drift (oracle mode). Sudden có recall cao nhất ($\approx$81.8\%); Incremental và Gradual hay bị nhầm lẫn do hình dạng tín hiệu MMD tương tự nhau.}
 	\label{fig:confusion-5class}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=0.85\textwidth]{../../results/plots/confusion_matrix_category.png}
-	\caption[Confusion Matrix - Category Level]{
-		\textbf{Confusion Matrix ở mức Category (TCD vs PCD)} (oracle mode): Cho thấy độ chính xác nhóm ở mức 78.2\%; các lớp drift chậm vẫn có xu hướng chồng lấn tín hiệu nhiều hơn các lớp sudden/blip.
-	}
+	\caption[Confusion Matrix --- Category Level]{Confusion Matrix ở mức nhóm (TCD vs PCD, oracle mode). Độ chính xác nhóm đạt 78.2\%; drift chậm (Gradual, Incremental) có xu hướng chồng lấn tín hiệu nhiều hơn drift nhanh (Sudden, Blip).}
 	\label{fig:confusion-category}
 \end{figure}
 
 \begin{itemize}
-	\item \textbf{Kết quả:} SE-CDT đạt CAT = \textbf{78.2\%} và SUB = \textbf{49.8\%} (oracle mode).
-	\item \textbf{Tỷ lệ phát hiện sự kiện (EDR):} SE-CDT (Std) đạt \textbf{94.4\%}, cao hơn nhiều so với SE-CDT (ADW) (50.6\%). Sự chênh lệch này đúng như dự đoán: ADW-MMD signal bỏ sót gradual drift nên MDR cao. Trong ngữ cảnh phân loại, ưu tiên là không bỏ sót sự kiện, nên SE-CDT (Std) được chọn làm cấu hình chính.
-	\item \textbf{Hạn chế:} Hệ thống hiện tại xử lý Recurrent drift như chuỗi các sự kiện Sudden riêng lẻ (độ chính xác Recurrent = 0\%), chưa có cơ chế bộ nhớ dài hạn.
+	\item \textbf{Sudden Drift (81.8\%):} Điểm mạnh nhất. Tín hiệu MMD tạo đỉnh nhọn rõ ràng (xem Hình~\ref{fig:signal_sudden}), dễ phân biệt với các loại khác qua height và prominence threshold.
+
+	\item \textbf{Gradual Drift (55.4\%):} Mức trung bình khá. Standard MMD bảo toàn được cấu trúc tín hiệu diễn ra từ từ trong vùng mật độ cao --- điều IDW-MMD không làm được.
+
+	\item \textbf{Incremental Drift (23.8\%):} Các đặc trưng temporal (LTS, MS) giúp nhận diện xu hướng tăng tuyến tính, nhưng sự nhầm lẫn với Gradual drift vẫn cao do hình dạng tín hiệu tương đồng (xem Hình~\ref{fig:signal_incremental}).
+
+	\item \textbf{Blip Drift (17.5\%):} Khó phân biệt giữa nhiễu ngắn hạn và drift tạm thời trong điều kiện không giám sát hoàn toàn.
+
+	\item \textbf{Recurrent Drift (0\%):} Hệ thống chưa có cơ chế bộ nhớ dài hạn (concept memory), nên xử lý Recurrent như chuỗi sự kiện Sudden riêng lẻ --- đây là hướng cải tiến rõ ràng nhất cho tương lai.
 \end{itemize}
 
-Bảng~\ref{tab:se-cdt-performance-by-type} phân tích kết quả theo từng loại drift.
+\subsection{So sánh với State-of-the-Art}
+\label{sec:classification-sota}
 
-\begin{table}[H]
-	\centering
-	\caption{Độ chính xác phân loại theo từng loại drift}
-	\label{tab:se-cdt-performance-by-type}
-	\input{../../results/tables/table_se_cdt_performance_by_type.tex}
-\end{table}
-
-\begin{itemize}
-	\item \textbf{Sudden Drift (81.8\%):} Đây là điểm mạnh nhất của phương pháp. Tín hiệu MMD tạo ra đỉnh nhọn (peak) rõ ràng, giúp dễ dàng phân biệt với các loại khác.
-
-	\item \textbf{Gradual Drift (55.4\%):} Khả năng phát hiện drift dần dần ở mức trung bình khá. Việc sử dụng Standard MMD giúp bảo toàn thông tin toàn cục tốt hơn so với IDW-MMD trong trường hợp này.
-
-	\item \textbf{Incremental Drift (23.8\%):} Mặc dù thấp hơn so với Sudden và Gradual, kết quả này vẫn cho thấy khả năng nhận diện xu hướng thay đổi tuyến tính nhờ các đặc trưng temporal (LTS, MS). Tuy nhiên, sự nhầm lẫn với Gradual drift vẫn còn cao do tính chất tương đồng của tín hiệu.
-
-	\item \textbf{Blip Drift (17.5\%):} Kết quả thấp cho thấy khó khăn trong việc phân biệt giữa nhiễu ngắn hạn và drift tạm thời (Blip) trong môi trường không giám sát hoàn toàn.
-
-	\item \textbf{Recurrent Drift (0\%):} Hạn chế hiện tại của hệ thống là chưa có cơ chế bộ nhớ dài hạn (concept memory) để liên kết các trạng thái lặp lại, do đó Recurrent drift thường được xử lý như các sự kiện Sudden riêng lẻ.
-\end{itemize}
-
-\textit{So sánh với State-of-the-Art:} Trong nghiên cứu gốc CDT-MSW~\cite{guo2022cdtmsw} (phương pháp supervised), các tác giả báo cáo CAT = \textbf{87.0\%} và SUB = \textbf{86.7\%}, tuy nhiên với EDR chỉ đạt \textbf{17.8\%} do phương pháp ưu tiên độ chính xác thay vì độ bao phủ. SE-CDT, hoạt động hoàn toàn \textbf{không giám sát}, đạt CAT = \textbf{78.2\%} với EDR vượt trội \textbf{94.4\%}. Chi tiết so sánh theo từng loại drift trong Bảng~\ref{tab:cdt-comparison-by-type}.
+Bảng~\ref{tab:cdt-comparison-by-type} so sánh trực tiếp với CDT-MSW~\cite{guo2022cdtmsw} --- phương pháp supervised sử dụng label và dữ liệu UCI thực tế.
 
 \begin{table}[H]
 	\centering
@@ -315,21 +325,7 @@ Bảng~\ref{tab:se-cdt-performance-by-type} phân tích kết quả theo từng 
 	\input{../../results/tables/table_cdt_msw_vs_se_cdt_by_drift_type.tex}
 \end{table}
 
-Hình~\ref{fig:signal_sudden} và Hình~\ref{fig:signal_incremental} minh họa sự khác biệt trong hình dạng tín hiệu MMD giúp hệ thống phân loại.
-
-\begin{figure}[H]
-        \centering
-        \includegraphics[width=0.95\textwidth]{../../results/plots/vis_repeated_sudden_SE.png}
-        \caption[Signal Shape - Sudden Drift]{Tín hiệu SE-CDT cho Sudden drift: Peak nhọn, đối xứng, dễ phát hiện bằng height threshold.}
-        \label{fig:signal_sudden}
-\end{figure}
-
-\begin{figure}[H]
-	\centering
-	\includegraphics[width=0.95\textwidth]{../../results/plots/vis_repeated_incremental_SE.png}
-	\caption[Signal Shape - Incremental Drift]{Tín hiệu SE-CDT cho Incremental drift: Ramp tăng dần. Các predictions chưa hoàn hảo (xen kẽ Blip/Gradual/Incremental), phản ánh đúng độ chính xác subcategory 50\% trong Bảng~\ref{tab:se-cdt-results}.}
-	\label{fig:signal_incremental}
-\end{figure}
+CDT-MSW báo cáo CAT = \textbf{87.0\%} và SUB = \textbf{86.7\%}, nhưng với EDR chỉ \textbf{17.8\%} --- phương pháp ưu tiên độ chính xác thay vì độ bao phủ. SE-CDT, hoàn toàn \textbf{không giám sát}, đạt CAT = \textbf{78.2\%} với EDR vượt trội \textbf{94.4\%}. Đây là đánh đổi có chủ đích: trong môi trường streaming thực tế, bỏ sót 82.2\% sự kiện drift (như CDT-MSW) nguy hiểm hơn nhiều so với phân loại sai một số ít sự kiện đã phát hiện được.
 
 \section{Đánh giá khả năng thích ứng mô hình}
 \label{sec:adaptation-eval}

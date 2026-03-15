@@ -1032,9 +1032,9 @@ def generate_latex_table(results):
         "No"
     ])
     
-    # 2. SE-CDT (ADW)
+    # 2. SE-CDT (IDW)
     data.append([
-        escape_latex("SE-CDT (ADW)"),
+        escape_latex("SE-CDT (IDW)"),
         format_metric(cat_acc_se / 100, "percentage"),
         format_metric(sub_acc_se / 100, "percentage"),
         format_metric(det_res['SE_ADW']['EDR'], "float"),
