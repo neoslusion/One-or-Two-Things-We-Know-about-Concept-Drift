@@ -105,12 +105,13 @@
 			\end{equation*}
 
 			\vspace{0.3em}
-			\textbf{3 thách thức chính:}
-			\begin{enumerate}
-				\item Phát hiện drift \textbf{nhanh, ít báo động giả}
-				\item Phân loại loại drift \textbf{không cần nhãn}
-				\item Thích ứng mô hình \textbf{tự động theo loại drift}
-			\end{enumerate}
+			\vspace{0.3em}
+			\begin{exampleblock}{\small Ví dụ: "Lạm phát làm AI lỗi thời"}
+				\small
+				Năm 2019: Lương 20tr $\to$ AI tài duyệt "Đủ mua nhà" (Đúng).\\
+				Năm 2026: Lạm phát, nhà tăng giá $\to$ 20tr mua không nổi nữa (Sai).\\
+				Dữ liệu hệ thống vẫn thu về "20tr", nhưng \textbf{ý nghĩa thực tế} đã thay đổi. Đó là Concept Drift!
+			\end{exampleblock}
 		\end{column}
 		\begin{column}{0.42\textwidth}
 			\centering
@@ -139,9 +140,9 @@
 		\begin{column}{0.48\textwidth}
 			\begin{block}{3 đóng góp chính}
 				\begin{enumerate}
-					\item \textbf{ShapeDD-IDW:} tăng throughput \textcolor{darkgreen}{\textbf{16.5$\times$}} với \textcolor{darkgreen}{\textbf{0 False Positives}}
-					\item \textbf{SE-CDT:} CAT = \textbf{81.2\%}, SUB = \textbf{50.0\%} hoàn toàn unsupervised
-					\item \textbf{Type-Specific Adaptation:} cải thiện \textcolor{darkgreen}{\textbf{+22.14\%}} so với No Adaptation
+					\item \textbf{ShapeDD-IDW:} Tối ưu hóa thuật toán để tăng cực hạn tốc độ giám sát và triệt tiêu báo động giả.
+					\item \textbf{SE-CDT:} Khung phân tích tự động phân loại 5 loại Drift mà hoàn toàn không cần nhãn (Unsupervised).
+					\item \textbf{Type-Specific Adaptation:} Đề xuất chiến lược cập nhật thích ứng theo loại sự kiện, "bệnh nào thuốc nấy".
 				\end{enumerate}
 			\end{block}
 		\end{column}
@@ -181,12 +182,10 @@
 			\end{alertblock}
 
 			\vspace{0.5em}
-			\begin{exampleblock}{Ưu điểm của MMD}
-				\begin{itemize}
-					\item \textbf{Unsupervised:} không cần nhãn
-					\item \textbf{Non-parametric:} không giả định phân phối
-					\item \textbf{Universal kernel:} bắt mọi dạng khác biệt
-				\end{itemize}
+			\begin{exampleblock}{\small Giải thích đơn giản (Ví dụ: So giỏ trái cây)}
+				\small
+				Làm sao biết "Giỏ Táo" ($P$) và "Giỏ Cam" ($Q$) chứa trái cây khác loại mà \textbf{không cần nếm} (không cần nhãn)?\\
+				\textbf{Cách MMD làm:} So sánh chéo \textit{độ tương đồng} về mọi đặc tính (màu, mùi, vỏ). Nếu cả 2 giỏ cùng chứa Táo $\to$ MMD $\approx 0$. Khác loại $\to$ MMD sẽ $> 0$. Không cần biết tên trái cây là gì, khác là phát hiện được!
 			\end{exampleblock}
 		\end{column}
 	\end{columns}
@@ -220,9 +219,17 @@
 			\captionof{figure}{\scriptsize Tín hiệu ShapeDD cho Sudden Drift --- hình tam giác đặc trưng tại điểm drift}
 
 			\vspace{0.5em}
+			\begin{exampleblock}{\small Ví dụ: Xe trượt qua "gờ giảm tốc"}
+				\small
+				Cửa sổ dữ liệu $2l_1$ giống như xe máy băng qua gờ giảm tốc (điểm thay đổi). Bánh trước chạm gờ $\to$ nảy lên. 
+				Giữa gờ $\to$ nảy cao nhất (\textbf{đỉnh tam giác}). 
+				Bánh sau qua khỏi gờ $\to$ êm lại (\textbf{xuống 0}). ShapeDD chuyên lướt đồ thị đi tìm cái "gờ tam giác" này!
+			\end{exampleblock}
+
+			\vspace{0.3em}
 			\begin{alertblock}{\small Hạn chế ShapeDD gốc}
 				\small
-				Permutation Test \textbf{2,500 lần/window} $\to$ chậm: chỉ $\sim$8,000 mẫu/s $\to$ không phù hợp real-time
+				Permutation Test \textbf{2,500 lần lặp/bước} $\to$ Rất chậm rùa bò ($\sim$8,000 mẫu/s) $\to$ KHÔNG thể chạy real-time!
 			\end{alertblock}
 		\end{column}
 	\end{columns}
@@ -299,84 +306,146 @@
 \end{frame}
 
 % --- Slide 9: IDW-MMD ---
-\begin{frame}{Đóng góp 1: Inverse Density-Weighted MMD (IDW-MMD)}
+\begin{frame}{Đóng góp 1: Thuyết minh thuật toán Inverse Density-Weighted MMD}
 	\begin{columns}[T]
-		\begin{column}{0.55\textwidth}
-			\textbf{Vấn đề MMD chuẩn:}
+		\begin{column}{0.5\textwidth}
+			\textbf{Vấn đề của MMD nguyên thủy (Trọng số phân bổ đều):}
 			\begin{itemize}
-				\item Trọng số đều $\to$ vùng trung tâm đông đúc chi phối kết quả
-				\item Drift thường bắt đầu ở \textbf{biên phân phối} $\to$ bị bỏ lỡ
-				\item Cần Permutation test $\to$ chậm
+				\item Điểm ở \textbf{trung tâm} tụ tập rất đông đúc $\to$ Át hết tiếng nói của người khác.
+				\item Drift thực chất hay khởi nguồn lác đác từ \textbf{viền ngoài phân phối} $\to$ Rất dễ hụt hơi, bỏ lỡ nảy sinh bất thường.
 			\end{itemize}
 
 			\vspace{0.5em}
-			\textbf{Giải pháp IDW-MMD:}
-			\begin{equation*}
-				w_i \propto \frac{1}{\sqrt{\underbrace{\sum_{j} k(x_i, x_j)}_{\text{Mật độ cục bộ } d_i}} + \epsilon}
-			\end{equation*}
-
-			\begin{itemize}
-				\item Điểm ở \textbf{biên} (thưa): $d_i$ nhỏ $\to$ $w_i$ \textbf{lớn}
-				\item Điểm ở \textbf{trung tâm} (đông): $d_i$ lớn $\to$ $w_i$ \textbf{nhỏ}
-				\item Cross-term giữ uniform $1/(nm)$ làm ``neo'' ổn định
-			\end{itemize}
-		\end{column}
-		\begin{column}{0.42\textwidth}
-			\begin{block}{IDW-MMD hoàn chỉnh}
+			\begin{exampleblock}{\small Ví dụ: Giao loa phóng thanh cho người vùng thưa thớt}
 				\small
+				\textbf{Phòng họp đông đúc (trung tâm):} Quá ồn, ai ho 1 tiếng (MMD nhỏ) cũng điếc.\\
+				\textbf{Sáng kiến IDW-MMD:} Cấp phép cho "loa phóng thanh" ($w_i \uparrow$) tới tận tay những quan sát thưa thớt ở vùng rìa ngoài (biên). Bất kỳ người lạ mặt (Drift) ở biên xuất hiện, hệ thống sẽ phóng đại rầm rộ ngay lập tức!
+			\end{exampleblock}
+		\end{column}
+		\begin{column}{0.48\textwidth}
+			\textbf{Giải pháp IDW-MMD:} Gán trọng số $w_i$ tỷ lệ nghịch với \textit{mật độ cục bộ} $d_i$.
+
+			\begin{block}{Tái cấu trúc Công thức Tính MMD}
+				\small
+				\begin{equation*}
+					w_i \propto \frac{1}{\sqrt{d_i} + \epsilon} \quad \text{với } d_i = \sum_{j} k(x_i, x_j)
+				\end{equation*}
+
 				\begin{align*}
-					\widehat{\text{MMD}}^2_{\text{IDW}} & = \sum_{i,j} w_i w_j k(x_i, x_j) \\
-					                                    & + \sum_{p,q} v_p v_q k(y_p, y_q)  \\
+					\widehat{\text{MMD}}^2_{\text{IDW}} & = \sum_{i,j} \textcolor{alertred}{w_i w_j} k(x_i, x_j) \\
+					                                    & + \sum_{p,q} \textcolor{alertred}{v_p v_q} k(y_p, y_q) \\
 					                                    & - \frac{2}{nm} \sum_{i,p} k(x_i, y_p)
 				\end{align*}
 			\end{block}
 
 			\vspace{0.3em}
-			\begin{exampleblock}{Kết quả chính}
-				\begin{itemize}
-					\item Giảm phương sai $\sim$30\%
-					\item Dùng \textbf{asymptotic p-value} thay permutation test
-					\item Throughput: \textbf{131,000} mẫu/s\\(vs 8,000 gốc = \textcolor{darkgreen}{16.5$\times$})
-				\end{itemize}
-			\end{exampleblock}
+			\textbf{Sự thanh lịch toán học:} Chuyển từ duyệt trâu (Permutation Test với độ phức tạp $O(N_{perm} \cdot n^2)$) sang tính \textbf{Asymptotic p-value} qua xấp xỉ phân phối tiệm cận Gamma ($O(n^2)$). Chỉ tính giải eigenvalue 1 lần rưỡi thay vì hoán vị trộn mảng tới 2,500 lần!
 		\end{column}
 	\end{columns}
 \end{frame}
 
-% --- Slide 10: SE-CDT Algorithm ---
-\begin{frame}{Đóng góp 2: SE-CDT --- Phân loại drift không giám sát}
-	\begin{columns}[T]
-		\begin{column}{0.55\textwidth}
-			\textbf{Ý tưởng:} Phân tích \textit{hình dạng} tín hiệu $\sigma(t)$
+% --- Slide 10: IDW-MMD Calculation Example ---
+\begin{frame}{Ví dụ tính toán trực quan: Vì sao IDW "nhạy bén" hơn?}
+	\textbf{Giả định tình huống:} Có 3 người bước vào phòng (3 điểm dữ liệu).
+    \begin{itemize}
+        \item $x_1, x_2$ đứng rất sát nhau ở giữa phòng $\to$ Mật độ $d$ lớn.
+        \item $x_3$ đứng lủi thủi 1 mình tự kỷ sát góc khuất $\to$ Mật độ $d$ nhỏ.
+    \end{itemize}
 
-			\vspace{0.3em}
-			\textbf{9 đặc trưng trích xuất:}
-			\begin{itemize}
-				\item \textbf{Hình học:} WR, $n_p$, CV, SNR, PPR, DPAR
-				\item \textbf{Thời gian:} LTS, SDS, MS
-			\end{itemize}
+	\vspace{1em}
+    \begin{columns}[T]
+        \begin{column}{0.5\textwidth}
+            \textbf{Bước 1: Tính mật độ cục bộ $d_i = \sum k(x_i, x_j)$}
+            \begin{itemize}
+                \item $d_1 = k(x_1, x_1) + k(x_1, x_2) \approx 1 + 0.9 = \textbf{1.9}$
+                \item $d_2 = k(x_2, x_1) + k(x_2, x_2) \approx 0.9 + 1 = \textbf{1.9}$
+                \item $d_3 = k(x_3, x_3) + \text{tiếng vọng xa xôi} \approx \textbf{1.0}$
+            \end{itemize}
+        \end{column}
+        \begin{column}{0.48\textwidth}
+            \textbf{Bước 2: Cấp quyền ưu tiên $w_i = \frac{1}{\sqrt{d_i}}$}
+            \begin{itemize}
+                \item $w_1 = w_2 = \frac{1}{\sqrt{1.9}} \approx \textbf{0.72}$ $\to$ Bị bóp nhỏ tiếng lại.
+                \item $w_3 = \frac{1}{\sqrt{1.0}} = \textbf{1.0}$ $\to$ To mồm! Ưu tiên tuyệt đối!
+            \end{itemize}
+        \end{column}
+    \end{columns}
+
+	\vspace{1em}
+	\begin{alertblock}{\small Vậy bài học rút ra là gì?}
+	    \small Người lạ đứng sát mép tường ($x_3$) có tiếng nói "to còi" trong phương trình chênh lệch trọng số ($\textbf{1.0} \gg \textbf{0.72}$). Thuật toán này bẻ cong cái uy quyền đám đông để khơi dậy bất thường. Dịch nôm na: \textit{Triệt tiêu tiếng ồn của đám mây trung tâm, làm căng rõ mồn một các kẻ xâm nhập biên!}
+	\end{alertblock}
+\end{frame}
+
+% --- Slide 11: SE-CDT Algorithm ---
+\begin{frame}{Đóng góp 2: Ý tưởng cốt lõi thuật toán SE-CDT}
+	\begin{columns}[T]
+		\begin{column}{0.5\textwidth}
+			\textbf{Làm sao phân loại mà không cần mở Nhãn lên xem?}
+			
+			Thay vì kiểm tra độ rớt % Accuracy \%%, nghiên cứu này tiên phong tiếp cận phân tích qua \textbf{đường cong hình học (Shape curve)} bằng 9 "chỉ số máu":
 
 			\vspace{0.5em}
+			\begin{itemize}
+				\item \textbf{Khối Hình Học (Phanh Khui Cấu Trúc):}
+				    \begin{itemize}
+    				    \item $n_p$: Đếm tổng số nhịp đập Peak.
+    				    \item $\text{WR}$: Đo khe hở chóp có gầy không (Width Ratio).
+    				    \item $\text{SNR}$: So đo độ nổi loạn của cục Peak với vùng Tạp Âm.
+    				\end{itemize}
+				\item \textbf{Khối Thời Gian (Đo Nhịp Hành Vị):}
+				    \begin{itemize}
+				        \item $\text{LTS}$: Số % thời gian đồ thị nằm phía trên đỉnh dốc.
+				    \end{itemize}
+			\end{itemize}
+		\end{column}
+		\begin{column}{0.48\textwidth}
+			\begin{exampleblock}{\small Trực quan: Bác sĩ xem điện tâm đồ bắt mạch}
+				\small
+				Ta không cần thọc kim vô máy lấy máu mới biết bệnh! Ta chỉ nhìn \textbf{biểu đồ điện tim}:
+				
+				- \textbf{Bệnh Sudden:} Điện tim đâm 1 gai chĩa chóp nhọn thẳng góc ($n_p$ cục bộ, WR cực nhỏ). \textit{Sốc!} \\
+				- \textbf{Bệnh Gradual:} Tín hiệu cứ rề rề nhô cao như con rùa leo núi mỏi mệt. \textit{Tăng xông máu!}\\
+				- \textbf{Bệnh Blip:} Xe tạt giật đùng đùng rồi tắt điện! $n_p=2$ nảy liền lấp lánh (1 đỉnh dương, 1 đỉnh âm lân cận).
+			\end{exampleblock}
+			
+			\centering
+			\includegraphics[width=0.7\linewidth]{vis_mixed_a_SE.png}
+			\captionof{figure}{\scriptsize Điện tâm đồ dạng đột quỵ (Sudden)}
+		\end{column}
+	\end{columns}
+\end{frame}
+
+% --- Slide 12: SE-CDT Calculation Example ---
+\begin{frame}{Ví dụ kiểm định Rule-based trên đặc trưng hình học SE-CDT}
+	\begin{columns}[T]
+		\begin{column}{0.5\textwidth}
+			\textbf{Bộ luật Phân Quyết (Cây Quyết Định):}
+
+			\vspace{0.3em}
 			{\small
 			\begin{tabular}{@{}p{3cm}l@{}}
 				\toprule
-				\textbf{Đặc trưng}               & \textbf{Loại Drift}    \\ \midrule
-				$n_p \leq 3$, WR$<$0.15, SNR$>$2  & \textbf{Sudden} (TCD)  \\
-				$n_p = 2$, PPR$<$0.2, DPAR$>$0.65 & \textbf{Blip} (TCD)    \\
-				$n_p \geq 4$, CV$<$0.3             & \textbf{Recurrent}     \\
-				LTS$>$0.5 hoặc MS$>$0.6           & \textbf{Incremental}   \\
-				Còn lại                            & \textbf{Gradual} (PCD) \\
+				\textbf{Phép thử Toán học}               & \textbf{Sự dán nhãn Unsupervised}    \\ \midrule
+				$n_p \leq 3$, WR$<$0.15, SNR$>$2  & Tiếng sét \textbf{Sudden} (Đột ngột)  \\
+				$n_p = 2$, PPR$<$0.2, DPAR$>$0.65 & Hắt xì \textbf{Blip} (Giật Cục)    \\
+				$n_p \geq 4$, CV$<$0.3             & Ve kêu \textbf{Recurrent} (Lặp lại)    \\
+				LTS$>$0.5 hoặc MS$>$0.6           & Nhích dần \textbf{Incremental}   \\
+				Rớt sàng lọc còn lại                   & Bệnh tuổi già \textbf{Gradual}  \\
 				\bottomrule
 			\end{tabular}}
 		\end{column}
-		\begin{column}{0.42\textwidth}
-			\centering
-			\includegraphics[width=\linewidth]{vis_mixed_a_SE.png}
-			\captionof{figure}{\scriptsize Tín hiệu SE-CDT: dạng tam giác nhọn cho Sudden Drift}
-
-			\vspace{0.3em}
-			\includegraphics[width=\linewidth]{vis_repeated_incremental_SE.png}
-			\captionof{figure}{\scriptsize Tín hiệu Incremental: ramp tăng dần}
+		\begin{column}{0.48\textwidth}
+			\textbf{Đố vui kiểm chứng tính toán:}
+			
+			Giả dụ đồ thị đang có 1 đỉnh nảy lên:
+			\begin{itemize}
+			    \item Đếm mỏm nhô ra: Duy nhất \textbf{1 Peak ($n_p=1 \leq 3$)}.
+			    \item Độ béo bụng của đường nảy (WR): Bề rộng ở mid-height đo được tốn 10\% độ bao phủ cửa sổ $\to$ $\textbf{WR = 0.1 < 0.15}$.
+			    \item Tỷ lệ vọt xa nền tảng (SNR): $v\_max / \mu \approx 3.0 \to$ $\textbf{SNR = 3.0 > 2}$.
+			\end{itemize}
+			
+			$\Rightarrow$ Pass 3 check-box hoàn hảo $\to$ Phóng ấn ngay đây chính là Cú Sốc Tức Thời (\textbf{Sudden Drift})!
 		\end{column}
 	\end{columns}
 \end{frame}
@@ -385,21 +454,17 @@
 \begin{frame}{Thiết kế lai: IDW-MMD cho Detection, Standard MMD cho Classification}
 	\begin{columns}[T]
 		\begin{column}{0.52\textwidth}
-			\textbf{Phát hiện quan trọng trong thực nghiệm:}
+			\textbf{Trực giác đằng sau thiết kế: Tách rời (Decoupled)}\\
+            Tại sao lại thiết kế 2 tầng với 2 loại hàm MMD khác nhau?
 
 			\vspace{0.5em}
-			\begin{tabular}{@{}lcc@{}}
-				\toprule
-				\textbf{Module}        & \textbf{IDW-MMD}                 & \textbf{Std MMD}                           \\ \midrule
-				\textbf{Detection}     & \textcolor{darkgreen}{\textbf{F1=0.548}} & F1=0.455                                   \\
-				False Positives        & \textcolor{darkgreen}{\textbf{2.5}}      & 14.3                                       \\ \addlinespace
-				\textbf{Classification} & CAT=20\%                         & \textcolor{darkgreen}{\textbf{CAT=81.2\%}} \\
-				Gradual detected       & 0\%                              & \textcolor{darkgreen}{\textbf{55\%}}       \\
-				\bottomrule
-			\end{tabular}
+			\begin{itemize}
+				\item \textbf{Std MMD dễ bị "Báo động giả" (FP):} Do trọng số đều, nó thường xuyên giật mình với các nhiễu cục bộ thông thường $\to$ Rất dở để làm Gác cửa (Detection).
+				\item \textbf{IDW-MMD lại bị mù "Gradual Drift":} Việc giảm trọng số vùng trung tâm khiến IDW san phẳng các biến đổi chậm (Gradual/Incremental), biến tín hiệu đồi núi thành đường bằng phẳng $\to$ Không thể dùng để Phân tích (Classification).
+			\end{itemize}
 
 			\vspace{0.5em}
-			\textbf{Lý do:} IDW-MMD giảm trọng số vùng trung tâm $\to$ ``lọc mất'' tín hiệu gradual/incremental (diễn ra chậm, đồng đều)
+			\textbf{Quyết định (Trade-off):} Thiết kế \textit{Một cái chỉ làm nhiệm vụ chặn bắt kẻ lạ, một cái chỉ làm nhiệm vụ phân tích hành vi!}
 		\end{column}
 		\begin{column}{0.45\textwidth}
 			\begin{block}{Quyết định thiết kế}
@@ -412,15 +477,12 @@
 			\end{block}
 
 			\vspace{0.3em}
-			\begin{exampleblock}{Chiến lược thích ứng}
+			\begin{exampleblock}{\small Bí quyết: Dùng đúng kính cho đúng việc}
 				\small
-				\begin{tabular}{@{}ll@{}}
-					Sudden     & $\to$ Full Reset              \\
-					Incremental & $\to$ Continuous Update       \\
-					Gradual    & $\to$ Weighted Window         \\
-					Recurrent  & $\to$ Model Cache \& Reuse    \\
-					Blip       & $\to$ No Action               \\
-				\end{tabular}
+				\begin{itemize}
+					\item \textbf{Detection (IDW-MMD):} Là cái \textbf{Kính Lúp} cực nhạy soi ngay cửa ra vào để chặn kẽ hở biên. Độ zoom lớn nên góc rất hẹp $\to$ Cảnh báo nhạy nhất.
+					\item \textbf{Classification (Std MMD):} Cất kính lúp, vác \textbf{Ống Nhòm} ra xem để thấy "toàn cảnh bầu trời" (global info). Phải nhìn toàn cảnh mới biết đối tượng "chạy" (Sudden) hay tà tà "đi bộ" (Gradual) để phân loại!
+				\end{itemize}
 			\end{exampleblock}
 		\end{column}
 	\end{columns}
@@ -547,14 +609,12 @@
 			\end{tabular}}
 
 			\vspace{0.5em}
-			\begin{block}{Phân tích}
-				\begin{itemize}
-					\item \textbf{+22.14\%} vs No Adaptation
-					\item \textbf{+13.4\%} vs Simple Retrain
-					\item \textbf{0 FP} nhờ reset bộ đệm ADWIN
-					\item \textbf{$N=5$ runs, $T=5000$ mẫu}
-				\end{itemize}
-			\end{block}
+			\begin{exampleblock}{\small Tại sao Type-Specific ăn đứt mọi thứ?}
+				\small
+				\textbf{Thuốc đắng dã tật, phải đúng bệnh:}\\
+				Nếu dữ liệu đổi "Dần Dần" (Gradual) mà lại \textit{tẩy não AI ngay lập tức} (Simple Retrain) $\to$ AI sẽ quên sạch kiến thức cũ vẫn đang còn xài được $\to$ Accuracy sập hầm do mất trí.\\
+				\textbf{Cách giải quyết:} Sudden thì Reset, Gradual thì Cập nhật mềm (uống thuốc từ từ). "Bắt trúng mạch, cho đúng thuốc" giúp giữ lại +13.4\% so với Reset hẩm hiu!
+			\end{exampleblock}
 		\end{column}
 	\end{columns}
 \end{frame}
