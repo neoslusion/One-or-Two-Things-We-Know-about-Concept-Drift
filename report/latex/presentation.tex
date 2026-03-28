@@ -61,10 +61,10 @@
 }
 
 % Title page info
-\title[Phát Hiện Concept Drift]{Nghiên cứu và phát triển hệ thống tự động phát hiện hiện tượng trôi dạt và cập nhật mô hình học máy thích ứng}
-\subtitle{Luận văn Thạc sĩ}
-\author[Lê Phúc Đức]{Sinh viên thực hiện: Lê Phúc Đức\\ GVHD: PGS.TS. Thoại Nam}
-\institute[HCMUT]{Trường Đại học Bách Khoa --- ĐHQG-HCM\\Khoa Khoa học và Kỹ thuật Máy tính}
+\title[Concept Drift Detection]{Research and Development of an Automated Concept Drift Detection and Adaptive Machine Learning System}
+\subtitle{Master's Thesis}
+\author[Le Phuc Duc]{Student: Le Phuc Duc\\ Supervisor: Assoc.Prof.Dr. Thoai Nam}
+\institute[HCMUT]{Ho Chi Minh City University of Technology\\Faculty of Computer Science and Engineering}
 \date{2026}
 
 \begin{document}
@@ -79,70 +79,68 @@
 % =============================================================================
 % SLIDE 2: TABLE OF CONTENTS
 % =============================================================================
-\begin{frame}{Nội dung trình bày}
+\begin{frame}{Presentation Outline}
 	\tableofcontents
 \end{frame}
 
 % #############################################################################
 % SECTION 1: INTRODUCTION (~2 phút)
 % #############################################################################
-\section{Giới thiệu}
+\section{Introduction}
 
 % --- Slide 3: Motivation ---
-\begin{frame}{Thực trạng \& Động lực nghiên cứu}
+\begin{frame}[shrink]{Motivation \& Background}
 	\begin{columns}[T]
 		\begin{column}{0.55\textwidth}
-			\textbf{Thực trạng:}
+			\textbf{Real-World Challenges:}
 			\begin{itemize}
-				\item Hệ thống gian lận ngân hàng: tỷ lệ cảnh báo sai \textbf{tăng 3 lần} sau 1 năm
-				\item Mô hình bảo trì nhà máy: hiệu suất giảm khi \textbf{điều kiện vận hành thay đổi}
+				\small
+				\item Banking fraud systems: False alarms \textbf{triple} after 1 year.
+				\item Predictive maintenance: Performance degrades as \textbf{conditions change}.
 			\end{itemize}
 
-			\vspace{0.5em}
-			\textbf{Nguyên nhân --- Concept Drift:}
+			\textbf{Root Cause --- Concept Drift:}
+			\vspace{-0.5em}
 			\begin{equation*}
 				P_{\text{train}}(X, Y) \neq P_{\text{online},t}(X, Y)
 			\end{equation*}
 
-			\vspace{0.3em}
-			\vspace{0.3em}
-			\begin{exampleblock}{\small Ví dụ: "Lạm phát làm AI lỗi thời"}
-				\small
-				Năm 2019: Lương 20tr $\to$ AI tài duyệt "Đủ mua nhà" (Đúng).\\
-				Năm 2026: Lạm phát, nhà tăng giá $\to$ 20tr mua không nổi nữa (Sai).\\
-				Dữ liệu hệ thống vẫn thu về "20tr", nhưng \textbf{ý nghĩa thực tế} đã thay đổi. Đó là Concept Drift!
+			\begin{exampleblock}{\footnotesize Non-Stationary Environments}
+				\scriptsize
+				Mappings between inputs/outputs are not permanent due to shifting behaviors.\\
+				\textit{Example:} Valid bank transactions rejected as fraud during seasonal spikes.
 			\end{exampleblock}
 		\end{column}
 		\begin{column}{0.42\textwidth}
 			\centering
-			\includegraphics[width=\linewidth]{image/patern_based_concept_drift.png}
-			\captionof{figure}{\scriptsize Các loại Concept Drift theo thời gian}
+			\includegraphics[width=0.9\linewidth]{image/patern_based_concept_drift.png}
+			\captionof{figure}{\scriptsize Temporal Drift Patterns}
 
-			\vspace{0.5em}
-			\includegraphics[width=0.9\linewidth]{image/distribution_based_concept_drift.png}
-			\captionof{figure}{\scriptsize Phân loại theo phân phối}
+			\vspace{0.2em}
+			\includegraphics[width=0.8\linewidth]{image/distribution_based_concept_drift.png}
+			\captionof{figure}{\scriptsize Distributional Shifts}
 		\end{column}
 	\end{columns}
 \end{frame}
 
 % --- Slide 4: Objectives ---
-\begin{frame}{Mục tiêu \& Đóng góp}
+\begin{frame}{Objectives \& Contributions}
 	\begin{columns}[T]
 		\begin{column}{0.5\textwidth}
-			\begin{block}{Mục tiêu nghiên cứu}
+			\begin{block}{Research Objectives}
 				\begin{enumerate}
-					\item \textbf{Cải tiến phát hiện:} Tích hợp IDW-MMD vào ShapeDD để tăng tốc và giảm báo động giả
-					\item \textbf{Phân loại unsupervised:} Đề xuất SE-CDT phân loại loại drift \emph{không cần nhãn}
-					\item \textbf{Hệ thống end-to-end:} Kiến trúc real-time trên Apache Kafka
+					\item \textbf{Detection Refinement:} Integrate IDW-MMD into ShapeDD to maximize throughput and minimize false alarms.
+					\item \textbf{Unsupervised Classification:} Propose SE-CDT framework to categorize temporal drift behaviors \emph{without true labels}.
+					\item \textbf{End-to-End System:} Design and deploy a real-time reactive architecture on Apache Kafka.
 				\end{enumerate}
 			\end{block}
 		\end{column}
 		\begin{column}{0.48\textwidth}
-			\begin{block}{3 đóng góp chính}
+			\begin{block}{Three Main Contributions}
 				\begin{enumerate}
-					\item \textbf{ShapeDD-IDW:} Tối ưu hóa thuật toán để tăng cực hạn tốc độ giám sát và triệt tiêu báo động giả.
-					\item \textbf{SE-CDT:} Khung phân tích tự động phân loại 5 loại Drift mà hoàn toàn không cần nhãn (Unsupervised).
-					\item \textbf{Type-Specific Adaptation:} Đề xuất chiến lược cập nhật thích ứng theo loại sự kiện, "bệnh nào thuốc nấy".
+					\item \textbf{Detection (ShapeDD-IDW):} Optimized kernel evaluation mechanisms to significantly boost throughput and virtually eliminate false alarms (FP).
+					\item \textbf{Classification (SE-CDT):} Developed an unsupervised topology analyzer to deduce 5 fundamental drift architectures.
+					\item \textbf{Adaptation:} Designed a Type-Specific Hybrid structure that intelligently routes model update strategies based on the identified drift type.
 				\end{enumerate}
 			\end{block}
 		\end{column}
@@ -152,120 +150,120 @@
 % #############################################################################
 % SECTION 2: THEORETICAL FOUNDATION (~3 phút)
 % #############################################################################
-\section{Cơ sở lý thuyết}
+\section{Theoretical Background}
 
 % --- Slide 5: MMD ---
 \begin{frame}{Maximum Mean Discrepancy (MMD)}
 	\begin{columns}[T]
 		\begin{column}{0.55\textwidth}
-			\textbf{Ý tưởng:} So sánh 2 phân phối $P$, $Q$ trong không gian kernel cao chiều:
+			\textbf{Core Concept:} Compare two distributions $P, Q$ in a high-dimensional kernel space:
 			\begin{equation*}
 				\text{MMD}(P, Q) = \sup_{f \in \mathcal{F}} \left| \mathbb{E}_{X \sim P}[f(X)] - \mathbb{E}_{Y \sim Q}[f(Y)] \right|
 			\end{equation*}
 
-			\textbf{Ước lượng thực tế} (RKHS với Gaussian RBF kernel):
+			\textbf{Empirical Estimator} (RKHS via Gaussian RBF):
+			\vspace{-0.5em}
 			\begin{align*}
-				\widehat{\text{MMD}}^2 & = \underbrace{\frac{1}{n^2}\sum_{i,j} k(x_i, x_j)}_{\text{Tương đồng trong } P}
-				+ \underbrace{\frac{1}{m^2}\sum_{p,q} k(y_p, y_q)}_{\text{Tương đồng trong } Q}                                                        \\
-				                       & \quad - \underbrace{\frac{2}{nm}\sum_{i,p} k(x_i, y_p)}_{\text{Tương đồng chéo}}
+				\widehat{\text{MMD}}^2 & = \underbrace{\frac{1}{n^2}\sum_{i,j} k(x_i, x_j)}_{\text{Internal } P}
+				+ \underbrace{\frac{1}{m^2}\sum_{p,q} k(y_p, y_q)}_{\text{Internal } Q}                                                        \\
+				                       & \quad - \underbrace{\frac{2}{nm}\sum_{i,p} k(x_i, y_p)}_{\text{Cross } P \leftrightarrow Q}
 			\end{align*}
 
-			\vspace{0.3em}
+			\vspace{-0.3em}
 			$k(x,y) = \exp\left(-\frac{\|x - y\|^2}{2\sigma_k^2}\right)$ \quad (Gaussian RBF)
 		\end{column}
 		\begin{column}{0.42\textwidth}
-			\begin{alertblock}{Vai trò trong Drift Detection}
+			\begin{alertblock}{Role in Drift Detection}
 				\begin{itemize}
-					\item $\text{MMD}^2 \approx 0$: Hai cửa sổ cùng phân phối
-					\item $\text{MMD}^2 > 0$: Phân phối đã thay đổi $\to$ \textbf{Drift!}
+					\item $\text{MMD}^2 \approx 0$: Identical distributions.
+					\item $\text{MMD}^2 > 0$: Divergence $\to$ \textbf{Drift!}
 				\end{itemize}
 			\end{alertblock}
 
-			\vspace{0.5em}
-			\begin{exampleblock}{\small Giải thích đơn giản (Ví dụ: So giỏ trái cây)}
+			\vspace{0.3em}
+			\begin{exampleblock}{\small RKHS Embeddings Intuition}
 				\small
-				Làm sao biết "Giỏ Táo" ($P$) và "Giỏ Cam" ($Q$) chứa trái cây khác loại mà \textbf{không cần nếm} (không cần nhãn)?\\
-				\textbf{Cách MMD làm:} So sánh chéo \textit{độ tương đồng} về mọi đặc tính (màu, mùi, vỏ). Nếu cả 2 giỏ cùng chứa Táo $\to$ MMD $\approx 0$. Khác loại $\to$ MMD sẽ $> 0$. Không cần biết tên trái cây là gì, khác là phát hiện được!
+				Instead of doing exhaustive parametric modeling, MMD directly maps sample data into a Reproducing Kernel Hilbert Space (RKHS).\\
+				The distance between their \textbf{Mean Embeddings} acts as a robust discrepancy metric. This fundamentally enables \textbf{non-parametric} and \textbf{unsupervised} real-time validation.
 			\end{exampleblock}
 		\end{column}
 	\end{columns}
 \end{frame}
 
 % --- Slide 6: ShapeDD ---
-\begin{frame}{ShapeDD --- Phát hiện drift dựa trên hình dạng tín hiệu}
+\begin{frame}[shrink]{ShapeDD --- Shape-Based Drift Detection}
 	\begin{columns}[T]
 		\begin{column}{0.55\textwidth}
-			\textbf{Định lý Triangle Shape (Kết quả trung tâm):}
+			\textbf{Triangle Shape Theorem:}
 
 			\vspace{0.3em}
-			Khi xảy ra drift đột ngột tại $t=0$, tín hiệu drift magnitude:
+			Given a sudden drift at $t=0$, the MMD drift magnitude $\sigma(t)$ forms:
 			\begin{equation*}
-				\sigma(t) = \underbrace{\| P - Q \|}_{\text{Độ mạnh drift}} \cdot \underbrace{h_l(t)}_{\text{Hình dạng tam giác}}
+				\sigma(t) = \underbrace{\| P - Q \|}_{\text{Drift Severity}} \cdot \underbrace{h_l(t)}_{\text{Triangle Shape}}
 			\end{equation*}
-			với $h_l(t) = \max\left(0, 1 - \frac{|l - t|}{l}\right)$
+			where $h_l(t) = \max\left(0, 1 - \frac{|l - t|}{l}\right)$
 
 			\vspace{0.5em}
-			\textbf{4 giai đoạn xử lý:}
+			\textbf{Processing Pipeline:}
 			\begin{enumerate}
-				\item Thu thập dữ liệu (cửa sổ trượt $2l_1$)
-				\item Xây dựng ma trận kernel $K$
-				\item Tính MMD giữa 2 nửa cửa sổ
-				\item Xác thực bằng \textbf{Permutation Test}
+				\item Buffer data (Sliding window $2l_1$).
+				\item Construct kernel matrix $K$.
+				\item Calculate MMD between window halves.
+				\item Verify significance via \textbf{Permutation Test}.
 			\end{enumerate}
 		\end{column}
 		\begin{column}{0.42\textwidth}
 			\centering
 			\includegraphics[width=\linewidth]{vis_repeated_sudden_SE.png}
-			\captionof{figure}{\scriptsize Tín hiệu ShapeDD cho Sudden Drift --- hình tam giác đặc trưng tại điểm drift}
+			\captionof{figure}{\scriptsize Distinctive MMD triangle during Sudden Drift}
 
 			\vspace{0.5em}
-			\begin{exampleblock}{\small Ví dụ: Xe trượt qua "gờ giảm tốc"}
+			\begin{exampleblock}{\small Geometric Property}
 				\small
-				Cửa sổ dữ liệu $2l_1$ giống như xe máy băng qua gờ giảm tốc (điểm thay đổi). Bánh trước chạm gờ $\to$ nảy lên. 
-				Giữa gờ $\to$ nảy cao nhất (\textbf{đỉnh tam giác}). 
-				Bánh sau qua khỏi gờ $\to$ êm lại (\textbf{xuống 0}). ShapeDD chuyên lướt đồ thị đi tìm cái "gờ tam giác" này!
+				As the sliding window steps over the crossing boundary (drift point) of two distinct distributions, the MMD magnitude $\sigma(t)$ inherently plots a \textbf{signature triangle}.\\
+				Peak magnitude arises when both samples perfectly center the intersection.
 			\end{exampleblock}
 
-			\vspace{0.3em}
-			\begin{alertblock}{\small Hạn chế ShapeDD gốc}
+			\vspace{0.1em}
+			\begin{alertblock}{\small Scalability Bottleneck}
 				\small
-				Permutation Test \textbf{2,500 lần lặp/bước} $\to$ Rất chậm rùa bò ($\sim$8,000 mẫu/s) $\to$ KHÔNG thể chạy real-time!
+				The resampling Permutation Test demands \textbf{2,500 iterations per step} $\to$ Unacceptable CPU footprint, capping throughput at \textbf{8,000 samples/s}.
 			\end{alertblock}
 		\end{column}
 	\end{columns}
 \end{frame}
 
 % --- Slide 7: CDT-MSW ---
-\begin{frame}{CDT-MSW --- Nền tảng phân loại drift}
+\begin{frame}{CDT-MSW --- Supervised Classification Baseline}
 	\begin{columns}[T]
 		\begin{column}{0.55\textwidth}
-			\textbf{CDT-MSW} (Guo et al., 2022): Phân loại drift thành:
+			\textbf{CDT-MSW} (Guo et al., 2022) categorizes drift into:
 			\begin{itemize}
 				\item \textbf{TCD} (Transient): Sudden, Blip, Recurrent
 				\item \textbf{PCD} (Progressive): Gradual, Incremental
 			\end{itemize}
 
 			\vspace{0.5em}
-			\textbf{Cơ chế Growth Process:}
+			\textbf{Growth Process Mechanism:}
 			\begin{itemize}
-				\item Đo \textit{drift length} qua accuracy variance trên adjoint window
-				\item Nếu drift length ngắn $\to$ TCD, dài $\to$ PCD
+				\item Measures \textit{drift length} via accuracy degradation variance over an adjoint prediction window.
+				\item Short duration $\to$ TCD, Long continuation $\to$ PCD.
 			\end{itemize}
 
 			\vspace{0.5em}
-			\begin{alertblock}{Hạn chế của CDT-MSW}
-				\textbf{Yêu cầu labels} để tính accuracy ratio $\to$ Không phù hợp cho môi trường unsupervised (IIoT, streaming)
+			\begin{alertblock}{Limitations of CDT-MSW}
+				Heavily relies on Ground-Truth \textbf{Labels} to compute accuracy degradation vectors $\to$ Strictly impractical for raw unsupervised IIoT streams.
 			\end{alertblock}
 		\end{column}
 		\begin{column}{0.42\textwidth}
 			\centering
 			\includegraphics[width=\linewidth]{image/cdt_msw.png}
-			\captionof{figure}{\scriptsize Mô hình CDT-MSW gốc (cần labels)}
+			\captionof{figure}{\scriptsize CDT-MSW Architecture (Label Dependent)}
 
 			\vspace{0.5em}
-			\begin{exampleblock}{\small Động lực cho SE-CDT}
+			\begin{exampleblock}{\small Motivation for SE-CDT}
 				\small
-				Thay accuracy-based growth bằng \textbf{MMD signal analysis} $\to$ hoàn toàn unsupervised
+				Eliminate label dependency entirely by substituting error tracks with \textbf{direct spatio-temporal MMD geometry $\sigma(t)$}.
 			\end{exampleblock}
 		\end{column}
 	\end{columns}
@@ -274,10 +272,10 @@
 % #############################################################################
 % SECTION 3: PROPOSED MODEL (~5 phút)
 % #############################################################################
-\section{Mô hình đề xuất}
+\section{Proposed Architecture}
 
 % --- Slide 8: System Architecture ---
-\begin{frame}{Kiến trúc Hệ thống SE-CDT}
+\begin{frame}{SE-CDT System Architecture}
 	\centering
 	\includegraphics[width=0.88\linewidth,height=0.6\textheight,keepaspectratio]{image/system_architecture.png}
 
@@ -286,49 +284,49 @@
 	\begin{columns}[T]
 		\begin{column}{0.33\textwidth}
 			\centering
-			\textbf{\textcolor{univblue}{Tầng 1: Detection}}\\
+			\textbf{\textcolor{univblue}{Layer 1: Detection}}\\
 			ShapeDD + IDW-MMD\\
-			{\scriptsize Phát hiện drift $P(X)$}
+			{\scriptsize Identifies drift $P(X)$}
 		\end{column}
 		\begin{column}{0.33\textwidth}
 			\centering
-			\textbf{\textcolor{univblue}{Tầng 2: Classification}}\\
+			\textbf{\textcolor{univblue}{Layer 2: Classification}}\\
 			SE-CDT\\
-			{\scriptsize Phân loại 5 loại drift}
+			{\scriptsize Classifies 5 drift types}
 		\end{column}
 		\begin{column}{0.33\textwidth}
 			\centering
-			\textbf{\textcolor{univblue}{Tầng 3: Adaptation}}\\
+			\textbf{\textcolor{univblue}{Layer 3: Adaptation}}\\
 			Type-Specific Strategy\\
-			{\scriptsize Cập nhật mô hình tự động}
+			{\scriptsize Automated model updating}
 		\end{column}
 	\end{columns}
 \end{frame}
 
 % --- Slide 9: IDW-MMD ---
-\begin{frame}{Đóng góp 1: Thuyết minh thuật toán Inverse Density-Weighted MMD}
+\begin{frame}[shrink]{Contribution 1: Inverse Density-Weighted MMD Algorithm}
 	\begin{columns}[T]
 		\begin{column}{0.5\textwidth}
-			\textbf{Vấn đề của MMD nguyên thủy (Trọng số phân bổ đều):}
+			\textbf{Limitations of Original MMD (Uniform weights):}
 			\begin{itemize}
-				\item Điểm ở \textbf{trung tâm} tụ tập rất đông đúc $\to$ Át hết tiếng nói của người khác.
-				\item Drift thực chất hay khởi nguồn lác đác từ \textbf{viền ngoài phân phối} $\to$ Rất dễ hụt hơi, bỏ lỡ nảy sinh bất thường.
+				\item Uniform weighting allows the dense \textbf{majority clusters} at the center to entirely dominate the statistical discrepancy computations.
+				\item Consequence: Drift often originates as outliers at the \textbf{distribution boundary} $\to$ Weak early drift signals are temporarily overshadowed.
 			\end{itemize}
 
 			\vspace{0.5em}
-			\begin{exampleblock}{\small Ví dụ: Giao loa phóng thanh cho người vùng thưa thớt}
+			\begin{exampleblock}{\small Signal Amplification Idea}
 				\small
-				\textbf{Phòng họp đông đúc (trung tâm):} Quá ồn, ai ho 1 tiếng (MMD nhỏ) cũng điếc.\\
-				\textbf{Sáng kiến IDW-MMD:} Cấp phép cho "loa phóng thanh" ($w_i \uparrow$) tới tận tay những quan sát thưa thớt ở vùng rìa ngoài (biên). Bất kỳ người lạ mặt (Drift) ở biên xuất hiện, hệ thống sẽ phóng đại rầm rộ ngay lập tức!
+				The Inverse Density-Weighted (IDW) mechanism allocates weights inversely proportional to local spatial density.\\
+				Dense center points are suppressed ($w_i \downarrow$). Conversely, anomalous divergences at the margins are \textbf{heavily amplified} ($w_i \uparrow$), yielding a starkly sensitive detection signal without sacrificing robustness.
 			\end{exampleblock}
 		\end{column}
 		\begin{column}{0.48\textwidth}
-			\textbf{Giải pháp IDW-MMD:} Gán trọng số $w_i$ tỷ lệ nghịch với \textit{mật độ cục bộ} $d_i$.
+			\textbf{IDW-MMD Solution:} Assign weights $w_i$ relative to local density $d_i$.
 
-			\begin{block}{Tái cấu trúc Công thức Tính MMD}
+			\begin{block}{Restructured MMD Formulation}
 				\small
 				\begin{equation*}
-					w_i \propto \frac{1}{\sqrt{d_i} + \epsilon} \quad \text{với } d_i = \sum_{j} k(x_i, x_j)
+					w_i \propto \frac{1}{\sqrt{d_i} + \epsilon} \quad \text{where } d_i = \sum_{j} k(x_i, x_j)
 				\end{equation*}
 
 				\begin{align*}
@@ -339,151 +337,143 @@
 			\end{block}
 
 			\vspace{0.3em}
-			\textbf{Sự thanh lịch toán học:} Chuyển từ duyệt trâu (Permutation Test với độ phức tạp $O(N_{perm} \cdot n^2)$) sang tính \textbf{Asymptotic p-value} qua xấp xỉ phân phối tiệm cận Gamma ($O(n^2)$). Chỉ tính giải eigenvalue 1 lần rưỡi thay vì hoán vị trộn mảng tới 2,500 lần!
+			\textbf{Mathematical Elegance:} Shifted from naive iterative sampling (Permutation Test $O(N_{perm} n^2)$) to evaluating the \textbf{Asymptotic p-value} via Gamma approximations ($O(n^2)$). Eliminates 2,500 permutations per timestep!
 		\end{column}
 	\end{columns}
 \end{frame}
 
 % --- Slide 10: IDW-MMD Calculation Example ---
-\begin{frame}{Ví dụ tính toán trực quan: Vì sao IDW "nhạy bén" hơn?}
-	\textbf{Giả định tình huống:} Có 3 người bước vào phòng (3 điểm dữ liệu).
+\begin{frame}[shrink]{IDW Weight Decomposition Example (Minimal 3-Point Set)}
+	Assume an observation window captures 3 data instances:
     \begin{itemize}
-        \item $x_1, x_2$ đứng rất sát nhau ở giữa phòng $\to$ Mật độ $d$ lớn.
-        \item $x_3$ đứng lủi thủi 1 mình tự kỷ sát góc khuất $\to$ Mật độ $d$ nhỏ.
+        \item Majority Core: $x_1, x_2$ are clustered closely mapping normal behavior.
+        \item Drift Indicator: $x_3$ emerges isolated at the feature boundary.
     \end{itemize}
 
 	\vspace{1em}
     \begin{columns}[T]
         \begin{column}{0.5\textwidth}
-            \textbf{Bước 1: Tính mật độ cục bộ $d_i = \sum k(x_i, x_j)$}
+            \textbf{1. Compute local density $d_i = \sum k(x_i, x_j)$}
             \begin{itemize}
-                \item $d_1 = k(x_1, x_1) + k(x_1, x_2) \approx 1 + 0.9 = \textbf{1.9}$
-                \item $d_2 = k(x_2, x_1) + k(x_2, x_2) \approx 0.9 + 1 = \textbf{1.9}$
-                \item $d_3 = k(x_3, x_3) + \text{tiếng vọng xa xôi} \approx \textbf{1.0}$
+                \item Core point: $d_1 = k(x_1, x_1) + k(x_1, x_2) \approx 1.9$
+                \item Core point: $d_2 = k(x_2, x_1) + k(x_2, x_2) \approx 1.9$
+                \item Boundary point: $d_3 = k(x_3, x_3) + \text{minimal} \approx \textbf{1.0}$
             \end{itemize}
         \end{column}
         \begin{column}{0.48\textwidth}
-            \textbf{Bước 2: Cấp quyền ưu tiên $w_i = \frac{1}{\sqrt{d_i}}$}
+            \textbf{2. Extract inverse weights $w_i = \frac{1}{\sqrt{d_i}}$}
             \begin{itemize}
-                \item $w_1 = w_2 = \frac{1}{\sqrt{1.9}} \approx \textbf{0.72}$ $\to$ Bị bóp nhỏ tiếng lại.
-                \item $w_3 = \frac{1}{\sqrt{1.0}} = \textbf{1.0}$ $\to$ To mồm! Ưu tiên tuyệt đối!
+                \item Core weight: $w_1 = w_2 = \frac{1}{\sqrt{1.9}} \approx \textbf{0.72}$ $\to$ Penalized.
+                \item Boundary weight: $w_3 = \frac{1}{\sqrt{1.0}} = \textbf{1.0}$ $\to$ Amplified.
             \end{itemize}
         \end{column}
     \end{columns}
 
 	\vspace{1em}
-	\begin{alertblock}{\small Vậy bài học rút ra là gì?}
-	    \small Người lạ đứng sát mép tường ($x_3$) có tiếng nói "to còi" trong phương trình chênh lệch trọng số ($\textbf{1.0} \gg \textbf{0.72}$). Thuật toán này bẻ cong cái uy quyền đám đông để khơi dậy bất thường. Dịch nôm na: \textit{Triệt tiêu tiếng ồn của đám mây trung tâm, làm căng rõ mồn một các kẻ xâm nhập biên!}
+	\begin{alertblock}{\small Theoretical Proof Interpretation}
+	    \small Unlike standard MMD ($w_i = 1 \forall i$), IDW \textbf{actively penalizes} signal strength in dense regions ($0.72 < 1.0$), while \textbf{boosting} samples deviating toward the boundary ($1.0 \gg 0.72$). This mechanism leverages spatial distribution shifts, forcing anomalous samples to dominate the discrepancy evaluation, thus identifying subtle concept drift early.
 	\end{alertblock}
 \end{frame}
 
 % --- Slide 11: SE-CDT Algorithm ---
-\begin{frame}{Đóng góp 2: Ý tưởng cốt lõi thuật toán SE-CDT}
+\begin{frame}[shrink]{Contribution 2: Unsupervised Time-Series Shape Analysis}
 	\begin{columns}[T]
 		\begin{column}{0.5\textwidth}
-			\textbf{Làm sao phân loại mà không cần mở Nhãn lên xem?}
+			\textbf{How to classify Drift Types without Ground Truths?}
 			
-			Thay vì kiểm tra độ rớt % Accuracy \%%, nghiên cứu này tiên phong tiếp cận phân tích qua \textbf{đường cong hình học (Shape curve)} bằng 9 "chỉ số máu":
+			Instead of verifying accuracy variance, this thesis proposes \textbf{Topological Shape Analysis} by extracting 9 distinct statistical features from $\sigma(t)$:
 
 			\vspace{0.5em}
 			\begin{itemize}
-				\item \textbf{Khối Hình Học (Phanh Khui Cấu Trúc):}
+				\item \textbf{Geometric Block (Structural Analysis):}
 				    \begin{itemize}
-    				    \item $n_p$: Đếm tổng số nhịp đập Peak.
-    				    \item $\text{WR}$: Đo khe hở chóp có gầy không (Width Ratio).
-    				    \item $\text{SNR}$: So đo độ nổi loạn của cục Peak với vùng Tạp Âm.
+    				    \item $n_p$: Total count of local amplitude maxima.
+    				    \item $\text{WR}$ (Width Ratio): Pulse spread at High-Half.
+    				    \item $\text{SNR}$ (Signal-to-Noise): Peak prominence relative to background noise.
     				\end{itemize}
-				\item \textbf{Khối Thời Gian (Đo Nhịp Hành Vị):}
+				\item \textbf{Temporal Block (Behavioral Analysis):}
 				    \begin{itemize}
-				        \item $\text{LTS}$: Số % thời gian đồ thị nằm phía trên đỉnh dốc.
+				        \item $\text{LTS}$: Density map residing strictly above the baseline threshold.
 				    \end{itemize}
 			\end{itemize}
 		\end{column}
 		\begin{column}{0.48\textwidth}
-			\begin{exampleblock}{\small Trực quan: Bác sĩ xem điện tâm đồ bắt mạch}
+			\begin{exampleblock}{\small Rationale: Geometry Correlates with Distribution Dynamics}
 				\small
-				Ta không cần thọc kim vô máy lấy máu mới biết bệnh! Ta chỉ nhìn \textbf{biểu đồ điện tim}:
+				Different drift architectures inherently output specific energy spectra:
 				
-				- \textbf{Bệnh Sudden:} Điện tim đâm 1 gai chĩa chóp nhọn thẳng góc ($n_p$ cục bộ, WR cực nhỏ). \textit{Sốc!} \\
-				- \textbf{Bệnh Gradual:} Tín hiệu cứ rề rề nhô cao như con rùa leo núi mỏi mệt. \textit{Tăng xông máu!}\\
-				- \textbf{Bệnh Blip:} Xe tạt giật đùng đùng rồi tắt điện! $n_p=2$ nảy liền lấp lánh (1 đỉnh dương, 1 đỉnh âm lân cận).
+				- \textbf{Sudden Drift:} Induces a singular, severe system shock yielding $\textbf{1 isolated peak}$ with extremely narrow bandwidth ($WR \to 0$).\\
+				- \textbf{Gradual Drift:} Blended noisy transitions elevate the baseline into a plateau, generally lacking defined peaks.\\
+				- \textbf{Blip / Outlier:} Sparks immediate dual-wave transient oscillations ($n_p=2$).
 			\end{exampleblock}
 			
 			\centering
 			\includegraphics[width=0.7\linewidth]{vis_mixed_a_SE.png}
-			\captionof{figure}{\scriptsize Điện tâm đồ dạng đột quỵ (Sudden)}
+			\captionof{figure}{\scriptsize Distinct Sudden Drift geometry ($WR$ narrow, $n_p=1$)}
 		\end{column}
 	\end{columns}
 \end{frame}
 
 % --- Slide 12: SE-CDT Calculation Example ---
-\begin{frame}{Ví dụ kiểm định Rule-based trên đặc trưng hình học SE-CDT}
+\begin{frame}[shrink]{Rule-based Classification Heuristic Example (SE-CDT)}
 	\begin{columns}[T]
-		\begin{column}{0.5\textwidth}
-			\textbf{Bộ luật Phân Quyết (Cây Quyết Định):}
+		\begin{column}{0.48\textwidth}
+			\textbf{Decision Tree Structure (Heuristics):}
 
 			\vspace{0.3em}
 			{\small
-			\begin{tabular}{@{}p{3cm}l@{}}
+			\begin{tabular}{@{}p{3.5cm}l@{}}
 				\toprule
-				\textbf{Phép thử Toán học}               & \textbf{Sự dán nhãn Unsupervised}    \\ \midrule
-				$n_p \leq 3$, WR$<$0.15, SNR$>$2  & Tiếng sét \textbf{Sudden} (Đột ngột)  \\
-				$n_p = 2$, PPR$<$0.2, DPAR$>$0.65 & Hắt xì \textbf{Blip} (Giật Cục)    \\
-				$n_p \geq 4$, CV$<$0.3             & Ve kêu \textbf{Recurrent} (Lặp lại)    \\
-				LTS$>$0.5 hoặc MS$>$0.6           & Nhích dần \textbf{Incremental}   \\
-				Rớt sàng lọc còn lại                   & Bệnh tuổi già \textbf{Gradual}  \\
+				\textbf{Verification Conditions}               & \textbf{Classification Result}    \\ \midrule
+				$n_p \leq 3, \text{WR}<0.15, \text{SNR}>2$  & \textbf{Sudden Drift}  \\
+				$n_p = 2, \text{PPR}<0.2, \text{DPAR}>0.65$ & \textbf{Blip / Outlier}    \\
+				$n_p \geq 4, \text{CV}<0.3$             & \textbf{Recurrent Drift}    \\
+				$\text{LTS}>0.5 \lor \text{MS}>0.6$  & \textbf{Incremental Drift}   \\
+				Fallback (Fails above conditions) & \textbf{Gradual Drift}  \\
 				\bottomrule
 			\end{tabular}}
 		\end{column}
-		\begin{column}{0.48\textwidth}
-			\textbf{Đố vui kiểm chứng tính toán:}
+		\begin{column}{0.5\textwidth}
+			\textbf{Real-time System Execution Trace:}
 			
-			Giả dụ đồ thị đang có 1 đỉnh nảy lên:
-			\begin{itemize}
-			    \item Đếm mỏm nhô ra: Duy nhất \textbf{1 Peak ($n_p=1 \leq 3$)}.
-			    \item Độ béo bụng của đường nảy (WR): Bề rộng ở mid-height đo được tốn 10\% độ bao phủ cửa sổ $\to$ $\textbf{WR = 0.1 < 0.15}$.
-			    \item Tỷ lệ vọt xa nền tảng (SNR): $v\_max / \mu \approx 3.0 \to$ $\textbf{SNR = 3.0 > 2}$.
-			\end{itemize}
+			Suppose Layer 1 (Detection) just triggered an anomaly threshold violation.
+			\begin{enumerate}
+			    \item The Vectorizer streams $2l_1$ timestamps surrounding the drift point.
+			    \item Counts local maxima: $\textbf{Identifies 1 Peak ($n_p=1 \leq 3$)}$.
+			    \item Measures pulse spread at Half-Maximum relative to the window boundary: \textbf{$\text{WR} = 0.12 < 0.15$}.
+			    \item Compares against baseline bounds: $\textbf{SNR = 3.0 > 2}$.
+			\end{enumerate}
 			
-			$\Rightarrow$ Pass 3 check-box hoàn hảo $\to$ Phóng ấn ngay đây chính là Cú Sốc Tức Thời (\textbf{Sudden Drift})!
+			$\Rightarrow$ The sequential feature vector strictly satisfies the first logical branch $\to$ Deterministically labels the event as \textbf{Sudden Drift}.
 		\end{column}
 	\end{columns}
 \end{frame}
 
-% --- Slide 11: Hybrid Design ---
-\begin{frame}{Thiết kế lai: IDW-MMD cho Detection, Standard MMD cho Classification}
+% --- Slide 13: Hybrid Design ---
+\begin{frame}[shrink]{Hybrid Pipeline: IDW-MMD for Detection, Standard MMD for Classification}
 	\begin{columns}[T]
-		\begin{column}{0.52\textwidth}
-			\textbf{Trực giác đằng sau thiết kế: Tách rời (Decoupled)}\\
-            Tại sao lại thiết kế 2 tầng với 2 loại hàm MMD khác nhau?
+		\begin{column}{0.5\textwidth}
+			\textbf{Decoupled Architecture Motivation:}\\
+            Why not utilize a monolithic configuration for both phases?
 
 			\vspace{0.5em}
 			\begin{itemize}
-				\item \textbf{Std MMD dễ bị "Báo động giả" (FP):} Do trọng số đều, nó thường xuyên giật mình với các nhiễu cục bộ thông thường $\to$ Rất dở để làm Gác cửa (Detection).
-				\item \textbf{IDW-MMD lại bị mù "Gradual Drift":} Việc giảm trọng số vùng trung tâm khiến IDW san phẳng các biến đổi chậm (Gradual/Incremental), biến tín hiệu đồi núi thành đường bằng phẳng $\to$ Không thể dùng để Phân tích (Classification).
+				\item \textbf{IDW-MMD (Hyper-sensitive, Noise-canceller):} Inverse weights command unparalleled sensitivity to dimensional boundaries, actively suppressing False Positives. However, it \textbf{flattens} progressive changes (Gradual Drift) $\to$ Sabotages structural data needed for classification.
+				\item \textbf{Standard MMD (Low-latency, Geometrically Preserved):} Fast estimations that strictly \textbf{preserve the native geometric slope} of signals $\to$ Provides a flawless pristine input mapping for SE-CDT.
 			\end{itemize}
-
-			\vspace{0.5em}
-			\textbf{Quyết định (Trade-off):} Thiết kế \textit{Một cái chỉ làm nhiệm vụ chặn bắt kẻ lạ, một cái chỉ làm nhiệm vụ phân tích hành vi!}
 		\end{column}
-		\begin{column}{0.45\textwidth}
-			\begin{block}{Quyết định thiết kế}
+		\begin{column}{0.48\textwidth}
+			\begin{block}{System Pipeline Design}
 				\begin{itemize}
-					\item \textbf{Tầng Detection:} \textcolor{univblue}{IDW-MMD}\\
-					      {\small Tối ưu độ nhạy biên, giảm FP}
-					\item \textbf{Tầng Classification:} \textcolor{univblue}{Std MMD}\\
-					      {\small Giữ lại thông tin toàn cục}
+					\item \textbf{Layer 1 (Detection):} Exclusively runs \textcolor{univblue}{IDW-MMD} $\to$ Acts as an unyielding Gatekeeper, rejecting thousands of stationary epochs, optimizing CPU utilization.
+					\item \textbf{Layer 2 (Classification):} Lazily triggers \textcolor{univblue}{Standard MMD} \textbf{only at timestamp $t_{detect}$} $\to$ Locates geometrical insights precisely at the drift incident.
 				\end{itemize}
 			\end{block}
 
-			\vspace{0.3em}
-			\begin{exampleblock}{\small Bí quyết: Dùng đúng kính cho đúng việc}
-				\small
-				\begin{itemize}
-					\item \textbf{Detection (IDW-MMD):} Là cái \textbf{Kính Lúp} cực nhạy soi ngay cửa ra vào để chặn kẽ hở biên. Độ zoom lớn nên góc rất hẹp $\to$ Cảnh báo nhạy nhất.
-					\item \textbf{Classification (Std MMD):} Cất kính lúp, vác \textbf{Ống Nhòm} ra xem để thấy "toàn cảnh bầu trời" (global info). Phải nhìn toàn cảnh mới biết đối tượng "chạy" (Sudden) hay tà tà "đi bộ" (Gradual) để phân loại!
-				\end{itemize}
-			\end{exampleblock}
+			\vspace{0.1em}
+			\centering
+			\includegraphics[width=0.75\linewidth]{vis_repeated_gradual_SE.png}
+			\captionof{figure}{\scriptsize Structural flattening of Gradual Drift via IDW}
 		\end{column}
 	\end{columns}
 \end{frame}
@@ -491,22 +481,22 @@
 % #############################################################################
 % SECTION 4: EXPERIMENTS (~4 phút)
 % #############################################################################
-\section{Thực nghiệm và Đánh giá}
+\section{Experiments \& Evaluation}
 
-% --- Slide 12: Detection Results ---
-\begin{frame}{Kết quả 1: Phát hiện Drift (30 runs, 11 datasets)}
+% --- Slide 14: Detection Results ---
+\begin{frame}[shrink]{Result 1: Drift Detection (30 runs, 11 datasets)}
 	\begin{columns}[T]
 		\begin{column}{0.48\textwidth}
 			\centering
 			\includegraphics[width=\linewidth]{critical_difference_f1.png}
-			\captionof{figure}{\scriptsize Biểu đồ Critical Difference (Nemenyi, $\alpha=0.05$)}
+			\captionof{figure}{\scriptsize Critical Difference Diagram (Nemenyi, $\alpha=0.05$)}
 
 			\vspace{0.5em}
 			\includegraphics[width=\linewidth]{figure_4_stationary_fp.png}
 			\captionof{figure}{\scriptsize False Positives: SE-CDT = \textbf{0 FP}}
 		\end{column}
 		\begin{column}{0.5\textwidth}
-			\textbf{So sánh 8 phương pháp:}
+			\textbf{Comparison against 8 baselines:}
 
 			\vspace{0.3em}
 			{\small
@@ -522,105 +512,105 @@
 			\end{tabular}}
 
 			\vspace{0.5em}
-			\begin{block}{Kết quả nổi bật}
+			\begin{block}{Highlight Achievements}
 				\begin{itemize}
-					\item SE-CDT: \textbf{0 FP} trên mọi dataset
-					\item Tốc độ: \textbf{131,000} mẫu/s (16.5$\times$)
-					\item Virtual Drift (SEA, LED): F1=0 \textcolor{darkgreen}{(đúng kỳ vọng)}
+					\item SE-CDT: \textbf{0 FP} across all stationary datasets.
+					\item Throughput: \textbf{131,000} instances/s ($16.5\times$ boost).
+					\item Virtual Drift Resilience: F1=0 \textcolor{darkgreen}{(as expected)}.
 				\end{itemize}
 			\end{block}
 		\end{column}
 	\end{columns}
 \end{frame}
 
-% --- Slide 13: Signal visualization ---
-\begin{frame}{Minh họa tín hiệu phát hiện drift}
+% --- Slide 15: Signal visualization ---
+\begin{frame}{Drift Detection Signal Visualization}
 	\begin{columns}[T]
 		\begin{column}{0.48\textwidth}
 			\centering
 			\includegraphics[width=\linewidth]{vis_repeated_sudden_SE.png}
-			\captionof{figure}{\scriptsize \textbf{Sudden Drift:} Đỉnh tam giác nhọn, rõ ràng --- đúng theo Theorem 1 (Triangle Shape Property)}
+			\captionof{figure}{\scriptsize \textbf{Sudden Drift:} Sharp signature triangle validating Theorem 1}
 		\end{column}
 		\begin{column}{0.48\textwidth}
 			\centering
 			\includegraphics[width=\linewidth]{vis_repeated_gradual_SE.png}
-			\captionof{figure}{\scriptsize \textbf{Gradual Drift:} Tín hiệu bị san phẳng --- IDW-MMD khó phát hiện, Std MMD bảo toàn tốt hơn}
+			\captionof{figure}{\scriptsize \textbf{Gradual Drift:} Flattened curve $\to$ IDW insensitive vs Std MMD preserved}
 		\end{column}
 	\end{columns}
 \end{frame}
 
-% --- Slide 14: Classification Results ---
-\begin{frame}{Kết quả 2: Phân loại Drift (SE-CDT)}
+% --- Slide 16: Classification Results ---
+\begin{frame}{Result 2: Unsupervised Classification (SE-CDT)}
 	\begin{columns}[T]
 		\begin{column}{0.48\textwidth}
 			\centering
 			\includegraphics[width=0.85\linewidth]{confusion_matrix_category.png}
-			\captionof{figure}{\scriptsize Confusion Matrix: TCD vs PCD --- CAT = \textbf{81.2\%}}
+			\captionof{figure}{\scriptsize Category Matrix (TCD/PCD) --- CAT = \textbf{81.2\%}}
 		\end{column}
 		\begin{column}{0.5\textwidth}
-			\textbf{So sánh với CDT-MSW (supervised):}
+			\textbf{Comparison vs. CDT-MSW (Supervised):}
 
 			\vspace{0.3em}
 			{\small
 			\begin{tabular}{@{}lccc@{}}
 				\toprule
-				                   & \textbf{SE-CDT}                          & \textbf{CDT-MSW}    & \textbf{Labels?}                             \\ \midrule
+				                   & \textbf{SE-CDT}                          & \textbf{CDT-MSW}    & \textbf{Needs Labels?}                       \\ \midrule
 				\textbf{CAT}       & 81.2\%                                   & 87.5\%              & ---                                          \\
 				\textbf{SUB}       & \textcolor{darkgreen}{\textbf{50.0\%}}   & 42.0\%              & ---                                          \\
-				\textbf{Labels}    & \textcolor{darkgreen}{\textbf{Không}}    & Có                  & ---                                          \\
+				\textbf{Labels}    & \textcolor{darkgreen}{\textbf{None}}     & Yes                 & ---                                          \\
 				\textbf{EDR}       & \textcolor{darkgreen}{\textbf{94.4\%}}   & ---                 & ---                                          \\
 				\bottomrule
 			\end{tabular}}
 
 			\vspace{0.5em}
-			\textbf{Chi tiết theo loại drift:}
+			\textbf{Sub-type Performance Breakdown:}
 			{\small
 			\begin{tabular}{@{}lll@{}}
 				\toprule
-				\textbf{Loại}    & \textbf{Accuracy} & \textbf{Nhận xét}    \\ \midrule
-				Sudden           & \textbf{82.0\%}   & Điểm mạnh            \\
-				Gradual          & 55.0\%            & Khá                  \\
-				Incremental      & 24.0\%            & Tín hiệu tương tự    \\
-				Recurrent        & 0\%               & Cần concept memory   \\
+				\textbf{Behavior Class}    & \textbf{Acc.} & \textbf{Model Capacity Evaluation}    \\ \midrule
+				Sudden Drift          & \textbf{82.0\%}   & Superior isolation capability  \\
+				Gradual Drift         & 55.0\%            & Margin confusion w/ Incremental \\
+				Incremental Drift     & 24.0\%            & Boundary confusion w/ Gradual    \\
+				Recurrent Drift        & 0\%               & Requires Concept Memory Cache   \\
 				\bottomrule
 			\end{tabular}}
 		\end{column}
 	\end{columns}
 \end{frame}
 
-% --- Slide 15: Adaptation Results ---
-\begin{frame}{Kết quả 3: Thích ứng mô hình (Prequential Accuracy)}
+% --- Slide 17: Adaptation Results ---
+\begin{frame}{Result 3: Model Adaptation (Prequential Accuracy)}
 	\begin{columns}[T]
 		\begin{column}{0.55\textwidth}
 			\centering
 			\includegraphics[width=\linewidth]{fig_prequential_stepping.png}
-			\captionof{figure}{\scriptsize Stepping Drift: Type-Specific (xanh) duy trì 78\%, No Adaptation (đỏ) giảm về 56\%}
+			\captionof{figure}{\scriptsize Stepping Drift: Type-Specific (blue) at 78\%, No Adaptation (red) drops to 56\%}
 		\end{column}
 		\begin{column}{0.43\textwidth}
 			{\small
 			\begin{tabular}{@{}lcc@{}}
 				\toprule
-				\textbf{Chiến lược}                              & \textbf{Step.} & \textbf{Sudd.} \\ \midrule
+				\textbf{Adaptation Strategy}                     & \textbf{Step.}  & \textbf{Sudd.} \\ \midrule
 				\textcolor{darkgreen}{\textbf{Type-Specific}}    & \textbf{78.3\%} & \textbf{78.4\%} \\
 				Periodic Retrain                                 & 70.8\%          & 71.0\%          \\
-				Simple Retrain                                   & 64.9\%          & 64.8\%          \\
+				Simple Retrain (Global)                          & 64.9\%          & 64.8\%          \\
 				No Adaptation                                    & 56.2\%          & 55.2\%          \\
 				\bottomrule
 			\end{tabular}}
 
-			\vspace{0.5em}
-			\begin{exampleblock}{\small Tại sao Type-Specific ăn đứt mọi thứ?}
+			\vspace{0.3em}
+			\begin{exampleblock}{\small Type-Specific Resolution Impact}
 				\small
-				\textbf{Thuốc đắng dã tật, phải đúng bệnh:}\\
-				Nếu dữ liệu đổi "Dần Dần" (Gradual) mà lại \textit{tẩy não AI ngay lập tức} (Simple Retrain) $\to$ AI sẽ quên sạch kiến thức cũ vẫn đang còn xài được $\to$ Accuracy sập hầm do mất trí.\\
-				\textbf{Cách giải quyết:} Sudden thì Reset, Gradual thì Cập nhật mềm (uống thuốc từ từ). "Bắt trúng mạch, cho đúng thuốc" giúp giữ lại +13.4\% so với Reset hẩm hiu!
+				\textbf{Stability-Plasticity Dilemma:}\\
+				If a Gradual Drift occurs and the system enforces a \textit{global hard reset} (Simple Retrain) $\to$ The AI suffers Catastrophic Forgetting of still-viable past knowledge.\\
+				\textbf{Core Benefit:} Explicit routing (Sudden $\to$ Hard Reset, Gradual $\to$ Soft Partial Update) allows Type-Specific to outperform extreme blanket policies by \textbf{+13.4\%}.
 			\end{exampleblock}
 		\end{column}
 	\end{columns}
 \end{frame}
 
-% --- Slide 16: Kafka Deployment ---
-\begin{frame}{Triển khai thực tế trên Kafka}
+% --- Slide 18: Kafka Deployment ---
+\begin{frame}[shrink]{Production System Deployment (Apache Kafka Testbed)}
 	\centering
 	\includegraphics[width=0.82\linewidth]{image/kafka_results_real.png}
 
@@ -628,18 +618,18 @@
 	\begin{columns}[T]
 		\begin{column}{0.33\textwidth}
 			\centering
-			\textbf{\textcolor{univblue}{Phát hiện}}\\
-			{\small Drift detected tại sample 1476 (đúng vị trí, trước ground truth 1500)}
+			\textbf{\textcolor{univblue}{Trigger Detection}}\\
+			{\small Alert triggered at sample 1476 (Correctly preempts ground truth 1500)}
 		\end{column}
 		\begin{column}{0.33\textwidth}
 			\centering
-			\textbf{\textcolor{univblue}{Phục hồi}}\\
-			{\small Accuracy: 59\% $\to$ \textbf{93\%} sau khi model reload}
+			\textbf{\textcolor{univblue}{Rapid Recovery}}\\
+			{\small Model accuracy surges from 59\% $\to$ \textbf{93\%} upon adaptation}
 		\end{column}
 		\begin{column}{0.33\textwidth}
 			\centering
-			\textbf{\textcolor{univblue}{Ổn định}}\\
-			{\small CPU/RAM duy trì ổn định, Closed-loop hoàn chỉnh}
+			\textbf{\textcolor{univblue}{Operational Stability}}\\
+			{\small Smooth resource utilization enabling Closed-loop autonomous response}
 		\end{column}
 	\end{columns}
 \end{frame}
@@ -647,48 +637,48 @@
 % #############################################################################
 % SECTION 5: CONCLUSION (~1 phút)
 % #############################################################################
-\section{Kết luận}
+\section{Conclusion}
 
-% --- Slide 17: Conclusion ---
-\begin{frame}{Kết luận \& Hướng phát triển}
+% --- Slide 19: Conclusion ---
+\begin{frame}{Conclusion \& Future Directions}
 	\begin{columns}[T]
 		\begin{column}{0.52\textwidth}
-			\begin{block}{Tổng kết đóng góp}
+			\begin{block}{Contribution Summary}
 				\begin{enumerate}
-					\item \textbf{Detection:} ShapeDD-IDW tăng tốc \textbf{16.5$\times$}, đạt \textbf{0 FP}
-					\item \textbf{Classification:} SE-CDT đạt CAT=\textbf{81.2\%}, SUB=\textbf{50.0\%} mà \emph{không cần nhãn}
-					\item \textbf{Adaptation:} Type-Specific cải thiện \textbf{+22.14\%} so với No Adaptation
-					\item \textbf{System:} Pipeline hoàn chỉnh trên Kafka với closed-loop adaptation
+					\item \textbf{Detection:} ShapeDD-IDW accelerates speed by \textbf{16.5$\times$}, achieving \textbf{0 FP}.
+					\item \textbf{Classification:} SE-CDT achieves CAT=\textbf{81.2\%}, SUB=\textbf{50.0\%} \emph{entirely label-free}.
+					\item \textbf{Adaptation:} Type-Specific outperforms "No Adaptation" by \textbf{+22.14\%}.
+					\item \textbf{System:} End-to-end Kafka-based closed-loop pipeline successfully validated.
 				\end{enumerate}
 			\end{block}
 		\end{column}
 		\begin{column}{0.45\textwidth}
-			\begin{exampleblock}{Hạn chế}
+			\begin{exampleblock}{Limitations}
 				\begin{itemize}
-					\item Recurrent accuracy = 0\% (cần concept memory)
-					\item Chủ yếu dùng synthetic data
-					\item N=5 cho prequential evaluation
+					\item Recurrent accuracy = 0\% (requires memory component).
+					\item Relies heavily on synthetic generators.
+					\item Limited $N=5$ prequential evaluation.
 				\end{itemize}
 			\end{exampleblock}
 
 			\vspace{0.3em}
-			\begin{block}{Hướng phát triển}
+			\begin{block}{Future Outlook}
 				\begin{itemize}
-					\item Gradual Drift: spectral features, semi-supervised
-					\item Incremental: continuous adaptation (River)
-					\item Meta-learning tự chọn chiến lược
-					\item Benchmark trên real-world data
+					\item Gradual Drift: Incorporate spectral features.
+					\item Incremental: Pair with River ML frameworks.
+					\item Meta-learning for dynamic strategy selection.
+					\item Benchmark on extensive real-world IoT datasets.
 				\end{itemize}
 			\end{block}
 		\end{column}
 	\end{columns}
 \end{frame}
 
-% --- Slide 18: Thank you ---
+% --- Slide 20: Thank you ---
 \begin{frame}[plain]
 	\centering
 	\vspace{2cm}
-	\Huge \textcolor{univblue}{\textbf{CẢM ƠN THẦY CÔ VÀ CÁC BẠN\\ĐÃ LẮNG NGHE!}}
+	\Huge \textcolor{univblue}{\textbf{THANK YOU\\FOR LISTENING!}}
 
 	\vspace{1.5cm}
 	\Large
@@ -696,7 +686,7 @@
 
 	\vspace{1cm}
 	\normalsize
-	\textit{Sinh viên: Lê Phúc Đức --- GVHD: PGS.TS. Thoại Nam}
+	\textit{Student: Le Phuc Duc --- Supervisor: Assoc.Prof.Dr. Thoai Nam}
 \end{frame}
 
 % #############################################################################
@@ -707,44 +697,44 @@
 
 % --- Backup 1: IDW-MMD vs Bharti ---
 \begin{frame}[noframenumbering]{Backup: IDW-MMD vs Optimally-Weighted MMD (Bharti et al.)}
-	\textbf{Câu hỏi:} ``IDW-MMD có gì khác Optimally-Weighted MMD của Bharti et al. (2023)?''
+	\textbf{Question:} ``How does IDW-MMD differ from Optimally-Weighted MMD by Bharti et al. (2023)?''
 
 	\vspace{0.5em}
 	\begin{columns}[T]
 		\begin{column}{0.48\textwidth}
 			\begin{block}{Bharti et al. (OW-MMD)}
 				\begin{itemize}
-					\item Bài toán: \textbf{Likelihood-free inference} (ABC)
-					\item Trọng số: Tối ưu hóa theo \textit{target posterior}
-					\item Phức tạp: Cần giải bài toán tối ưu lồi
-					\item \textbf{Không liên quan drift detection}
+					\item Domain: \textbf{Likelihood-free inference} (ABC)
+					\item Weights: Optimized according to \textit{target posterior}
+					\item Complexity: Requires solving constrained convex optimization
+					\item \textbf{Irrelevant to concept drift detection}
 				\end{itemize}
 			\end{block}
 		\end{column}
 		\begin{column}{0.48\textwidth}
-			\begin{exampleblock}{IDW-MMD (Luận văn đề xuất)}
+			\begin{exampleblock}{IDW-MMD (Our Proposal)}
 				\begin{itemize}
-					\item Bài toán: \textbf{Drift detection} trong streaming
-					\item Trọng số: Heuristic $w_i \propto 1/\sqrt{d_i + \epsilon}$
-					\item Đơn giản: $O(n)$ tính trọng số
-					\item Kế thừa \textbf{ý tưởng} weighted MMD, \textbf{không kế thừa} phương pháp
+					\item Domain: \textbf{Drift detection} in fast streaming data
+					\item Weights: Heuristic $w_i \propto 1/\sqrt{d_i + \epsilon}$
+					\item Complexity: Extremely fast $O(n)$ analytical derivation
+					\item Inherits the \textbf{paradigm} of weighted MMD, but uses an entirely \textbf{distinct methodology}.
 				\end{itemize}
 			\end{exampleblock}
 		\end{column}
 	\end{columns}
 
 	\vspace{0.5em}
-	\textbf{Tóm lại:} Cùng framework ``gán trọng số cho điểm dữ liệu trong MMD'', nhưng \textbf{bài toán khác}, \textbf{hàm trọng số khác}, \textbf{mục tiêu khác}.
+	\textbf{Conclusion:} Both apply a ``weighted MMD framework'', but tackle \textbf{different problem domains}, employ \textbf{different weight functions}, and aim for \textbf{different objective limits}.
 \end{frame}
 
 % --- Backup 2: F1 low ---
-\begin{frame}[noframenumbering]{Backup: ``F1 = 0.481 thấp hơn MMD baseline --- đóng góp ở đâu?''}
-	\textbf{Câu hỏi:} ``F1-score SE-CDT thấp hơn MMD chuẩn (0.455), đóng góp thực sự là gì?''
+\begin{frame}[noframenumbering]{Backup: ``F1 lower than MMD baseline --- Where is the contribution?''}
+	\textbf{Question:} ``SE-CDT's F1 is 0.481 vs 0.455. Why is this significant?''
 
 	\vspace{0.5em}
 	\begin{columns}[T]
 		\begin{column}{0.5\textwidth}
-			\textbf{F1 không phải metric duy nhất:}
+			\textbf{F1 is an aggregated metric:}
 
 			{\small
 			\begin{tabular}{@{}lccc@{}}
@@ -758,217 +748,210 @@
 			\end{tabular}}
 
 			\vspace{0.5em}
-			\textbf{Trong production:}
+			\textbf{In Production Context:}
 			\begin{itemize}
-				\item FP $\to$ \textbf{alert fatigue} (mệt mỏi cảnh báo)
-				\item Chi phí FP $\gg$ chi phí FN
-				\item MMD: 14.3 FP/run = không tin cậy
+				\item Frequent FPs $\to$ \textbf{Alert fatigue}
+				\item Mitigation cost of False Alarms $\gg$ missed events
+				\item Standard MMD $\to$ statistically unreliable
 			\end{itemize}
 		\end{column}
 		\begin{column}{0.48\textwidth}
-			\textbf{Đóng góp thực sự:}
+			\textbf{Core Architectural Contributions:}
 			\begin{enumerate}
-				\item \textbf{0 FP} --- tin cậy nhất
-				\item \textbf{+Classification} --- biết loại drift
-				\item \textbf{16.5$\times$ speedup}
-				\item \textbf{Unsupervised} end-to-end
+				\item \textbf{0 FP} --- High operational trust
+				\item \textbf{+Classification Module} added
+				\item \textbf{16.5$\times$ throughput speedup}
+				\item Retains \textbf{Unsupervised} property
 			\end{enumerate}
 
 			\vspace{0.5em}
 			\centering
 			\includegraphics[width=0.9\linewidth]{figure_4_stationary_fp.png}
-			\captionof{figure}{\scriptsize SE-CDT = 0 FP vs KS = 36.6 FP}
+			\captionof{figure}{\scriptsize Perfect Zero-FP rate vs Noisy baselines}
 		\end{column}
 	\end{columns}
 \end{frame}
 
 % --- Backup 3: Recurrent = 0% ---
-\begin{frame}[noframenumbering]{Backup: ``Recurrent Drift accuracy = 0\% --- tại sao?''}
-	\textbf{Câu hỏi:} ``Recurrent accuracy = 0\% nhưng vẫn liệt kê chiến lược thích ứng?''
+\begin{frame}[noframenumbering,shrink]{Backup: ``Recurrent Drift accuracy = 0\% --- Analysis''}
+	\textbf{Question:} ``Why list Recurrent Adaptation if the classification accuracy on it is 0\%?''
 
 	\vspace{0.5em}
 	\begin{columns}[T]
 		\begin{column}{0.55\textwidth}
-			\textbf{Nguyên nhân gốc:}
+			\textbf{Root Limitation:}
 			\begin{itemize}
-				\item SE-CDT xử lý \textbf{từng peak độc lập}
-				\item Recurrent = chuỗi peaks \textbf{lặp lại} $\to$ cần \textbf{concept memory dài hạn} để nhận ra pattern
-				\item Hiện tại: mỗi peak được classify riêng $\to$ thường ra ``Sudden''
+				\item SE-CDT evaluates \textbf{individual geometric peaks independently}.
+				\item Recurrent behaviors = temporally \textbf{repeating} peaks $\to$ requires \textbf{long-term Concept Memory} to trace recurring patterns.
+				\item Current limitation: Isolated repeating peaks are predictably grouped simply as discrete ``Sudden'' events.
 			\end{itemize}
 
 			\vspace{0.5em}
-			\textbf{Chiến lược thích ứng:}
+			\textbf{Adaptation Design vs Implementation:}
 			\begin{itemize}
-				\item Framework thiết kế đầy đủ 5 chiến lược
-				\item \textbf{Triển khai và đánh giá}: chỉ Sudden (trọng tâm)
-				\item Recurrent (Model Cache \& Reuse): \textbf{hướng tương lai}
+				\item The framework explicitly maps routing strategies for all 5 generic drift types.
+				\item \textbf{Implementation Focus}: Optimized primarily for Sudden/Gradual dynamics.
+				\item Recurrent Concept Memory is designated as \textbf{future research scaling}.
 			\end{itemize}
 		\end{column}
 		\begin{column}{0.42\textwidth}
-			\textbf{Hướng giải quyết:}
-			\begin{exampleblock}{Concept Memory}
+			\textbf{Future Solution Architecture:}
+			\begin{exampleblock}{Concept Memory System}
 				\begin{itemize}
-					\item Lưu ``distribution signature'' mỗi concept
-					\item So sánh concept mới với kho lưu
-					\item Nếu match $\to$ Recurrent
-					\item Khoảng cách KS hoặc MMD
+					\item Cache ``distribution signatures'' for active conceptual clusters.
+					\item Map subsequent novel concepts against the historical cache.
+					\item High similarity match $\to$ Trigger Recurrent classification \& reload.
 				\end{itemize}
 			\end{exampleblock}
 
 			\vspace{0.3em}
-			\begin{alertblock}{Phạm vi luận văn}
+			\begin{alertblock}{Scope Limit}
 				\small
-				Luận văn tập trung Sudden drift (trọng tâm ShapeDD). Recurrent = hạn chế đã thừa nhận, hướng tương lai.
+				This thesis prioritizes robust initial boundary detection via ShapeDD. Identifying complex multi-epoch Recurrent cycles remains an acknowledged structural limit.
 			\end{alertblock}
 		\end{column}
 	\end{columns}
 \end{frame}
 
 % --- Backup 4: Category vs CDT-MSW ---
-\begin{frame}[noframenumbering]{Backup: ``CAT 81.2\% < CDT-MSW 87.5\% --- SE-CDT kém hơn?''}
-	\textbf{Câu hỏi:} ``Category accuracy thấp hơn CDT-MSW, tại sao claim là đóng góp?''
+\begin{frame}[noframenumbering,shrink]{Backup: ``CAT 81.2\% < CDT-MSW 87.5\% --- Is SE-CDT worse?''}
+	\textbf{Question:} ``Category Classification Accuracy is lower than CDT-MSW. Why claim this as a major contribution?''
 
 	\vspace{0.5em}
 	\begin{columns}[T]
 		\begin{column}{0.48\textwidth}
-			\begin{block}{So sánh công bằng}
+			\begin{block}{Fair Evaluation Landscape}
 				{\small
 				\begin{tabular}{@{}lcc@{}}
 					\toprule
 					              & \textbf{SE-CDT}                        & \textbf{CDT-MSW} \\ \midrule
-					Labels        & \textcolor{darkgreen}{\textbf{Không}}  & Có               \\
+					Labels        & \textcolor{darkgreen}{\textbf{None}}  & Required               \\
 					CAT           & 81.2\%                                 & 87.5\%           \\
 					SUB           & \textcolor{darkgreen}{\textbf{50.0\%}} & 42.0\%           \\
 					EDR           & \textcolor{darkgreen}{\textbf{94.4\%}} & ---              \\
-					Growth method & WR-based                               & Accuracy-based   \\
+					Method & Pure Geometric                               & Metric Variance \\
 					\bottomrule
 				\end{tabular}}
 			\end{block}
 		\end{column}
 		\begin{column}{0.48\textwidth}
-			\textbf{Phân tích:}
+			\textbf{Contextual Analysis:}
 			\begin{itemize}
-				\item CDT-MSW \textbf{cần labels} $\to$ không phù hợp IIoT/streaming
-				\item SE-CDT \textbf{unsupervised} mà CAT chỉ kém 6.3\%
-				\item SUB \textbf{vượt trội}: 50\% vs 42\% $\to$ phân loại chi tiết tốt hơn
-				\item EDR 94.4\% $\to$ phát hiện gần như mọi sự kiện
+				\item CDT-MSW \textbf{mandates labels} $\to$ Generally unfeasible in real-time continuous IIoT streams.
+				\item SE-CDT operates \textbf{entirely Unsupervised} yet still achieves parity within 6.3\% of the CAT baseline.
+				\item \textbf{Dominant SUB performance:} 50\% vs 42\% establishes far superior fine-grained analytical resolution.
+				\item 94.4\% EDR confirms exceptional trigger reliability.
 			\end{itemize}
 
 			\vspace{0.3em}
-			\begin{alertblock}{Trade-off cốt lõi}
+			\begin{alertblock}{Fundamental Design Trade-off}
 				\small
-				Được: hoạt động \textbf{không cần labels}\\
-				Mất: giảm 6.3\% CAT (chấp nhận được)
+				Benefit: Unleashed capability to function \textbf{100\% label-free}.\\
+				Constraint: Acceptable marginal 6.3\% sacrifice on generic macro CAT accuracy.
 			\end{alertblock}
 		\end{column}
 	\end{columns}
 \end{frame}
 
 % --- Backup 5: Why not DL ---
-\begin{frame}[noframenumbering]{Backup: ``Tại sao không dùng Deep Learning?''}
-	\textbf{Câu hỏi:} ``Deep Learning có thể giải quyết bài toán này tốt hơn không?''
+\begin{frame}[noframenumbering,shrink]{Backup: ``Why not leverage Deep Learning?''}
+	\textbf{Question:} ``Couldn't Deep Learning solve this problem more accurately?''
 
 	\vspace{0.5em}
 	\begin{columns}[T]
 		\begin{column}{0.48\textwidth}
-			\begin{alertblock}{DL cho Drift Detection --- Hạn chế}
+			\begin{alertblock}{DL applied to Drift Detection --- Limitations}
 				\begin{itemize}
-					\item Cần \textbf{nhiều dữ liệu labeled} để train
-					\item \textbf{Latency cao}: forward pass nặng hơn kernel computation
-					\item \textbf{Không có} bảo đảm thống kê (p-value)
-					\item \textbf{Black-box}: khó giải thích tại sao phát hiện drift
-					\item Bản thân DL model cũng bị \textbf{drift ảnh hưởng}
+					\item High dependency on \textbf{massive labeled datasets}.
+					\item \textbf{Infeasible Latency:} Deep Forward-passing incurs heavy computational burden vs simplified kernel mappings.
+					\item Distinctively lacks reliable \textbf{theoretical bounds} for anomaly evaluation.
+					\item \textbf{Black-box Nature:} Incapable of structurally explaining drift geometries.
 				\end{itemize}
 			\end{alertblock}
 		\end{column}
 		\begin{column}{0.48\textwidth}
-			\begin{exampleblock}{MMD/ShapeDD --- Ưu điểm}
+			\begin{exampleblock}{MMD/ShapeDD --- Primary Advantages}
 				\begin{itemize}
-					\item \textbf{Unsupervised}: không cần training
-					\item \textbf{Bảo đảm lý thuyết}: Triangle Shape Property
-					\item \textbf{Interpretable}: tam giác = drift
-					\item \textbf{Nhanh}: $O(n^2)$ per window
-					\item \textbf{Robust}: kernel universal
+					\item \textbf{Unsupervised Status:} Fully functional with absolutely 0 training required overhead.
+					\item \textbf{Theoretically Grounded:} Validated through mathematical derivations (Triangle Shape Property).
+					\item Phenomenally \textbf{Interpretable} topological rules.
+					\item Universal continuous applicability mapping.
 				\end{itemize}
 			\end{exampleblock}
 
 			\vspace{0.3em}
-			\textbf{Tuy nhiên:} DL integration (learned representations) là \textbf{hướng tương lai} đã đề cập ở Ch5
+			\textbf{Note:} Integrating embedded feature representation extraction prior to kernel comparisons is proposed as a vital \textbf{Future Architecture Expansion}.
 		\end{column}
 	\end{columns}
 \end{frame}
 
 % --- Backup 6: Throughput inconsistency ---
-\begin{frame}[noframenumbering]{Backup: Throughput 131K vs 500--2K --- Giải thích}
-	\textbf{Câu hỏi:} ``Throughput 131,000 samples/s hay 500--2,000 samples/s?''
+\begin{frame}[noframenumbering,shrink]{Backup: Experimental vs Application Throughput}
+	\textbf{Question:} ``Is the throughput effectively 131,000 instances/s or just 500--2,000 instances/s?''
 
 	\vspace{0.5em}
 	\begin{columns}[T]
 		\begin{column}{0.48\textwidth}
 			\centering
 			\includegraphics[width=\linewidth]{throughput_comparison.png}
-			\captionof{figure}{\scriptsize Throughput so sánh}
+			\captionof{figure}{\scriptsize Distinct Validation Operating Modes}
 		\end{column}
 		\begin{column}{0.48\textwidth}
-			\textbf{Hai ngữ cảnh khác nhau:}
+			\textbf{Variance inherently reflects distinct analytical scopes:}
 
 			\vspace{0.5em}
-			\begin{block}{Detection-only (Benchmark)}
+			\begin{block}{Detection-only Component Benchmark}
 				\begin{itemize}
-					\item ShapeDD-IDW trên benchmark dataset
-					\item Chỉ tính: MMD + asymptotic p-value
-					\item $\to$ \textbf{131,000 mẫu/s}
+					\item Isolated purely for ShapeDD-IDW on core distributions.
+					\item Operations specifically restricted to computing analytical MMD distance matrix limits.
+					\item Estimated at \textbf{\textasciitilde{}131,000 elements/second.}
 				\end{itemize}
 			\end{block}
 
-			\begin{exampleblock}{Full Pipeline (Streaming)}
+			\begin{exampleblock}{End-to-End Systems Execution Protocol}
 				\begin{itemize}
-					\item Detection + Classification + I/O
-					\item Gaussian smoothing + Peak detection + Feature extraction
-					\item $\to$ \textbf{500--2,000 mẫu/s}
+					\item Actively incorporates parallel intensive structural Smoothing algorithms alongside advanced categorical Feature Processing engines.
+					\item Resultative rate resolves to solidly \textbf{500--2,000 processing sweeps/second.}
 				\end{itemize}
 			\end{exampleblock}
 
 			\vspace{0.3em}
-			\small \textbf{So sánh:} CDT-MSW full pipeline $\sim$5,000 mẫu/s $\to$ SE-CDT chậm hơn do thêm module classification
+			\small \textbf{Context:} The reference baseline CDT-MSW generally measures $\sim$5,000 records/s $\to$ The SE-CDT structure rationally trades system velocity for its completely unsupervised and autonomous multi-label capabilities.
 		\end{column}
 	\end{columns}
 \end{frame}
 
 % --- Backup 7: Mild drift weakness ---
-\begin{frame}[noframenumbering]{Backup: Hạn chế với Mild Drift (F1 = 0.006)}
-	\textbf{Câu hỏi:} ``Trên Mild Drift, SE-CDT chỉ đạt F1 = 0.006 --- tại sao?''
+\begin{frame}[noframenumbering,shrink]{Backup: Mild Drift Analytical Weakness}
+	\textbf{Question:} ``During the 'Mild Drift' verification scheme, SE-CDT seemingly achieved F1 = 0.006 --- What caused this severe metric gap?''
 
 	\vspace{0.5em}
 	\begin{columns}[T]
 		\begin{column}{0.48\textwidth}
-			\textbf{Nguyên nhân:}
+			\textbf{Mechanistic Cause Analysis:}
 			\begin{itemize}
-				\item IDW-MMD giảm trọng số vùng \textbf{trung tâm} (đông đúc)
-				\item Mild drift thường xảy ra ở \textbf{vùng trung tâm}
-				\item $\to$ Tín hiệu drift bị ``lọc bỏ'' (over-smoothing)
-				\item MMD chuẩn: F1 = 0.585 trên cùng dataset
+				\item The IDW methodology intrinsically reduces numerical weights concentrated intensely within \textbf{stable distribution cores}.
+				\item The exact mechanics defining "Mild Drifts" predominantly manifest exactly around those core statistical margins.
+				\item Result: Such drifts effectively undergo \textit{oversmoothing bias}. (Standard MMD evaluates the identical sample at an improved 0.585 score boundary).
 			\end{itemize}
 
 			\vspace{0.5em}
-			\textbf{Trade-off có chủ đích:}
+			\textbf{Intentional Model Trade-off Framework:}
 			\begin{itemize}
-				\item IDW-MMD ưu tiên \textbf{precision} (0 FP)
-				\item Đánh đổi \textbf{recall} trên drift nhẹ
-				\item Trong production: drift nhẹ ít nguy hiểm hơn FP
+				\item The IDW system intentionally guarantees \textbf{Precision optimization} (Anchored firmly tracking 0 continuous False Positives).
+				\item We categorically sacrifice statistical Recall sensitivity regarding exceptionally minor variance margins.
 			\end{itemize}
 		\end{column}
 		\begin{column}{0.48\textwidth}
 			\centering
 			\includegraphics[width=\linewidth]{vis_repeated_gradual_SE.png}
-			\captionof{figure}{\scriptsize Tín hiệu Gradual Drift bị san phẳng}
+			\captionof{figure}{\scriptsize Distinct Topological Flattening and Structural Smoothing Consequence Profiles}
 
 			\vspace{0.3em}
-			\begin{exampleblock}{Hướng cải thiện}
+			\begin{exampleblock}{Future Mitigation Routes}
 				\begin{itemize}
-					\item Kết hợp IDW-MMD + Standard MMD
-					\item Adaptive weighting theo intensity
-					\item Multi-scale analysis
+					\item Constructing dual parallelization routes combining IDW precision stability alongside broad Standard MMD baseline monitoring parameters.
+					\item Dynamically adjusting algorithmic detection intensity constraints natively dependent on adaptive multi-factor scaling vectors.
 				\end{itemize}
 			\end{exampleblock}
 		\end{column}
@@ -977,60 +960,60 @@
 
 % --- Backup 8: Permutation vs Asymptotic ---
 \begin{frame}[noframenumbering]{Backup: Permutation Test vs Asymptotic p-value}
-	\textbf{Câu hỏi:} ``Bỏ Permutation Test --- Asymptotic p-value có chính xác bằng không?''
+	\textbf{Question:} ``By removing the Permutation Test, does the Asymptotic p-value remain accurate?''
 
 	\vspace{0.5em}
 	\begin{columns}[T]
 		\begin{column}{0.48\textwidth}
-			\begin{alertblock}{Permutation Test (ShapeDD gốc)}
+			\begin{alertblock}{Permutation Test (Original ShapeDD)}
 				\begin{itemize}
-					\item Hoán vị nhãn 2,500 lần
-					\item \textbf{Exact p-value}: không giả định phân phối
-					\item Chi phí: $O(N_{\text{perm}} \cdot n^2)$
-					\item Thực tế: $\sim$6.25 triệu phép tính/window
-					\item $\to$ \textbf{$\sim$8,000 mẫu/s}
+					\item Aggressively shuffles variables 2,500 times.
+					\item \textbf{Exact p-value}: Assumes zero underlying statistical distribution bounds.
+					\item Complexity: $O(N_{\text{perm}} \cdot n^2)$
+					\item Practice: $\sim$6.25 million operations/window.
+					\item $\to$ Limited to \textbf{\textasciitilde{}8,000 samples/s}.
 				\end{itemize}
 			\end{alertblock}
 		\end{column}
 		\begin{column}{0.48\textwidth}
 			\begin{exampleblock}{Asymptotic p-value (IDW-MMD)}
 				\begin{itemize}
-					\item Dựa trên phân phối tiệm cận Gamma
-					\item Convergence khi $n \geq 50$ (thỏa mãn: $n = 50$)
-					\item Chi phí: $O(n^2)$ (eigenvalue decomposition)
-					\item $\to$ \textbf{$\sim$131,000 mẫu/s}
+					\item Operates strictly on \textbf{Asymptotic Gamma approximation}.
+					\item Confirmed convergence mapping when block sizes $n \geq 50$ (Current setting: $n = 50$).
+					\item Complexity: Analytical $O(n^2)$ (Eigenvalue resolution).
+					\item $\to$ Amplified to \textbf{\textasciitilde{}131,000 samples/s}.
 				\end{itemize}
 			\end{exampleblock}
 		\end{column}
 	\end{columns}
 
 	\vspace{0.5em}
-	\textbf{Kiểm chứng:} F1 tương đương (0.481 vs ShapeDD gốc), \textbf{FP từ vài đơn vị $\to$ 0} $\to$ IDW-MMD + asymptotic thậm chí \textbf{chính xác hơn} do giảm variance
+	\textbf{Metric Verification:} General F1 practically equivalent (0.481), but fundamentally \textbf{collapses structural FP errors to absolute zero} $\to$ Asymptotic approximations technically grant \textbf{enhanced reliability} by drastically lowering variance noise.
 \end{frame}
 
 % --- Backup 9: Subcategory 50% ---
-\begin{frame}[noframenumbering]{Backup: ``Subcategory accuracy 50\% --- Random guessing?''}
-	\textbf{Câu hỏi:} ``SUB = 50\% có phải random guessing cho 2 classes?''
+\begin{frame}[noframenumbering,shrink]{Backup: ``Subcategory accuracy 50\% --- Random guessing?''}
+	\textbf{Question:} ``Isn't a SUB score of 50\% functionally equivalent to a coin toss algorithm?''
 
 	\vspace{0.5em}
 	\begin{columns}[T]
 		\begin{column}{0.48\textwidth}
 			\centering
 			\includegraphics[width=0.9\linewidth]{confusion_matrix_se_cdt.png}
-			\captionof{figure}{\scriptsize Confusion Matrix 5 classes}
+			\captionof{figure}{\scriptsize Distinct 5-Class Confusion Matrix Mapping}
 		\end{column}
 		\begin{column}{0.48\textwidth}
-			\textbf{Không phải random:}
+			\textbf{Statistically Substantial Deviation:}
 			\begin{itemize}
-				\item Random cho \textbf{5 classes} = 20\%
-				\item SE-CDT đạt \textbf{50\%} = gấp 2.5 lần random
-				\item Phân bố không đều:
+				\item A random baseline across \textbf{5 isolated classes} averages precisely 20\%.
+				\item 50\% represents a \textbf{2.5$\times$ analytical multiplier} against randomized output vectors.
+				\item Uneven mapping concentration:
 			\end{itemize}
 
 			{\small
 			\begin{tabular}{@{}lc@{}}
 				\toprule
-				\textbf{Loại}    & \textbf{Accuracy} \\ \midrule
+				\textbf{Behavioral Variant}    & \textbf{Accuracy} \\ \midrule
 				Sudden           & \textbf{82.0\%}   \\
 				Gradual          & 55.0\%            \\
 				Incremental      & 24.0\%            \\
@@ -1040,48 +1023,46 @@
 			\end{tabular}}
 
 			\vspace{0.3em}
-			\textbf{Nguyên nhân SUB thấp:} Tín hiệu MMD hoạt động ở \textit{độ phân giải cửa sổ} ($\sim$150 mẫu/phép đo) $\to$ nén drift thành $\sim$52 điểm có hình dạng tương tự
+			\textbf{Technical Subcategory Limitation:} Distance metrics operate actively on \textit{compressed temporal windows} ($\sim$150 samples) $\to$ Inherently limits precise geometric drift geometry representation to $\sim$52 scattered signal points.
 		\end{column}
 	\end{columns}
 \end{frame}
 
 % --- Backup 10: N=5 prequential ---
-\begin{frame}[noframenumbering]{Backup: ``N=5 runs --- Đủ ý nghĩa thống kê?''}
-	\textbf{Câu hỏi:} ``Prequential evaluation chỉ N=5, có chặt chẽ không?''
+\begin{frame}[noframenumbering,shrink]{Backup: ``Is N=5 runs statistically sufficient?''}
+	\textbf{Question:} ``Is the $N=5$ prequential evaluation sufficiently robust for drawing absolute conclusions?''
 
 	\vspace{0.5em}
 	\begin{columns}[T]
 		\begin{column}{0.48\textwidth}
 			\centering
 			\includegraphics[width=\linewidth]{fig_prequential_sudden.png}
-			\captionof{figure}{\scriptsize Kết quả Sudden Drift (N=5)}
+			\captionof{figure}{\scriptsize Prequential Structural Execution Chart (N=5)}
 
 			\vspace{0.3em}
-			\textbf{Xu hướng rõ ràng:}
+			\textbf{Conclusive Directional Trend:}
 			\begin{itemize}
 				\item Type-Specific: 78.40\% $\pm$1.1
 				\item No Adaptation: 55.16\% $\pm$7.8
-				\item Khoảng cách: \textbf{23.24\%} (lớn)
-				\item Std dev nhỏ (1.1\%) $\to$ kết quả ổn định
+				\item Performance Gap: Vast \textbf{+23.24\%}.
+				\item Excellent stability factor ($\pm$1.1).
 			\end{itemize}
 		\end{column}
 		\begin{column}{0.48\textwidth}
-			\textbf{Đánh giá:}
+			\textbf{Current Diagnostic Defense:}
 			\begin{itemize}
-				\item Trend \textbf{rõ ràng và nhất quán} qua cả 3 kịch bản
-				\item Standard deviation nhỏ ($\pm$1.1 -- $\pm$5.3)
-				\item Khoảng cách giữa các phương pháp \textbf{lớn hơn nhiều} so với variance
+				\item Visible trend is \textbf{unambiguous and structurally consistent} against entirely distinct shift models.
+				\item The calculated algorithmic margin comprehensively overrides the narrow standard deviation limits ($\pm$1.1 -- $\pm$5.3).
 			\end{itemize}
 
 			\vspace{0.5em}
-			\begin{alertblock}{Thừa nhận hạn chế}
-				Để đạt ý nghĩa thống kê theo chuẩn nghiên cứu, cần:
+			\begin{alertblock}{Acknowledged Constraint}
+				To satisfy rigid large-scale testing protocols, future implementations must:
 				\begin{itemize}
-					\item $N \geq 30$ runs
-					\item Thêm kịch bản Gradual, Incremental
-					\item Phân tích chi phí computational
+					\item Execute over standardized $N \geq 30$ iterative blocks.
+					\item Map complex cascading Incremental variants.
 				\end{itemize}
-				$\to$ Đã liệt kê trong \textbf{Hướng tương lai} (Ch5)
+				$\to$ Explicitly delineated formally within \textbf{Chapter 5: Future Directions}.
 			\end{alertblock}
 		\end{column}
 	\end{columns}
