@@ -1,4 +1,4 @@
-\documentclass[aspectratio=169,11pt]{beamer}
+\documentclass[aspectratio=169,10pt]{beamer}
 
 % Vietnamese language support
 \usepackage[utf8]{inputenc}
@@ -113,11 +113,11 @@
 		\end{column}
 		\begin{column}{0.42\textwidth}
 			\centering
-			\includegraphics[width=0.9\linewidth]{image/patern_based_concept_drift.png}
+			\includegraphics[width=0.7\linewidth]{image/patern_based_concept_drift.png}
 			\captionof{figure}{\scriptsize Temporal Drift Patterns}
 
 			\vspace{0.2em}
-			\includegraphics[width=0.8\linewidth]{image/distribution_based_concept_drift.png}
+			\includegraphics[width=0.65\linewidth]{image/distribution_based_concept_drift.png}
 			\captionof{figure}{\scriptsize Distributional Shifts}
 		\end{column}
 	\end{columns}
@@ -196,14 +196,14 @@
 		\begin{column}{0.55\textwidth}
 			\textbf{Triangle Shape Theorem:}
 
-			\vspace{0.3em}
+			\vspace{0.1em}
 			Given a sudden drift at $t=0$, the MMD drift magnitude $\sigma(t)$ forms:
 			\begin{equation*}
 				\sigma(t) = \underbrace{\| P - Q \|}_{\text{Drift Severity}} \cdot \underbrace{h_l(t)}_{\text{Triangle Shape}}
 			\end{equation*}
 			where $h_l(t) = \max\left(0, 1 - \frac{|l - t|}{l}\right)$
 
-			\vspace{0.5em}
+			\vspace{0.2em}
 			\textbf{Processing Pipeline:}
 			\begin{enumerate}
 				\item Buffer data (Sliding window $2l_1$).
@@ -211,24 +211,23 @@
 				\item Calculate MMD between window halves.
 				\item Verify significance via \textbf{Permutation Test}.
 			\end{enumerate}
+
+			\vspace{0.2em}
+			\begin{alertblock}{\footnotesize Scalability Bottleneck}
+				\scriptsize
+				Permutation Test needs \textbf{2,500 reps/step} $\to$ Heavy CPU usage, cap: \textbf{8,000 samples/s}.
+			\end{alertblock}
 		\end{column}
 		\begin{column}{0.42\textwidth}
 			\centering
-			\includegraphics[width=\linewidth]{vis_repeated_sudden_SE.png}
+			\includegraphics[width=0.85\linewidth]{vis_repeated_sudden_SE.png}
+			\vspace{-0.3em}
 			\captionof{figure}{\scriptsize Distinctive MMD triangle during Sudden Drift}
 
-			\vspace{0.5em}
-			\begin{exampleblock}{\small Geometric Property}
-				\small
-				As the sliding window steps over the crossing boundary (drift point) of two distinct distributions, the MMD magnitude $\sigma(t)$ inherently plots a \textbf{signature triangle}.\\
-				Peak magnitude arises when both samples perfectly center the intersection.
+			\begin{exampleblock}{\footnotesize Geometric Property}
+				\scriptsize
+				As the sliding window crosses the drift boundary, the MMD magnitude inherently forms a \textbf{signature triangle}. Peak magnitude occurs when samples perfectly span the intersection.
 			\end{exampleblock}
-
-			\vspace{0.1em}
-			\begin{alertblock}{\small Scalability Bottleneck}
-				\small
-				The resampling Permutation Test demands \textbf{2,500 iterations per step} $\to$ Unacceptable CPU footprint, capping throughput at \textbf{8,000 samples/s}.
-			\end{alertblock}
 		\end{column}
 	\end{columns}
 \end{frame}
@@ -309,15 +308,15 @@
 		\begin{column}{0.5\textwidth}
 			\textbf{Limitations of Original MMD (Uniform weights):}
 			\begin{itemize}
-				\item Uniform weighting allows the dense \textbf{majority clusters} at the center to entirely dominate the statistical discrepancy computations.
-				\item Consequence: Drift often originates as outliers at the \textbf{distribution boundary} $\to$ Weak early drift signals are temporarily overshadowed.
+				\small
+				\item Dense \textbf{majority clusters} entirely dominate statistical discrepancies.
+				\item Weak early drift signals at \textbf{distribution boundaries} are overshadowed.
 			\end{itemize}
 
-			\vspace{0.5em}
-			\begin{exampleblock}{\small Signal Amplification Idea}
-				\small
-				The Inverse Density-Weighted (IDW) mechanism allocates weights inversely proportional to local spatial density.\\
-				Dense center points are suppressed ($w_i \downarrow$). Conversely, anomalous divergences at the margins are \textbf{heavily amplified} ($w_i \uparrow$), yielding a starkly sensitive detection signal without sacrificing robustness.
+			\vspace{0.2em}
+			\begin{exampleblock}{\footnotesize Signal Amplification Idea}
+				\scriptsize
+				IDW allocates weights inversely proportional to local spatial density. Dense center points are suppressed ($w_i \downarrow$). Anomalies at margins are \textbf{heavily amplified} ($w_i \uparrow$), increasing sensitivity.
 			\end{exampleblock}
 		\end{column}
 		\begin{column}{0.48\textwidth}
@@ -336,8 +335,11 @@
 				\end{align*}
 			\end{block}
 
-			\vspace{0.3em}
-			\textbf{Mathematical Elegance:} Shifted from naive iterative sampling (Permutation Test $O(N_{perm} n^2)$) to evaluating the \textbf{Asymptotic p-value} via Gamma approximations ($O(n^2)$). Eliminates 2,500 permutations per timestep!
+			\vspace{0.1em}
+			\begin{alertblock}{\footnotesize Mathematical Elegance}
+				\scriptsize
+				Shifted from Permutation Test ($O(N_{perm} n^2)$) to evaluating the \textbf{Asymptotic p-value} via Gamma approximations ($O(n^2)$), saving 2,500 permutations per timestep.
+			\end{alertblock}
 		\end{column}
 	\end{columns}
 \end{frame}
@@ -398,17 +400,19 @@
 			\end{itemize}
 		\end{column}
 		\begin{column}{0.48\textwidth}
-			\begin{exampleblock}{\small Rationale: Geometry Correlates with Distribution Dynamics}
-				\small
-				Different drift architectures inherently output specific energy spectra:
-				
-				- \textbf{Sudden Drift:} Induces a singular, severe system shock yielding $\textbf{1 isolated peak}$ with extremely narrow bandwidth ($WR \to 0$).\\
-				- \textbf{Gradual Drift:} Blended noisy transitions elevate the baseline into a plateau, generally lacking defined peaks.\\
-				- \textbf{Blip / Outlier:} Sparks immediate dual-wave transient oscillations ($n_p=2$).
+			\vspace{-0.3em}
+			\begin{exampleblock}{\footnotesize Rationale: Geometry vs. Dynamics}
+				\scriptsize
+				Different architectures fundamentally generate specific energy spectra:\\
+				- \textbf{Sudden:} Severe shock yielding $\textbf{1 isolated peak}$ with narrow bandwidth ($WR \to 0$).\\
+				- \textbf{Gradual:} Blended transitions elevate the baseline into a plateau without defined peaks.\\
+				- \textbf{Blip/Outlier:} Sparks immediate dual-wave transient oscillations ($n_p=2$).
 			\end{exampleblock}
 			
 			\centering
-			\includegraphics[width=0.7\linewidth]{vis_mixed_a_SE.png}
+			\vspace{-0.3em}
+			\includegraphics[width=0.65\linewidth]{vis_mixed_a_SE.png}
+			\vspace{-0.3em}
 			\captionof{figure}{\scriptsize Distinct Sudden Drift geometry ($WR$ narrow, $n_p=1$)}
 		\end{column}
 	\end{columns}
@@ -551,10 +555,10 @@
 			\textbf{Comparison vs. CDT-MSW (Supervised):}
 
 			\vspace{0.3em}
-			{\small
+			{\footnotesize
 			\begin{tabular}{@{}lccc@{}}
 				\toprule
-				                   & \textbf{SE-CDT}                          & \textbf{CDT-MSW}    & \textbf{Needs Labels?}                       \\ \midrule
+				                   & \textbf{SE-CDT}                          & \textbf{CDT-MSW}    & \textbf{Labeled?}                       \\ \midrule
 				\textbf{CAT}       & 81.2\%                                   & 87.5\%              & ---                                          \\
 				\textbf{SUB}       & \textcolor{darkgreen}{\textbf{50.0\%}}   & 42.0\%              & ---                                          \\
 				\textbf{Labels}    & \textcolor{darkgreen}{\textbf{None}}     & Yes                 & ---                                          \\
@@ -564,14 +568,15 @@
 
 			\vspace{0.5em}
 			\textbf{Sub-type Performance Breakdown:}
-			{\small
-			\begin{tabular}{@{}lll@{}}
+			
+			{\footnotesize
+			\begin{tabular}{@{}llp{3.8cm}@{}}
 				\toprule
-				\textbf{Behavior Class}    & \textbf{Acc.} & \textbf{Model Capacity Evaluation}    \\ \midrule
-				Sudden Drift          & \textbf{82.0\%}   & Superior isolation capability  \\
-				Gradual Drift         & 55.0\%            & Margin confusion w/ Incremental \\
-				Incremental Drift     & 24.0\%            & Boundary confusion w/ Gradual    \\
-				Recurrent Drift        & 0\%               & Requires Concept Memory Cache   \\
+				\textbf{Class}    & \textbf{Acc.} & \textbf{Evaluation}    \\ \midrule
+				Sudden            & \textbf{82.0\%}   & Superior isolation capability \\
+				Gradual           & 55.0\%            & Confusion with Incremental \\
+				Incremental       & 24.0\%            & Confusion with Gradual    \\
+				Recurrent         & 0\%               & Requires Concept Memory   \\
 				\bottomrule
 			\end{tabular}}
 		\end{column}
@@ -579,7 +584,7 @@
 \end{frame}
 
 % --- Slide 17: Adaptation Results ---
-\begin{frame}{Result 3: Model Adaptation (Prequential Accuracy)}
+\begin{frame}[shrink]{Result 3: Model Adaptation (Prequential Accuracy)}
 	\begin{columns}[T]
 		\begin{column}{0.55\textwidth}
 			\centering
@@ -640,7 +645,7 @@
 \section{Conclusion}
 
 % --- Slide 19: Conclusion ---
-\begin{frame}{Conclusion \& Future Directions}
+\begin{frame}[shrink]{Conclusion \& Future Directions}
 	\begin{columns}[T]
 		\begin{column}{0.52\textwidth}
 			\begin{block}{Contribution Summary}
@@ -728,7 +733,7 @@
 \end{frame}
 
 % --- Backup 2: F1 low ---
-\begin{frame}[noframenumbering]{Backup: ``F1 lower than MMD baseline --- Where is the contribution?''}
+\begin{frame}[noframenumbering,shrink]{Backup: ``F1 lower than MMD baseline --- Where is the contribution?''}
 	\textbf{Question:} ``SE-CDT's F1 is 0.481 vs 0.455. Why is this significant?''
 
 	\vspace{0.5em}
