@@ -18,28 +18,28 @@ Thay vì trình bày một cấu hình chung, các tham số môi trường và 
 
 \subsection{Tập dữ liệu thực nghiệm}
 
-Hệ thống được đánh giá trên bộ 10 tập dữ liệu tổng hợp (synthetic datasets) và một tập dữ liệu thực tế (realworld datasets), được thiết kế để kiểm tra các khía cạnh cụ thể của thuật toán phát hiện. Các tập dữ liệu được phân loại dựa trên bản chất của sự thay đổi phân phối:
+Hệ thống được đánh giá trên bộ 10 tập dữ liệu tổng hợp (synthetic datasets) và một tập dữ liệu thực tế (realworld datasets), được thiết kế để kiểm tra các khía cạnh cụ thể của thuật toán phát hiện. Các tập dữ liệu tổng hợp được sinh bằng các bộ sinh chuẩn (standard generators) từ thư viện River~\cite{river2021} --- một framework mã nguồn mở được cộng đồng nghiên cứu data stream mining sử dụng rộng rãi. Các tập dữ liệu được phân loại dựa trên bản chất của sự thay đổi phân phối:
 
 \paragraph{Nhóm 1: Sudden Drift (Thay đổi $P(X)$ đột ngột)}
 Đây là trọng tâm chính của ShapeDD và IDW-MMD. Các dataset này chứa sự thay đổi đột ngột trong phân phối đầu vào $P(X)$ (Covariate Shift), nơi các phương pháp unsupervised cần phải phát hiện chính xác.
 \begin{itemize}
-	\item \textit{Gaussian Shift (Moderate):} Dữ liệu phân phối chuẩn đa chiều ($d=10$) với sự dịch chuyển trung bình (mean shift) đột ngột ($\delta=1.5$). Đây là trường hợp lý tưởng để kiểm tra độ nhạy của kernel RBF.
-	\item \textit{STAGGER Concepts:} Bộ dữ liệu kinh điển với các đặc trưng nhị phân. Mặc dù thường được dùng cho supervised drift, nó cũng chứa sự thay đổi phân phối $P(X)$ do cách lấy mẫu, tạo ra tín hiệu drift rõ ràng.
-	\item \textit{Random Uniform (Sensitivity Test):} Bộ 4 dataset (\textit{mild, moderate, severe, ultra\_severe}) được sinh ngẫu nhiên với cường độ thay đổi (intensity) tăng dần từ 0.125 đến 2.0. Bộ này dùng để đánh giá "ngưỡng phát hiện" (detection threshold) của các thuật toán.
+	\item \textit{Gaussian Shift (Moderate):} Dữ liệu phân phối chuẩn đa chiều ($d=10$) với sự dịch chuyển trung bình (mean shift) đột ngột ($\delta=1.5$). Đây là trường hợp lý tưởng để kiểm tra độ nhạy của kernel RBF. Kịch bản này được thiết kế dựa trên phương pháp đánh giá tham số (parametric artificial datasets) trong bài khảo sát của Hinder et al.~\cite{hinder2024survey_partA}.
+	\item \textit{STAGGER Concepts:} Bộ dữ liệu kinh điển được giới thiệu lần đầu bởi Schlimmer và Granger~\cite{schlimmer1986incremental}, với các đặc trưng nhị phân. Mặc dù thường được dùng cho supervised drift, nó cũng chứa sự thay đổi phân phối $P(X)$ do cách lấy mẫu, tạo ra tín hiệu drift rõ ràng.
+	\item \textit{Random Uniform (Sensitivity Test):} Bộ 4 dataset (\textit{mild, moderate, severe, ultra\_severe}) được sinh ngẫu nhiên với cường độ thay đổi (intensity) tăng dần từ 0.125 đến 2.0, sử dụng bộ sinh dữ liệu của River~\cite{river2021}. Bộ này dùng để đánh giá "ngưỡng phát hiện" (detection threshold) của các thuật toán.
 	\item \textit{Stepping Drift (Cumulative):} Một biến thể quan trọng được thêm vào để kiểm chứng khả năng thích ứng. Khác với Sudden Drift thông thường (thường luân phiên A$\to$B$\to$A), Stepping Drift dịch chuyển phân phối tích lũy theo một hướng (A$\to$B$\to$C$\to$D). Điều này ngăn cản mô hình "học vẹt" các trạng thái cũ và buộc hệ thống phải thích ứng với dữ liệu hoàn toàn mới (out-of-distribution robustness). \textit{Kịch bản này chỉ được dùng trong đánh giá thích ứng (Mục~\ref{sec:adaptation-eval}), không thuộc benchmark detection 11 tập ở Mục~\ref{sec:detection-eval}.}
 \end{itemize}
 
 \paragraph{Nhóm 2: Blip Drift (Thay đổi ngắn hạn)}
 \begin{itemize}
-	\item \textit{RBF Blips:} Dữ liệu được sinh từ các trọng tâm Gaussian (50 centroids) di chuyển đột ngột và quay lại trạng thái cũ trong thời gian ngắn. Thử thách khả năng phát hiện sự thay đổi tạm thời của các thuật toán.
+	\item \textit{RBF Blips:} Dữ liệu được sinh từ bộ sinh Random RBF Generator~\cite{river2021} với 50 trọng tâm Gaussian (centroids) di chuyển đột ngột và quay lại trạng thái cũ trong thời gian ngắn. Thử thách khả năng phát hiện sự thay đổi tạm thời của các thuật toán.
 \end{itemize}
 
 \paragraph{Nhóm 3: Real Drift / Thay đổi ranh giới quyết định (Control Group)}
 Nhóm này bao gồm các dataset chỉ có sự thay đổi về biên quyết định $P(Y|X)$ trong khi phân phối đầu vào $P(X)$ giữ nguyên (hoặc thay đổi không đáng kể).
 \begin{itemize}
-	\item \textit{Standard SEA:} Thay đổi ngưỡng phân lớp $x_1 + x_2 > \theta$.
-	\item \textit{Rotating Hyperplane:} Mặt siêu phẳng xoay dần trong không gian.
-	\item \textit{LED Abrupt:} Thay đổi quy tắc hiển thị số trên đèn LED (7 features).
+	\item \textit{Standard SEA:} Bộ dữ liệu benchmark do Street và Kim đề xuất~\cite{street2001streaming}, thay đổi ngưỡng phân lớp $x_1 + x_2 > \theta$.
+	\item \textit{Rotating Hyperplane:} Bộ dữ liệu do Hulten et al. giới thiệu~\cite{hulten2001mining}, mặt siêu phẳng xoay dần trong không gian để mô phỏng gradual drift.
+	\item \textit{LED Abrupt:} Bài toán phân lớp đèn LED 7 thanh, được sinh bằng bộ sinh chuẩn của River~\cite{river2021}. Drift được tạo bằng cách hoán đổi vị trí các thuộc tính relevant tại các mốc thời gian xác định.
 \end{itemize}
 
 \textbf{Mục đích kiểm chứng:} Đối với các phương pháp phát hiện drift không giám sát (như ShapeDD, MMD), kết quả lý tưởng trên nhóm này là \textbf{không phát hiện} (hoặc phát hiện rất ít), vì $P(X)$ không đổi. Việc benchmark trên nhóm này giúp xác nhận thuật toán không bị "ảo giác" (hallucination) trước các thay đổi chỉ mang tính ngữ nghĩa nhãn.
@@ -47,7 +47,7 @@ Nhóm này bao gồm các dataset chỉ có sự thay đổi về biên quyết 
 \paragraph{Nhóm 4: Dữ liệu bán thực tế (Semi-Synthetic) với điểm drift kiểm soát}
 Nhóm này bao gồm dataset có \textit{đặc trưng đầu vào từ dữ liệu thực tế} nhưng các \textit{điểm drift được inject nhân tạo} để đảm bảo ground truth rõ ràng.
 \begin{itemize}
-	\item \textit{Electricity Semi-Synthetic:} Đặc trưng điện năng thực tế (NSW market, 45,312 quan sát) với 10 điểm drift được chèn tại các vị trí cố định bằng cách xáo trộn phân phối đặc trưng. Cho phép kiểm tra hành vi của thuật toán trên dữ liệu phân phối phi-Gaussian phức tạp trong khi vẫn có ground truth xác định.
+	\item \textit{Electricity Semi-Synthetic:} Dựa trên bộ dữ liệu Electricity gốc của Harries~\cite{harries1999splice} từ thị trường điện năng NSW (Australia, 45,312 quan sát), với 10 điểm drift được chèn tại các vị trí cố định bằng cách xáo trộn phân phối đặc trưng. Cho phép kiểm tra hành vi của thuật toán trên dữ liệu phân phối phi-Gaussian phức tạp trong khi vẫn có ground truth xác định.
 \end{itemize}
 
 
