@@ -6,41 +6,31 @@ drift detection methods including:
 
 Baseline Methods:
 - MMD: Maximum Mean Discrepancy (standard) - Gretton et al. (2012)
-- KS: Kolmogorov-Smirnov test (classical non-parametric)
+- KS:  Kolmogorov-Smirnov test (classical non-parametric)
+
+Other Window-based Methods:
+- D3:     Deep-learning-based discriminative drift detector
+- DAWIDD: Distribution-Aware Window-based detector
+- IDW_MMD: Stand-alone Inverse-Density-Weighted MMD (ablation)
 
 ShapeDD Variants:
-- ShapeDD: Original shape-based detection with permutation test
-- ShapeDD_IDW: ShapeDD + Weighted MMD with asymptotic p-value (RECOMMENDED)
+- ShapeDD:     Original shape-based detection with permutation test
+- ShapeDD_IDW: ShapeDD + IDW-MMD with asymptotic p-value (RECOMMENDED, fast)
 
-Unified System:
-- SE_CDT: Unified detector-classifier (detection + drift type classification)
-
-Legacy/Deprecated (not recommended for benchmark):
-- D3: Deep learning-based (different paradigm)
-- DAWIDD: Distribution-Aware Window-based method
-- MMD_WMMD: Just Weighted MMD without ShapeDD
-- ShapeDD_WMMD_HEURISTIC: Old heuristic version (superseded by PROPER)
-
-Note on Weighted MMD:
-- Uses Inverse Density Weighting (IDW): w_i ∝ 1/sqrt(kernel_density)
-- Points in sparse regions (boundaries) get higher weights
-- Improves sensitivity to distribution changes
+Unified System (this thesis' contribution):
+- SE_CDT: Unified detector + classifier
+          (detection + drift type classification in a single pass)
 """
 
 import time
-import numpy as np
-from collections import deque
-
-import sys
-import os
 
 from core.detectors.shape_dd import shape
 from core.detectors.d3 import d3
 from core.detectors.dawidd import dawidd
 from core.detectors.mmd import mmd
 from core.detectors.mmd_variants import (
-    mmd_adw,                  # Weighted MMD split test
-    shapedd_adw_mmd_proper,   # PROPER design with asymptotic p-value
+    mmd_idw,                  # IDW-MMD split test
+    shapedd_idw_mmd_proper,   # PROPER ShapeDD + IDW-MMD with asymptotic p-value
 )
 from core.detectors.ks import ks
 from core.detectors.se_cdt import SE_CDT  # Unified detector-classifier
@@ -71,6 +61,11 @@ def evaluate_drift_detector(
 
     start_time = time.process_time()
     detections = []
+    # SE-CDT also predicts a drift type per detection.  ``predicted_labels``
+    # is parallel to ``detections`` (None for methods that only detect, e.g.
+    # baselines).  Lower-cased to match the ground-truth ``event_labels``
+    # vocabulary in `data.generators.benchmark_generators._VALID_DRIFT_LABELS`.
+    predicted_labels: list = []
     last_detection = -(10**9)
 
     # Create sliding windows (same for all methods)
@@ -95,6 +90,8 @@ def evaluate_drift_detector(
         )
 
     for window_idx, (window, center_idx) in enumerate(zip(windows, window_centers)):
+        # Reset per-window prediction; only SE_CDT populates this.
+        window_pred_label: str | None = None
         try:
             # === RECOMMENDED Methods ===
             
@@ -104,33 +101,28 @@ def evaluate_drift_detector(
                 min_pvalue = shp_results[:, 2].min()
                 trigger = min_pvalue < 0.05
 
-            elif method_name == "ShapeDD_WMMD":
-                # ShapeDD + Weighted MMD with permutation test
-                # Statistically rigorous but SLOW (~500ms per window)
-                shp_results = shape_with_wmmd(window, SHAPE_L1, SHAPE_L2, n_perm=500)
-                min_pvalue = shp_results[:, 2].min()
-                trigger = min_pvalue < 0.05
-            
-            elif method_name in ("ShapeDD_IDW"):
-                # RECOMMENDED: ShapeDD + Weighted MMD with asymptotic p-value
-                # Fast (~5ms) + has statistical p-value
-                is_drift, positions, _, p_values = shapedd_adw_mmd_proper(
+            elif method_name == "ShapeDD_IDW":
+                # ShapeDD + IDW-MMD with asymptotic p-value (fast, recommended)
+                is_drift, _positions, _, _p_values = shapedd_idw_mmd_proper(
                     window, l1=SHAPE_L1, l2=SHAPE_L2, alpha=0.05
                 )
                 trigger = is_drift
-            
+
             elif method_name == "SE_CDT":
-                # SE-CDT: Unified Detector-Classifier
+                # SE-CDT: Unified Detector-Classifier.
                 # Returns both detection AND drift type classification.
                 # The detector object is created ONCE before this loop (see above).
                 result = _se_cdt.monitor(window)
                 trigger = result.is_drift
+                if trigger:
+                    sub = (result.subcategory or "Unknown").lower()
+                    window_pred_label = sub if sub != "unknown" else None
 
             # === Baseline Methods ===
-            
+
             elif method_name == "MMD":
                 # Standard MMD (Gretton et al., 2012)
-                stat, p_value = mmd(window)
+                _stat, p_value = mmd(window)
                 trigger = p_value < 0.05
 
             elif method_name == "KS":
@@ -138,22 +130,13 @@ def evaluate_drift_detector(
                 p_value = ks(window)
                 trigger = p_value < 0.05
 
-            elif method_name in ("IDW_MMD"):
-                # Weighted MMD without ShapeDD (ablation study)
-                stat, threshold = mmd_adw(window, gamma="auto")
+            elif method_name == "IDW_MMD":
+                # Stand-alone IDW-MMD without ShapeDD (ablation)
+                stat, threshold = mmd_idw(window, gamma="auto")
                 trigger = stat > threshold
 
-            # === Legacy/Deprecated Methods ===
-            
-            elif method_name in ("ShapeDD_WMMD_HEURISTIC", "ShapeDD_ADW_MMD"):
-                # DEPRECATED: Old heuristic version (use PROPER instead)
-                pattern_score, mmd_max = shapedd_adw_mmd(
-                    window, l1=SHAPE_L1, l2=SHAPE_L2, gamma="auto"
-                )
-                trigger = pattern_score > 0.5
-
             elif method_name == "D3":
-                # Deep learning-based (different paradigm)
+                # Deep-learning-based discriminative detector
                 score = d3(window)
                 trigger = score < 0.25
 
@@ -168,6 +151,7 @@ def evaluate_drift_detector(
             # Record detection with cooldown
             if trigger and (center_idx - last_detection >= COOLDOWN):
                 detections.append(center_idx)
+                predicted_labels.append(window_pred_label)
                 last_detection = center_idx
 
         except Exception as e:
@@ -181,6 +165,9 @@ def evaluate_drift_detector(
     return {
         "method": method_name,
         "detections": detections,
+        # Per-detection drift type predictions (populated by SE_CDT only).
+        # ``predicted_labels[i]`` corresponds to ``detections[i]``.
+        "predicted_labels": predicted_labels,
         "stream_size": len(X),
         "runtime_s": end_time - start_time,
         **metrics,

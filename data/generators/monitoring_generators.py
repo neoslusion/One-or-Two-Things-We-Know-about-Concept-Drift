@@ -28,11 +28,16 @@ def generate_joint_drift_stream(
         3. Retraining helps because the new model learns the new boundary
 
     Drift types supported:
-        - "sudden": Abrupt μ shift (alternating ±magnitude)
-        - "stepping": Cumulative μ shift (staircase)
-        - "gradual": Smooth μ interpolation over transition window
-        - "incremental": Continuous linear μ shift
-        - "recurrent": Alternating between concepts (A→B→A→B)
+        - "sudden": Abrupt μ shift, each event hits a *new* feature subset
+          (rotating by n_shift) so consecutive concepts are independent.
+        - "stepping": Cumulative μ shift on the same features (staircase).
+        - "gradual": Smooth μ interpolation over transition window;
+          consecutive concepts independent (same rotation as sudden).
+        - "incremental": Continuous linear μ shift; consecutive concepts
+          independent (same rotation as sudden).
+        - "recurrent": Alternating between two concepts (A→B→A→B).
+          This is the only drift type that intentionally revisits a prior
+          mean, matching the standard definition (Lu et al. 2018).
 
     References:
         - Lu et al. (2018): Joint drift = P(X) + P(Y|X) change
@@ -62,47 +67,59 @@ def generate_joint_drift_stream(
 
     # --- Step 1: Generate concept means (controls P(X) drift) ---
     # Each concept k has mean μ_k. The shift pattern depends on drift_type.
-    n_shift = max(2, n_features // 2)  # Shift first half of features
+    n_shift = max(2, n_features // 2)  # Number of features to shift per concept
 
     # Pre-compute means for each segment
     segment_means = [np.zeros(n_features)]  # Segment 0: origin
+
+    def _rotated_feature_indices(concept_idx: int) -> np.ndarray:
+        """Return the n_shift feature indices to shift for the k-th NEW concept.
+
+        Indices rotate by n_shift each step so that consecutive concepts touch
+        DISJOINT feature subsets (modulo n_features). This guarantees that
+        Sudden/Gradual/Incremental drifts do NOT alternate back to a previously
+        visited mean (which would implicitly be "Recurrent" and confuse
+        Concept Memory at the SE-CDT classifier).
+        """
+        start = (concept_idx - 1) * n_shift % n_features
+        return (np.arange(n_shift) + start) % n_features
 
     for k in range(1, n_drifts + 1):
         prev_mean = segment_means[-1].copy()
 
         if drift_type == "sudden":
-            # Alternating: +magnitude, -magnitude, +magnitude, ...
+            # Truly independent concepts: rotate which features are shifted.
             new_mean = np.zeros(n_features)
-            if k % 2 == 1:
-                new_mean[:n_shift] = drift_magnitude
-            # else: back to origin
+            new_mean[_rotated_feature_indices(k)] = drift_magnitude
             segment_means.append(new_mean)
 
         elif drift_type == "stepping":
-            # Cumulative: each drift adds +magnitude
+            # Cumulative: each drift adds +magnitude on the SAME features.
+            # Stepping is intentionally a one-directional staircase (already
+            # produces independent concepts), so no rotation needed.
             new_mean = prev_mean.copy()
             new_mean[:n_shift] += drift_magnitude
             segment_means.append(new_mean)
 
         elif drift_type in ("gradual", "incremental"):
-            # Same as sudden for final state, transition handled below
+            # Final state per concept = same rotation as Sudden; transition is
+            # handled in Step 3 below.
             new_mean = np.zeros(n_features)
-            if k % 2 == 1:
-                new_mean[:n_shift] = drift_magnitude
+            new_mean[_rotated_feature_indices(k)] = drift_magnitude
             segment_means.append(new_mean)
 
         elif drift_type == "recurrent":
-            # Alternating: same as sudden
+            # KEEP the alternating A->B->A->B pattern: this is the *correct*
+            # theoretical definition of Recurrent drift (Lu et al. 2018).
             new_mean = np.zeros(n_features)
             if k % 2 == 1:
                 new_mean[:n_shift] = drift_magnitude
             segment_means.append(new_mean)
 
         else:
-            # Default: sudden behavior
+            # Default: treat as sudden with rotation.
             new_mean = np.zeros(n_features)
-            if k % 2 == 1:
-                new_mean[:n_shift] = drift_magnitude
+            new_mean[_rotated_feature_indices(k)] = drift_magnitude
             segment_means.append(new_mean)
 
     # --- Step 2: Generate hyperplane weights (controls P(Y|X) drift) ---

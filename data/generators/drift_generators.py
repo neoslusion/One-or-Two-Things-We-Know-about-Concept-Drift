@@ -482,6 +482,23 @@ def generate_mixed_stream_rigorous(
     
     current_concept = 0
     
+    # Mathematical rationale for the per-event shift below.
+    #
+    # The original implementation alternated ±magnitude on every Sudden/
+    # Gradual/Incremental event. With more than two consecutive events of
+    # the same type, the joint distribution P(X) collapses back to a
+    # previously-seen concept (concept_t == concept_{t-2}), which is the
+    # textbook definition of *recurrent drift* — not Sudden. This made the
+    # Repeated_Sudden / Repeated_Gradual scenarios silently equivalent to
+    # Recurrent, and unfairly inflated Concept-Memory recall on Sudden.
+    #
+    # To produce genuinely independent concepts at each non-Recurrent
+    # event, we rotate the shifted feature subset by a stride that is
+    # coprime to ``n_features`` (here 1, but the rotation logic is the
+    # same). Concept k shifts a different, mostly disjoint subset from
+    # concept k-2, so P(X) at event k cannot exactly match P(X) at any
+    # earlier event of the same type. Recurrent drift continues to use
+    # the alternating pattern, which is the correct definition.
     for evt in events:
         dtype = evt['type']
         pos = evt['pos']
@@ -489,63 +506,76 @@ def generate_mixed_stream_rigorous(
         magnitude = evt.get('magnitude', 2.0)
         
         n_shift = max(1, n_features // 2)
-        
+
+        def _shifted_features(concept_idx: int) -> np.ndarray:
+            """Indices of features that are shifted for the given concept.
+
+            We keep the size constant (``n_shift``) so the magnitude of
+            distribution change per event stays comparable, but we rotate
+            the starting index so successive concepts touch a different
+            subset of features.
+            """
+            start = (concept_idx - 1) * n_shift % n_features
+            return (np.arange(n_shift) + start) % n_features
+
         if dtype == "Sudden":
-            # Instant shift: X[pos:] gets shifted
             current_concept += 1
-            shift = magnitude if current_concept % 2 == 1 else -magnitude
-            X[pos:, :n_shift] += shift
+            feat_idx = _shifted_features(current_concept)
+            X[pos:, feat_idx] += magnitude
             concept_id[pos:] = current_concept
             
         elif dtype == "Stepping":
-            # Cumulative sudden shift (Staircase)
+            # Cumulative sudden shift (Staircase) — keeps the original
+            # semantics: every event widens the gap on the same feature
+            # subset, which monotonically increases the drift magnitude.
             current_concept += 1
-            # Accumulate magnitude instead of alternating
-            # Previous X[pos:] already has shifts from previous events because we modify X in place
-            # So we just add the NEW step magnitude to everything after pos
             X[pos:, :n_shift] += magnitude
             concept_id[pos:] = current_concept
 
         elif dtype == "Gradual":
-            # Probabilistic mixture during transition
+            # Probabilistic mixture during transition (Bifet & Gama 2010).
             end_pos = min(pos + width, length)
+            new_concept = current_concept + 1
+            feat_idx = _shifted_features(new_concept)
             
             for t in range(pos, end_pos):
                 alpha = (t - pos) / width
                 
                 if generator.rng.random() < alpha:
-                    # Sample from new concept
-                    shift = magnitude if (current_concept + 1) % 2 == 1 else 0
-                    X[t, :n_shift] = generator.rng.randn(n_shift) + shift
-                    concept_id[t] = current_concept + 1
-                # else keep current concept values
+                    # Sample fresh data from the new concept on its own
+                    # feature subset; keep the other features unchanged.
+                    X[t, feat_idx] = generator.rng.randn(len(feat_idx)) + magnitude
+                    concept_id[t] = new_concept
             
-            # After transition
+            # After transition: post-drift segment is fully on the new
+            # concept's feature subset.
             if end_pos < length:
-                current_concept += 1
-                shift = magnitude if current_concept % 2 == 1 else 0
-                base = generator.rng.randn(length - end_pos, n_shift)
-                X[end_pos:, :n_shift] = base + shift
+                current_concept = new_concept
+                base = generator.rng.randn(length - end_pos, len(feat_idx))
+                X[end_pos:, feat_idx] = base + magnitude
                 concept_id[end_pos:] = current_concept
                 
         elif dtype == "Incremental":
-            # Continuous shift during transition
+            # Continuous shift during transition.
             end_pos = min(pos + width, length)
+            new_concept = current_concept + 1
+            feat_idx = _shifted_features(new_concept)
             
             for t in range(pos, end_pos):
                 progress = (t - pos) / width
-                current_shift = magnitude * progress
-                X[t, :n_shift] += current_shift
-                concept_id[t] = current_concept + 1 if progress > 0.5 else current_concept
+                X[t, feat_idx] += magnitude * progress
+                concept_id[t] = new_concept if progress > 0.5 else current_concept
             
-            # After transition
             if end_pos < length:
-                current_concept += 1
-                X[end_pos:, :n_shift] += magnitude
+                current_concept = new_concept
+                X[end_pos:, feat_idx] += magnitude
                 concept_id[end_pos:] = current_concept
                 
         elif dtype == "Recurrent":
-            # Alternating pattern
+            # Alternating pattern is the *correct* definition of recurrent
+            # drift, so we keep it intact (and we deliberately do NOT
+            # rotate the feature subset — the whole point is that the
+            # post-cycle distribution matches an earlier cycle).
             period = max(1, width // 2)
             
             for t in range(pos, length, period):

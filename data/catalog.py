@@ -3,91 +3,61 @@ Dataset catalog for drift detection benchmarks.
 
 Contains the DATASET_CATALOG dictionary defining all available benchmark datasets
 and helper functions to filter enabled datasets.
+
+Notes on `ground_truth_type`:
+    - "exact":     synthetic stream with known drift positions
+    - "estimated": semi-real / heuristic positions
+    - "none":      no ground-truth drift positions
 """
 
 DATASET_CATALOG = {
     # ========================================================================
-    # SUDDEN DRIFT DATASETS (8 datasets)
-    # Classic benchmarks with abrupt concept switches
-    # ground_truth_type: "exact" = known positions, "estimated" = heuristic, "none" = unknown
+    # SUDDEN DRIFT (P(X) change) — main benchmark contributors
     # ========================================================================
-    "standard_sea": {
-        "enabled": True,   # ENABLED for supplementary analysis (P(Y|X) only - concept drift)
-        "type": "standard_sea",
-        "n_drift_events": 10,
-        "ground_truth_type": "exact",
-        "drift_category": "concept_drift_only",  # Does NOT count toward main benchmark
-        "params": {}
-    },
-    "enhanced_sea": {
-        "enabled": False,
-        "type": "enhanced_sea",
-        "n_drift_events": 10,
-        "params": {
-            "scale_factors": (1.8, 1.5, 2.0),
-            "shift_amounts": (5.0, 4.0, 8.0)
-        }
-    },
     "stagger": {
         "enabled": True,
         "type": "stagger",
         "n_drift_events": 10,
-        "ground_truth_type": "exact",  # Synthetic - exact drift positions known
-        "params": {}
+        "ground_truth_type": "exact",
+        "params": {},
     },
-    "hyperplane": {
-        "enabled": True,   # ENABLED for supplementary analysis (P(Y|X) only - concept drift)
-        "type": "hyperplane",
+    "stagger_recurrent_explicit": {
+        # Dedicated 4-concept STAGGER variant providing clean recurrent-drift
+        # coverage (events 0-2 sudden, 3-9 recurrent).  See
+        # `generate_stagger_recurrent_explicit_stream` for the concept rules.
+        "enabled": True,
+        "type": "stagger_recurrent_explicit",
         "n_drift_events": 10,
         "ground_truth_type": "exact",
-        "drift_category": "concept_drift_only",  # Does NOT count toward main benchmark
-        "params": {
-            "n_features": 10
-        }
+        "params": {},
     },
     "gen_random_mild": {
         "enabled": True,
         "type": "gen_random",
         "n_drift_events": 10,
-        "params": {
-            "dims": 5,
-            "intens": 0.125,
-            "dist": "unif",
-            "alt": False
-        }
+        "ground_truth_type": "exact",
+        "params": {"dims": 5, "intens": 0.125, "dist": "unif", "alt": False},
     },
     "gen_random_moderate": {
         "enabled": True,
         "type": "gen_random",
         "n_drift_events": 10,
-        "params": {
-            "dims": 5,
-            "intens": 0.25,
-            "dist": "unif",
-            "alt": False
-        }
+        "ground_truth_type": "exact",
+        "params": {"dims": 5, "intens": 0.25, "dist": "unif", "alt": False},
     },
     "gen_random_severe": {
         "enabled": True,
         "type": "gen_random",
         "n_drift_events": 10,
-        "params": {
-            "dims": 5,
-            "intens": 1,
-            "dist": "unif",
-            "alt": True
-        }
+        "ground_truth_type": "exact",
+        "params": {"dims": 5, "intens": 1, "dist": "unif", "alt": True},
     },
     "gen_random_ultra_severe": {
         "enabled": True,
         "type": "gen_random",
         "n_drift_events": 10,
-        "params": {
-            "dims": 5,
-            "intens": 2,
-            "dist": "unif",
-            "alt": True
-        }
+        "ground_truth_type": "exact",
+        "params": {"dims": 5, "intens": 2, "dist": "unif", "alt": True},
     },
     "gaussian_shift_moderate": {
         "enabled": True,
@@ -96,191 +66,100 @@ DATASET_CATALOG = {
         "ground_truth_type": "exact",
         "params": {
             "n_features": 10,
-            "shift_magnitude": 1.5,      # Moderate drift
-            "noise_percentage": 0.05
-        }
+            "shift_magnitude": 1.5,
+            "noise_percentage": 0.05,
+        },
     },
 
     # ========================================================================
-    # GRADUAL DRIFT DATASETS (4 datasets)
-    # Smooth blending transitions between concepts
+    # SUPPLEMENTARY: P(Y|X)-only concept drift (do NOT count toward main benchmark)
+    # Kept to demonstrate that unsupervised P(X) detectors cannot detect Y|X drift.
     # ========================================================================
-
-    "sea_gradual": {
-        "enabled": False,  # DISABLED: Only P(Y|X) changes, NOT P(X) - unsupervised cannot detect
-        "type": "sea_gradual",
+    "standard_sea": {
+        "enabled": True,
+        "type": "standard_sea",
         "n_drift_events": 10,
         "ground_truth_type": "exact",
-        "params": {
-            "transition_width": 450
-        }
+        "drift_category": "concept_drift_only",
+        "params": {},
     },
-    "hyperplane_gradual": {
-        "enabled": False,
-        "type": "hyperplane_gradual",
+    "hyperplane": {
+        "enabled": True,
+        "type": "hyperplane",
         "n_drift_events": 10,
-        "params": {
-            "n_features": 10  # Continuous drift (no discrete transition)
-        }
+        "ground_truth_type": "exact",
+        "drift_category": "concept_drift_only",
+        "params": {"n_features": 10},
     },
-    "agrawal_gradual": {
-        "enabled": False,
-        "type": "agrawal_gradual",
-        "n_drift_events": 10,
-        "params": {
-            "transition_width": 450  # OPTIMIZED: 50% of segment (909 samples)
-        }
-    },
+
+    # ========================================================================
+    # GRADUAL DRIFT
+    # circles_gradual was the historical gradual benchmark.  It is kept
+    # DISABLED here because Phase 0-mini verification (see
+    # scripts/verify_gradual_px_drift.py) shows that the dataset only
+    # changes P(Y|X), not P(X), and is therefore invisible to unsupervised
+    # P(X) detectors.  gaussian_gradual_synthetic is enabled in its place
+    # to provide genuine gradual P(X) coverage with a controllable
+    # transition width.
+    # ========================================================================
     "circles_gradual": {
         "enabled": False,
         "type": "circles_gradual",
         "n_drift_events": 10,
-        "params": {
-            "transition_width": 400  # OPTIMIZED: 44% of segment (more stable)
-        }
+        "ground_truth_type": "exact",
+        "params": {"transition_width": 400},
     },
-
-    # ========================================================================
-    # INCREMENTAL DRIFT DATASETS (2 datasets) - MOA Standard
-    # Continuous cluster boundary movement
-    # ========================================================================
-
-    "rbf_slow": {
-        "enabled": False,  # DISABLED: Incremental drift is too gradual for robust detection
-        "type": "rbf",
+    "gaussian_gradual_synthetic": {
+        "enabled": True,
+        "type": "gaussian_gradual",
         "n_drift_events": 10,
-        "ground_truth_type": "estimated",
+        "ground_truth_type": "exact",
         "params": {
-            "n_centroids": 50,
-            "speed": 0.0001
-        }
-    },
-    "rbf_fast": {
-        "enabled": False,
-        "type": "rbf",
-        "n_drift_events": 10,
-        "params": {
-            "n_centroids": 50,    # MOA standard
-            "speed": 0.001        # Fast continuous drift (10× faster)
-        }
+            "n_features": 10,
+            "shift_magnitude": 1.5,
+            "transition_width": 400,
+            "noise_percentage": 0.05,
+        },
     },
 
     # ========================================================================
-    # REAL-WORLD DATASETS (1 dataset)
-    # Natural concept drift from real-world processes
-    # NO GROUND TRUTH - Use for qualitative analysis only
+    # SEMI-REAL: real features with synthetic drift at known positions
     # ========================================================================
-
-    "electricity": {
-        "enabled": False,
-        "type": "electricity",
-        "n_drift_events": 5,      # Estimated (no ground truth available)
-        "params": {}
-    },
-    "electricity_sorted": {
-        "enabled": False,  # DISABLED: No ground truth drift positions - not standard methodology
-        "type": "electricity_sorted",
-        "n_drift_events": 5,
-        "ground_truth_type": "none",
-        "params": {
-            "sort_feature": "nswdemand"
-        }
-    },
     "electricity_semisynthetic": {
-        "enabled": True,  # ENABLED: Real features + known drift positions
+        "enabled": True,
         "type": "electricity_semisynthetic",
         "n_drift_events": 10,
-        "ground_truth_type": "exact",  # Synthetic drifts at known positions
-        "params": {}
+        "ground_truth_type": "exact",
+        "params": {},
     },
 
     # ========================================================================
-    # SEMI-REAL DATASETS - Controlled Drift from Real Data
-    # Real-world features with known drift positions (sorted by feature)
+    # STATIONARY: false-positive / Type-I error calibration
     # ========================================================================
-
-    "covertype_sorted": {
-        "enabled": False,  # DISABLED: Covtype not available in river library
-        "type": "covertype_sorted",
-        "n_drift_events": 5,      # Controllable - adjust as needed
-        "ground_truth_type": "estimated",  # Semi-real: drift positions are heuristic
-        "params": {
-            "sort_feature": "Elevation"  # Creates natural drift by terrain
-        }
-    },
-
-    # ========================================================================
-    # STATIONARY DATASETS (2 datasets) - False Positive Analysis
-    # No drift - for statistical calibration validation
-    # ========================================================================
-
     "stagger_none": {
-        "enabled": True,  # ENABLED: False positive calibration (no drift baseline)
+        "enabled": True,
         "type": "stagger",
-        "n_drift_events": 0,      # NO DRIFT - stationary
-        "ground_truth_type": "exact",  # Synthetic - known to have NO drift
-        "params": {}
-    },
-    "gen_random_none": {
-        "enabled": False,
-        "type": "gen_random",
-        "n_drift_events": 0,      # NO DRIFT - stationary
-        "params": {
-            "dims": 5,
-            "intens": 0,          # Zero intensity = no drift
-            "dist": "unif",
-            "alt": False
-        }
+        "n_drift_events": 0,
+        "ground_truth_type": "exact",
+        "params": {},
     },
 
     # ========================================================================
-    # SINE FAMILY: Classification Reversal + Noise Robustness Tests
-    # ========================================================================
-    "sine1": {
-        "enabled": False,
-        "type": "sine1",
-        "n_drift_events": 10,
-        "params": {}
-    },
-    "sine2": {
-        "enabled": False,
-        "type": "sine2",
-        "n_drift_events": 10,
-        "params": {}
-    },
-    "sinirrel1": {
-        "enabled": False,
-        "type": "sinirrel1",
-        "n_drift_events": 10,
-        "params": {}
-    },
-    "sinirrel2": {
-        "enabled": False,
-        "type": "sinirrel2",
-        "n_drift_events": 10,
-        "params": {}
-    },
-
-    # ========================================================================
-    # RBF AND LED: Complex Distributions
+    # COMPLEX DISTRIBUTIONS: blip / discrete features
     # ========================================================================
     "rbfblips": {
         "enabled": True,
         "type": "rbfblips",
         "n_drift_events": 10,
-        "params": {
-            "n_centroids": 50,
-            "n_features": 10
-        }
+        "ground_truth_type": "exact",
+        "params": {"n_centroids": 50, "n_features": 10},
     },
     "led_abrupt": {
-        "enabled": True,  # ENABLED: Classic discrete/binary feature benchmark
+        "enabled": True,
         "type": "led_abrupt",
         "n_drift_events": 10,
         "ground_truth_type": "exact",
-        "params": {
-            "has_noise": False  # Clean signal for controlled evaluation
-        }
+        "params": {"has_noise": False},
     },
 }
 
@@ -292,8 +171,11 @@ def get_enabled_datasets():
     Returns:
         list: List of (name, config) tuples for enabled datasets
     """
-    return [(name, config) for name, config in DATASET_CATALOG.items()
-            if config['enabled']]
+    return [
+        (name, config)
+        for name, config in DATASET_CATALOG.items()
+        if config["enabled"]
+    ]
 
 
 def get_datasets_by_type():
@@ -301,21 +183,30 @@ def get_datasets_by_type():
     Categorize enabled datasets by drift type.
 
     Returns:
-        dict: Dictionary with keys 'sudden', 'gradual', 'incremental', 'realworld', 'stationary'
+        dict: Keys 'sudden', 'gradual', 'realworld', 'stationary',
+              'concept_drift_only'.
     """
-    enabled = [k for k, v in DATASET_CATALOG.items() if v['enabled']]
+    enabled = [k for k, v in DATASET_CATALOG.items() if v["enabled"]]
 
-    return {
-        # Main benchmark: P(X) change datasets (count toward overall accuracy)
-        'sudden': [k for k in enabled if 'gradual' not in k and k != 'rbf_slow' and k != 'rbf_fast'
-                   and 'electricity' not in k and 'covertype' not in k and 'none' not in k
-                   and DATASET_CATALOG[k].get('drift_category') != 'concept_drift_only'],
-        'gradual': [k for k in enabled if 'gradual' in k],
-        'incremental': [k for k in enabled if k in ['rbf_slow', 'rbf_fast']],
-        'realworld': [k for k in enabled if 'electricity' in k or 'covertype' in k],
-        'stationary': [k for k in enabled if 'none' in k],
-        # Supplementary: P(Y|X) only datasets (do NOT count toward main benchmark)
-        'concept_drift_only': [k for k in enabled 
-                               if DATASET_CATALOG[k].get('drift_category') == 'concept_drift_only'],
+    def _drift_class(k: str) -> str:
+        cfg = DATASET_CATALOG[k]
+        if cfg.get("drift_category") == "concept_drift_only":
+            return "concept_drift_only"
+        if cfg["n_drift_events"] == 0 or "none" in k:
+            return "stationary"
+        if "gradual" in k:
+            return "gradual"
+        if "electricity" in k or "covertype" in k:
+            return "realworld"
+        return "sudden"
+
+    classes = {
+        "sudden": [],
+        "gradual": [],
+        "realworld": [],
+        "stationary": [],
+        "concept_drift_only": [],
     }
-
+    for k in enabled:
+        classes[_drift_class(k)].append(k)
+    return classes

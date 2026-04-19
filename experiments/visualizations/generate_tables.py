@@ -70,29 +70,23 @@ def generate_drift_type_performance_table(results):
     headers = ["Drift Type", "Accuracy [%]"]
     data = []
     
-    # Rows for individual drift types
     for dt in drift_types:
         se_val = per_class_acc[dt]
         se_str = format_metric(se_val/100, "percentage")
-            
-        # Special note for Recurrent
+
         if dt == "Recurrent":
             se_str += "$^\\dagger$"
-            
+
         data.append([escape_latex(dt), se_str])
-        
-    # Generate Latex
-    # Standard table with 2 columns
+
     latex_output = generate_standard_table(headers, data, align="|l|c|")
-    
-    # Add footer manually
+
     footer = (
         "\\hline\n"
-        "\\multicolumn{2}{|l|}{\\footnotesize $^\\dagger$Recurrent drift processed as separate Sudden events (no concept memory).}\\ \\n"
+        "\\multicolumn{2}{|l|}{\\footnotesize $^\\dagger$Recurrent drift identified via Concept Memory (Standard MMD comparison with stored snapshots).}\\\\\n"
         "\\hline\n"
     )
-    
-    # Insert footer before \end{tabular}
+
     latex_output = latex_output.replace("\\end{tabular}", footer + "\\end{tabular}")
 
     output_path = TABLES_DIR / "table_se_cdt_performance_by_type.tex"

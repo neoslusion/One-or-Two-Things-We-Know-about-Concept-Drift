@@ -24,7 +24,7 @@ DRIFT_PVALUE = 0.05  # P-value threshold (alpha)
 DRIFT_ALPHA = 0.05   # Significance level
 
 # SE-CDT Detection Thresholds
-# CRITICAL: pattern_score from shapedd_adw_mmd_full typically returns 0.0-0.4
+# CRITICAL: pattern_score from shapedd_idw_mmd_proper typically returns 0.0-0.4
 # Default threshold of 0.5 is TOO HIGH and causes zero detections!
 # Tuned threshold based on empirical testing:
 SE_CDT_THRESHOLD = 0.15       # For SE_CDT.monitor() - LOWERED from default 0.5

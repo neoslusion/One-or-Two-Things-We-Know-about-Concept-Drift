@@ -7,9 +7,26 @@ Implements standard drift detection metrics including:
 - Mean Time To Detection (MTTD)
 - Mean Time Between False Alarms (MTFA)
 - Mean Time Ratio (MTR)
+- Per-event drift-type classification metrics (CAT_ACC / SUB_ACC,
+  per-class precision/recall/F1) for SE-CDT and similar
+  classifying detectors.
 """
 
 import numpy as np
+
+# Mapping from 5-class subcategory to 2-class macro-category.
+# TCD = Temporary Concept Drift, PCD = Permanent Concept Drift.
+_SUBCATEGORY_TO_CATEGORY = {
+    "sudden": "TCD",
+    "blip": "TCD",
+    "recurrent": "TCD",
+    "gradual": "PCD",
+    "incremental": "PCD",
+}
+
+# Canonical drift-type vocabulary used both by ``SE_CDT.subcategory`` and by
+# ``info["event_labels"]`` (after lower-casing).
+DRIFT_LABEL_VOCAB = tuple(_SUBCATEGORY_TO_CATEGORY.keys())
 
 
 def calculate_beta_score(precision: float, recall: float, beta: float = 0.5) -> float:
@@ -263,4 +280,146 @@ def calculate_detection_metrics(detections, true_drifts, acceptable_delta=75):
         'detection_rate': detection_rate,
         'n_detections': len(detections)
     }
+
+
+def calculate_classification_metrics(
+    detections,
+    predicted_labels,
+    true_drifts,
+    event_labels,
+    acceptable_delta: int = 75,
+):
+    """Per-event drift-type classification metrics for classifying detectors.
+
+    Matches each detected position to its closest true drift position within
+    ``acceptable_delta`` (mirroring :func:`calculate_detection_metrics_enhanced`)
+    and compares the corresponding ``predicted_label`` to the ground-truth
+    ``event_label``.  Only events that were both **detected** and **labelled**
+    contribute to the classification accuracies; missed detections are
+    excluded so the metric isolates the classifier's performance from the
+    detector's recall.
+
+    Parameters
+    ----------
+    detections : list[int]
+        Detection positions (sorted ascending).
+    predicted_labels : list[str | None]
+        ``predicted_labels[i]`` is the drift type predicted at
+        ``detections[i]``.  ``None`` entries are treated as missing
+        predictions (still match the detection but are excluded from the
+        accuracy denominator).
+    true_drifts : list[int]
+        Ground-truth drift positions.
+    event_labels : list[str]
+        ``event_labels[k]`` is the ground-truth drift type for the ``k``-th
+        true drift.  Must have the same length as ``true_drifts``.
+    acceptable_delta : int, default=75
+        Maximum distance (in samples) for a detection to count as a TP for
+        a given true drift.
+
+    Returns
+    -------
+    dict
+        Keys: ``cat_acc`` (TCD vs PCD), ``sub_acc`` (5-class), ``n_matched``
+        (number of (true, predicted) pairs evaluated), ``n_classifiable``
+        (matched pairs with non-None prediction *and* a known ground-truth
+        label), and per-class ``precision_<lab>`` / ``recall_<lab>`` /
+        ``f1_<lab>`` for each label in :data:`DRIFT_LABEL_VOCAB`.
+    """
+    detections = sorted(int(d) for d in detections)
+    if predicted_labels is None:
+        predicted_labels = [None] * len(detections)
+    if len(predicted_labels) != len(detections):
+        raise ValueError(
+            "predicted_labels and detections must have the same length "
+            f"({len(predicted_labels)} vs {len(detections)})"
+        )
+    if event_labels is None:
+        event_labels = []
+    if len(event_labels) != len(true_drifts):
+        raise ValueError(
+            "event_labels and true_drifts must have the same length "
+            f"({len(event_labels)} vs {len(true_drifts)})"
+        )
+
+    empty = {
+        "cat_acc": float("nan"),
+        "sub_acc": float("nan"),
+        "n_matched": 0,
+        "n_classifiable": 0,
+    }
+    for label in DRIFT_LABEL_VOCAB:
+        empty[f"precision_{label}"] = float("nan")
+        empty[f"recall_{label}"] = float("nan")
+        empty[f"f1_{label}"] = float("nan")
+
+    if not true_drifts or not detections:
+        return empty
+
+    # Match detections to true drifts (closest-within-tolerance, no reuse).
+    pairs: list[tuple[str, str]] = []
+    used_detections: set[int] = set()
+    det_to_pred = {i: predicted_labels[i] for i in range(len(detections))}
+    for k, td in enumerate(true_drifts):
+        true_lab = (event_labels[k] or "").lower() if event_labels[k] is not None else None
+        candidates = [
+            (i, abs(detections[i] - td))
+            for i in range(len(detections))
+            if i not in used_detections and abs(detections[i] - td) <= acceptable_delta
+        ]
+        if not candidates:
+            continue
+        i_star, _ = min(candidates, key=lambda p: p[1])
+        used_detections.add(i_star)
+        pred_lab = det_to_pred[i_star]
+        if pred_lab is not None:
+            pred_lab = pred_lab.lower()
+        pairs.append((true_lab, pred_lab))
+
+    n_matched = len(pairs)
+    classifiable = [
+        (t, p)
+        for (t, p) in pairs
+        if t in DRIFT_LABEL_VOCAB and p in DRIFT_LABEL_VOCAB
+    ]
+    n_classifiable = len(classifiable)
+
+    if n_classifiable == 0:
+        empty["n_matched"] = n_matched
+        return empty
+
+    sub_correct = sum(1 for (t, p) in classifiable if t == p)
+    cat_correct = sum(
+        1
+        for (t, p) in classifiable
+        if _SUBCATEGORY_TO_CATEGORY[t] == _SUBCATEGORY_TO_CATEGORY[p]
+    )
+
+    # Per-class precision / recall / F1 over the classifiable subset.
+    out = {
+        "cat_acc": cat_correct / n_classifiable,
+        "sub_acc": sub_correct / n_classifiable,
+        "n_matched": n_matched,
+        "n_classifiable": n_classifiable,
+    }
+    for label in DRIFT_LABEL_VOCAB:
+        tp = sum(1 for (t, p) in classifiable if t == label and p == label)
+        fp = sum(1 for (t, p) in classifiable if t != label and p == label)
+        fn = sum(1 for (t, p) in classifiable if t == label and p != label)
+        prec = tp / (tp + fp) if (tp + fp) > 0 else float("nan")
+        rec = tp / (tp + fn) if (tp + fn) > 0 else float("nan")
+        if (
+            isinstance(prec, float)
+            and isinstance(rec, float)
+            and not np.isnan(prec)
+            and not np.isnan(rec)
+            and (prec + rec) > 0
+        ):
+            f1 = 2 * prec * rec / (prec + rec)
+        else:
+            f1 = float("nan")
+        out[f"precision_{label}"] = prec
+        out[f"recall_{label}"] = rec
+        out[f"f1_{label}"] = f1
+    return out
 

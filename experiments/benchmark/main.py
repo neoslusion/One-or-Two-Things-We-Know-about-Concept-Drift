@@ -68,11 +68,14 @@ if __name__ == "__main__" and __package__ is None:
         WINDOW_METHODS,
         STREAMING_METHODS,
     )
-    from data.catalog import DATASET_CATALOG, get_enabled_datasets
+    from data.catalog import get_enabled_datasets
     from data.generators.benchmark_generators import generate_drift_stream
     from experiments.benchmark.evaluation import (
         evaluate_drift_detector,
         evaluate_streaming_detector,
+    )
+    from experiments.benchmark.evaluation.metrics import (
+        calculate_classification_metrics,
     )
     from experiments.benchmark.analysis import (
         run_statistical_analysis,
@@ -97,12 +100,13 @@ else:
         STREAMING_METHODS,
         N_JOBS,
     )
-    from data.catalog import DATASET_CATALOG, get_enabled_datasets
+    from data.catalog import get_enabled_datasets
     from data.generators.benchmark_generators import generate_drift_stream
     from .evaluation import (
         evaluate_drift_detector,
         evaluate_streaming_detector,
     )
+    from .evaluation.metrics import calculate_classification_metrics
     from .analysis import (
         run_statistical_analysis,
         generate_all_figures,
@@ -150,7 +154,31 @@ def _process_single_run(run_idx, seed, enabled_datasets, stream_size, chunk_size
             total_size=stream_size,
             seed=seed
         )
-        
+        event_labels = info.get('event_labels', [])
+
+        def _attach_metadata(result, paradigm):
+            """Add cross-cutting metadata + per-event classification metrics."""
+            result['paradigm'] = paradigm
+            result['dataset'] = dataset_name
+            result['n_features'] = info['n_features']
+            result['n_drifts'] = info['n_drifts']
+            result['drift_positions'] = true_drifts
+            result['event_labels'] = event_labels
+            result['intens'] = info['intens']
+            result['dims'] = info['dims']
+            result['ground_truth_type'] = dataset_config.get('ground_truth_type', 'unknown')
+            result['run_id'] = run_idx
+            result['seed'] = seed
+            classification = calculate_classification_metrics(
+                result.get('detections', []),
+                result.get('predicted_labels', None),
+                true_drifts,
+                event_labels,
+            )
+            for k, v in classification.items():
+                result.setdefault(k, v)
+            return result
+
         dataset_results = []
 
         # Evaluate window-based methods
@@ -161,19 +189,7 @@ def _process_single_run(run_idx, seed, enabled_datasets, stream_size, chunk_size
                 overlap=overlap,
                 verbose=False
             )
-
-            # Add metadata
-            result['paradigm'] = 'window'
-            result['dataset'] = dataset_name
-            result['n_features'] = info['n_features']
-            result['n_drifts'] = info['n_drifts']
-            result['drift_positions'] = true_drifts
-            result['intens'] = info['intens']
-            result['dims'] = info['dims']
-            result['ground_truth_type'] = dataset_config.get('ground_truth_type', 'unknown')
-            result['run_id'] = run_idx
-            result['seed'] = seed
-
+            _attach_metadata(result, 'window')
             dataset_results.append(result)
             run_results.append(result)
 
@@ -182,18 +198,7 @@ def _process_single_run(run_idx, seed, enabled_datasets, stream_size, chunk_size
             result = evaluate_streaming_detector(
                 method, X, y, true_drifts
             )
-
-            result['paradigm'] = 'streaming'
-            result['dataset'] = dataset_name
-            result['n_features'] = info['n_features']
-            result['n_drifts'] = info['n_drifts']
-            result['drift_positions'] = true_drifts
-            result['intens'] = info['intens']
-            result['dims'] = info['dims']
-            result['ground_truth_type'] = dataset_config.get('ground_truth_type', 'unknown')
-            result['run_id'] = run_idx
-            result['seed'] = seed
-
+            _attach_metadata(result, 'streaming')
             dataset_results.append(result)
             run_results.append(result)
 
@@ -346,7 +351,7 @@ def main():
     # ========================================================================
     # STATISTICAL ANALYSIS
     # ========================================================================
-    analysis_results = run_statistical_analysis(all_results, N_RUNS)
+    run_statistical_analysis(all_results, N_RUNS)
 
     # ========================================================================
     # RESULTS SUMMARY
@@ -361,7 +366,7 @@ def main():
     print("="*80)
     import pandas as pd
     df_results = pd.DataFrame(all_results)
-    statistical_report = generate_statistical_report(
+    generate_statistical_report(
         df_results,
         output_dir=str(DETECTION_BENCHMARK_OUTPUTS["statistical_tests"].parent)
     )

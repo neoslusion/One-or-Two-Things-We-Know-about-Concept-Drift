@@ -122,6 +122,10 @@ def evaluate_streaming_detector(method_name, X, y, true_drifts):
         'method': method_name,
         'paradigm': 'streaming',
         'detections': detections,
+        # Streaming baselines only detect; they cannot classify drift type.
+        # Kept for schema parity with the window-based path (see
+        # :func:`experiments.benchmark.evaluation.window_detectors.evaluate_drift_detector`).
+        'predicted_labels': [None] * len(detections),
         'runtime_s': end_time - start_time,
         **metrics
     }

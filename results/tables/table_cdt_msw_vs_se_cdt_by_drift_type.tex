@@ -2,12 +2,12 @@
 \hline
 \textbf{Drift Type} & \textbf{CDT-MSW (Paper) [\%]} & \textbf{SE-CDT (Ours) [\%]} \\
 \hline
-Sudden & \textbf{90.2\%} & 81.8\% \\
-Blip & \textbf{88.5\%} & 17.5\% \\
-Gradual & \textbf{96.9\%} & 55.4\% \\
-Incremental & \textbf{74.0\%} & 23.8\% \\
-Recurrent & \textbf{83.9\%} & 0.0\%$^\dagger$ \\
+Sudden & \textbf{90.2\%} & 82.4\% \\
+Blip & \textbf{88.5\%} & 5.0\% \\
+Gradual & \textbf{96.9\%} & 63.8\% \\
+Incremental & \textbf{74.0\%} & 28.5\% \\
+Recurrent & \textbf{83.9\%} & 33.1\%$^\dagger$ \\
 \hline
-\multicolumn{3}{|l|}{\footnotesize $^\dagger$Recurrent drift processed as independent Sudden events (SE-CDT has no concept memory).} \\
+\multicolumn{3}{|l|}{\footnotesize $^\dagger$Recurrent drift identified via Concept Memory (Standard MMD comparison with stored snapshots; threshold $\mu = 0.15$).} \\
 \hline
 \end{tabular}

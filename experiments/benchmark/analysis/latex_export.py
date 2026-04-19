@@ -95,7 +95,7 @@ def export_all_tables(all_results, stream_size, output_dir=TABLES_DIR):
     def simplify_name(name):
         name = name.replace("gen_random_", "Random ").replace("gaussian_shift_", "Gaussian ").replace("electricity_semisynthetic", "Electricity")
         name = name.replace("_", " ").title()
-        name = name.replace("Mmd", "MMD").replace("Adw", "ADW").replace("Proper", "PROPER")
+        name = name.replace("Mmd", "MMD").replace("Idw", "IDW").replace("Proper", "PROPER")
         return name
 
     # Process columns (datasets) excluding Mean first

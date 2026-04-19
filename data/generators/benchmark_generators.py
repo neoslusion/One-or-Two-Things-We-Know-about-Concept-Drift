@@ -3,17 +3,109 @@ Dataset generation functions for drift detection benchmarks.
 
 Contains generators for various synthetic and semi-real datasets including:
 - Sudden drift: SEA, STAGGER, Hyperplane, gen_random
-- Gradual drift: SEA gradual, Hyperplane gradual, Agrawal gradual, Circles gradual
+- Gradual drift: Circles gradual, Gaussian gradual (synthetic)
 - Incremental drift: RBF with moving centroids
-- Real-world: Electricity, Covertype (sorted versions)
-- Noise robustness: Sine family with irrelevant features
+- Real-world: Electricity (semi-synthetic with controlled drift)
 """
+
+from typing import List
 
 import numpy as np
 from river.datasets import synth
 
 # Import gen_random from local module
 from .legacy_gen_data import gen_random
+
+
+# ============================================================================
+# PER-EVENT DRIFT TYPE LABELS (used for classification accuracy evaluation)
+# ============================================================================
+# Five-class taxonomy used by SE-CDT:
+#     "sudden", "gradual", "incremental", "recurrent", "blip"
+# A drift event is labelled "recurrent" when its post-drift concept matches a
+# concept that has already appeared earlier in the stream.  Otherwise the
+# label reflects the transition shape (sudden / gradual / incremental / blip).
+# ----------------------------------------------------------------------------
+
+_VALID_DRIFT_LABELS = {"sudden", "gradual", "incremental", "recurrent", "blip"}
+
+
+def _cyclic_first_then_recurrent(
+    n_drift_events: int, cycle_length: int, base_label: str = "sudden"
+) -> List[str]:
+    """Helper for cyclic generators with ``cycle_length`` distinct concepts.
+
+    The first ``cycle_length - 1`` events visit a brand-new concept and are
+    therefore labelled ``base_label`` (typically ``"sudden"`` or
+    ``"gradual"``); subsequent events return to a previously seen concept and
+    are labelled ``"recurrent"``.
+    """
+    n_first = max(0, cycle_length - 1)
+    n_first = min(n_first, n_drift_events)
+    return [base_label] * n_first + ["recurrent"] * (n_drift_events - n_first)
+
+
+def _default_event_labels(
+    dataset_type: str, n_drift_events: int, params: dict
+) -> List[str]:
+    """Compute per-event drift type labels from dataset type and parameters.
+
+    The returned list has length ``n_drift_events``.  Datasets without drift
+    (``stagger_none``) yield an empty list.  Override by setting
+    ``event_labels`` directly in the catalog entry when the default heuristic
+    is wrong for a particular configuration.
+    """
+    if n_drift_events <= 0:
+        return []
+
+    if dataset_type == "stagger":
+        return _cyclic_first_then_recurrent(n_drift_events, cycle_length=3)
+
+    if dataset_type == "stagger_recurrent_explicit":
+        return _cyclic_first_then_recurrent(n_drift_events, cycle_length=4)
+
+    if dataset_type == "standard_sea":
+        return _cyclic_first_then_recurrent(n_drift_events, cycle_length=4)
+
+    if dataset_type == "gaussian_shift":
+        return _cyclic_first_then_recurrent(n_drift_events, cycle_length=2)
+
+    if dataset_type == "led_abrupt":
+        return _cyclic_first_then_recurrent(n_drift_events, cycle_length=2)
+
+    if dataset_type == "rbfblips":
+        # Each segment uses a fresh seed_model, so every transition lands on
+        # a brand-new RBF configuration.  No recurrence pattern.
+        return ["sudden"] * n_drift_events
+
+    if dataset_type == "hyperplane":
+        # Continuous rotation: drift markers are evaluation points on a
+        # globally incremental drift.
+        return ["incremental"] * n_drift_events
+
+    if dataset_type == "gen_random":
+        if params.get("alt", False):
+            return _cyclic_first_then_recurrent(n_drift_events, cycle_length=2)
+        return ["sudden"] * n_drift_events
+
+    if dataset_type == "circles_gradual":
+        return _cyclic_first_then_recurrent(
+            n_drift_events, cycle_length=4, base_label="gradual"
+        )
+
+    if dataset_type == "gaussian_gradual":
+        return _cyclic_first_then_recurrent(
+            n_drift_events, cycle_length=2, base_label="gradual"
+        )
+
+    if dataset_type == "electricity_semisynthetic":
+        # Real features sorted into segments, each with a different demand
+        # range: every transition reveals a previously-unseen distribution.
+        return ["sudden"] * n_drift_events
+
+    # Conservative fallback: treat as sudden so the entry still contributes
+    # well-typed information.  Catalog entries should override when wrong.
+    return ["sudden"] * n_drift_events
 
 
 # ============================================================================
@@ -95,7 +187,12 @@ def generate_enhanced_sea_stream(
 
 
 def generate_stagger_stream(total_size, n_drift_events, seed=42):
-    """STAGGER concepts with multiple sudden drifts."""
+    """STAGGER concepts with multiple sudden drifts (cycle of 3 concepts).
+
+    For per-event labelling the cycle length is 3, so events 0-1 are first-time
+    transitions ("sudden") and events 2-9 return to a previously seen concept
+    ("recurrent").  See `_default_event_labels`.
+    """
     np.random.seed(seed)
 
     segment_size = total_size // (n_drift_events + 1)
@@ -120,6 +217,57 @@ def generate_stagger_stream(total_size, n_drift_events, seed=42):
         else:
             X_seg[:, 1] += 1.5
             y_seg = (X_seg[:, 1] + X_seg[:, 2] > 0.5).astype(int)
+
+        X_segments.append(X_seg)
+        y_segments.append(y_seg)
+
+    X = np.vstack(X_segments)
+    y = np.hstack(y_segments)
+
+    return X, y, drift_positions
+
+
+def generate_stagger_recurrent_explicit_stream(total_size, n_drift_events, seed=42):
+    """STAGGER variant with a 4-concept cycle, designed as a clean
+    *recurrent-drift* benchmark.
+
+    Each segment is generated from one of four distinct concepts that differ
+    both in P(X) (different mean shifts) and in the labelling rule.  With the
+    default setting ``n_drift_events = 10`` the segment sequence cycles
+    through ``[0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2]`` so that events 0-2 are
+    "first-time" sudden transitions and events 3-9 are returns to previously
+    seen concepts.  Per-event labels are therefore
+    ``["sudden"] * 3 + ["recurrent"] * 7``.
+
+    This generator is used by the ``stagger_recurrent_explicit`` catalog
+    entry to give the recurrent-drift class non-trivial coverage in the
+    benchmark.
+    """
+    np.random.seed(seed)
+
+    segment_size = total_size // (n_drift_events + 1)
+    drift_positions = [(i + 1) * segment_size for i in range(n_drift_events)]
+    segments = [0] + drift_positions + [total_size]
+
+    X_segments, y_segments = [], []
+
+    for seg_idx in range(len(segments) - 1):
+        size = segments[seg_idx + 1] - segments[seg_idx]
+        X_seg = np.random.randn(size, 5)
+
+        concept_idx = seg_idx % 4
+        if concept_idx == 0:
+            X_seg[:, 0] += 2.0
+            y_seg = (X_seg[:, 0] + X_seg[:, 1] > 1.5).astype(int)
+        elif concept_idx == 1:
+            X_seg[:, 0] -= 2.0
+            y_seg = (X_seg[:, 0] * X_seg[:, 1] > 0).astype(int)
+        elif concept_idx == 2:
+            X_seg[:, 1] += 1.5
+            y_seg = (X_seg[:, 1] + X_seg[:, 2] > 0.5).astype(int)
+        else:  # concept_idx == 3
+            X_seg[:, 2] -= 1.5
+            y_seg = (X_seg[:, 2] - X_seg[:, 1] > 0.0).astype(int)
 
         X_segments.append(X_seg)
         y_segments.append(y_seg)
@@ -579,6 +727,74 @@ def generate_circles_gradual_stream(
 
     X = np.array(X_list)
     y = np.array(y_list)
+
+    return X, y, drift_positions
+
+
+def generate_gaussian_gradual_stream(
+    total_size: int,
+    n_drift_events: int,
+    seed: int = 42,
+    n_features: int = 10,
+    shift_magnitude: float = 1.5,
+    transition_width: int = 400,
+    noise_percentage: float = 0.05,
+):
+    """Gaussian data with TRUE gradual P(X) drift (smooth mean shift).
+
+    Companion to ``generate_gaussian_shift_stream`` but the alternating
+    mean transitions are realised as a linear blend of length
+    ``transition_width`` centred on each drift point instead of an
+    instantaneous switch.  Inside the transition window the mean of the
+    first ``n_features // 2`` features interpolates linearly from the old
+    state to the new one, producing a textbook gradual drift in P(X)
+    (a feature missing from the previous catalog: ``circles_gradual``
+    only changes P(Y|X), see ``scripts/verify_gradual_px_drift.py``).
+
+    Parameters mirror :func:`generate_gaussian_shift_stream`.
+    """
+    np.random.seed(seed)
+
+    segment_size = total_size // (n_drift_events + 1)
+    drift_positions = [(i + 1) * segment_size for i in range(n_drift_events)]
+
+    X = np.random.randn(total_size, n_features)
+    n_shift_features = n_features // 2
+    half_width = transition_width // 2
+
+    # Per-sample mixing weight in [0, 1] for the shifted state.  Segments
+    # alternate between state 0 (no shift) and state 1 (shifted).
+    weights = np.zeros(total_size, dtype=float)
+    seg_states = [seg_idx % 2 for seg_idx in range(n_drift_events + 1)]
+    seg_starts = [0] + drift_positions
+    seg_ends = drift_positions + [total_size]
+    for s, e, state in zip(seg_starts, seg_ends, seg_states):
+        weights[s:e] = float(state)
+
+    # Replace abrupt jumps with a linear blend over the transition window
+    for d in drift_positions:
+        t_start = max(0, d - half_width)
+        t_end = min(total_size, d + half_width)
+        if t_end <= t_start:
+            continue
+        old_state = weights[t_start - 1] if t_start > 0 else weights[t_start]
+        new_state = weights[t_end - 1]
+        if old_state == new_state:
+            continue
+        ramp = np.linspace(old_state, new_state, t_end - t_start, endpoint=False)
+        weights[t_start:t_end] = ramp
+
+    X[:, :n_shift_features] += shift_magnitude * weights[:, np.newaxis]
+
+    rng_weights = np.random.RandomState(seed + 1000)
+    direction = rng_weights.randn(n_features)
+    direction /= np.linalg.norm(direction)
+    scores = X @ direction
+    y = (scores >= 0).astype(int)
+
+    if noise_percentage > 0:
+        noise_mask = np.random.random(total_size) < noise_percentage
+        y[noise_mask] = 1 - y[noise_mask]
 
     return X, y, drift_positions
 
@@ -1234,6 +1450,19 @@ def generate_drift_stream(dataset_config, total_size=10000, seed=42):
             "drift_type": "sudden",
         }
 
+    elif dataset_type == "stagger_recurrent_explicit":
+        X, y, drift_positions = generate_stagger_recurrent_explicit_stream(
+            total_size, n_drift_events, seed
+        )
+        info = {
+            "name": "STAGGER (recurrent-explicit)",
+            "features": 5,
+            "dims": 5,
+            "intens": "N/A",
+            "dist": "N/A",
+            "drift_type": "recurrent",
+        }
+
     elif dataset_type == "hyperplane":
         n_features = params.get("n_features", 10)
         X, y, drift_positions = generate_hyperplane_stream(
@@ -1343,6 +1572,31 @@ def generate_drift_stream(dataset_config, total_size=10000, seed=42):
             "dist": "N/A",
             "drift_type": "gradual",
             "transition_width": transition_width,
+        }
+
+    elif dataset_type == "gaussian_gradual":
+        n_features = params.get("n_features", 10)
+        shift_magnitude = params.get("shift_magnitude", 1.5)
+        transition_width = params.get("transition_width", 400)
+        noise_percentage = params.get("noise_percentage", 0.05)
+        X, y, drift_positions = generate_gaussian_gradual_stream(
+            total_size,
+            n_drift_events,
+            seed,
+            n_features=n_features,
+            shift_magnitude=shift_magnitude,
+            transition_width=transition_width,
+            noise_percentage=noise_percentage,
+        )
+        info = {
+            "name": f"Gaussian Gradual (δ={shift_magnitude}, w={transition_width})",
+            "features": n_features,
+            "dims": n_features,
+            "intens": f"shift={shift_magnitude}",
+            "dist": "Gaussian",
+            "drift_type": "gradual",
+            "transition_width": transition_width,
+            "px_drift": True,
         }
 
     # ========================================================================
@@ -1533,5 +1787,27 @@ def generate_drift_stream(dataset_config, total_size=10000, seed=42):
     info["n_features"] = X.shape[1]
     info["n_drifts"] = len(drift_positions)
     info["drift_positions"] = drift_positions
+
+    # Per-event drift type labels (length == len(drift_positions)).
+    # Catalog entries can override the default heuristic by providing
+    # ``event_labels`` in the dataset config.
+    config_labels = dataset_config.get("event_labels")
+    if config_labels is not None:
+        if len(config_labels) != len(drift_positions):
+            raise ValueError(
+                f"event_labels length ({len(config_labels)}) does not match "
+                f"n_drift_events ({len(drift_positions)}) for dataset_type "
+                f"{dataset_type!r}"
+            )
+        invalid = [lab for lab in config_labels if lab not in _VALID_DRIFT_LABELS]
+        if invalid:
+            raise ValueError(
+                f"Invalid event_labels {invalid!r} for dataset_type "
+                f"{dataset_type!r}; allowed values are {_VALID_DRIFT_LABELS!r}"
+            )
+        event_labels = list(config_labels)
+    else:
+        event_labels = _default_event_labels(dataset_type, n_drift_events, params)
+    info["event_labels"] = event_labels
 
     return X, y, drift_positions, info

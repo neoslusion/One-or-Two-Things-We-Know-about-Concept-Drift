@@ -74,6 +74,7 @@ PREQUENTIAL_OUTPUTS = {
     "gradual_accuracy": PLOTS_DIR / "fig_prequential_gradual.png",
     "incremental_accuracy": PLOTS_DIR / "fig_prequential_incremental.png",
     "recurrent_accuracy": PLOTS_DIR / "fig_prequential_recurrent.png",
+    "stepping_accuracy": PLOTS_DIR / "fig_prequential_stepping.png",
     "mixed_accuracy": PLOTS_DIR / "fig_prequential_mixed.png",
 }
 

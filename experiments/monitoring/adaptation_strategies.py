@@ -187,21 +187,36 @@ def find_best_cached_model(X: np.ndarray, cache_dir: Path, similarity_threshold:
     return None, None
 
 
-def adapt_recurrent_drift(model, X: np.ndarray, y: Optional[np.ndarray],
+def adapt_recurrent_drift(model_factory: Callable, model, X: np.ndarray, y: Optional[np.ndarray],
                           feature_names: Optional[List[str]] = None,
                           cache_dir: Optional[Path] = None,
                           similarity_threshold: float = 0.15):
     """
     RECURRENT drift: Use cached sklearn model if pattern repeats.
-    
+
     Return to previous distribution - try to reuse old models.
     Fine-tune cached model with sklearn batch learning.
+
+    Args:
+        model_factory: callable returning a fresh sklearn Pipeline (used when
+            no cached model is available -- ensures clean weights instead of
+            warm-starting on a model that may carry stale state).
+        model: current sklearn Pipeline (passed through if cache lookup +
+            fallback both fail to produce a usable replacement).
+
+    Cold-start fallback rationale: if the SE-CDT classifier predicted Recurrent
+    but no matching cached model exists, the most likely interpretation is
+    that the concept is in fact new (false-positive match from Concept Memory
+    in absence of priors). In that case, full reset (model_factory + .fit) is
+    semantically correct; warm-start would carry stale weights from a now
+    obsolete concept and degrade accuracy.
     """
     log("RECURRENT drift → Checking for cached model")
 
     if cache_dir is None or not cache_dir.exists():
-        log("  No cache directory → fallback to batch retrain")
-        return adapt_incremental_drift(model, X, y, feature_names)
+        log("  No cache directory → fallback to full reset (no priors available)")
+        return adapt_sudden_drift(model_factory, X, y, current_model=model,
+                                  feature_names=feature_names)
 
     # Find best matching cached model
     cache_path, similarity = find_best_cached_model(X, cache_dir, similarity_threshold)
@@ -227,8 +242,9 @@ def adapt_recurrent_drift(model, X: np.ndarray, y: Optional[np.ndarray],
         except Exception as e:
             err(f"  Failed to load cached model: {e}")
 
-    log("  No suitable cached model → fallback to batch retrain")
-    return adapt_incremental_drift(model, X, y, feature_names)
+    log("  No suitable cached model → fallback to full reset (no priors available)")
+    return adapt_sudden_drift(model_factory, X, y, current_model=model,
+                              feature_names=feature_names)
 
 
 def adapt_blip_drift(model, X: np.ndarray, y: Optional[np.ndarray],

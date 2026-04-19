@@ -76,7 +76,7 @@ Luận văn trình bày IDW-MMD theo thuật toán cụ thể như sau. Lưu ý 
 
 \begin{algorithm}[H]
 	\caption{Inverse Density-Weighted MMD (IDW-MMD)}
-	\label{alg:adw_mmd}
+	\label{alg:idw_mmd}
 	\begin{algorithmic}[1]
 		\Require Reference window $X = \{x_1, \ldots, x_n\}$, test window $Y = \{y_1, \ldots, y_m\}$, kernel $k(\cdot,\cdot)$, stability constant $\epsilon = 0.5$
 		\Ensure IDW-MMD statistic $\widehat{\text{MMD}}^2_{\text{IDW}}$
@@ -363,7 +363,46 @@ Các ngưỡng trong Algorithm~\ref{alg:se-cdt} được xác định qua phân 
 
 Các ngưỡng trên được tối ưu cho cửa sổ chuẩn $n, m \approx 200$. Nếu thay đổi kích thước cửa sổ, WR, SNR, PPR cần được hiệu chỉnh lại; với dữ liệu thực tế, khuyến nghị tinh chỉnh (hyperparameter tuning) trên một tập dữ liệu domain-specific nhỏ.
 
-\textbf{Lưu ý:} Các ngưỡng trên mang tính \textit{heuristic}, được xác định qua quan sát thực nghiệm chứ không suy ra từ phân tích thống kê lý thuyết. Luận văn frame phần Classification này như một \textbf{proof-of-concept}; các hạn chế chi tiết và hướng cải tiến được thảo luận trong Chương~\ref{chap:conclusion}.
+\textbf{Lưu ý:} Các ngưỡng cố định trên mang tính \textit{heuristic}, được xác định qua quan sát thực nghiệm chứ không suy ra từ phân tích thống kê lý thuyết. Để giảm bớt sự phụ thuộc vào con số cứng và giúp SE-CDT thích nghi giữa các luồng dữ liệu khác nhau \textit{mà vẫn không cần nhãn}, luận văn bổ sung thêm một cơ chế \textbf{tự hiệu chỉnh ngưỡng theo baseline} (Mục~\ref{sec:se-cdt-self-calibration}). Luận văn vẫn frame phần Classification này như một \textbf{proof-of-concept}; các hạn chế còn lại và hướng cải tiến được thảo luận trong Chương~\ref{chap:conclusion}.
+
+\subsection{Tự hiệu chỉnh ngưỡng phân loại (Online Self-Calibration)}
+\label{sec:se-cdt-self-calibration}
+
+Một điểm yếu cố hữu của bộ ngưỡng cứng là: cùng một giá trị SNR $> 2.0$ có thể vừa đủ ``sắc nét'' đối với một stream Gaussian sạch, nhưng lại quá khó đạt trên một stream có nhiễu nền cao. Để giải quyết vấn đề này theo hướng \textit{vẫn không cần nhãn} (runtime-unsupervised), luận văn bổ sung một mô-đun \textbf{Rolling Feature Baseline} chạy song song với detector.
+
+\textbf{Ý tưởng.} Mỗi khi cửa sổ hiện tại được kết luận là \textit{không có drift}, ba đặc trưng then chốt --- SNR, WR, và CV --- được trích xuất từ tín hiệu MMD và đưa vào một bộ đệm vòng kích thước $B$ (mặc định $B = 200$). Với bộ đệm này, hệ thống ước lượng các phân vị (quantile) thực nghiệm của từng đặc trưng trong điều kiện \textit{không có drift}. Khi cần phân loại một drift mới phát hiện, SE-CDT \textit{nới lỏng} ngưỡng cứng theo phân vị quan sát được trên baseline:
+\begin{equation}
+	\tau^{\text{adapt}}_{\text{SNR}} = \max\bigl(\tau^{\text{static}}_{\text{SNR}},\; q_{0.90}(\text{SNR baseline})\bigr),
+\end{equation}
+và tương tự cho WR và CV (với phân vị thấp $q_{0.10}$ thay cho $q_{0.90}$ khi điều kiện là ``$<$''). Lý do chọn cơ chế ``\textit{nới lỏng một chiều}'' (one-sided loosening) thay vì \textit{thay thế hoàn toàn} là để bảo toàn hành vi đã được kiểm chứng trên benchmark synthetic: nếu baseline rất sạch (quantile thấp), ngưỡng cứng tiếp tục được dùng; chỉ khi baseline cho thấy nhiễu nền cao bất thường, ngưỡng mới được kéo lên cho phù hợp.
+
+\textbf{Quy tắc kích hoạt.} Baseline chỉ được cập nhật khi (i) cửa sổ vừa rồi không phát hiện drift và (ii) tín hiệu MMD trace có độ dài tối thiểu (mặc định $\geq 3$ điểm) để đảm bảo SNR/WR/CV có ý nghĩa thống kê. Bộ đệm có \textit{cửa sổ làm nóng} (warm-up): trước khi tích lũy đủ $B_{\min} = 30$ mẫu, hệ thống vẫn dùng ngưỡng cứng và bỏ qua mọi sự nới lỏng. Cơ chế này tránh việc adaptive threshold ``chạy theo'' nhiễu trong giai đoạn đầu của stream.
+
+\textbf{Ưu điểm chính.}
+\begin{enumerate}
+	\item \textbf{Vẫn không cần nhãn} ở runtime: baseline chỉ dùng tín hiệu MMD, không cần $y$.
+	\item \textbf{Không phá vỡ benchmark synthetic:} cơ chế ``one-sided loosening'' đảm bảo trên các stream sạch, ngưỡng vẫn giống cấu hình tĩnh; sự khác biệt chỉ xuất hiện khi nhiễu nền tăng.
+	\item \textbf{Tính generic giữa các domain:} cùng một SE-CDT có thể chạy trên dữ liệu công nghiệp nhiễu cao và dữ liệu Gaussian tổng hợp mà không cần tinh chỉnh ngưỡng thủ công cho từng stream.
+\end{enumerate}
+
+\subsection{Bộ nhớ khái niệm cho Recurrent Drift (Concept Memory)}
+\label{sec:se-cdt-concept-memory}
+
+Trong phiên bản đầu tiên của SE-CDT, các điểm Recurrent drift bị phân loại như một chuỗi sự kiện Sudden riêng lẻ (oracle SUB Recurrent $= 0\%$ trong báo cáo trước cải tiến) vì decision tree không có cách nào ``ghi nhớ'' rằng cùng một concept đã xuất hiện trước đó. Để khắc phục, luận văn bổ sung một mô-đun \textbf{Concept Memory} dạng ring buffer.
+
+\textbf{Cấu trúc.} Memory chứa tối đa $M$ snapshot (mặc định $M = 8$), mỗi snapshot là một mẫu $S_k$ kích thước $n_s$ điểm (mặc định $n_s = 200$) lấy ngay sau khi một drift được phát hiện và \textit{ổn định} trở lại. Cùng với mỗi $S_k$, hệ thống lưu cả median-heuristic gamma $\gamma_k$ tại thời điểm chụp.
+
+\textbf{Quy trình tra cứu.} Khi SE-CDT phát hiện một drift mới:
+\begin{enumerate}
+	\item Trích xuất snapshot post-drift $S^{\text{new}}$ từ cửa sổ trượt hiện tại.
+	\item Với mỗi $S_k \in \text{Memory}$, tính \textit{Standard MMD} giữa $S^{\text{new}}$ và $S_k$ bằng RBF kernel với $\gamma$ là trung bình $(\gamma_k + \gamma_{\text{new}})/2$.
+	\item Nếu tồn tại $k^\ast$ sao cho $\text{MMD}^2(S^{\text{new}}, S_{k^\ast}) < \tau_{\text{match}}$ (mặc định $\tau_{\text{match}} = 0.01$), drift được \textit{relabel} thành \textbf{TCD-Recurrent} với chỉ số concept $k^\ast$.
+	\item Nếu không match được, $S^{\text{new}}$ được \textit{thêm vào memory} và đẩy snapshot cũ nhất ra (chính sách FIFO).
+\end{enumerate}
+
+\textbf{Vì sao dùng Standard MMD thay vì IDW-MMD trong concept memory?} Bài toán so khớp concept ở đây không phải là phát hiện sự thay đổi tinh vi ở biên, mà là \textit{trả lời câu hỏi nhị phân}: hai mẫu này có cùng nguồn gốc phân phối hay không? Standard MMD (unbiased U-statistic) cho ước lượng không thiên lệch của khoảng cách phân phối và có ngưỡng diễn giải dễ hơn theo lý thuyết, do đó phù hợp hơn cho phép so sánh ``ghi nhớ vs. mới''. IDW-MMD vẫn được dùng ở bước detection để giữ tốc độ.
+
+\textbf{Tích hợp vào Algorithm~\ref{alg:se-cdt}.} Concept Memory chạy như một \textit{post-processor} của decision tree: khi nhánh ban đầu trả về một subcategory bất kỳ trong nhóm TCD (Sudden, Blip, Recurrent), bước Concept Memory được gọi và có quyền \textit{override} kết quả thành Recurrent nếu match thành công. Nhóm PCD (Gradual, Incremental) không kích hoạt Concept Memory vì bản chất tích lũy của chúng không phù hợp với khái niệm ``concept lặp lại đột ngột''.
 
 \textbf{Lưu ý về IDW-MMD trong classification:}
 Luận văn cũng thử nghiệm dùng trực tiếp IDW-MMD signal (thay vì standard MMD) làm đầu vào cho SE-CDT. Kết quả cho thấy IDW-MMD không phù hợp ở đây vì cơ chế triệt nhiễu của nó cũng vô tình làm mờ các đặc trưng hình dạng drift cần thiết cho phân loại. IDW-MMD hiệu quả ở bước \textit{phát hiện} (có drift hay không), còn SE-CDT dùng standard MMD signal để \textit{phân loại} loại drift. Chi tiết thực nghiệm được trình bày ở Chương~\ref{chap:experiments}.

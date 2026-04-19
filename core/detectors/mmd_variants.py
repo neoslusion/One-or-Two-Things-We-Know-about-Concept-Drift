@@ -113,15 +113,25 @@ def compute_gamma_median_heuristic(X):
 
 
 # =============================================================================
-# ADAPTIVE DENSITY-WEIGHTED MMD (ADW-MMD)
+# IDW-MMD (Inverse Density-Weighted MMD)
+# =============================================================================
+# The contribution of this thesis: a weighted MMD variant where each sample
+# is weighted inversely proportional to the square root of its local kernel
+# density estimate:
+#       w_i  ∝  1 / sqrt( Σ_j  k(x_i, x_j) )
+# This up-weights boundary / low-density points, increasing sensitivity to
+# distributional shifts at the support boundary while keeping false-positive
+# control tight.
 # =============================================================================
 
 def compute_optimal_weights(K, method: str = "inverse_density"):
     """
-    Compute sample weights using Inverse Density Weighting (IDW).
-    
-    Contribution: Upweights boundary points to improve drift sensitivity.
-    w_i ∝ 1 / sqrt(Σ_j K(x_i, x_j))
+    Compute sample weights using Inverse Density Weighting (IDW-MMD).
+
+    Contribution: up-weights boundary / low-density points to improve
+    drift sensitivity (see thesis §3.2 for the derivation).
+
+        w_i ∝ 1 / sqrt(Σ_j K(x_i, x_j))
     """
     n = K.shape[0]
 
@@ -146,7 +156,7 @@ def compute_optimal_weights(K, method: str = "inverse_density"):
         raise ValueError(f"Unknown weight method: {method}")
 
 
-def compute_adw_mmd_squared(X, Y, gamma=None, weight_method="inverse_density"):
+def compute_idw_mmd_squared(X, Y, gamma=None, weight_method="inverse_density"):
     """
     Compute Weighted MMD² between X and Y using IDW.
     """
@@ -191,21 +201,21 @@ def compute_adw_mmd_squared(X, Y, gamma=None, weight_method="inverse_density"):
     return term1 + term2 - 2 * term3
 
 
-def compute_adw_mmd(X, Y, gamma="auto", weight_method="inverse_density"):
+def compute_idw_mmd(X, Y, gamma="auto", weight_method="inverse_density"):
     """Wrapper for sqrt(MMD²)."""
-    mmd_sq = compute_adw_mmd_squared(X, Y, gamma, weight_method)
+    mmd_sq = compute_idw_mmd_squared(X, Y, gamma, weight_method)
     return np.sqrt(max(0, mmd_sq))
 
 
-def mmd_adw(X, s=None, gamma="auto", weight_method="inverse_density"):
-    """Split-window WMMD computation for drift signals."""
+def mmd_idw(X, s=None, gamma="auto", weight_method="inverse_density"):
+    """Split-window IDW-MMD computation for drift signals."""
     if s is None:
         s = len(X) // 2
 
     X_ref = X[:s]
     X_test = X[s:]
 
-    mmd_value = compute_adw_mmd(X_ref, X_test, gamma, weight_method)
+    mmd_value = compute_idw_mmd(X_ref, X_test, gamma, weight_method)
     return mmd_value, 0.1  # Threshold placeholder
 
 
@@ -254,9 +264,9 @@ def wmmd_asymptotic(X_window, s, weight_method="variance_reduction"):
 # SE-CDT MAIN DETECTION LOGIC (PROPER)
 # =============================================================================
 
-def shapedd_adw_mmd_proper(X, l1=50, l2=150, alpha=0.05, weight_method="variance_reduction"):
+def shapedd_idw_mmd_proper(X, l1=50, l2=150, alpha=0.05, weight_method="variance_reduction"):
     """
-    PROPER ShapeDD + ADW-MMD — Hybrid MMD design.
+    PROPER ShapeDD + IDW-MMD — Hybrid MMD design.
 
     Architecture (two-role design):
     -----------------------------------------------------------------------
@@ -302,6 +312,13 @@ def shapedd_adw_mmd_proper(X, l1=50, l2=150, alpha=0.05, weight_method="variance
     # 1. TRACE: Standard (unweighted) MMD sliding signal
     #    Preserves the full shape of gradual/incremental drifts for
     #    downstream classification by the SE-CDT Classification Module.
+    #
+    # NOTE (D1 fix): the median-heuristic bandwidth `gamma` is computed on
+    # an early slice of the stream and is reused for *every* sliding window
+    # below. Previously this gamma was dropped on the floor and sklearn's
+    # `pairwise_kernels(metric="rbf")` silently fell back to gamma=1/n_features,
+    # which makes the trace effectively dimension-dependent and breaks the
+    # downstream classification features (WR, SNR, CV ...).
     # -----------------------------------------------------------------------
     gamma = compute_gamma_median_heuristic(X[:min(500, n)])
 
@@ -314,9 +331,11 @@ def shapedd_adw_mmd_proper(X, l1=50, l2=150, alpha=0.05, weight_method="variance
         test_window = X[i + l1 : i + l1 + l2]
 
         # Standard (unweighted) MMD²: E[k(x,x')] + E[k(y,y')] - 2E[k(x,y)]
-        K_XX = _sklearn_rbf(ref_window,  metric="rbf")
-        K_YY = _sklearn_rbf(test_window, metric="rbf")
-        K_XY = _sklearn_rbf(ref_window, test_window, metric="rbf")
+        # Pass the precomputed median-heuristic gamma to every RBF call so
+        # the kernel bandwidth is consistent across the trace.
+        K_XX = _sklearn_rbf(ref_window,  metric="rbf", filter_params=True, gamma=gamma)
+        K_YY = _sklearn_rbf(test_window, metric="rbf", filter_params=True, gamma=gamma)
+        K_XY = _sklearn_rbf(ref_window, test_window, metric="rbf", filter_params=True, gamma=gamma)
 
         m, nw = l1, l2
         # Unbiased U-statistic estimator (zero diagonal for XX and YY)

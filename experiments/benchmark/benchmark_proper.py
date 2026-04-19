@@ -18,7 +18,7 @@ if str(PROJECT_ROOT) not in sys.path:
     
 from core.detectors.cdt_msw import CDT_MSW
 from core.detectors.se_cdt import SE_CDT
-from core.detectors.mmd_variants import mmd_adw
+from core.detectors.mmd_variants import mmd_idw
 from core.detectors.mmd import mmd as mmd_standard  # Standard MMD for detection
 from scipy.signal import find_peaks, peak_widths
 
@@ -44,7 +44,7 @@ SHAPE_PROMINENCE = 0.008    # Tuned: requires clear peaks
 SHAPE_HEIGHT_STD = 0.025    # For Standard MMD (increased to reduce FP)
 SHAPE_PROMINENCE_STD = 0.012
 DETECTION_TOLERANCE = 250   # Standard tolerance for TP matching
-USE_STANDARD_MMD = False    # Use ADW-MMD (faster but suppresses weak signals)
+USE_STANDARD_MMD = False    # Use IDW-MMD (faster but suppresses weak signals)
 
 # Use unified output paths
 OUTPUT_FILE = str(BENCHMARK_PROPER_OUTPUTS["results_pkl"])
@@ -213,7 +213,7 @@ def compute_mmd_sequence(X, window_size=WINDOW_SIZE, step=10, use_standard=USE_S
     """Compute MMD sequence over sliding windows.
     
     Args:
-        use_standard: If True, use standard MMD. If False, use ADW-MMD.
+        use_standard: If True, use standard MMD. If False, use IDW-MMD.
     """
     n = len(X)
     mmd_curve = []
@@ -227,8 +227,8 @@ def compute_mmd_sequence(X, window_size=WINDOW_SIZE, step=10, use_standard=USE_S
             val, _ = mmd_standard(window, s=window_size, n_perm=100)  # Reduced perm for speed
             val = max(0, val)  # Ensure non-negative
         else:
-            # ADW-MMD (faster, but suppresses weak signals)
-            val, _ = mmd_adw(window, s=window_size)
+            # IDW-MMD (faster, but suppresses weak signals)
+            val, _ = mmd_idw(window, s=window_size)
         
         mmd_curve.append(val)
         
@@ -482,8 +482,8 @@ def run_mixed_experiment(params):
     # 3. SE Detection with BOTH MMD variants - use UNSUPERVISED stream
     # 3a. Standard MMD Signal (better for PCD)
     mmd_sig_std = compute_mmd_sequence(X_unsup, WINDOW_SIZE, step=10, use_standard=True)
-    # 3b. ADW-MMD Signal (faster, better precision)
-    mmd_sig_adw = compute_mmd_sequence(X_unsup, WINDOW_SIZE, step=10, use_standard=False)
+    # 3b. IDW-MMD Signal (faster, better precision)
+    mmd_sig_idw = compute_mmd_sequence(X_unsup, WINDOW_SIZE, step=10, use_standard=False)
     
     def detect_peaks_from_signal(sig, height=SHAPE_HEIGHT, prom=SHAPE_PROMINENCE):
         """Detect peaks and return detection points."""
@@ -537,8 +537,8 @@ def run_mixed_experiment(params):
     
     # Standard MMD detection (use tuned thresholds, slightly lower for Standard MMD)
     se_det_std = detect_peaks_from_signal(mmd_sig_std, height=SHAPE_HEIGHT_STD, prom=SHAPE_PROMINENCE_STD)
-    # ADW-MMD detection (same thresholds)
-    se_det_adw = detect_peaks_from_signal(mmd_sig_adw, height=SHAPE_HEIGHT, prom=SHAPE_PROMINENCE)
+    # IDW-MMD detection (same thresholds)
+    se_det_idw = detect_peaks_from_signal(mmd_sig_idw, height=SHAPE_HEIGHT, prom=SHAPE_PROMINENCE)
     # Adaptive detection (Standard MMD with two-stage + width filter)
     se_det_adaptive = detect_adaptive(mmd_sig_std)
     
@@ -573,13 +573,13 @@ def run_mixed_experiment(params):
         return e2e_results
     
     e2e_std = run_e2e_classification(se_det_std, mmd_sig_std, events)
-    e2e_adw = run_e2e_classification(se_det_adw, mmd_sig_adw, events)
+    e2e_idw = run_e2e_classification(se_det_idw, mmd_sig_idw, events)
     e2e_adaptive = run_e2e_classification(se_det_adaptive, mmd_sig_std, events)
             
     # 5. Calculate Metrics for ALL methods
     cdt_metrics = calculate_metrics(cdt_detections, events, len(X_unsup))
     se_std_metrics = calculate_metrics(se_det_std, events, len(X_unsup))
-    se_adw_metrics = calculate_metrics(se_det_adw, events, len(X_unsup))
+    se_idw_metrics = calculate_metrics(se_det_idw, events, len(X_unsup))
     se_adaptive_metrics = calculate_metrics(se_det_adaptive, events, len(X_unsup))
         
     return {
@@ -588,10 +588,10 @@ def run_mixed_experiment(params):
         "CDT_Detections": cdt_detections,
         "SE_Classifications": se_classifications,
         "E2E_STD": e2e_std,
-        "E2E_ADW": e2e_adw,
+        "E2E_IDW": e2e_idw,
         "E2E_Adaptive": e2e_adaptive,
         "SE_Det_STD": se_det_std,
-        "SE_Det_ADW": se_det_adw,
+        "SE_Det_IDW": se_det_idw,
         "SE_Det_Adaptive": se_det_adaptive,
         "Events": events,
         "Runtime_CDT": dt_cdt,
@@ -599,7 +599,7 @@ def run_mixed_experiment(params):
         "Stream_Length": len(X_unsup),
         "CDT_Metrics": cdt_metrics,
         "SE_STD_Metrics": se_std_metrics,
-        "SE_ADW_Metrics": se_adw_metrics,
+        "SE_IDW_Metrics": se_idw_metrics,
         "SE_Adaptive_Metrics": se_adaptive_metrics
     }
 
@@ -886,7 +886,19 @@ def run_quick_validation(scenarios=None, n_seeds=2):
 
 def run_benchmark_proper():
     tasks = []
-    scenarios = ["Mixed_A", "Mixed_B", "Repeated_Gradual", "Repeated_Incremental", "Repeated_Sudden"]
+    # Recurrent scenario added explicitly so that Concept Memory has a stream
+    # in which post-drift snapshots actually re-occur (the alternating Recurrent
+    # generator does this by construction). Without it, Recurrent never gets
+    # a fair test in mixed scenarios, where prior Sudden/Gradual events have
+    # already shifted other feature subsets and Concept Memory cannot match.
+    scenarios = [
+        "Mixed_A",
+        "Mixed_B",
+        "Repeated_Gradual",
+        "Repeated_Incremental",
+        "Repeated_Sudden",
+        "Repeated_Recurrent",
+    ]
     
     # Check for Quick Mode
     if os.environ.get("QUICK_MODE") == "True":
@@ -959,10 +971,10 @@ def generate_latex_table(results):
     metrics_agg = {
         "CDT": {"TP": 0, "FP": 0, "FN": 0, "Total": 0},
         "SE_STD": {"TP": 0, "FP": 0, "FN": 0, "Total": 0},
-        "SE_ADW": {"TP": 0, "FP": 0, "FN": 0, "Total": 0}
+        "SE_IDW": {"TP": 0, "FP": 0, "FN": 0, "Total": 0}
     }
     for r in results:
-        for m_key, agg_key in [("CDT_Metrics", "CDT"), ("SE_STD_Metrics", "SE_STD"), ("SE_ADW_Metrics", "SE_ADW")]:
+        for m_key, agg_key in [("CDT_Metrics", "CDT"), ("SE_STD_Metrics", "SE_STD"), ("SE_IDW_Metrics", "SE_IDW")]:
             if m_key in r:
                 metrics_agg[agg_key]["TP"] += r[m_key]["TP"]
                 metrics_agg[agg_key]["FP"] += r[m_key]["FP"]
@@ -970,7 +982,7 @@ def generate_latex_table(results):
                 metrics_agg[agg_key]["Total"] += r[m_key]["FN"] + r[m_key]["TP"]
             
     det_res = {}
-    for m in ["CDT", "SE_STD", "SE_ADW"]:
+    for m in ["CDT", "SE_STD", "SE_IDW"]:
         total = metrics_agg[m]["Total"]
         fn = metrics_agg[m]["FN"]
         tp = metrics_agg[m]["TP"]
@@ -1037,9 +1049,9 @@ def generate_latex_table(results):
         escape_latex("SE-CDT (IDW)"),
         format_metric(cat_acc_se / 100, "percentage"),
         format_metric(sub_acc_se / 100, "percentage"),
-        format_metric(det_res['SE_ADW']['EDR'], "float"),
-        format_metric(det_res['SE_ADW']['MDR'], "float"),
-        format_metric(det_res['SE_ADW']['FP'], "integer"),
+        format_metric(det_res['SE_IDW']['EDR'], "float"),
+        format_metric(det_res['SE_IDW']['MDR'], "float"),
+        format_metric(det_res['SE_IDW']['FP'], "integer"),
         "No"
     ])
 
@@ -1256,11 +1268,10 @@ def generate_by_drift_type_table(results):
 
     latex_output = generate_standard_table(headers, data, align="|l|c|c|")
 
-    # Append footnote row inside the tabular
     footnote = (
         "\\multicolumn{3}{|l|}{\\footnotesize "
-        "$^\\dagger$Recurrent drift processed as independent Sudden events "
-        "(SE-CDT has no concept memory).} \\\\"
+        "$^\\dagger$Recurrent drift identified via Concept Memory "
+        "(Standard MMD comparison with stored snapshots; threshold $\\mu = 0.15$).} \\\\"
     )
     latex_output = latex_output.replace(
         "\\hline\n\\end{tabular}",

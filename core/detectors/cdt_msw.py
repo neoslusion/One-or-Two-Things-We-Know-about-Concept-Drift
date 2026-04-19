@@ -2,8 +2,37 @@ import numpy as np
 from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score
 
+# =============================================================================
+# DISCLAIMER (CDT-MSW reproduction)
+# =============================================================================
+# This module is a faithful but *non-tuned* re-implementation of the
+# **CDT-MSW** baseline algorithm (Concept Drift Type identification based on
+# Multi-Sliding Windows) as described in the original paper.  It is included
+# only so that readers can inspect the algorithmic details locally.
+#
+# IMPORTANT
+# ---------
+# The headline classification accuracy figures attributed to CDT-MSW in the
+# thesis (Chapter 4) are **the numbers reported in the original publication**,
+# *not* numbers produced by this reproduction.  The reasons are:
+#   1. The original method is supervised (uses true labels y), so a fair
+#      comparison would also require us to retrain its base SVC with the
+#      authors' exact preprocessing / regularisation grid, which we did not
+#      attempt to do.
+#   2. The threshold parameters (tau, delta, ...) were never re-tuned for
+#      our benchmark streams.
+#
+# Treat any local CDT-MSW number as a *sanity-check on the implementation*,
+# not as a reproducible baseline result.
+# =============================================================================
+
+
 class CDT_MSW:
-    """Concept Drift Type identification based on Multi-Sliding Windows"""
+    """Concept Drift Type identification based on Multi-Sliding Windows.
+
+    See the module-level disclaimer above before interpreting any results
+    obtained from this class.
+    """
     
     def __init__(self, window_size=50, tau=0.85, delta=0.005, n_adjoint=4, k_tracking=10):
         self.s = window_size
@@ -260,7 +289,7 @@ if __name__ == "__main__":
     print(f"Drift detected: {result['drift_detected']}")
     print(f"Drift position: window {result['drift_position']}")
     print(f"Sample index: {result['drift_position'] * window_size if result['drift_position'] else 'N/A'}")
-    print(f"Expected: window 10 (sample 500)")
+    print("Expected: window 10 (sample 500)")
     print(f"Drift category: {result['drift_category']}")
     print(f"Drift subcategory: {result['drift_subcategory']}")
 

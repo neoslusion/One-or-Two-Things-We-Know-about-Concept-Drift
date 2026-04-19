@@ -138,7 +138,7 @@ def main():
     process = psutil.Process()
 
     # Initialize SE-CDT Unified Detector
-    # Configured to use PROPER ShapeDD + ADW-MMD + Signal Shape Classification
+    # Configured to use PROPER ShapeDD + IDW-MMD + Signal Shape Classification
     se_cdt = SE_CDT(
         window_size=SHAPE_L1,
         l2=SHAPE_L2,

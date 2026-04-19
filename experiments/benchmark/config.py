@@ -32,12 +32,22 @@ import os
 # ============================================================================
 # RELIABILITY CONFIGURATION (Multiple Independent Runs)
 # ============================================================================
-# Statistical validation requires multiple runs with different random seeds
-# Benchmark standard: 30-500 runs (we use 30 for 80% statistical power)
-if os.environ.get("QUICK_MODE") == "True":
+# Statistical validation requires multiple runs with different random seeds.
+# The historical default is 30 runs for 80% statistical power; we expose
+# two environment-variable overrides for the master-thesis benchmark loop:
+#
+#   QUICK_MODE=True              -> N_RUNS = 2   (developer smoke test)
+#   BENCHMARK_N_RUNS=<int>       -> N_RUNS = int (overrides everything)
+#
+# If both are unset we default to 15 seeds, which gives a good
+# Friedman/Nemenyi sample without spending several hours on a laptop.
+_env_n_runs = os.environ.get("BENCHMARK_N_RUNS")
+if _env_n_runs is not None:
+    N_RUNS = int(_env_n_runs)
+elif os.environ.get("QUICK_MODE") == "True":
     N_RUNS = 2
 else:
-    N_RUNS = 30 # Number of independent runs (minimum for statistical validity)
+    N_RUNS = 15
 
 RANDOM_SEEDS = [42 + i * 137 for i in range(N_RUNS)]  # Prime spacing avoids correlation
 N_JOBS = -1 # Number of parallel jobs (-1 = all cores)

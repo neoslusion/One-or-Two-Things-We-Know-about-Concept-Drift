@@ -9,7 +9,7 @@ It integrates the following modules:
 1.  **Stream Interface:** Generates synthetic data streams (Sudden, Gradual, Recurrent, etc.).
 2.  **Inference Module:** Uses an incremental Learner (SGD or Retrainable Batch Classifier) to make predictions.
 3.  **SE-CDT System (Monitor):** A Unified Detector-Classifier that:
-    *   Detects drift using ShapeDD-ADW (Adaptive Density-Weighted MMD).
+    *   Detects drift using ShapeDD-IDW (Inverse Density-Weighted MMD).
     *   Classifies drift type (Sudden/Gradual/etc.) using Signal Shape Analysis (Algorithm 3.4).
 4.  **Adaptation Manager:** Selects the optimal adaptation strategy based on the classified drift type:
     *   Sudden -> Reset/Retrain
@@ -266,7 +266,7 @@ def evaluate_with_adaptation(
             l2=SHAPE_L2, 
             threshold=sudden_thresh,  # For heuristic fallback
             alpha=0.05,               # Significance level for PROPER mode
-            use_proper=True           # Use PROPER ShapeDD + ADW-MMD design
+            use_proper=True           # Use PROPER ShapeDD + IDW-MMD design
         )
         if SE_CDT
         else None
@@ -358,6 +358,17 @@ def evaluate_with_adaptation(
                 if mode == AdaptationMode.NONE:
                     # Do nothing to the model!
                     drift_detected = False
+                    continue
+
+                # 1b. PERIODIC RETRAIN: model is updated on a fixed schedule
+                # above (idx % 500 == 0), independent of SE-CDT detections.
+                # We only reset detector state here; we MUST NOT shrink the
+                # buffer like the type-specific path does, otherwise the next
+                # periodic retrain only sees a shrunken history and is
+                # systematically penalised relative to type-specific.
+                if mode == AdaptationMode.PERIODIC:
+                    drift_detected = False
+                    samples_since_drift = 0
                     continue
 
                 # 2. SIMPLE RETRAIN
@@ -1201,6 +1212,7 @@ def main():
         "gradual": "gradual_accuracy",
         "incremental": "incremental_accuracy",
         "recurrent": "recurrent_accuracy",
+        "stepping": "stepping_accuracy",
         "mixed": "mixed_accuracy",
     }
     plot_key = drift_type_map.get(args.drift_type, "mixed_accuracy")

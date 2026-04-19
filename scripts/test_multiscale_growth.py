@@ -23,7 +23,7 @@ from typing import Dict, List, Tuple
 
 from data.generators.drift_generators import ConceptDriftStreamGenerator
 from core.detectors.se_cdt import SE_CDT
-from core.detectors.mmd_variants import shapedd_adw_mmd_proper
+from core.detectors.mmd_variants import shapedd_idw_mmd_proper
 
 
 # ─── Ground Truth Mapping ─────────────────────────────────────────────────────
@@ -122,7 +122,7 @@ def run_multiscale_growth(window: np.ndarray, detector: SE_CDT,
             if n < min_needed:
                 wr_by_scale[l1_scale] = 0.0
                 continue
-            _, _, trace, _ = shapedd_adw_mmd_proper(
+            _, _, trace, _ = shapedd_idw_mmd_proper(
                 window, l1=l1_scale, l2=l2, alpha=1.0
             )
         
@@ -173,7 +173,7 @@ def run_experiment(n_runs: int = 10, n_samples: int = 1500):
                 X, drift_pos = generate_drift_data(drift_type, seed, n_samples)
                 
                 # Run detection first (get MMD trace)
-                _, _, mmd_trace, _ = shapedd_adw_mmd_proper(
+                _, _, mmd_trace, _ = shapedd_idw_mmd_proper(
                     X, l1=50, l2=150, alpha=0.05
                 )
                 
