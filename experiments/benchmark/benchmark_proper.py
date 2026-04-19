@@ -1160,26 +1160,36 @@ def generate_fair_comparison_table(results):
     se_edr = (metrics_agg["SE"]["TP"] / metrics_agg["SE"]["Total"] * 100) if metrics_agg["SE"]["Total"] > 0 else 0
     
     # Expected CDT_MSW results from original paper (Guo et al. 2022)
-    # Computed from paper Table 6 (ACC_cat) and Table 7 (ACC_subcat), Table 4 (EDR)
-    expected_cdt_cat = 87.0   # Table 6 avg across 10 datasets x 5 window sizes
-    expected_cdt_sub = 86.7   # Table 7 avg (conditional: correct detection + correct category)
-    expected_cdt_edr = 17.8   # Table 4 avg across 5 drift types x 5 window sizes
+    # All values verified against scripts/verify_cdt_msw_paper_numbers.py
+    #   - CAT 87.0%   = Table 6 macro-avg (avg of 10 dataset averages)
+    #   - SUB 86.7%   = Table 7 avg over 10 datasets
+    #   - Recall 82.5% = 1 - (Table 5 MDR avg over 5 drift types x 5 window sizes)
+    #
+    # NOTE on metric naming:
+    #   The paper's "EDR" = Error Detection Rate = false detections / total detections
+    #   (a false-discovery-rate, "lower is better"). It is NOT comparable to our
+    #   own "EDR" = Event Detection Rate = TP / (TP+FN) = Recall ("higher is better").
+    #   For a fair recall-vs-recall comparison we use 1 - MDR from the paper's
+    #   Table 5 instead of the paper's "EDR" from Table 4.
+    expected_cdt_cat    = 87.0   # Table 6 macro-avg
+    expected_cdt_sub    = 86.7   # Table 7 avg (conditional on correct detection+category)
+    expected_cdt_recall = 82.5   # 1 - Table 5 MDR avg (recall on paper's UCI/real datasets)
     
     # Generate comparison table
-    headers = ["Method", "Data Type", "CAT Acc (%)", "SUB Acc (%)", "EDR (%)", "Source"]
+    headers = ["Method", "Data Type", "CAT Acc (\\%)", "SUB Acc (\\%)", "Recall (\\%)", "Source"]
     data = []
     
-    # Row 1: CDT_MSW from paper (expected with supervised data)
+    # Row 1: CDT_MSW numbers as reported / derived from the original paper
     data.append([
         escape_latex("CDT_MSW"),
         "Supervised P(Y|X)",
         format_metric(expected_cdt_cat / 100, "percentage"),
         format_metric(expected_cdt_sub / 100, "percentage"),
-        format_metric(expected_cdt_edr / 100, "percentage"),
+        format_metric(expected_cdt_recall / 100, "percentage"),
         "Guo et al. 2022"
     ])
     
-    # Row 2: SE-CDT (unsupervised data)
+    # Row 2: SE-CDT (unsupervised data, our benchmark)
     data.append([
         "\\textbf{" + escape_latex("SE-CDT") + "}",
         "\\textbf{Unsupervised P(X)}",
@@ -1204,11 +1214,12 @@ def generate_fair_comparison_table(results):
     print("\n" + "="*80)
     print("FAIR COMPARISON RESULTS")
     print("="*80)
-    print(f"CDT_MSW (Guo et al. 2022 paper): CAT={expected_cdt_cat:.1f}%, SUB={expected_cdt_sub:.1f}% (cond.), EDR={expected_cdt_edr:.1f}%")
-    print(f"SE-CDT (Our unsupervised):        CAT={cat_acc_se:.1f}%, SUB={sub_acc_se:.1f}%, EDR={se_edr:.1f}%")
+    print(f"CDT_MSW (Guo et al. 2022 paper): CAT={expected_cdt_cat:.1f}%, SUB={expected_cdt_sub:.1f}% (cond.), Recall={expected_cdt_recall:.1f}%")
+    print(f"SE-CDT (Our unsupervised):        CAT={cat_acc_se:.1f}%, SUB={sub_acc_se:.1f}%, Recall={se_edr:.1f}%")
     print("="*80)
     print("NOTE: CDT_MSW ACC_subcat is conditional (correct detection + correct category)")
     print("NOTE: SE-CDT metrics are unconditional (all events, unsupervised P(X) change)")
+    print("NOTE: Recall = TP/(TP+FN). For CDT-MSW computed as 1 - MDR (paper Table 5).")
     print("="*80 + "\n")
 
 

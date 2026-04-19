@@ -571,7 +571,7 @@
 				\textbf{Labels}    & \textcolor{darkgreen}{\textbf{None}}     & Required            & Unsupervised win     \\
 				\textbf{CAT}       & 79.2\%                                   & 87.0\%              & Close at $-7.8$pp    \\
 				\textbf{SUB}       & 50.8\%                                   & 86.7\%              & Conditional metric   \\
-				\textbf{EDR}       & \textcolor{darkgreen}{\textbf{94.7\%}}   & 17.8\%              & Catches 5$\times$ more drifts \\
+				\textbf{Recall}    & \textcolor{darkgreen}{\textbf{94.7\%}}   & 82.5\%              & $1-\overline{\text{MDR}}$ from paper Table 5 \\
 				\bottomrule
 			\end{tabular}}
 
@@ -844,29 +844,29 @@
 				\begin{tabular}{@{}lcc@{}}
 					\toprule
 					              & \textbf{SE-CDT}                        & \textbf{CDT-MSW} \\ \midrule
-					Labels        & \textcolor{darkgreen}{\textbf{None}}  & Required          \\
-					CAT           & 79.2\%                                 & 87.0\%            \\
-					SUB           & 50.8\%                                 & 86.7\%            \\
-					\textbf{EDR}  & \textcolor{darkgreen}{\textbf{94.7\%}} & 17.8\%            \\
-					Effective rate & \textcolor{darkgreen}{\textbf{75.0\%}} & 15.5\%          \\
+					Labels        & \textcolor{darkgreen}{\textbf{None}}   & Required           \\
+					CAT           & 79.2\%                                 & 87.0\%             \\
+					SUB           & 50.8\%                                 & 86.7\%             \\
+					Recall        & \textcolor{darkgreen}{\textbf{94.7\%}} & 82.5\%             \\
+					Effective     & \textbf{75.0\%}                        & 71.8\%             \\
 					\bottomrule
 				\end{tabular}}
 				\vspace{0.2em}
-				{\scriptsize ``Effective rate'' = CAT $\times$ EDR (probability of seeing a drift \emph{and} typing it correctly).}
+				{\scriptsize Effective $=$ CAT $\times$ Recall (probability of seeing a drift \emph{and} typing it correctly). CDT-MSW Recall $= 1 - \overline{\text{MDR}}$ from paper Table~5.}
 			\end{block}
 		\end{column}
 		\begin{column}{0.48\textwidth}
 			\textbf{Reading the numbers in context:}
 			\begin{itemize}
-				\item CDT-MSW only reports CAT/SUB on the drifts it \textit{detects}; it misses 82\% of them (EDR = 17.8\%).
-				\item SE-CDT detects 94.7\% of drifts and types each one without labels.
-				\item End-to-end, SE-CDT delivers a typed alert on \textbf{75\%} of drifts vs \textbf{15.5\%} for CDT-MSW.
+				\item CDT-MSW reports CAT and SUB \textit{conditionally} on drifts it detects; with paper recall $\approx 82.5\%$ it still misses $\sim 17\%$ of events.
+				\item SE-CDT detects $94.7\%$ of drifts and types every one of them without any labels.
+				\item End-to-end, both systems land within $\sim 3$pp on effective accuracy ($75.0\%$ vs $71.8\%$); the contribution is reaching this on \textbf{unsupervised $P(X)$}.
 			\end{itemize}
 
 			\vspace{0.3em}
 			\begin{alertblock}{Trade-off}
 				\small
-				CDT-MSW is more accurate per detected event because it sees ground-truth labels. SE-CDT covers $\sim$5$\times$ more events with no label dependency --- a better fit for IIoT pipelines where labels arrive late or never.
+				CDT-MSW is more accurate per detected event because it has access to ground-truth labels. SE-CDT achieves comparable end-to-end accuracy on the same task class without any label dependency --- a better fit for IIoT pipelines where labels arrive late or never.
 			\end{alertblock}
 		\end{column}
 	\end{columns}
