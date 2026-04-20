@@ -3,134 +3,134 @@
 
 \section{Tổng kết các đóng góp chính}
 
-Luận văn này đã giải quyết bài toán phát hiện và thích ứng với concept drift trong môi trường dữ liệu luồng (streaming data) thông qua việc kết hợp nền tảng lý thuyết vững chắc và triển khai hệ thống thực tế. Ba đóng góp trọng tâm của nghiên cứu bao gồm:
+Luận văn giải quyết bài toán phát hiện và thích ứng với concept drift trong môi trường dữ liệu luồng (streaming data) bằng cách kết hợp nền tảng lý thuyết và triển khai hệ thống thực tế. Có ba đóng góp chính:
 
 \subsection{Đóng góp về Phương pháp luận (Methodological)}
 \begin{itemize}
-	\item \textbf{Tích hợp ShapeDD-IDW:} Tích hợp phương pháp IDW-MMD (Inverse Density-Weighted MMD) --- một heuristic do luận văn đề xuất, lấy động lực từ weighted MMD framework của~\cite{bharti2023owmmd} --- với asymptotic p-value vào ShapeDD detector. Kết quả cho thấy phương pháp này cải thiện thông lượng xử lý gấp \textbf{16.5 lần} (đạt $\approx$ 111,000--131,000 mẫu/giây) so với ShapeDD gốc ($\approx$ 8,000 mẫu/giây), trong khi đạt F1-score = 0.484 với \textbf{0 False Positives} trên detection benchmark. Tính chất false-positive của IDW-MMD và SE-CDT được kiểm chứng định lượng bằng \textit{H0-calibration test} (Mục~\ref{sec:h0-calibration}), cho thấy Type-I error thực nghiệm $\leq \alpha = 0.05$ trên cả ba phân phối stationary thử nghiệm. \textit{Lưu ý:} Phương pháp có giới hạn là không phát hiện được virtual drift (chỉ thay đổi $P(Y|X)$ mà không thay đổi $P(X)$), phản ánh đúng bản chất unsupervised của thuật toán.
-	\item \textbf{Đề xuất SE-CDT:} Xây dựng phương pháp phân loại drift không giám sát \textbf{SE-CDT}, tận dụng khả năng định vị chính xác thời điểm drift của ShapeDD để phân loại loại drift. Phiên bản hiện tại bao gồm hai cơ chế tăng cường: (i) \textit{Concept Memory} (ring buffer + Standard MMD comparison) cho phép nhận diện chính xác Recurrent drift thay vì coi mỗi lần xuất hiện như một Sudden độc lập; (ii) \textit{Online self-calibration} cho phép nới lỏng các ngưỡng SNR/WR/CV theo phân vị quan sát được trên cửa sổ không drift, vẫn không cần nhãn ở runtime. Phương pháp tạo tiền đề cho chiến lược thích ứng thông minh trên streaming data thực tế.
+	\item \textbf{Tích hợp ShapeDD-IDW:} Đưa IDW-MMD (Inverse Density-Weighted MMD), một heuristic do luận văn đề xuất, lấy động lực từ weighted MMD framework của~\cite{bharti2023owmmd}, kết hợp với asymptotic p-value vào ShapeDD detector. Phương pháp này tăng thông lượng xử lý gấp \textbf{16.5 lần} (đạt khoảng $111{,}000$--$131{,}000$ mẫu/giây) so với ShapeDD gốc (khoảng $8{,}000$ mẫu/giây), đạt F1 $= 0.484$ với \textbf{0 False Positives} trên detection benchmark. Tính chất FP của IDW-MMD và SE-CDT được kiểm chứng bằng H0-calibration test (Mục~\ref{sec:h0-calibration}), cho thấy Type-I error thực nghiệm $\leq \alpha = 0.05$ trên cả ba phân phối stationary thử nghiệm. \textit{Lưu ý:} phương pháp không phát hiện được virtual drift (chỉ thay đổi $P(Y|X)$ mà không thay đổi $P(X)$), đúng với bản chất unsupervised của thuật toán.
+	\item \textbf{Đề xuất SE-CDT:} Phương pháp phân loại drift không giám sát, tận dụng khả năng định vị chính xác thời điểm drift của ShapeDD. Phiên bản hiện tại có hai cơ chế tăng cường: (i) Concept Memory (ring buffer + Standard MMD comparison) nhận diện Recurrent drift thay vì coi mỗi lần xuất hiện như một Sudden độc lập; (ii) Online self-calibration nới ngưỡng SNR/WR/CV theo phân vị quan sát trên cửa sổ không drift, không cần nhãn ở runtime. Phương pháp tạo tiền đề cho chiến lược thích ứng thông minh trên streaming data thực tế.
 \end{itemize}
 
 \subsection{Đóng góp về Thực nghiệm (Empirical)}
 \begin{itemize}
-	\item \textbf{Benchmark mở rộng và chặt chẽ hơn:} Thực hiện đánh giá có hệ thống 8 phương pháp phát hiện drift (MMD, IDW-MMD, KS, ShapeDD, ShapeDD-IDW, SE-CDT, D3, DAWIDD) trên 14 tập dữ liệu --- bao gồm bổ sung \texttt{stagger\_recurrent\_explicit} (recurrent đối xứng), \texttt{gaussian\_gradual\_synthetic} (gradual có \texttt{transition\_length} rõ ràng), và \texttt{stagger\_none} (stationary, baseline FP). Kết quả được kiểm chứng thống kê bằng kiểm định Friedman và Nemenyi với 15 lần chạy độc lập, $\alpha = 0.05$.
-	\item \textbf{H0-calibration test:} Bổ sung thực nghiệm đo Type-I error trực tiếp trên ba phân phối stationary (Gauss-iid d=5, d=10, AR(1)), xác nhận IDW-MMD và SE-CDT có FP rate $\leq \alpha$ về mặt thống kê chứ không chỉ trên benchmark detection (Mục~\ref{sec:h0-calibration}).
-	\item \textbf{Phân tích độ trễ và chi phí:} Chứng minh hiệu quả của việc thay thế permutation test bằng asymptotic p-value (được kích hoạt bởi IDW-MMD kernel), giúp giảm độ trễ phát hiện trung bình và tăng throughput 16.5 lần so với ShapeDD gốc.
-	\item \textbf{Xác nhận hành vi đúng:} Benchmark xác nhận SE-CDT/ShapeDD-IDW không phát hiện ``drift'' trên các dataset virtual drift (hyperplane, led\_abrupt, sea) --- hành vi mong đợi vì $P(X)$ không đổi.
+	\item \textbf{Benchmark mở rộng và chặt chẽ hơn:} Đánh giá có hệ thống 8 phương pháp phát hiện drift (MMD, IDW-MMD, KS, ShapeDD, ShapeDD-IDW, SE-CDT, D3, DAWIDD) trên 14 tập dữ liệu, có bổ sung \texttt{stagger\_recurrent\_explicit} (recurrent đối xứng), \texttt{gaussian\_gradual\_synthetic} (gradual có \texttt{transition\_length} rõ ràng) và \texttt{stagger\_none} (stationary, baseline FP). Kết quả được kiểm chứng bằng kiểm định Friedman và Nemenyi với 15 lần chạy độc lập, $\alpha = 0.05$.
+	\item \textbf{H0-calibration test:} Đo Type-I error trực tiếp trên ba phân phối stationary (Gauss-iid $d=5$, $d=10$, AR(1)), xác nhận IDW-MMD và SE-CDT có FP rate $\leq \alpha$ về mặt thống kê chứ không chỉ trên benchmark detection (Mục~\ref{sec:h0-calibration}).
+	\item \textbf{Phân tích độ trễ và chi phí:} Cho thấy việc thay permutation test bằng asymptotic p-value (kích hoạt nhờ IDW-MMD kernel) giúp giảm độ trễ phát hiện trung bình và tăng throughput 16.5 lần so với ShapeDD gốc.
+	\item \textbf{Xác nhận hành vi đúng:} SE-CDT và ShapeDD-IDW không phát hiện ``drift'' trên các dataset virtual drift (hyperplane, led\_abrupt, sea), đúng với kỳ vọng vì $P(X)$ không đổi.
 \end{itemize}
 
 \subsection{Đóng góp về Hệ thống (System)}
 \begin{itemize}
-	\item \textbf{Kiến trúc Real-time Streaming:} Thiết kế và triển khai kiến trúc hệ thống dựa trên \textbf{Apache Kafka}, cho phép xử lý phân tán và mở rộng. Hệ thống tách biệt các module (Detection, Classification, Adaptation) giúp dễ dàng bảo trì và nâng cấp.
-	\item \textbf{Khung chiến lược thích ứng:} Hiện thực hóa 5 chiến lược thích ứng tương ứng với các loại drift (Sudden, Incremental, Gradual, Recurrent, Blip). Đặc biệt, chiến lược \textit{triển khai mô hình đóng băng (Frozen Model Deployment)} được đề xuất để đo lường chính xác tác động của drift trong môi trường production.
+	\item \textbf{Kiến trúc Real-time Streaming:} Thiết kế và triển khai kiến trúc hệ thống dựa trên \textbf{Apache Kafka}, cho phép xử lý phân tán và mở rộng. Hệ thống tách biệt các module (Detection, Classification, Adaptation) để dễ bảo trì và nâng cấp.
+	\item \textbf{Khung chiến lược thích ứng:} Cài đặt 5 chiến lược thích ứng cho 5 loại drift (Sudden, Incremental, Gradual, Recurrent, Blip). Trong đó, chiến lược triển khai mô hình đóng băng (Frozen Model Deployment) được đề xuất để đo tác động của drift trong môi trường production.
 \end{itemize}
 
 \section{Những phát hiện và hiểu biết chính}
 
-Từ quá trình nghiên cứu và thực nghiệm, luận văn rút ra các bài học quan trọng:
+Quá trình nghiên cứu và thực nghiệm cho thấy mấy điểm sau:
 
 \begin{enumerate}
-	\item \textbf{Adaptive Window là yếu tố then chốt:} ShapeDD với kích thước cửa sổ thích ứng (adaptive sizing) cho thấy cải thiện đáng kể so với cửa sổ cố định trong điều kiện thử nghiệm. Khả năng tự điều chỉnh theo độ lớn drift giúp giảm báo động giả (False Positives) và tăng độ nhạy.
+	\item \textbf{Adaptive Window có vai trò quan trọng:} ShapeDD với kích thước cửa sổ thích ứng (adaptive sizing) cho kết quả tốt hơn cửa sổ cố định trong điều kiện thử nghiệm. Khả năng tự điều chỉnh theo độ lớn drift giúp giảm False Positives và tăng độ nhạy.
 
-	\item \textbf{Trade-off giữa Tốc độ và Độ chính xác:} Các phương pháp cửa sổ trượt truyền thống chính xác nhưng chậm. Việc tích hợp IDW-MMD với asymptotic p-value đã giải quyết nút thắt này, đưa throughput từ $\sim$8,000 lên $\sim$131,000 mẫu/giây --- đạt tốc độ cao hơn KS-Test trong khi duy trì độ chính xác (F1 = 0.484 vs 0.294).
+	\item \textbf{Trade-off giữa Tốc độ và Độ chính xác:} Các phương pháp cửa sổ trượt truyền thống chính xác nhưng chậm. Việc tích hợp IDW-MMD với asymptotic p-value đẩy throughput từ khoảng 8{,}000 lên khoảng 131{,}000 mẫu/giây, nhanh hơn KS-Test mà vẫn giữ độ chính xác (F1 $= 0.484$ so với $0.294$).
 
-	\item \textbf{Hiệu quả của Type-Specific Adaptation:} Trên \textbf{Stepping Drift}, Type-Specific đạt 77.28\% so với No Adaptation 56.18\% (cải thiện $+21.10$pp); cao hơn Simple Retrain $+12.36$pp và Periodic Retrain $+12.39$pp. Trên \textbf{Sudden Drift}, Type-Specific đạt 76.64\% so với No Adaptation 51.80\% (cải thiện $+24.84$pp); cao hơn Simple Retrain $+14.84$pp và Periodic Retrain $+12.41$pp. Hai kịch bản cho cùng mức kết quả ($\sim 77\%$) với cùng pipeline, cho thấy phần lớn cải thiện đến từ bước phân loại drift trước khi chọn chiến lược, không phải từ riêng cơ chế phát hiện.
+	\item \textbf{Hiệu quả của Type-Specific Adaptation:} Trên Stepping Drift, Type-Specific đạt 77.28\% so với No Adaptation 56.18\% ($+21.10$pp), hơn Simple Retrain $+12.36$pp và Periodic Retrain $+12.39$pp. Trên Sudden Drift, Type-Specific đạt 76.64\% so với No Adaptation 51.80\% ($+24.84$pp), hơn Simple Retrain $+14.84$pp và Periodic Retrain $+12.41$pp. Hai kịch bản cho cùng mức kết quả (khoảng 77\%) với cùng pipeline, cho thấy phần lớn cải thiện đến từ bước phân loại drift trước khi chọn chiến lược, không phải từ riêng bước phát hiện.
 
-	\item \textbf{Vai trò của Phân loại Drift:} Việc xác định đúng loại drift (ví dụ: Blip vs. Sudden) là cực kỳ quan trọng để tránh phản ứng thái quá với nhiễu (noise). Chiến lược thích ứng dựa trên loại drift giúp hệ thống vận hành ổn định và tiết kiệm tài nguyên.
+	\item \textbf{Vai trò của Phân loại Drift:} Xác định đúng loại drift (ví dụ Blip với Sudden) giúp tránh phản ứng thái quá với nhiễu. Chiến lược thích ứng theo loại drift giúp hệ thống vận hành ổn định và tiết kiệm tài nguyên.
 \end{enumerate}
 
 \section{Hạn chế và Phạm vi nghiên cứu}
 
-Mặc dù đạt được những kết quả khả quan, nghiên cứu vẫn tồn tại một số hạn chế cần được xem xét:
+Bên cạnh kết quả đạt được, nghiên cứu vẫn còn một số hạn chế:
 
 \subsection{Trade-off giữa Detection và Classification}
-SE-CDT (Std) đạt tỷ lệ phát hiện sự kiện (EDR -- tương đương Recall) = 94.7\% nhưng có số lượng False Positives cao (FP = 1634). SE-CDT (IDW) giảm FP xuống 234 nhưng EDR giảm còn 58.7\%. Trong môi trường production cần cân nhắc trade-off này:
+SE-CDT (Std) đạt EDR (tương đương Recall) $= 94.7\%$ nhưng FP cao ($1634$). SE-CDT (IDW) giảm FP xuống $234$ nhưng EDR còn $58.7\%$. Trong môi trường production cần cân nhắc:
 \begin{itemize}
-	\item Nếu ưu tiên \textbf{recall cao}: Sử dụng SE-CDT (Std) với threshold thấp
-	\item Nếu ưu tiên \textbf{FP thấp}: Sử dụng SE-CDT (IDW) hoặc ShapeDD-IDW (FP = 0 trong detection benchmark)
+	\item Nếu ưu tiên \textbf{recall cao}: dùng SE-CDT (Std) với threshold thấp.
+	\item Nếu ưu tiên \textbf{FP thấp}: dùng SE-CDT (IDW) hoặc ShapeDD-IDW (FP $= 0$ trong detection benchmark).
 \end{itemize}
 
 \subsection{Subcategory Accuracy còn hạn chế}
-Mặc dù Category Accuracy (TCD vs PCD) đạt mức tốt, Subcategory Accuracy vẫn còn khoảng cách so với CAT. Cụ thể:
+Category Accuracy (TCD vs PCD) đạt mức tốt nhưng Subcategory Accuracy vẫn còn khoảng cách so với CAT. Cụ thể:
 \begin{itemize}
 	\item Gradual và Incremental dễ nhầm lẫn do tín hiệu MMD tương tự.
-	\item Recurrent đã được cải thiện đáng kể nhờ Concept Memory (Mục~\ref{sec:se-cdt-concept-memory}), nhưng vẫn phụ thuộc vào ngưỡng so khớp $\tau_{\text{match}}$ và kích thước snapshot $n_s$.
-	\item Blip detection sử dụng các đặc trưng tương đối (PPR, DPAR, WR), không còn phụ thuộc vào ngưỡng tuyệt đối \texttt{peak\_distance}, nhưng vẫn cần validation thêm trên dữ liệu thực tế.
+	\item Recurrent đã được cải thiện nhờ Concept Memory (Mục~\ref{sec:se-cdt-concept-memory}), nhưng vẫn phụ thuộc vào ngưỡng so khớp $\tau_{\text{match}}$ và kích thước snapshot $n_s$.
+	\item Blip detection dùng các đặc trưng tương đối (PPR, DPAR, WR), không còn phụ thuộc vào ngưỡng tuyệt đối \texttt{peak\_distance}, nhưng vẫn cần validation thêm trên dữ liệu thực tế.
 \end{itemize}
 
-\textbf{Nguyên nhân gốc:} Phương pháp CDT-MSW gốc~\cite{guo2022cdtmsw} sử dụng \textit{Growth process} (đo drift length bằng accuracy variance trong adjoint window) để phân biệt TCD và PCD một cách chính xác. Tuy nhiên, Growth process yêu cầu labels để tính accuracy -- điều không khả dụng trong môi trường unsupervised. SE-CDT thay thế bằng các đặc trưng hình học từ tín hiệu MMD (WR, SNR, LTS), nhưng tín hiệu MMD hoạt động ở độ phân giải cửa sổ ($\sim$150 mẫu/phép đo), nén các quá trình chuyển đổi drift thành tín hiệu $\sim$52 điểm có hình dạng tương tự bất kể loại drift. Đây là trade-off cốt lõi của việc sử dụng phương pháp không giám sát: được khả năng hoạt động không cần labels, mất khả năng phân biệt tốc độ thay đổi phân phối.
+\textbf{Nguyên nhân gốc.} CDT-MSW gốc~\cite{guo2022cdtmsw} dùng Growth process (đo drift length bằng accuracy variance trong adjoint window) để phân biệt TCD và PCD. Cách này cần labels để tính accuracy, không có sẵn trong môi trường unsupervised. SE-CDT thay bằng các đặc trưng hình học từ tín hiệu MMD (WR, SNR, LTS), nhưng tín hiệu MMD hoạt động ở độ phân giải cửa sổ (khoảng 150 mẫu/phép đo), nén quá trình chuyển đổi drift thành tín hiệu khoảng 52 điểm có hình dạng tương tự nhau, bất kể loại drift. Đây là trade-off cốt lõi của hướng tiếp cận không giám sát: được tính độc lập với labels, mất khả năng phân biệt tốc độ thay đổi phân phối.
 
 \subsection{Ngưỡng phân loại vẫn còn yếu tố heuristic}
 \label{sec:limitation-heuristic}
-Các ngưỡng cứng trong cây quyết định SE-CDT (Algorithm~\ref{alg:se-cdt}) --- WR $< 0.15$, SNR $> 2.0$, CV $< 0.3$, LTS $> 0.5$, v.v. --- vẫn được xác định bằng quan sát thực nghiệm chứ không suy ra từ phân tích thống kê lý thuyết. So với bước Detection (sử dụng p-value tiệm cận có cơ sở toán học chặt chẽ từ~\cite{gretton2012kernel}), bước Classification chưa có một ``công cụ'' lý thuyết tương đương ở mức từng đặc trưng đơn lẻ.
+Các ngưỡng cứng trong cây quyết định SE-CDT (Algorithm~\ref{alg:se-cdt}) như WR $< 0.15$, SNR $> 2.0$, CV $< 0.3$, LTS $> 0.5$, v.v. vẫn được chọn dựa trên quan sát thực nghiệm chứ chưa suy ra từ phân tích thống kê lý thuyết. So với bước Detection (dùng p-value tiệm cận có cơ sở toán học chặt từ~\cite{gretton2012kernel}), bước Classification chưa có ``công cụ'' lý thuyết tương đương ở mức từng đặc trưng đơn lẻ.
 
-\textbf{Mức độ giảm thiểu trong phiên bản hiện tại.}
+\textbf{Phần đã giảm thiểu trong phiên bản hiện tại.}
 \begin{enumerate}
-	\item \textbf{Self-calibration ngưỡng SNR/WR/CV} (Mục~\ref{sec:se-cdt-self-calibration}): cho phép \textit{nới lỏng} ngưỡng cứng theo phân vị quan sát được trên cửa sổ không drift, giúp SE-CDT chịu được nền nhiễu cao hơn mà không cần tinh chỉnh thủ công cho từng dataset, vẫn giữ tính chất \textit{runtime-unsupervised}.
-	\item \textbf{H0-calibration test} (Mục~\ref{sec:h0-calibration}): kiểm chứng định lượng rằng IDW-MMD và SE-CDT có Type-I error thực nghiệm $\leq \alpha = 0.05$ trên ba phân phối stationary khác nhau (Gauss-iid d=5, d=10, AR(1) tương quan), cung cấp một \textit{floor} thống kê cho hành vi false-positive.
-	\item \textbf{Loại bỏ magic number trong Blip và Growth process} (Mục~\ref{sec:shaped-cdt}): điều kiện Blip không còn phụ thuộc vào \texttt{peak\_distance < 35} cứng, và growth process dùng đơn vị có ý nghĩa vật lý (tỷ lệ với cửa sổ tham chiếu $l_1$) thay vì \texttt{fwhm/3}.
+	\item \textbf{Self-calibration ngưỡng SNR/WR/CV} (Mục~\ref{sec:se-cdt-self-calibration}): nới ngưỡng cứng theo phân vị quan sát trên cửa sổ không drift, giúp SE-CDT chịu được nền nhiễu cao hơn mà không cần tinh chỉnh thủ công cho từng dataset, vẫn giữ tính runtime-unsupervised.
+	\item \textbf{H0-calibration test} (Mục~\ref{sec:h0-calibration}): kiểm chứng IDW-MMD và SE-CDT có Type-I error thực nghiệm $\leq \alpha = 0.05$ trên ba phân phối stationary (Gauss-iid $d=5$, $d=10$, AR(1) tương quan), tạo floor thống kê cho hành vi false-positive.
+	\item \textbf{Bỏ magic number trong Blip và Growth process} (Mục~\ref{sec:shaped-cdt}): điều kiện Blip không còn phụ thuộc vào \texttt{peak\_distance < 35} cứng, và growth process dùng đơn vị có ý nghĩa vật lý (tỉ lệ với cửa sổ tham chiếu $l_1$) thay vì \texttt{fwhm/3}.
 \end{enumerate}
 
 \textbf{Phần còn tồn đọng.}
 \begin{enumerate}
-	\item Self-calibration chỉ có thể \textit{nới lỏng} ngưỡng, chưa thể \textit{thay thế} hoàn toàn cây quyết định bằng một mô hình xác suất, do đó vẫn không xuất ra confidence/p-value cho mỗi nhãn drift.
-	\item Các ngưỡng cho LTS, MS, SDS vẫn cố định và chưa được self-calibrated; lý do là ba đặc trưng này có range giá trị nhỏ và rất nhạy với window size, nên việc rút phân vị từ baseline không drift dễ tạo ra quantile thoái hoá.
-	\item Concept Memory vẫn cần ngưỡng so khớp $\tau_{\text{match}} = 0.15$ chọn theo thực nghiệm (đặt ở mức $\approx 2 \times$ nhiễu MMD nền). Khi snapshot tích lũy đủ gần với một sự kiện Sudden mới, ngưỡng này có thể dán nhãn nhầm thành Recurrent. Hướng làm cho ngưỡng tự thích nghi theo phân phối được trình bày ở Mục~\ref{sec:future-secdt-classification}.
+	\item Self-calibration chỉ có thể nới ngưỡng, chưa thay được cây quyết định bằng một mô hình xác suất, vì vậy vẫn không xuất confidence/p-value cho mỗi nhãn drift.
+	\item Ngưỡng cho LTS, MS, SDS vẫn cố định, chưa được self-calibrated. Ba đặc trưng này có range nhỏ và nhạy với window size, nên việc rút phân vị từ baseline không drift dễ tạo ra quantile thoái hoá.
+	\item Concept Memory vẫn cần ngưỡng so khớp $\tau_{\text{match}} = 0.15$ chọn theo thực nghiệm (đặt ở mức khoảng $2\times$ nhiễu MMD nền). Khi snapshot tích lũy đủ gần với một sự kiện Sudden mới, ngưỡng này có thể dán nhãn nhầm thành Recurrent. Hướng cho ngưỡng tự thích nghi theo phân phối được trình bày ở Mục~\ref{sec:future-secdt-classification}.
 \end{enumerate}
-Luận văn frame phần phân loại này như một \textbf{proof-of-concept} có mức ``adaptive'' nhẹ ở runtime, vẫn cần các nghiên cứu sau để đạt mức ``probabilistic'' đầy đủ.
+Phần phân loại được trình bày như một proof-of-concept có mức ``adaptive'' nhẹ ở runtime, cần các nghiên cứu tiếp theo để đạt mức ``probabilistic'' đầy đủ.
 
 \subsection{Giả định joint drift trong phân loại}
 \label{sec:limitation-joint-drift}
-Như đã phân tích trong Chương~\ref{chap:proposed-model}, SE-CDT phân loại \textit{hình dạng của sự thay đổi phân phối đầu vào} $P(X)$ (covariate shift pattern), không phải loại concept drift theo nghĩa supervised truyền thống (thay đổi $P(Y|X)$). Cách tiếp cận này hoạt động dựa trên giả định rằng sự thay đổi $P(X)$ và $P(Y|X)$ có mối tương quan cao (joint drift). Giả định này được kiểm chứng trong thực nghiệm bằng các bộ sinh dữ liệu kết hợp, nhưng có thể không đúng trong mọi ứng dụng thực tế --- đặc biệt khi:
+Như đã phân tích trong Chương~\ref{chap:proposed-model}, SE-CDT phân loại hình dạng của sự thay đổi phân phối đầu vào $P(X)$ (covariate shift pattern), không phải loại concept drift theo nghĩa supervised truyền thống (thay đổi $P(Y|X)$). Cách này dựa trên giả định $P(X)$ và $P(Y|X)$ có tương quan cao (joint drift). Giả định được kiểm chứng trong thực nghiệm bằng các bộ sinh dữ liệu kết hợp, nhưng có thể không đúng trong mọi ứng dụng thực tế, đặc biệt khi:
 \begin{itemize}
-	\item \textbf{Virtual Drift thuần túy:} $P(Y|X)$ thay đổi nhưng $P(X)$ giữ nguyên $\Rightarrow$ SE-CDT sẽ không phát hiện.
-	\item \textbf{Covariate shift thuần túy:} $P(X)$ thay đổi mạnh nhưng $P(Y|X)$ giữ nguyên $\Rightarrow$ SE-CDT sẽ phát hiện và phân loại nhưng chiến lược thích ứng có thể không cần thiết.
+	\item \textbf{Virtual Drift thuần:} $P(Y|X)$ thay đổi nhưng $P(X)$ giữ nguyên, SE-CDT sẽ không phát hiện.
+	\item \textbf{Covariate shift thuần:} $P(X)$ thay đổi mạnh nhưng $P(Y|X)$ giữ nguyên, SE-CDT sẽ phát hiện và phân loại nhưng việc thích ứng có thể không cần thiết.
 \end{itemize}
-Đây là giới hạn cơ bản của mọi phương pháp unsupervised drift detection, không riêng SE-CDT. Để giảm thiểu rủi ro, trong triển khai thực tế nên kết hợp SE-CDT với giám sát hiệu suất mô hình (performance monitoring) khi labels trở nên khả dụng (dù có độ trễ).
+Đây là giới hạn chung của mọi phương pháp unsupervised drift detection, không riêng SE-CDT. Trong triển khai thực tế nên kết hợp SE-CDT với giám sát hiệu suất mô hình (performance monitoring) khi labels có sẵn (dù có độ trễ).
 
 \subsection{Dữ liệu tổng hợp (Synthetic Data)}
-Việc đánh giá chủ yếu dựa trên các tập dữ liệu tổng hợp. Mặc dù chúng cho phép kiểm soát chính xác ground truth (thời điểm drift, loại drift) để đo lường F1-score và độ trễ, nhưng có thể chưa phản ánh hết độ phức tạp, nhiễu tạp và tính bất định của dữ liệu thực tế (real-world traces) trong các hệ thống sản xuất quy mô lớn.
+Đánh giá chủ yếu dựa trên các tập dữ liệu tổng hợp. Dữ liệu tổng hợp cho phép kiểm soát chính xác ground truth (thời điểm drift, loại drift) để đo F1-score và độ trễ, nhưng có thể chưa phản ánh hết độ phức tạp, nhiễu và tính bất định của dữ liệu thực tế trong các hệ thống sản xuất quy mô lớn.
 
 \subsection{Phạm vi đánh giá thích ứng}
-Trong Chương~\ref{chap:experiments}, đánh giá thích ứng đã sử dụng 4 baseline (Type-Specific, Simple Retrain, Periodic Retrain, No Adaptation), nhưng chỉ trên 3 kịch bản (Stepping, Sudden, Mixed) với $N=5$ lần chạy và $T=5000$ mẫu. Để có kết luận mạnh hơn về thống kê, hướng mở rộng tự nhiên gồm: (1) tăng số lần chạy lên $N \geq 30$, (2) bổ sung kịch bản Gradual và Incremental drift, và (3) đo chi phí tính toán của từng chiến lược trong điều kiện production.
+Đánh giá thích ứng ở Chương~\ref{chap:experiments} dùng 4 baseline (Type-Specific, Simple Retrain, Periodic Retrain, No Adaptation), nhưng chỉ trên 3 kịch bản (Stepping, Sudden, Mixed) với $N=5$ lần chạy và $T=5000$ mẫu. Hướng mở rộng tự nhiên: (1) tăng số lần chạy lên $N \geq 30$, (2) bổ sung kịch bản Gradual và Incremental drift, và (3) đo chi phí tính toán của từng chiến lược trong điều kiện production.
 
 \section{Hướng nghiên cứu tương lai}
 
-Dựa trên nền tảng của luận văn, các hướng phát triển tiếp theo được đề xuất theo thứ tự ưu tiên:
+Dựa trên kết quả của luận văn, các hướng phát triển tiếp theo được đề xuất theo thứ tự ưu tiên.
 
 \subsection{Mở rộng sang các loại Drift khác (Ưu tiên hàng đầu)}
 \begin{itemize}
-	\item \textbf{Gradual và Incremental Drift:} Hai loại này hiện là điểm yếu chính của SE-CDT (Bảng~\ref{tab:se-cdt-performance-by-type}). Nguyên nhân nằm ở chính cấu hình MMD trượt: khi cả cửa sổ tham chiếu và cửa sổ kiểm thử đều di chuyển vào phân phối mới sau drift, tín hiệu $\sigma(t)$ luôn quay về baseline, làm mờ ranh giới giữa drift dần dần (Gradual) và drift tích lũy (Incremental). Việc bổ sung các đặc trưng dựa trên hình dạng \textit{đuôi} của tín hiệu MMD vì vậy có giới hạn cố hữu. Hướng cải tiến tự nhiên là chuyển sang \textit{multi-scale reference window}: giữ một cửa sổ tham chiếu dài cố định (ví dụ 500 mẫu) làm baseline ổn định, song song với cửa sổ kiểm thử trượt --- khi đó tín hiệu MMD sẽ duy trì ở mức cao đối với drift bền vững (Incremental) và quay về baseline đối với drift tạm thời (Gradual), trả lại sự phân biệt mà cấu hình hiện tại đang đánh mất. Một hướng bổ sung là tích hợp semi-supervised learning để khai thác một lượng nhỏ nhãn khi có sẵn từ domain.
-	\item \textbf{Chiến lược thích ứng liên tục cho Incremental:} Bên cạnh hướng phân loại, có thể thử nghiệm chiến lược \textit{continuous adaptation} sử dụng framework River cho riêng nhánh Incremental, tập trung vào cân bằng giữa tốc độ cập nhật và độ ổn định mô hình --- bổ sung cho ba chiến lược thích ứng đã trình bày trong Chương~\ref{chap:proposed-model}.
-	\item \textbf{Recurrent Drift (mở rộng Concept Memory):} Concept Memory hiện tại (Mục~\ref{sec:se-cdt-concept-memory}) so khớp snapshot raw bằng Standard MMD. Hướng mở rộng tự nhiên gồm: (i) học \textit{embedding} của snapshot (Set Transformer / DeepSets) thay vì so sánh raw window, để giảm phụ thuộc vào kích thước $n_s$ và bandwidth $\gamma$; (ii) thay $\tau_{\text{match}}$ cố định bằng ngưỡng học tự động dựa trên phân phối khoảng cách giữa các snapshot không drift; (iii) liên kết Concept Memory với Model Caching ở Adaptation Module để tái sử dụng mô hình một cách \textit{end-to-end}.
+	\item \textbf{Gradual và Incremental Drift:} Hai loại này hiện là điểm yếu chính của SE-CDT (Bảng~\ref{tab:se-cdt-performance-by-type}). Nguyên nhân nằm ở cấu hình MMD trượt: khi cả cửa sổ tham chiếu và cửa sổ kiểm thử đều di chuyển vào phân phối mới sau drift, tín hiệu $\sigma(t)$ luôn quay về baseline, làm mờ ranh giới giữa drift dần dần (Gradual) và drift tích lũy (Incremental). Việc thêm các đặc trưng dựa trên hình dạng đuôi của tín hiệu MMD vì vậy có giới hạn cố hữu. Hướng cải tiến tự nhiên là chuyển sang multi-scale reference window: giữ một cửa sổ tham chiếu dài cố định (ví dụ 500 mẫu) làm baseline ổn định, song song với cửa sổ kiểm thử trượt. Khi đó tín hiệu MMD sẽ duy trì ở mức cao với drift bền vững (Incremental) và quay về baseline với drift tạm thời (Gradual), trả lại khả năng phân biệt mà cấu hình hiện tại đang đánh mất. Một hướng bổ sung là tích hợp semi-supervised learning để khai thác một lượng nhỏ nhãn khi có sẵn từ domain.
+	\item \textbf{Chiến lược thích ứng liên tục cho Incremental:} Bên cạnh hướng phân loại, có thể thử nghiệm continuous adaptation dùng framework River cho riêng nhánh Incremental, tập trung vào cân bằng giữa tốc độ cập nhật và độ ổn định mô hình. Hướng này bổ sung cho ba chiến lược thích ứng đã trình bày trong Chương~\ref{chap:proposed-model}.
+	\item \textbf{Recurrent Drift (mở rộng Concept Memory):} Concept Memory hiện tại (Mục~\ref{sec:se-cdt-concept-memory}) so khớp snapshot raw bằng Standard MMD. Hướng mở rộng tự nhiên gồm: (i) học embedding của snapshot (Set Transformer / DeepSets) thay vì so sánh raw window, để giảm phụ thuộc vào kích thước $n_s$ và bandwidth $\gamma$; (ii) thay $\tau_{\text{match}}$ cố định bằng ngưỡng học tự động dựa trên phân phối khoảng cách giữa các snapshot không drift; (iii) liên kết Concept Memory với Model Caching ở Adaptation Module để tái sử dụng mô hình end-to-end.
 \end{itemize}
 
 \subsection{Cải tiến phân loại SE-CDT}
 \label{sec:future-secdt-classification}
-Như đã phân tích trong Mục~\ref{sec:limitation-heuristic}, bước Classification của SE-CDT vẫn là phần có cơ sở lý thuyết yếu nhất trong pipeline, dù đã được củng cố bởi self-calibration và H0-calibration test trong phiên bản hiện tại. Các hướng cải tiến tiếp theo bao gồm:
+Như đã phân tích trong Mục~\ref{sec:limitation-heuristic}, bước Classification của SE-CDT vẫn là phần có cơ sở lý thuyết yếu nhất trong pipeline, dù đã được củng cố bằng self-calibration và H0-calibration test ở phiên bản hiện tại. Các hướng cải tiến tiếp theo:
 \begin{itemize}
-	\item \textbf{Bayesian decision boundaries:} Thay thế cây quyết định ngưỡng cứng bằng mô hình Bayesian với prior từ đặc trưng tín hiệu, cho phép đo uncertainty của kết quả phân loại và cung cấp confidence score tương tự p-value --- bù đắp đúng hạn chế của self-calibration một chiều hiện tại (chỉ nới lỏng, không xuất confidence).
-	\item \textbf{Mở rộng self-calibration sang đặc trưng temporal:} LTS, MS, SDS hiện vẫn dùng ngưỡng cứng vì baseline không drift dễ thoái hoá khi cửa sổ ngắn; các phương án tiềm năng gồm rolling baseline đa mức (multi-scale) hoặc dùng quantile robust (Hodges--Lehmann) thay cho phân vị thực nghiệm thuần.
-	\item \textbf{Concept Memory thông minh hơn:} Thay $\tau_{\text{match}}$ cố định bằng học không giám sát ngưỡng (ví dụ: extreme value statistics trên phân phối khoảng cách giữa các snapshot không drift), hoặc chuyển sang lưu trữ embedding (Set Transformer / DeepSets) thay vì raw window.
-	\item \textbf{Few-shot calibration có nhãn:} Khi có sẵn một lượng nhỏ ($\sim$50--100 mẫu có nhãn) từ domain cụ thể, tinh chỉnh thêm ngưỡng cứng để khai thác tối đa thông tin có sẵn --- bổ sung cho self-calibration hoàn toàn không nhãn ở runtime.
-	\item \textbf{Representation learning:} Học biểu diễn tín hiệu MMD bằng mạng 1D-CNN hoặc Transformer nhỏ, phân loại trong không gian biểu diễn thay vì không gian đặc trưng thủ công --- loại bỏ hoàn toàn sự phụ thuộc vào ngưỡng heuristic.
+	\item \textbf{Bayesian decision boundaries:} thay cây quyết định ngưỡng cứng bằng mô hình Bayesian với prior từ đặc trưng tín hiệu, để đo uncertainty của kết quả phân loại và xuất confidence score tương tự p-value, bù đúng hạn chế của self-calibration một chiều hiện tại (chỉ nới ngưỡng, không xuất confidence).
+	\item \textbf{Mở rộng self-calibration sang đặc trưng temporal:} LTS, MS, SDS hiện vẫn dùng ngưỡng cứng vì baseline không drift dễ thoái hoá khi cửa sổ ngắn. Các phương án có thể thử: rolling baseline đa mức (multi-scale) hoặc dùng quantile robust (Hodges--Lehmann) thay cho phân vị thực nghiệm thuần.
+	\item \textbf{Concept Memory thông minh hơn:} thay $\tau_{\text{match}}$ cố định bằng học không giám sát ngưỡng (ví dụ extreme value statistics trên phân phối khoảng cách giữa các snapshot không drift), hoặc chuyển sang lưu trữ embedding (Set Transformer / DeepSets) thay vì raw window.
+	\item \textbf{Few-shot calibration có nhãn:} khi có sẵn một lượng nhỏ (khoảng 50--100 mẫu có nhãn) từ domain cụ thể, có thể tinh chỉnh thêm ngưỡng cứng để khai thác thông tin sẵn có, bổ sung cho self-calibration không nhãn ở runtime.
+	\item \textbf{Representation learning:} học biểu diễn tín hiệu MMD bằng mạng 1D-CNN hoặc Transformer nhỏ, phân loại trong không gian biểu diễn thay vì không gian đặc trưng thủ công, để bỏ hẳn sự phụ thuộc vào ngưỡng heuristic.
 \end{itemize}
 
 \subsection{Tầm nhìn dài hạn}
 \begin{itemize}
-	\item \textbf{Meta-learning trực tuyến:} Phát triển các thuật toán có khả năng tự động lựa chọn chiến lược thích ứng và tham số tối ưu dựa trên đặc điểm dữ liệu quan sát được, giảm thiểu sự can thiệp thủ công.
-	\item \textbf{Deep Learning Integration:} Khám phá việc sử dụng Deep Learning để học các biểu diễn (representations) bất biến với drift, giúp mô hình bền vững hơn trước các thay đổi nhỏ.
-	\item \textbf{Benchmark chuẩn hóa:} Xây dựng bộ benchmark chuẩn với dữ liệu thực tế được gán nhãn drift kỹ lưỡng, đóng góp cho cộng đồng nghiên cứu concept drift.
+	\item \textbf{Meta-learning trực tuyến:} thuật toán tự động chọn chiến lược thích ứng và tham số tối ưu dựa trên đặc điểm dữ liệu quan sát, giảm sự can thiệp thủ công.
+	\item \textbf{Deep Learning Integration:} dùng Deep Learning để học biểu diễn bất biến với drift, giúp mô hình bền vững hơn trước các thay đổi nhỏ.
+	\item \textbf{Benchmark chuẩn hóa:} xây dựng bộ benchmark chuẩn với dữ liệu thực tế được gán nhãn drift kỹ lưỡng, đóng góp cho cộng đồng nghiên cứu concept drift.
 \end{itemize}
 
 \section{Kết luận}
 
-Hành trình giải quyết bài toán concept drift là một quá trình liên tục. Luận văn này đã đưa ra các đề xuất cụ thể thông qua:
+Bài toán concept drift là một bài toán mở. Luận văn đóng góp các đề xuất cụ thể sau:
 \begin{enumerate}
-	\item \textbf{Cải thiện hiệu năng:} Tích hợp IDW-MMD với asymptotic p-value giúp tăng throughput \textbf{16.5 lần} (từ 8,000 lên 131,000 mẫu/giây), cho thấy tiềm năng áp dụng trong môi trường production.
-	\item \textbf{Độ tin cậy:} ShapeDD-IDW và SE-CDT giữ \textbf{0 False Positives} trong cả benchmark detection và các thí nghiệm monitoring. Quan sát này được kiểm chứng thêm bằng \textit{H0-calibration test} cho thấy Type-I error thực nghiệm $\leq \alpha = 0.05$ trên ba phân phối stationary.
-	\item \textbf{Phân loại không giám sát + adaptive nhẹ:} SE-CDT phân loại drift mà không cần labels, đồng thời được tăng cường bằng \textit{Concept Memory} (cho Recurrent) và \textit{online self-calibration} cho ngưỡng SNR/WR/CV --- vẫn không cần nhãn ở runtime.
-	\item \textbf{Thích ứng hiệu quả:} Type-Specific Adaptation cải thiện $+21.10$pp trên Stepping và $+24.84$pp trên Sudden so với No Adaptation; cao hơn Simple Retrain lần lượt $+12.36$pp và $+14.84$pp. Phạm vi thực nghiệm và hướng mở rộng được trình bày trong Mục~\ref{chap:experiments} và phần Hạn chế.
+	\item \textbf{Cải thiện hiệu năng:} IDW-MMD kết hợp asymptotic p-value tăng throughput \textbf{16.5 lần} (từ $8{,}000$ lên $131{,}000$ mẫu/giây), cho thấy khả năng áp dụng trong môi trường production.
+	\item \textbf{Độ tin cậy:} ShapeDD-IDW và SE-CDT giữ \textbf{0 False Positives} trong cả benchmark detection và các thí nghiệm monitoring. H0-calibration test xác nhận Type-I error thực nghiệm $\leq \alpha = 0.05$ trên ba phân phối stationary.
+	\item \textbf{Phân loại không giám sát + adaptive nhẹ:} SE-CDT phân loại drift không cần labels, có Concept Memory (cho Recurrent) và online self-calibration cho ngưỡng SNR/WR/CV, vẫn không cần nhãn ở runtime.
+	\item \textbf{Thích ứng hiệu quả:} Type-Specific Adaptation cải thiện $+21.10$pp trên Stepping và $+24.84$pp trên Sudden so với No Adaptation; hơn Simple Retrain lần lượt $+12.36$pp và $+14.84$pp. Phạm vi thực nghiệm và hướng mở rộng được trình bày ở Chương~\ref{chap:experiments} và phần Hạn chế.
 \end{enumerate}
 
-Kết quả nghiên cứu cho thấy rằng việc chuyển dịch từ các mô hình tĩnh sang các hệ thống thích ứng (adaptive systems) là xu hướng cần thiết. Với nền tảng đó, các hướng phát triển ưu tiên tiếp theo --- cụ thể là mở rộng self-calibration sang đặc trưng temporal, thay decision tree heuristic bằng mô hình Bayesian có confidence score, và kiểm chứng trên dữ liệu thực tế --- được kỳ vọng sẽ tiếp tục củng cố tính khả thi và khả năng ứng dụng của hệ thống này trong các môi trường sản xuất công nghiệp cụ thể.
+Kết quả cho thấy việc chuyển từ mô hình tĩnh sang hệ thống thích ứng là một hướng đi cần thiết. Các bước phát triển tiếp theo được nêu ở trên (mở rộng self-calibration sang đặc trưng temporal, thay decision tree heuristic bằng mô hình Bayesian có confidence score, và kiểm chứng trên dữ liệu thực tế) có thể tiếp tục củng cố tính khả thi và khả năng ứng dụng của hệ thống.

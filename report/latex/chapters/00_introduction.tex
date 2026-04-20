@@ -2,12 +2,12 @@
 
 \section{Thực trạng chung}
 Hệ thống phát hiện gian lận của một ngân hàng có thể đạt độ chính xác cao
-trong năm đầu vận hành, nhưng sau một thời gian dài vận hành, tỷ lệ cảnh báo sai tăng đột biến
-lên gấp ba lần. Một mô hình dự báo bảo trì máy móc trong nhà máy thép hoạt
-động ổn định suốt mùa khô, nhưng khi mùa mưa đến, hiệu suất giảm mạnh do
-điều kiện vận hành thay đổi. Đây không phải là lỗi của thuật toán hay của
-kỹ sư xây dựng mô hình --- mà là hiện tượng \textit{trôi dạt khái niệm}
-(concept drift): khi phân phối dữ liệu thực tế thay đổi theo thời gian trong
+trong năm đầu vận hành, nhưng sau một thời gian dài, tỷ lệ cảnh báo sai
+tăng gấp ba lần. Một mô hình dự báo bảo trì máy móc trong nhà máy thép
+hoạt động ổn định suốt mùa khô, đến khi mùa mưa thì hiệu suất giảm mạnh
+do điều kiện vận hành thay đổi. Đây không phải là lỗi của thuật toán hay
+của kỹ sư xây dựng mô hình, mà là hiện tượng \textit{trôi dạt khái niệm}
+(concept drift): phân phối dữ liệu thực tế thay đổi theo thời gian trong
 khi mô hình vẫn ``đứng yên''~\cite{jourdan2023process}.
 
 Về mặt toán học, concept drift xảy ra khi $P_{train}(X, Y) \neq P_{online,t}(X, Y)$,
@@ -16,91 +16,68 @@ trong đó $P_{train}$ và $P_{online,t}$ lần lượt là phân phối đồng
 Concept drift có thể xuất hiện dưới nhiều dạng: \textit{sudden drift},
 \textit{gradual drift}, \textit{incremental drift}, và \textit{recurrent drift}~\cite{yuan2022advances}.
 
-Các mô hình học máy được huấn luyện với giả định rằng dữ liệu trong tương lai
+Các mô hình học máy được huấn luyện với giả định dữ liệu trong tương lai
 sẽ tuân theo cùng phân phối với dữ liệu huấn luyện (giả định i.i.d.). Tuy nhiên,
 môi trường sản xuất công nghiệp hiếm khi tĩnh: thiết bị lão hóa, quy trình thay đổi,
-cảm biến xuống cấp, và hành vi người dùng biến đổi~\cite{jourdan2023process}. Kết quả là
-hiệu suất mô hình suy giảm dần theo thời gian --- đôi khi đột ngột --- làm giảm
-độ tin cậy hệ thống và tăng chi phí vận hành. Để giải quyết vấn đề này, cần có cơ chế
-(1) phát hiện drift càng sớm càng tốt, và (2) thích ứng mô hình một cách hiệu quả
-theo các điều kiện mới.
+cảm biến xuống cấp, hành vi người dùng biến đổi~\cite{jourdan2023process}. Kết quả là
+hiệu suất mô hình suy giảm dần theo thời gian, đôi khi đột ngột, làm giảm
+độ tin cậy hệ thống và tăng chi phí vận hành. Để xử lý, cần có cơ chế
+(1) phát hiện drift càng sớm càng tốt, và (2) thích ứng mô hình theo các điều kiện mới.
 
 \section{Tổng quan về bài toán}
-Bài toán đặt ra có thể phát biểu chính xác hơn như sau: concept drift có thể xảy ra ở hai cấp độ --- (1) phân phối đầu vào $P(X)$ thay đổi (covariate shift), hoặc (2) mối quan hệ $P(y|X)$ thay đổi trong khi $P(X)$ giữ nguyên (real concept drift). Luận văn này tập trung vào hướng không giám sát, tức là phát hiện sự thay đổi $P(X)$ mà không cần nhãn --- hướng phù hợp nhất với môi trường sản xuất công nghiệp thực tế.
+Concept drift có thể xảy ra ở hai cấp độ: (1) phân phối đầu vào $P(X)$ thay đổi (covariate shift), hoặc (2) mối quan hệ $P(y|X)$ thay đổi trong khi $P(X)$ giữ nguyên (real concept drift). Luận văn tập trung vào hướng không giám sát, tức là phát hiện sự thay đổi của $P(X)$ mà không cần nhãn. Đây cũng là hướng phù hợp với môi trường sản xuất công nghiệp thực tế.
 
-Đối với các ứng dụng học máy trong môi trường sản xuất công nghiệp như IoT,
-việc phát hiện drift trong thời gian thực hoặc gần thời gian thực là yêu cầu
-bắt buộc để đảm bảo chất lượng và độ tin cậy của hệ thống~\cite{jourdan2023process}.
-Tuy nhiên, việc hiện thực hóa một hệ thống như vậy đối mặt với ba thách thức kỹ thuật trọng yếu. Thứ nhất là yêu cầu về độ trễ thấp trong phát hiện thời điểm trôi dạt xảy ra. Thứ hai là có khả năng phân loại các loại trôi dạt (sudden, gradual, incremental, recurrent) để xác định chiến lược thích ứng phù hợp cho mô hình. Cuối cùng là cơ chế cập nhật mô hình nhanh chóng mà không làm gián đoạn hoạt động của mô hình.
+Với các ứng dụng học máy trong môi trường công nghiệp như IoT,
+phát hiện drift trong thời gian thực hoặc gần thời gian thực là yêu cầu
+bắt buộc để giữ chất lượng và độ tin cậy của hệ thống~\cite{jourdan2023process}.
+Việc xây dựng một hệ thống như vậy có ba thách thức chính: (i) độ trễ thấp khi phát hiện thời điểm drift; (ii) phân loại được loại drift (sudden, gradual, incremental, recurrent) để chọn chiến lược thích ứng phù hợp; và (iii) cập nhật mô hình nhanh mà không làm gián đoạn hoạt động.
 
-Từ những thách thức trên, đề tài này đặt ra những mục tiêu nghiên cứu và phát triển một hệ thống tự động phát hiện và thích ứng với hiện tượng trôi dạt khái niệm trong môi trường luồng dữ liệu thời gian thực, đặc biệt là trong môi trường không giám sát.
+Từ ba thách thức trên, đề tài đặt mục tiêu nghiên cứu và phát triển một hệ thống tự động phát hiện và thích ứng với concept drift trong luồng dữ liệu thời gian thực, đặc biệt trong môi trường không giám sát.
 \section{Mục tiêu đề tài}
 
 \subsection{Khảo sát các phương pháp phát hiện drift}
-Khảo sát toàn diện các phương pháp phát hiện \textit{concept drift},
-bao gồm các phương pháp truyền thống và phương pháp ShapeDD.
-Nghiên cứu sẽ so sánh hiệu năng, phân tích ưu nhược điểm,
-từ đó xác định hướng cải tiến phù hợp.
+Khảo sát các phương pháp phát hiện \textit{concept drift}, gồm các phương pháp truyền thống và phương pháp ShapeDD. So sánh hiệu năng, phân tích ưu nhược điểm để tìm hướng cải tiến phù hợp.
 
 \subsection{Tích hợp các cải tiến cho ShapeDD}
-Dựa trên cơ sở lý thuyết và kết quả đánh giá hiệu năng, nghiên cứu tích hợp kỹ thuật \textbf{IDW-MMD (Inverse Density-Weighted MMD)} vào phương pháp ShapeDD. Mục tiêu là giải quyết các hạn chế về chi phí tính toán và độ nhạy của phương pháp gốc. IDW-MMD sử dụng cơ chế trọng số nghịch biến với mật độ để giảm độ dao động kết quả, cho phép đạt độ chính xác cao với số lượng mẫu ít hơn.
+Dựa trên cơ sở lý thuyết và kết quả đánh giá hiệu năng, luận văn tích hợp kỹ thuật \textbf{IDW-MMD (Inverse Density-Weighted MMD)} vào phương pháp ShapeDD. Mục tiêu là xử lý hạn chế về chi phí tính toán và độ nhạy của phương pháp gốc. IDW-MMD dùng cơ chế trọng số nghịch biến với mật độ để giảm dao động kết quả, đạt độ chính xác cao với số lượng mẫu ít hơn.
 
 \subsection{Đề xuất phương pháp phân loại drift SE-CDT}
-Lấy cảm hứng từ ý tưởng phân loại loại drift của CDT-MSW (Concept Drift Type identification based on Multi-Sliding Windows~\cite{guo2022cdtmsw}, sẽ được trình bày chi tiết ở Mục~\ref{sec:cdt-msw-theory}), luận văn đề xuất cách tiếp cận mới \textbf{SE-CDT} (ShapeDD-Enhanced Concept Drift Type Identification). Khác với CDT-MSW gốc yêu cầu nhãn để tính và tận dụng accuracy ratio để xác định và phân loại, SE-CDT thay thế hoàn toàn cơ chế này bằng các đặc trưng hình học từ tín hiệu MMD.
-Phương pháp này có khả năng: (1) phát hiện chính xác thời điểm xảy ra \textit{drift} nhờ ShapeDD, và (2) sử dụng thông tin đó để trích xuất cửa sổ dữ liệu chính xác cho việc phân loại loại \textit{drift}, từ đó đưa ra chiến lược thích ứng phù hợp.
+Lấy cảm hứng từ ý tưởng phân loại loại drift của CDT-MSW (Concept Drift Type identification based on Multi-Sliding Windows~\cite{guo2022cdtmsw}, được trình bày chi tiết ở Mục~\ref{sec:cdt-msw-theory}), luận văn đề xuất cách tiếp cận mới \textbf{SE-CDT} (ShapeDD-Enhanced Concept Drift Type Identification). Khác với CDT-MSW gốc cần nhãn để tính accuracy ratio làm tín hiệu phân loại, SE-CDT thay thế cơ chế này bằng các đặc trưng hình học từ tín hiệu MMD. Phương pháp này có khả năng: (1) phát hiện chính xác thời điểm xảy ra \textit{drift} nhờ ShapeDD, và (2) dùng thông tin đó để trích xuất cửa sổ dữ liệu cho việc phân loại loại \textit{drift}, từ đó chọn chiến lược thích ứng phù hợp.
 
 \subsection{Tối ưu hóa tham số}
-Tiến hành thử nghiệm và tùy chỉnh các tham số của phương pháp
-để đảm bảo hiệu quả với các kiểu dữ liệu và loại \textit{drift} khác nhau.
+Thử nghiệm và điều chỉnh các tham số của phương pháp để đảm bảo hiệu quả với nhiều kiểu dữ liệu và loại \textit{drift} khác nhau.
 
 \subsection{Triển khai và đánh giá}
-Thiết kế kiến trúc hệ thống trên môi trường dữ liệu streaming real-time bằng Apache Kafka. Thực hiện mô phỏng và đánh giá hiệu năng trong các kịch bản thử nghiệm để kiểm chứng tính khả thi của giải pháp đề xuất. (Lưu ý: Việc triển khai production thực tế và đánh giá hiệu năng chịu tải quy mô lớn là hướng phát triển tương lai).
+Thiết kế kiến trúc hệ thống trên môi trường dữ liệu streaming real-time bằng Apache Kafka. Mô phỏng và đánh giá hiệu năng trên các kịch bản thử nghiệm để kiểm chứng tính khả thi của giải pháp. (Việc triển khai production thực tế và đánh giá hiệu năng chịu tải quy mô lớn là hướng phát triển trong tương lai.)
 
 \section{Phạm vi đề tài và đối tượng nghiên cứu}
 \subsection{Phạm vi đề tài}
-Trong môi trường sản xuất công nghiệp, nhãn thật
-($y$) thường không có sẵn trong thời gian thực do chi phí và thời gian kiểm
-định chất lượng cao~\cite{jourdan2023process}. Do đó, nghiên cứu này tập trung vào
-phát hiện concept drift theo hướng \textbf{không giám sát} (unsupervised),
-cụ thể là phát hiện sự thay đổi trong phân phối dữ liệu đầu vào $P(X)$ ---
-còn gọi là \textit{covariate shift} hoặc \textit{data drift}. Cách tiếp cận này
-dựa trên giả định rằng khi $P(X)$ thay đổi đáng kể, ranh giới quyết định $P(Y|X)$ cũng thường thay đổi theo (giả định joint drift). Việc phát hiện sớm sự thay đổi trong $P(X)$ đóng vai trò như tín hiệu cảnh báo, cho phép hệ thống kích hoạt các cơ chế kiểm tra hoặc cập nhật mô hình khi cần thiết.
-Cụ thể, luận văn sẽ tập trung vào việc phát triển hệ thống kết hợp các phương pháp sau:
+Trong môi trường sản xuất công nghiệp, nhãn thật ($y$) thường không có sẵn trong thời gian thực do chi phí và thời gian kiểm định chất lượng cao~\cite{jourdan2023process}. Vì vậy nghiên cứu tập trung vào phát hiện concept drift theo hướng \textbf{không giám sát} (unsupervised), cụ thể là phát hiện sự thay đổi trong phân phối dữ liệu đầu vào $P(X)$ (còn gọi là covariate shift hoặc data drift). Cách tiếp cận này dựa trên giả định: khi $P(X)$ thay đổi nhiều, ranh giới quyết định $P(Y|X)$ cũng thường thay đổi theo (giả định joint drift). Phát hiện sớm sự thay đổi trong $P(X)$ đóng vai trò tín hiệu cảnh báo, để hệ thống kích hoạt các cơ chế kiểm tra hoặc cập nhật mô hình khi cần.
+Luận văn tập trung phát triển một hệ thống kết hợp các thành phần sau:
 \begin{itemize}
-	\item Nghiên cứu và cải thiện phương pháp ShapeDD để phát hiện concept drift không giám sát, so sánh với các phương pháp phát hiện drift truyền thống.
-	\item Xây dựng các chiến lược thích ứng mô hình đa dạng tương ứng với từng loại drift được phát hiện.
-	\item Thiết kế và triển khai kiến trúc streaming real-time sử dụng Apache Kafka cho việc xử lý event-driven có khả năng mở rộng.
-	\item Tùy chỉnh và tối ưu hóa các tham số của phương pháp để đảm bảo hiệu quả với các kiểu dữ liệu và hiện tượng trôi dạt khác nhau.
-	\item Đánh giá hiệu năng của hệ thống trên các tập dữ liệu tổng hợp đa dạng và các kịch bản drift khác nhau.
+	\item Nghiên cứu và cải thiện phương pháp ShapeDD để phát hiện concept drift không giám sát, so sánh với các phương pháp truyền thống.
+	\item Xây dựng các chiến lược thích ứng mô hình tương ứng với từng loại drift được phát hiện.
+	\item Thiết kế và triển khai kiến trúc streaming real-time dùng Apache Kafka cho xử lý event-driven có khả năng mở rộng.
+	\item Tùy chỉnh tham số của phương pháp để đảm bảo hiệu quả với các kiểu dữ liệu và hiện tượng trôi dạt khác nhau.
+	\item Đánh giá hiệu năng trên các tập dữ liệu tổng hợp và các kịch bản drift khác nhau.
 \end{itemize}
 
-\textbf{Phạm vi đánh giá:} Hệ thống được thiết kế và đánh giá trên
-\textbf{đa dạng các loại drift} bao gồm sudden, gradual, incremental, recurrent, và blip nhưng vẫn tập trung vào sudden drift.
-Cách tiếp cận đánh giá bao gồm:
+\textbf{Phạm vi đánh giá.} Hệ thống được thiết kế và đánh giá trên nhiều loại drift (sudden, gradual, incremental, recurrent, blip), nhưng trọng tâm vẫn là sudden drift. Cách đánh giá:
 
 \begin{enumerate}
-	\item \textbf{Đánh giá toàn diện:} Thực nghiệm trên nhiều kịch bản drift khác nhau
-	      với nhiều lần chạy độc lập để đảm bảo độ tin cậy thống kê.
+	\item \textbf{Đánh giá đa kịch bản:} Thực nghiệm trên nhiều kịch bản drift khác nhau, mỗi kịch bản chạy độc lập nhiều lần để có độ tin cậy thống kê.
 
-	\item \textbf{Phân tích đa tầng:} Đánh giá cả khả năng \textit{phát hiện}
-	      lẫn khả năng \textit{phân loại} của hệ thống, bao gồm phân loại
-	      theo nhóm (TCD vs PCD) và theo loại cụ thể.
+	\item \textbf{Phân tích đa tầng:} Đánh giá cả khả năng \textit{phát hiện} lẫn khả năng \textit{phân loại}, bao gồm phân loại theo nhóm (TCD và PCD) và theo loại cụ thể.
 
-	\item \textbf{So sánh công bằng:} Đánh giá phương pháp đề xuất (SE-CDT không giám sát)
-	      so với baseline CDT-MSW có giám sát trong cùng điều kiện thử nghiệm.
+	\item \textbf{So sánh công bằng:} So sánh phương pháp đề xuất (SE-CDT không giám sát) với baseline CDT-MSW có giám sát trong cùng điều kiện thử nghiệm.
 \end{enumerate}
 
 
 \subsection{Đối tượng nghiên cứu}
-Đối tượng nghiên cứu của luận văn bao gồm:
+Đối tượng nghiên cứu của luận văn gồm:
 \begin{itemize}
-	\item \textbf{Phương pháp phát hiện drift:} ShapeDD, ShapeDD-IDW (đề xuất), và các phương pháp
-	      so sánh bao gồm MMD, KS-Test, D3, DAWIDD.
-	\item \textbf{Mô hình phân loại drift:} SE-CDT --- phương pháp xác định
-	      loại \textit{drift} dựa trên hình dạng tín hiệu MMD, lấy ý tưởng từ CDT-MSW.
-	\item \textbf{Dữ liệu streaming:} Các tập dữ liệu tổng hợp đa dạng
-	      (Gaussian, multimodal, high-dimensional,...) với các loại \textit{drift} khác nhau
-	      (sudden, gradual, incremental, recurrent, blip).
-	\item \textbf{Nền tảng xử lý streaming:} Apache Kafka cho việc triển khai
-	      hệ thống giám sát \textit{real-time}.
+	\item \textbf{Phương pháp phát hiện drift:} ShapeDD, ShapeDD-IDW (đề xuất), và các phương pháp so sánh gồm MMD, KS-Test, D3, DAWIDD.
+	\item \textbf{Mô hình phân loại drift:} SE-CDT, phương pháp xác định loại \textit{drift} dựa trên hình dạng tín hiệu MMD, lấy ý tưởng từ CDT-MSW.
+	\item \textbf{Dữ liệu streaming:} Các tập dữ liệu tổng hợp (Gaussian, multimodal, high-dimensional, \dots) với nhiều loại \textit{drift} khác nhau (sudden, gradual, incremental, recurrent, blip).
+	\item \textbf{Nền tảng xử lý streaming:} Apache Kafka cho việc triển khai hệ thống giám sát \textit{real-time}.
 \end{itemize}
