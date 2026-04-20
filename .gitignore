@@ -92,3 +92,8 @@ temp/
 # *.md
 # *.txt
 *.csv
+
+# Generated benchmark artifacts (regenerable from scripts)
+results/raw/
+results/plots/fig_prequential_mixed.png
+results/tables/table_se_cdt_performance_summary.tex
