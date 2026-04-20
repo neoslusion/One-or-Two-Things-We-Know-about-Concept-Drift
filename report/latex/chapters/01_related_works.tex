@@ -50,7 +50,7 @@ móng cho các phương pháp sau này.
 \textbf{DDM (Drift Detection Method)} theo dõi tỷ lệ lỗi $p_i$ và độ lệch chuẩn $s_i$ của mô hình trên dòng dữ liệu.
 Ý tưởng là trong quá trình hoạt động, nếu phân phối dữ liệu ổn định, tỷ lệ dự đoán sai sẽ giảm dần và dao động xung quanh một giá trị thấp.
 Khi concept drift xảy ra, tỷ lệ lỗi của mô hình đột ngột tăng cao, vượt ra khỏi khoảng tin cậy.
-DDM sẽ tiến hành ghi nhận giá trị tối thiểu của $p_i + s_i$ trong quá trình học, và đặt hai ngưỡng cảnh báo:
+DDM ghi nhận giá trị tối thiểu của $p_i + s_i$ trong quá trình học, và đặt hai ngưỡng cảnh báo:
 \begin{itemize}
 	\item \textbf{Warning level:} Khi $p_i + s_i \geq p_{min} + 2 \cdot s_{min}$ (ngưỡng 2-sigma), hệ thống bắt đầu lưu dữ liệu mới để chuẩn bị huấn luyện lại
 	\item \textbf{Drift level:} Khi $p_i + s_i \geq p_{min} + 3 \cdot s_{min}$ (ngưỡng 3-sigma), drift được xác nhận, mô hình cũ bị loại bỏ và huấn luyện lại từ dữ liệu đã lưu

@@ -58,7 +58,9 @@ Một loạt các dịch vụ/ứng dụng trong bối cảnh hệ thống và m
 	\item \textbf{Thành phố thông minh:} Dữ liệu được thu thập cho nhiều mục đích như đảm bảo an ninh mạng, dự đoán ô nhiễm không khí, dự đoán giao thông đường bộ và dự báo tải điện
 \end{itemize}
 
-Sự phân phối của dữ liệu có thể thay đổi theo thời gian do máy móc lão hóa và cần quy trình bảo trì, hoặc do các yếu tố môi trường thay đổi. Do đó, một kỹ thuật CBM không có khả năng xử lý concept drift sẽ hoạt động kém~\cite{jourdan2021machine}. Do đó, concept drift có thể ảnh hưởng đến hiệu quả và tính mạnh mẽ của phân tích luồng dữ liệu~\cite{tripathi2021ensuring}. Trong môi trường không cố định, có một số cân nhắc mà các mô hình dự đoán phải tính đến để phát hiện và tự thích ứng với concept drift, nếu không, hiệu suất của các mô hình này sẽ giảm sút về độ chính xác và độ mạnh mẽ. Theo thời gian, một mô hình dự đoán có thể cần cập nhật lại dữ liệu mới, hoặc thay đổi các tham số và cấu trúc của nó bằng cách kết hợp các dữ liệu huấn luyện mới hoặc thay thế hoàn toàn mô hình cũ để xử lý concept drift~\cite{gama2014survey, lu2018learning}.
+Phân phối dữ liệu có thể thay đổi theo thời gian do máy móc lão hóa, do quy trình bảo trì, hoặc do các yếu tố môi trường thay đổi. Một kỹ thuật CBM không có khả năng xử lý concept drift sẽ hoạt động kém trong các điều kiện này~\cite{jourdan2021machine}, kéo theo độ tin cậy và độ chính xác của phân tích luồng dữ liệu cũng bị ảnh hưởng~\cite{tripathi2021ensuring}.
+
+Vì vậy, mô hình dự đoán cần có cơ chế phát hiện và tự thích ứng với concept drift để giữ hiệu suất ổn định. Việc thích ứng có thể là cập nhật trên dữ liệu mới, điều chỉnh tham số và cấu trúc, hoặc thay thế hoàn toàn mô hình cũ tùy theo loại drift xảy ra~\cite{gama2014survey, lu2018learning}.
 
 \section{ShapeDD - Phương pháp phát hiện trôi dạt dựa trên hình dạng và khử nhiễu tín hiệu}
 
@@ -68,7 +70,7 @@ Trong học máy cổ điển, dữ liệu thường được giả định là 
 
 Các phương pháp \textbf{không giám sát (unsupervised)} cho bài toán phát hiện drift thường dựa trên việc đo \textit{độ khác biệt} giữa hai phân phối dữ liệu trong hai cửa sổ thời gian liên tiếp. Do số lượng mẫu trong mỗi cửa sổ thường nhỏ, các phép đo này dễ bị \textbf{nhiễu}, khiến việc phân biệt giữa thay đổi thật và dao động ngẫu nhiên trở nên khó khăn.
 
-\textbf{ShapeDD (Shape-Based Drift Detection)} được đề xuất để xử lý vấn đề này, thông qua việc khai thác \textit{đặc trưng hình học} của tín hiệu trôi dạt. Phương pháp đặc biệt hiệu quả với \textbf{drift đột ngột (abrupt drift)}.
+\textbf{ShapeDD (Shape-Based Drift Detection)} được đề xuất để xử lý vấn đề này, bằng cách khai thác \textit{đặc trưng hình học} của tín hiệu trôi dạt. Phương pháp đặc biệt hiệu quả với \textbf{drift đột ngột (abrupt drift)}.
 
 \subsection{Quy ước ký hiệu}
 
@@ -238,7 +240,7 @@ Các phương pháp phát hiện drift cơ bản đã được trình bày chi t
 
 \textbf{Phương pháp dựa trên cửa sổ thích ứng:} ADWIN điều chỉnh động kích thước cửa sổ dựa trên sự thay đổi được quan sát, đạt được cân bằng giữa độ nhạy và ổn định với đảm bảo lý thuyết $O(\log W)$ về bộ nhớ.
 
-\textbf{Phương pháp dựa trên độc lập thống kê:} DAWIDD phát hiện drift thông qua việc đo lường sự phụ thuộc giữa features và thời gian, cho phép phát hiện sớm mà không cần nhãn.
+\textbf{Phương pháp dựa trên độc lập thống kê:} DAWIDD phát hiện drift bằng cách đo sự phụ thuộc giữa các đặc trưng và thời gian, cho phép phát hiện sớm mà không cần nhãn.
 
 So với các phương pháp này, ShapeDD mang lại góc nhìn khác biệt bằng cách sử dụng Maximum Mean Discrepancy (MMD) để so sánh trực tiếp phân phối dữ liệu trong không gian kernel, kết hợp với kỹ thuật phát hiện hình dạng (shape detection) để giảm nhiễu và tăng độ chính xác định vị drift.
 ShapeDD hoạt động theo bốn giai đoạn chính như sau~\cite{shapeDD2024}:

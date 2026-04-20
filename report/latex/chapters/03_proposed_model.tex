@@ -8,7 +8,7 @@
 Mặc dù ShapeDD gốc thể hiện nhiều ưu điểm về độ chính xác định vị và khả năng khử nhiễu, việc áp dụng phương pháp này trong các hệ thống thời gian thực quy mô lớn gặp phải ba thách thức chính:
 
 \begin{enumerate}
-	\item \textbf{Chi phí tính toán cao:} Việc sử dụng kiểm định hoán vị với số lượng lớn (thường là 2500 lần để đảm kết quả có ý nghĩa về mặt thống kê) để ước lượng p-value tạo ra nghẽn cổ chai về hiệu năng, giới hạn tốc độ xử lý.
+	\item \textbf{Chi phí tính toán cao:} Việc sử dụng kiểm định hoán vị với số lượng lớn (thường là 2500 lần để đảm bảo kết quả có ý nghĩa về mặt thống kê) để ước lượng p-value tạo ra nghẽn cổ chai về hiệu năng, giới hạn tốc độ xử lý.
 	\item \textbf{Độ nhạy với tham số:} Hiệu suất của ShapeDD phụ thuộc nhiều vào việc lựa chọn độ rộng hạt nhân (kernel bandwidth) và kích thước cửa sổ, làm giảm khả năng tổng quát hóa trên các luồng dữ liệu có đặc tính drift đa dạng.
 	\item \textbf{Thiếu cơ chế thích ứng:} Phát hiện drift chỉ là bước đầu; hệ thống cần một cơ chế để tự động cập nhật mô hình một cách phù hợp với bản chất của sự thay đổi (đột ngột hay dần dần)~\cite{yuan2022advances}.
 \end{enumerate}
@@ -50,7 +50,7 @@ MMD có trọng số có dạng tổng quát:
 trong đó $w_i$ và $v_p$ là trọng số của từng điểm (thỏa mãn $\sum_i w_i = 1$, $\sum_p v_p = 1$). Câu hỏi đặt ra là: tính $w_i$ như thế nào để phát hiện drift hiệu quả?
 
 \subsubsection{Giải pháp đề xuất: Trọng số nghịch biến mật độ (Inverse Density Weighting)}
-Luận văn đề xuất phương pháp \textbf{IDW-MMD} (Inverse Density-Weighted MMD), một cách tiếp cận heuristic mới, lấy động lực từ ý tưởng weighted MMD trong Optimally-Weighted MMD của Bharti et al.~\cite{bharti2023owmmd}.
+Luận văn đề xuất phương pháp \textbf{IDW-MMD} (Inverse Density-Weighted MMD), một cách tiếp cận heuristic mới, lấy cảm hứng từ ý tưởng weighted MMD trong Optimally-Weighted MMD của Bharti et al.~\cite{bharti2023owmmd}.
 
 Phương pháp của Bharti et al. được thiết kế cho bài toán suy luận thống kê, đề xuất trọng số tối ưu phức tạp và không liên quan đến bài toán drift detection. Luận văn chỉ kế thừa ý tưởng ``gán trọng số cho từng điểm dữ liệu trong MMD'' và áp dụng một heuristic đơn giản hơn (trọng số nghịch biến với căn bậc hai của mật độ kernel) để phù hợp với bài toán drift detection.
 
