@@ -170,7 +170,7 @@ Hiệu suất của các phương pháp thay đổi tùy thuộc vào đặc tí
 	\item \textbf{Hành vi trên Virtual Drift (Control Group):}
 	      Trên các dataset \textit{hyperplane}, \textit{led\_abrupt}, và \textit{standard\_sea}, SE-CDT/ShapeDD-IDW đạt F1 = 0.0. Đây là \textbf{hành vi mong đợi} vì các dataset này chỉ có sự thay đổi $P(Y|X)$. Phương pháp unsupervised chỉ tập trung vào $P(X)$, giúp hệ thống không bị ``đánh lừa'' bởi các thay đổi chỉ mang tính chất nhãn.
 	\item \textbf{Blip Drift:}
-	      Trên tập \textit{rbfblips}, SE-CDT đạt F1 = 1.0. Cơ chế shape detection kết hợp IDW-MMD cho kết quả tốt với các thay đổi ngắn hạn, đột ngột. Đáng chú ý, kết quả này giữ vững sau khi điều kiện Blip trong Algorithm~\ref{alg:se-cdt} được \textit{loại bỏ tham số tuyệt đối} \texttt{peak\_distance < 35} và chỉ còn dựa trên các đặc trưng tương đối (PPR, DPAR, WR), tăng tính độc lập với kích thước cửa sổ.
+	      Trên tập \textit{rbfblips}, SE-CDT đạt F1 = 1.0. Cơ chế shape detection kết hợp IDW-MMD cho kết quả tốt với các thay đổi ngắn hạn, đột ngột. Đáng chú ý, kết quả này giữ vững khi điều kiện Blip trong Algorithm~\ref{alg:se-cdt} chỉ dựa trên các đặc trưng tương đối (PPR, DPAR, WR), không cần ngưỡng khoảng cách peak tuyệt đối, nhờ đó tăng tính độc lập với kích thước cửa sổ.
 	\item \textbf{Báo động giả (False Positives trong detection):}
 	      Hình~\ref{fig:stationary_fp} so sánh số FP trong benchmark detection. KS-Test ghi nhận nhiều báo động sai nhất (37.6 FP/run), trong khi SE-CDT và ShapeDD-IDW giữ \textbf{0 FP} trên toàn bộ tập, bao gồm cả tập stationary \texttt{stagger\_none} (không có sự kiện ground-truth). Có hai lý do: (i) cơ chế shape detection yêu cầu tín hiệu MMD phải khớp dạng tam giác đặc trưng; (ii) băng thông kernel $\gamma$ được ước lượng một lần bằng heuristic median và dùng chung cho cả ba kernel $K_{XX}, K_{YY}, K_{XY}$, tránh sự bất nhất giữa các lát kernel.
 \end{enumerate}
@@ -356,7 +356,7 @@ Bảng~\ref{tab:se-cdt-performance-by-type} và Hình~\ref{fig:confusion-5class}
 
 	\item \textbf{Recurrent Drift (33.1\%):} Tăng từ $0\%$ lên $33.1\%$ nhờ tích hợp \textbf{Concept Memory} (Mục~\ref{sec:se-cdt-concept-memory}). Cơ chế gồm hai bước: ringbuffer lưu snapshot sau mỗi drift; MMD chuẩn so khớp snapshot cũ với tín hiệu hiện tại, nếu khoảng cách nhỏ hơn $\mu = 0.15$ thì xếp loại Recurrent. Ngưỡng $\mu$ được chọn thực nghiệm sao cho gấp khoảng $2\times$ độ nhiễu MMD nền (đo được $\approx 0.08$ trên dữ liệu Gaussian đồng nhất). Phần còn thiếu (khoảng $67\%$) chủ yếu là khi ringbuffer chưa kịp lưu concept ban đầu (lần đầu B xuất hiện sau A) hoặc snapshot bị nhiễu vì window post-drift quá ngắn. Hai trường hợp này có thể cải thiện bằng cách kéo dài snapshot và lưu thêm metadata về concept.
 
-	\item \textbf{Blip Drift (5.0\%):} Đây là điểm yếu lớn nhất sau khi bỏ tham số tuyệt đối \texttt{peak\_distance < 35} (D3 fix, ưu tiên tính độc lập kích thước cửa sổ). Bộ phân loại hiện chỉ dùng các đặc trưng tương đối (PPR, DPAR, WR) và yêu cầu đúng $n_p = 2$ peak cô lập. Trong thực tế, tín hiệu Blip thường có nhiễu phụ làm xuất hiện 3--4 peak, làm luật ``$n_p = 2$'' bị bỏ qua. Đây là đánh đổi giữa tính tổng quát và độ chính xác riêng cho Blip; hướng cải tiến tiếp theo là cho phép $n_p \in \{2, 3\}$ và đánh giá lại.
+	\item \textbf{Blip Drift (5.0\%):} Đây là điểm yếu lớn nhất khi bộ phân loại được thiết kế chỉ dùng các đặc trưng tương đối (PPR, DPAR, WR) để giữ tính độc lập với kích thước cửa sổ, không dùng ngưỡng khoảng cách peak tuyệt đối. Luật phân loại yêu cầu đúng $n_p = 2$ peak cô lập, nhưng trong thực tế tín hiệu Blip thường có nhiễu phụ làm xuất hiện 3--4 peak nên luật này bị bỏ qua. Đây là đánh đổi giữa tính tổng quát và độ chính xác riêng cho Blip; hướng cải tiến tiếp theo là nới luật để chấp nhận $n_p \in \{2, 3\}$ và đánh giá lại.
 \end{itemize}
 
 \subsection{So sánh với State-of-the-Art}
@@ -390,9 +390,9 @@ Sau khi phát hiện drift, hệ thống kích hoạt quy trình thích ứng. P
 		\item \textit{No Adaptation:} giữ nguyên mô hình ban đầu (cận dưới).
 		\item \textit{Periodic Retrain:} huấn luyện lại định kỳ mỗi 500 mẫu, không dùng tín hiệu detector.
 		\item \textit{Simple Retrain:} huấn luyện lại trên cửa sổ gần nhất mỗi khi SE-CDT báo drift, bất kể loại nào.
-		\item \textit{Type-Specific (đề xuất):} chọn một trong bốn chiến lược (Full Reset, Incremental Fine-tune, Recency-weighted, Model Caching) tuỳ theo nhãn drift do SE-CDT phân loại (xem Mục~3.4).
+		\item \textit{Type-Specific (đề xuất):} chọn một trong bốn chiến lược (Full Reset, Incremental Fine-tune, Recency-weighted, Model Caching) tuỳ theo nhãn drift do SE-CDT phân loại (xem Mục~\ref{sec:model-adaptation-framework}).
 	\end{itemize}
-	\item \textbf{Tham số:} ngưỡng phát hiện $\tau = 0.015$, cửa sổ ShapeDD $W = 50$, mô hình nền Logistic Regression (\texttt{scikit-learn}, \texttt{max\_iter} $= 1000$).
+	\item \textbf{Tham số:} ngưỡng phát hiện $\tau = 0.015$, cửa sổ ShapeDD $W = 50$, mô hình nền là Logistic Regression với số lần lặp tối đa 1000.
 	\item \textbf{Chỉ số:} Prequential Accuracy (độ chính xác cuốn chiếu) đo khả năng phục hồi sau drift; số False Positives (FP) đo chi phí cảnh báo dư thừa.
 \end{itemize}
 

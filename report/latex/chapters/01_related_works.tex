@@ -269,7 +269,6 @@ Như bảng~\ref{tab:drift-history} tóm tắt, lĩnh vực phát hiện concept
 \label{sec:cdt-msw-theory}
 \subsection{Tổng quan}
 
-% \textit{Mặc dù luận văn tập trung đánh giá \textbf{sudden drift} như đã nêu trong Chương~1, việc hệ thống hóa phương pháp phân loại loại drift là nền tảng quan trọng cho kiến trúc thích ứng thông minh được đề xuất trong Chương~3. Phương pháp CDT-MSW được tích hợp vào hệ thống để kích hoạt chiến lược cập nhật mô hình phù hợp với từng loại drift.}
 Sau khi phát hiện được thời điểm xảy ra trôi dạt, việc xác định loại trôi dạt là cần thiết để có thể đưa ra hành động phù hợp can thiệp vào mô hình. Khác với các phương pháp truyền thống chỉ trả lời ``có drift hay không'', phương pháp \textbf{CDT-MSW} (Concept Drift Type identification based on Multi-Sliding Windows) được Guo \textit{et al.}~\cite{guo2022cdtmsw} đề xuất nhằm \emph{phân biệt bản chất và tốc độ thay đổi của quá trình drift}. Phương pháp này dựa trên việc quan sát hành vi thay đổi của độ chính xác giữa nhiều cửa sổ trượt (traditional sliding windows và adaptive windows), qua đó nhận dạng các loại drift gồm \emph{sudden}, \emph{gradual}, \emph{incremental} và \emph{recurrent}.
 
 \subsection{Giai đoạn 1: Phát hiện vị trí trôi dạt (Detection Process)}
@@ -463,4 +462,4 @@ Các phương pháp theo dõi hiệu năng mô hình (DDM, EDDM, ADWIN\ldots) ho
 
 \textbf{ShapeDD} có ba điểm phù hợp với mục tiêu của luận văn: (1) hoạt động hoàn toàn \textit{không giám sát} (không cần nhãn), (2) xác định được \textit{vị trí chính xác} của điểm drift nhờ đặc trưng hình học tam giác (Triangle Shape Property), và (3) có nền tảng lý thuyết rõ ràng nên dễ cải tiến có chủ đích. ShapeDD gốc vẫn phụ thuộc vào permutation test tốn kém và chưa có cơ chế phân loại loại drift.
 
-Luận văn vì vậy tập trung vào việc \textbf{cải tiến ShapeDD} theo hai hướng bổ sung cho nhau: (1) thay permutation test bằng IDW-MMD kết hợp asymptotic p-value để tăng tốc độ xử lý, và (2) xây dựng SE-CDT để phân loại loại drift dựa trên hình dạng tín hiệu MMD mà không cần nhãn. Chi tiết được trình bày trong Chương~\ref{chap:theoretical-foundation} và Chương~\ref{chap:proposed-model}.
+Luận văn vì vậy tập trung vào việc \textbf{cải tiến ShapeDD} theo hai hướng bổ sung cho nhau: (1) thay permutation test bằng IDW-MMD kết hợp asymptotic p-value để tăng tốc độ xử lý, và (2) xây dựng SE-CDT để phân loại loại drift dựa trên hình dạng tín hiệu MMD mà không cần nhãn. Cải tiến cụ thể được trình bày ở Chương~\ref{chap:proposed-model} (lý thuyết nền của ShapeDD đã được giới thiệu ở Chương~\ref{chap:theoretical-foundation}).
