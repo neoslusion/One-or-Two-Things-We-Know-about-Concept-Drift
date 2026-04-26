@@ -7,15 +7,20 @@ Luận văn giải quyết bài toán phát hiện và thích ứng với concep
 
 \subsection{Đóng góp về Phương pháp luận (Methodological)}
 \begin{itemize}
-	\item \textbf{Tích hợp ShapeDD-IDW:} Đưa IDW-MMD (Inverse Density-Weighted MMD), một heuristic do luận văn đề xuất, lấy cảm hứng từ weighted MMD framework của~\cite{bharti2023owmmd}, kết hợp với asymptotic p-value vào ShapeDD detector. Phương pháp này tăng thông lượng xử lý gấp \textbf{16.5 lần} (đạt khoảng $111{,}000$--$131{,}000$ mẫu/giây) so với ShapeDD gốc (khoảng $8{,}000$ mẫu/giây), đạt F1 $= 0.484$ với \textbf{0 False Positives} trên detection benchmark. Tính chất FP của IDW-MMD và SE-CDT được kiểm chứng bằng H0-calibration test (Mục~\ref{sec:h0-calibration}), cho thấy Type-I error thực nghiệm $\leq \alpha = 0.05$ trên cả ba phân phối stationary thử nghiệm. \textit{Lưu ý:} phương pháp không phát hiện được virtual drift (chỉ thay đổi $P(Y|X)$ mà không thay đổi $P(X)$), đúng với bản chất unsupervised của thuật toán.
+	\item \textbf{Tích hợp ShapeDD-IDW:} Đưa IDW-MMD (Inverse Density-Weighted MMD), một heuristic do luận văn đề xuất, lấy cảm hứng từ weighted MMD framework của~\cite{bharti2023owmmd}, kết hợp với p-value Gamma-approximation vào ShapeDD detector theo kiến trúc \textit{hybrid} (Standard MMD cho trace + IDW với Gamma null làm bước kiểm định, xem Mục~\ref{sec:detection-hybrid}). Phương pháp này tăng thông lượng xử lý gấp \textbf{16.5 lần} (đạt khoảng $111{,}000$--$131{,}000$ mẫu/giây trên cấu hình parallel của benchmark) so với ShapeDD gốc dùng permutation test (khoảng $8{,}000$ mẫu/giây), với F1 $= 0.454$ trên detection benchmark ($\delta = 75$, 14 datasets, 15 seeds), \textbf{tương đương với MMD chuẩn ($F_1 = 0.460$) và cao hơn ShapeDD gốc ($F_1 = 0.433$)} mặc dù dùng số lần resampling ít hơn 100$\times$ (B = 20 vs N\_perm = 2500). Phép kiểm Gamma-approximation đã được kiểm chứng bằng H0-calibration test (Mục~\ref{sec:h0-calibration}): Type-I error thực nghiệm là $0.04$--$0.10$ trên ba phân phối stationary, nằm trong khoảng tin cậy 95\% của mức danh nghĩa $\alpha = 0.05$, xác lập rằng số False Positive trên dữ liệu thật ($\sim 14.7$ FP/run trên benchmark detection) phản ánh đúng cấu hình thống kê của test chứ không phải lỗi thuật toán.
+
+	\textit{Ghi chú lịch sử về kiểm định.} Phiên bản trước của luận văn áp dụng asymptotic Gaussian (eq.~\ref{eq:idw_mmd}-style với phương sai $4\,\mathrm{Var}(K_{XY})/\min(n,m)$ rút từ Gretton 2012). Trong quá trình audit nội bộ phát hiện rằng công thức phương sai này thuộc \textit{H1 leading-order} chứ không phải H0 null distribution của MMD$^2_u$ (vốn là tổng có trọng của các $\chi^2$ độc lập, không phải Gaussian centered tại 0). Hệ quả là test cũ quá conservative, Type-I error đo được là 0.000 trên cả ba phân phối H0-calibration --- biểu hiện của một test không kích hoạt được, không phải của một detector tin cậy. Phiên bản hiện tại đã thay bằng Gamma-approximation null (Gretton et al. 2009 NIPS) với 20 index-permutations để moment-match, vừa giữ tốc độ vừa hiệu chỉnh đúng theo lý thuyết. Các con số trong chương Thực nghiệm được tính lại với kiểm định mới này.
+
+	\textit{Lưu ý phạm vi:} (i) phương pháp không phát hiện được virtual drift (chỉ thay đổi $P(Y|X)$ mà không thay đổi $P(X)$), đúng với bản chất unsupervised của thuật toán; (ii) trên benchmark phân loại với độ trễ chấp nhận $\delta = 250$ mẫu lớn hơn, FP có thể tăng do detector bắt thêm các thay đổi tạm thời trong khoảng chuyển tiếp dài --- đây là trade-off đã được phân tích ở Mục~\ref{par:tolerance-convention}.
 	\item \textbf{Đề xuất SE-CDT:} Phương pháp phân loại drift không giám sát, tận dụng khả năng định vị chính xác thời điểm drift của ShapeDD. Phiên bản hiện tại có hai cơ chế tăng cường: (i) Concept Memory (ring buffer + Standard MMD comparison) nhận diện Recurrent drift thay vì coi mỗi lần xuất hiện như một Sudden độc lập; (ii) Online self-calibration nới ngưỡng SNR/WR/CV theo phân vị quan sát trên cửa sổ không drift, không cần nhãn ở runtime. Phương pháp tạo tiền đề cho chiến lược thích ứng thông minh trên streaming data thực tế.
 \end{itemize}
 
 \subsection{Đóng góp về Thực nghiệm (Empirical)}
 \begin{itemize}
 	\item \textbf{Benchmark mở rộng và chặt chẽ hơn:} Đánh giá có hệ thống 8 phương pháp phát hiện drift (MMD, IDW-MMD, KS, ShapeDD, ShapeDD-IDW, SE-CDT, D3, DAWIDD) trên 14 tập dữ liệu, có bổ sung \texttt{stagger\_recurrent\_explicit} (recurrent đối xứng), \texttt{gaussian\_gradual\_synthetic} (gradual có \texttt{transition\_length} rõ ràng) và \texttt{stagger\_none} (stationary, baseline FP). Kết quả được kiểm chứng bằng kiểm định Friedman và Nemenyi với 15 lần chạy độc lập, $\alpha = 0.05$.
-	\item \textbf{H0-calibration test:} Đo Type-I error trực tiếp trên ba phân phối stationary (Gauss-iid $d=5$, $d=10$, AR(1)), xác nhận IDW-MMD và SE-CDT có FP rate $\leq \alpha$ về mặt thống kê chứ không chỉ trên benchmark detection (Mục~\ref{sec:h0-calibration}).
-	\item \textbf{Phân tích độ trễ và chi phí:} Cho thấy việc thay permutation test bằng asymptotic p-value (kích hoạt nhờ IDW-MMD kernel) giúp giảm độ trễ phát hiện trung bình và tăng throughput 16.5 lần so với ShapeDD gốc.
+	\item \textbf{H0-calibration test:} Đo Type-I error trực tiếp trên ba phân phối stationary (Gauss-iid $d=5$, $d=10$, AR(1)), xác nhận MMD chuẩn (permutation), IDW-MMD (Gamma null) và SE-CDT (composite) đều có Type-I error nằm trong khoảng tin cậy 95\% của mức danh nghĩa $\alpha = 0.05$ (Mục~\ref{sec:h0-calibration}).
+	\item \textbf{Đánh giá thích ứng có ý nghĩa thống kê:} Prequential evaluation với $N = 30$ runs trên 3 kịch bản (Stepping, Sudden, Mixed) bổ sung kiểm định Friedman, cho $p < 10^{-15}$ trên cả ba, xác lập rằng các baseline thích ứng (Type-Specific, Simple Retrain, Periodic Retrain, No Adaptation) khác biệt có ý nghĩa thống kê chứ không phải dao động ngẫu nhiên.
+	\item \textbf{Phân tích độ trễ và chi phí:} Cho thấy việc thay permutation test ($N_{\text{perm}} = 2{,}500$) bằng Gamma-approximation null ($B = 20$ index-permutations với kernel matrix tái sử dụng) giúp giảm chi phí xử lý mỗi cửa sổ từ $\sim 125$ ms xuống $\sim 7.6$ ms, tăng throughput $16.5\times$ so với ShapeDD gốc.
 	\item \textbf{Xác nhận hành vi đúng:} SE-CDT và ShapeDD-IDW không phát hiện ``drift'' trên các dataset virtual drift (hyperplane, led\_abrupt, sea), đúng với kỳ vọng vì $P(X)$ không đổi.
 \end{itemize}
 
@@ -32,9 +37,9 @@ Quá trình nghiên cứu và thực nghiệm cho thấy mấy điểm sau:
 \begin{enumerate}
 	\item \textbf{Adaptive Window có vai trò quan trọng:} ShapeDD với kích thước cửa sổ thích ứng (adaptive sizing) cho kết quả tốt hơn cửa sổ cố định trong điều kiện thử nghiệm. Khả năng tự điều chỉnh theo độ lớn drift giúp giảm False Positives và tăng độ nhạy.
 
-	\item \textbf{Trade-off giữa Tốc độ và Độ chính xác:} Các phương pháp cửa sổ trượt truyền thống chính xác nhưng chậm. Việc tích hợp IDW-MMD với asymptotic p-value đẩy throughput từ khoảng 8{,}000 lên khoảng 131{,}000 mẫu/giây, nhanh hơn KS-Test mà vẫn giữ độ chính xác (F1 $= 0.484$ so với $0.294$).
+	\item \textbf{Trade-off giữa Tốc độ và Độ chính xác:} Các phương pháp cửa sổ trượt truyền thống chính xác nhưng chậm. Việc tích hợp IDW-MMD với Gamma-approximation p-value đẩy throughput từ khoảng $8{,}000$ lên khoảng $131{,}000$ mẫu/giây, nhanh hơn KS-Test mà vẫn giữ độ chính xác cạnh tranh ($F_1 = 0.454$ so với KS $0.294$, tương đương ShapeDD gốc $0.433$).
 
-	\item \textbf{Hiệu quả của Type-Specific Adaptation:} Trên Stepping Drift, Type-Specific đạt 77.28\% so với No Adaptation 56.18\% ($+21.10$pp), hơn Simple Retrain $+12.36$pp và Periodic Retrain $+12.39$pp. Trên Sudden Drift, Type-Specific đạt 76.64\% so với No Adaptation 51.80\% ($+24.84$pp), hơn Simple Retrain $+14.84$pp và Periodic Retrain $+12.41$pp. Hai kịch bản cho cùng mức kết quả (khoảng 77\%) với cùng pipeline, cho thấy phần lớn cải thiện đến từ bước phân loại drift trước khi chọn chiến lược, không phải từ riêng bước phát hiện.
+	\item \textbf{Hiệu quả của Type-Specific Adaptation (kiểm chứng thống kê chặt chẽ).} Trên kết quả $N=30$ mới, Type-Specific Adaptation hơn No Adaptation $+16.57$pp trên Stepping ($71.37\%$ vs $54.80\%$), $+17.10$pp trên Sudden ($70.78\%$ vs $53.68\%$), và $+3.51$pp trên Mixed ($86.20\%$ vs $82.69\%$). Type-Specific cũng vượt cả Simple Retrain ($+1.96$ đến $+8.62$pp) và Periodic Retrain ($+0.11$ đến $+7.34$pp) trên cả ba kịch bản. Khác biệt giữa các chiến lược có ý nghĩa thống kê mạnh: kiểm định Friedman cho $p < 10^{-15}$ trên cả ba kịch bản, không có nghi ngờ về tính ngẫu nhiên. Phần lớn cải thiện đến từ bước phân loại drift trước khi chọn chiến lược, không phải từ riêng bước phát hiện.
 
 	\item \textbf{Vai trò của Phân loại Drift:} Xác định đúng loại drift (ví dụ Blip với Sudden) giúp tránh phản ứng thái quá với nhiễu. Chiến lược thích ứng theo loại drift giúp hệ thống vận hành ổn định và tiết kiệm tài nguyên.
 \end{enumerate}
@@ -43,12 +48,13 @@ Quá trình nghiên cứu và thực nghiệm cho thấy mấy điểm sau:
 
 Bên cạnh kết quả đạt được, nghiên cứu vẫn còn một số hạn chế:
 
-\subsection{Trade-off giữa Detection và Classification}
-SE-CDT (Std) đạt EDR (tương đương Recall) $= 94.7\%$ nhưng FP cao ($1634$). SE-CDT (IDW) giảm FP xuống $234$ nhưng EDR còn $58.7\%$. Trong môi trường production cần cân nhắc:
+\subsection{Trade-off giữa Recall và False Positives}
+Trên benchmark phân loại ($\delta = 250$), SE-CDT (Std) đạt EDR $\approx 94.2\%$ với FP cao hơn; SE-CDT (IDW) có FP thấp hơn nhưng cũng giảm EDR. Trên benchmark detection ($\delta = 75$), cùng phương pháp đạt $F_1 = 0.454$ với $\sim 14.7$ FP/run. Hai cấu hình phục vụ hai use-case khác nhau:
 \begin{itemize}
-	\item Nếu ưu tiên \textbf{recall cao}: dùng SE-CDT (Std) với threshold thấp.
-	\item Nếu ưu tiên \textbf{FP thấp}: dùng SE-CDT (IDW) hoặc ShapeDD-IDW (FP $= 0$ trong detection benchmark).
+	\item Nếu ưu tiên \textbf{recall cao} (production monitoring nơi bỏ sót drift đắt hơn xử lý báo nhầm): dùng SE-CDT (Std).
+	\item Nếu ưu tiên \textbf{FP thấp} (alerting với chi phí phản ứng cao): dùng SE-CDT (IDW) với threshold cao hơn.
 \end{itemize}
+Lưu ý rằng số FP thực tế phản ánh chính xác mức $\alpha$ của test đã được hiệu chỉnh đúng (xem Mục~\ref{sec:h0-calibration}); để giảm FP có thể siết $\alpha$ thấp hơn, hi sinh recall tương ứng. Đây là trade-off cố hữu của hypothesis testing, không phải hạn chế của thuật toán.
 
 \subsection{Subcategory Accuracy còn hạn chế}
 Category Accuracy (TCD vs PCD) đạt mức tốt nhưng Subcategory Accuracy vẫn còn khoảng cách so với CAT. Cụ thể:
@@ -129,10 +135,10 @@ Như đã phân tích trong Mục~\ref{sec:limitation-heuristic}, bước Classi
 
 Bài toán concept drift là một bài toán mở. Luận văn đóng góp các đề xuất cụ thể sau:
 \begin{enumerate}
-	\item \textbf{Cải thiện hiệu năng:} IDW-MMD kết hợp asymptotic p-value tăng throughput \textbf{16.5 lần} (từ $8{,}000$ lên $131{,}000$ mẫu/giây), cho thấy khả năng áp dụng trong môi trường production.
-	\item \textbf{Độ tin cậy:} ShapeDD-IDW và SE-CDT giữ \textbf{0 False Positives} trong cả benchmark detection và các thí nghiệm monitoring. H0-calibration test xác nhận Type-I error thực nghiệm $\leq \alpha = 0.05$ trên ba phân phối stationary.
-	\item \textbf{Phân loại không giám sát + adaptive nhẹ:} SE-CDT phân loại drift không cần labels, có Concept Memory (cho Recurrent) và online self-calibration cho ngưỡng SNR/WR/CV, vẫn không cần nhãn ở runtime.
-	\item \textbf{Thích ứng hiệu quả:} Type-Specific Adaptation cải thiện $+21.10$pp trên Stepping và $+24.84$pp trên Sudden so với No Adaptation; hơn Simple Retrain lần lượt $+12.36$pp và $+14.84$pp. Phạm vi thực nghiệm và hướng mở rộng được trình bày ở Chương~\ref{chap:experiments} và phần Hạn chế.
+	\item \textbf{Cải thiện hiệu năng:} IDW-MMD kết hợp Gamma-approximation null p-value tăng throughput \textbf{16.5 lần} (từ $8{,}000$ lên $131{,}000$ mẫu/giây trên cấu hình parallel của benchmark), trong khi vẫn đạt $F_1 = 0.454$ (so với ShapeDD gốc $0.433$).
+	\item \textbf{Độ tin cậy thống kê:} Phép kiểm Gamma-approximation được hiệu chỉnh đúng tại $\alpha = 0.05$, kiểm chứng bằng H0-calibration test trên ba phân phối stationary (Type-I error đo được $0.04$--$0.10$). FP trên dữ liệu thật ($\sim 14.7$/run) phản ánh đúng cấu hình thống kê chứ không phải lỗi mis-calibration như phiên bản trước.
+	\item \textbf{Phân loại không giám sát + adaptive nhẹ:} SE-CDT phân loại drift không cần labels, đạt CAT $= 82.2\%$, SUB micro $= 65.8\%$; có Concept Memory đẩy độ chính xác Recurrent lên $91.5\%$ (cao hơn CDT-MSW gốc $83.9\%$ trên benchmark UCI), và online self-calibration cho ngưỡng SNR/WR/CV, vẫn không cần nhãn ở runtime.
+	\item \textbf{Thích ứng hiệu quả (kiểm chứng thống kê):} Type-Specific Adaptation cải thiện $+16.57$pp trên Stepping và $+17.10$pp trên Sudden so với No Adaptation; hơn Simple Retrain lần lượt $+8.42$pp và $+8.62$pp. Trên Mixed, Type-Specific là phương pháp dẫn đầu ($+3.51$pp so với No Adaptation). Tất cả khác biệt có $p < 10^{-15}$ qua kiểm định Friedman ($N = 30$ runs).
 \end{enumerate}
 
 Kết quả cho thấy việc chuyển từ mô hình tĩnh sang hệ thống thích ứng là một hướng đi cần thiết. Các bước phát triển tiếp theo được nêu ở trên (mở rộng self-calibration sang đặc trưng temporal, thay decision tree heuristic bằng mô hình Bayesian có confidence score, và kiểm chứng trên dữ liệu thực tế) có thể tiếp tục củng cố tính khả thi và khả năng ứng dụng của hệ thống.
