@@ -72,7 +72,7 @@ from core.config import RAW_DIR, TABLES_DIR  # noqa: E402
 from core.detectors.mmd import mmd  # noqa: E402
 from core.detectors.mmd_variants import (  # noqa: E402
     shapedd_idw_mmd_proper,
-    wmmd_asymptotic,
+    wmmd_gamma,
 )
 
 
@@ -132,9 +132,16 @@ def probe_standard_mmd(window: np.ndarray, *, alpha: float = ALPHA) -> bool:
 
 
 def probe_idw_mmd(window: np.ndarray, *, alpha: float = ALPHA) -> bool:
-    """Return True if IDW-MMD asymptotic test rejects H0 at level alpha."""
+    """Return True if IDW-MMD with Gamma-approximation null rejects H0 at level alpha.
+
+    Note: previously this routed to ``wmmd_asymptotic`` which used a
+    Gaussian H₁ asymptotic mis-applied as the H₀ null (see
+    ``mmd_variants.wmmd_gamma`` docstring for the audit and fix).  We
+    now use the moment-matched Gamma null which is properly calibrated
+    at α.
+    """
     s = len(window) // 2
-    _, p = wmmd_asymptotic(window, s, weight_method="variance_reduction")
+    _, p = wmmd_gamma(window, s, weight_method="variance_reduction")
     return bool(p < alpha)
 
 
@@ -148,7 +155,7 @@ def probe_se_cdt(window: np.ndarray, *, alpha: float = ALPHA) -> bool:
 
 PROBES = {
     "Standard MMD (perm)":   probe_standard_mmd,
-    "IDW-MMD (asymptotic)":  probe_idw_mmd,
+    "IDW-MMD (Gamma null)":  probe_idw_mmd,
     "SE-CDT (composite)":    probe_se_cdt,
 }
 

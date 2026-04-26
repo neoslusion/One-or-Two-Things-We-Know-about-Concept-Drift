@@ -66,10 +66,10 @@ def generate_drift_type_performance_table(results):
         else:
             per_class_acc[dt] = 0.0
             
-    # 2. Generate Table Data
+    # 2. Generate Table Data (per-class rows)
     headers = ["Drift Type", "Accuracy [%]"]
     data = []
-    
+
     for dt in drift_types:
         se_val = per_class_acc[dt]
         se_str = format_metric(se_val/100, "percentage")
@@ -79,22 +79,48 @@ def generate_drift_type_performance_table(results):
 
         data.append([escape_latex(dt), se_str])
 
+    # 3. Compute and append macro / micro averages.
+    # Macro avg: average of the five per-class accuracies (each weighted equally).
+    macro_avg = sum(per_class_acc[dt] for dt in drift_types) / len(drift_types)
+
+    # Micro avg: pool all events across classes (biased toward most-frequent class).
+    n_correct = sum(confusion[dt] for dt in drift_types)
+    n_total = sum(total_counts[dt] for dt in drift_types)
+    micro_avg = (n_correct / n_total * 100) if n_total > 0 else 0.0
+
     latex_output = generate_standard_table(headers, data, align="|l|c|")
+
+    # Inject the macro/micro rows just before \hline\end{tabular}.
+    avg_rows = (
+        "\\hline\n"
+        f"\\textbf{{Macro avg (per-class)}} & \\textbf{{{macro_avg:.1f}\\%}} \\\\\n"
+        f"\\textbf{{Micro avg (over events)}} & \\textbf{{{micro_avg:.1f}\\%}} \\\\\n"
+    )
 
     footer = (
         "\\hline\n"
-        "\\multicolumn{2}{|l|}{\\footnotesize $^\\dagger$Recurrent drift identified via Concept Memory (Standard MMD comparison with stored snapshots).}\\\\\n"
+        "\\multicolumn{2}{|p{0.85\\textwidth}|}{\\footnotesize "
+        "$^\\dagger$Recurrent drift identified via Concept Memory "
+        "(Standard MMD comparison with stored snapshots; $\\tau_{\\text{match}}=0.15$). "
+        "Macro avg averages the five per-class accuracies (each weighted equally); "
+        "micro avg pools all events and counts correct predictions, so it is biased "
+        "toward the most frequent class (here Sudden).}\\\\\n"
         "\\hline\n"
     )
 
-    latex_output = latex_output.replace("\\end{tabular}", footer + "\\end{tabular}")
+    # Find the closing \hline that ends the data section, insert the avg rows
+    # *before* it, then append our footer afterwards.
+    closing = "\\hline\n\\end{tabular}"
+    new_closing = avg_rows + footer + "\\end{tabular}"
+    latex_output = latex_output.replace(closing, new_closing)
 
     output_path = TABLES_DIR / "table_se_cdt_performance_by_type.tex"
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(latex_output)
-        
+
     logger.info(f"Generated Drift Type Performance Table: {output_path}")
-    print(f"   ✓ Generated: {output_path.name}")
+    print(f"   ✓ Generated: {output_path.name}  "
+          f"(macro={macro_avg:.1f}%, micro={micro_avg:.1f}%)")
 
 
 def generate_performance_summary_table(results):

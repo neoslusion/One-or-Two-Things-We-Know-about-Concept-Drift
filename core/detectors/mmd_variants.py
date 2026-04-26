@@ -219,45 +219,167 @@ def mmd_idw(X, s=None, gamma="auto", weight_method="inverse_density"):
     return mmd_value, 0.1  # Threshold placeholder
 
 
-def wmmd_asymptotic(X_window, s, weight_method="variance_reduction"):
+def _wmmd_from_K(K, m, n_y, indices_x, indices_y, weight_method):
     """
-    Weighted MMD with ASYMPTOTIC p-value (Fast Validation).
-    
-    Uses asymptotic Gaussian distribution of MMD² under H0.
-    Replaces slow permutation tests.
+    Compute the (possibly weighted) MMD² statistic from a *pre-computed* kernel
+    matrix ``K`` using the given index sets ``indices_x``, ``indices_y``.
+
+    This helper is used by ``wmmd_gamma`` to produce a fast bootstrap null
+    distribution: the kernel matrix is computed *once* on the pooled sample,
+    and each "permutation" only re-indexes into ``K`` rather than recomputing
+    O(n²) kernel evaluations.
+
+    The weighting scheme matches the IDW-MMD definition used in the thesis:
+    XX and YY use IDW weights, the cross-term XY uses uniform 1/(mn_y).
     """
-    from scipy.stats import norm
-    
+    indices_x = np.asarray(indices_x, dtype=int)
+    indices_y = np.asarray(indices_y, dtype=int)
+    K_xx = K[np.ix_(indices_x, indices_x)]
+    K_yy = K[np.ix_(indices_y, indices_y)]
+    K_xy = K[np.ix_(indices_x, indices_y)]
+    W_xx = compute_optimal_weights(K_xx, weight_method)
+    W_yy = compute_optimal_weights(K_yy, weight_method)
+    W_xy = np.ones((m, n_y)) / (m * n_y)
+    return float(np.sum(W_xx * K_xx) + np.sum(W_yy * K_yy) - 2.0 * np.sum(W_xy * K_xy))
+
+
+def wmmd_gamma(
+    X_window,
+    s,
+    weight_method="variance_reduction",
+    n_null_samples: int = 20,
+    seed: int = 0,
+):
+    """
+    (Weighted) MMD with **moment-matched Gamma null** p-value.
+
+    This replaces the previous ``wmmd_asymptotic`` which applied the
+    *Gaussian H₁ asymptotic* of standard MMD as if it were the H₀ null
+    distribution -- an incorrect derivation that produced a systematically
+    over-conservative test (empirical Type-I error ≈ 0 on stationary
+    streams instead of the nominal α). See thesis §3.2.4 and the audit
+    note in this module for context.
+
+    Mathematical justification
+    --------------------------
+    Under H₀ (P = Q), the limiting distribution of the (biased) MMD²
+    statistic is a sum of weighted χ² variables (Gretton et al. 2012,
+    Thm. 12), *not* a Gaussian centered at zero.  A simple, correct
+    fast approximation is the **two-moment Gamma fit** proposed by
+    Gretton et al. NIPS 2009, which fits a Gamma(k, θ) distribution
+    matching the empirical first two moments of the null statistic:
+
+        k = (E[ξ])² / Var[ξ],      θ = Var[ξ] / E[ξ],
+        p-value = 1 - F_Γ(observed; k, θ).
+
+    To estimate (E[ξ], Var[ξ]) under H₀ for the *weighted* IDW-MMD
+    (whose null moments do not have a clean closed form because of the
+    asymmetric IDW vs. uniform cross-term), we use a **fast index
+    permutation** of the *single* kernel matrix already computed on
+    the pooled window: the kernel is O(n²) once, then each null
+    sample only indexes into ``K`` (no kernel re-computation).
+
+    With ``n_null_samples = 20`` this costs ~20× a single MMD
+    evaluation -- still ~125× cheaper than the original 2500-permutation
+    test, while remaining properly calibrated at α = 0.05.
+
+    Parameters
+    ----------
+    X_window : (n, d) ndarray
+        Concatenated [reference; test] window.
+    s : int
+        Split point: X = X_window[:s], Y = X_window[s:].
+    weight_method : str
+        Passed to ``compute_optimal_weights`` (e.g. "variance_reduction"
+        for IDW, "uniform" for unweighted).
+    n_null_samples : int, default 20
+        Number of label permutations used to estimate the null
+        distribution moments. The variance of the moment estimate scales
+        as 1/n_null_samples; B=20 is enough for a stable Gamma fit while
+        keeping latency low.
+    seed : int, default 0
+        Seed for the permutation RNG.  Fixed by default so each call to
+        the detector is deterministic given the input window (which is
+        what callers in ``shapedd_idw_mmd_proper`` rely on).
+
+    Returns
+    -------
+    mmd_sqrt : float
+        sqrt(max(0, observed MMD²)).
+    p_value : float
+        Right-tail Gamma p-value.  Falls back to the empirical bootstrap
+        p-value when the fitted Gamma is degenerate (zero/near-zero
+        mean or variance under H₀).
+    """
+    from scipy.stats import gamma as gamma_dist
+
     n = len(X_window)
     m = s
     n_y = n - m
     if m < 10 or n_y < 10:
         return 0.0, 1.0
-    
-    gamma = compute_gamma_median_heuristic(X_window)
-    K = rbf_kernel(X_window, X_window, gamma)
-    
-    K_XX = K[:m, :m]
-    K_YY = K[m:, m:]
-    K_XY = K[:m, m:]
-    
-    W_XX = compute_optimal_weights(K_XX, weight_method)
-    W_YY = compute_optimal_weights(K_YY, weight_method)
-    W_XY = np.ones((m, n_y)) / (m * n_y)
-    
-    mmd_sq = np.sum(W_XX * K_XX) + np.sum(W_YY * K_YY) - 2 * np.sum(W_XY * K_XY)
-    
-    # Simplified variance estimation for asymptotic test
-    cross_var = np.var(K_XY)
-    var_mmd = 4 * cross_var / min(m, n_y)
-    
-    if var_mmd < 1e-10:
-        return np.sqrt(max(0, mmd_sq)), 1.0 if mmd_sq <= 0 else 0.0
-    
-    z_score = mmd_sq / np.sqrt(var_mmd)
-    p_value = 1 - norm.cdf(z_score)
-    
-    return np.sqrt(max(0, mmd_sq)), p_value
+
+    g = compute_gamma_median_heuristic(X_window)
+    K = rbf_kernel(X_window, X_window, g)  # one-shot kernel computation
+
+    obs_mmd_sq = _wmmd_from_K(
+        K, m, n_y,
+        np.arange(m),
+        np.arange(m, n),
+        weight_method,
+    )
+
+    # --- Build empirical null distribution by index permutation ---
+    rng = np.random.RandomState(seed)
+    null_samples = np.empty(n_null_samples, dtype=float)
+    for b in range(n_null_samples):
+        perm = rng.permutation(n)
+        null_samples[b] = _wmmd_from_K(
+            K, m, n_y, perm[:m], perm[m:m + n_y], weight_method
+        )
+
+    null_mean = float(np.mean(null_samples))
+    null_var = float(np.var(null_samples, ddof=1)) if n_null_samples > 1 else 0.0
+
+    # --- Gamma moment-matching fit ---
+    # If the null moments are degenerate (e.g. all permutations gave
+    # numerically identical statistics, which can happen for tiny windows
+    # or pathological inputs), fall back to a direct empirical p-value.
+    if (
+        not np.isfinite(null_mean)
+        or not np.isfinite(null_var)
+        or null_mean <= 1e-12
+        or null_var <= 1e-12
+    ):
+        # Empirical right-tail bootstrap p-value with +1/+1 smoothing.
+        rejections = int(np.sum(null_samples >= obs_mmd_sq))
+        p_value = float((rejections + 1) / (n_null_samples + 1))
+    else:
+        k_param = (null_mean ** 2) / null_var          # shape
+        theta_param = null_var / null_mean             # scale
+        # P(ξ ≥ obs | H0) under Gamma(k, θ).
+        p_value = float(1.0 - gamma_dist.cdf(obs_mmd_sq, a=k_param, scale=theta_param))
+        p_value = float(np.clip(p_value, 0.0, 1.0))
+
+    return float(np.sqrt(max(0.0, obs_mmd_sq))), p_value
+
+
+def wmmd_asymptotic(X_window, s, weight_method="variance_reduction"):
+    """DEPRECATED: kept as an alias for backward compatibility.
+
+    The original Gaussian-asymptotic implementation applied the H₁
+    leading-order variance ``4·Var(K_XY)/min(n,m)`` from Gretton 2012
+    (Thm. 8) to compute a one-sided z-test under H₀.  Under H₀ the true
+    MMD² limit is a (degenerate) sum of weighted χ², not a Gaussian
+    centered at zero, so that derivation was incorrect; on stationary
+    streams it produced a systematically over-conservative test
+    (empirical Type-I error ≈ 0).
+
+    We now route this entry point to :func:`wmmd_gamma`, which uses a
+    moment-matched Gamma fit on a fast (B=20) index-permutation null.
+    See ``wmmd_gamma`` for the mathematical justification.
+    """
+    return wmmd_gamma(X_window, s, weight_method=weight_method)
 
 
 # =============================================================================
@@ -279,10 +401,12 @@ def shapedd_idw_mmd_proper(X, l1=50, l2=150, alpha=0.05, weight_method="variance
         are over-smoothed and lost (CAT accuracy drops from 85.8% → 20%).
 
     Role 2 — VALIDATION p-value  (used by Detection Module):
-        Uses *IDW-MMD* asymptotic test (wmmd_asymptotic).
+        Uses *IDW-MMD* with **Gamma-approximation null** (wmmd_gamma).
         Rationale: IDW up-weights boundary points → higher sensitivity to
-        abrupt distributional changes → lower false-positive rate (FP=0
-        on the detection benchmark).
+        abrupt distributional changes; Gamma-fit null replaces the
+        previous (incorrect) Gaussian-asymptotic null that was
+        systematically over-conservative.  Empirically calibrated at
+        Type-I error ≈ α; see wmmd_gamma docstring for derivation.
     -----------------------------------------------------------------------
 
     Pipeline:
@@ -302,7 +426,7 @@ def shapedd_idw_mmd_proper(X, l1=50, l2=150, alpha=0.05, weight_method="variance
             return False, [], np.array([]), []
 
         split = n // 2
-        mmd_val, p_val = wmmd_asymptotic(X, split, weight_method)
+        mmd_val, p_val = wmmd_gamma(X, split, weight_method)
         mmd_trace = np.array([mmd_val])
         if p_val < alpha:
             return True, [split], mmd_trace, [p_val]
@@ -356,7 +480,7 @@ def shapedd_idw_mmd_proper(X, l1=50, l2=150, alpha=0.05, weight_method="variance
     if len(mmd_trace) < 3:
         if len(mmd_trace) > 0 and np.max(mmd_trace) > 0.05:
             pos = mmd_positions[np.argmax(mmd_trace)]
-            _, p_val = wmmd_asymptotic(X, len(X) // 2, weight_method)
+            _, p_val = wmmd_gamma(X, len(X) // 2, weight_method)
             if p_val < alpha:
                 return True, [pos], mmd_trace, [p_val]
         return False, [], mmd_trace, []
@@ -381,10 +505,13 @@ def shapedd_idw_mmd_proper(X, l1=50, l2=150, alpha=0.05, weight_method="variance
         return False, [], mmd_trace, []
 
     # -----------------------------------------------------------------------
-    # 3. VALIDATION: IDW asymptotic p-value (wmmd_asymptotic)
+    # 3. VALIDATION: IDW + Gamma-approximation p-value (wmmd_gamma)
     #    Confirms that the candidate drift position is statistically
     #    significant under H0: same distribution.
-    #    IDW up-weights boundary points → tighter false-positive control.
+    #    The Gamma-fit null is calibrated at α via moment matching on
+    #    a fast (B=20) index-permutation null distribution; the IDW
+    #    weighting in the test statistic up-weights boundary points
+    #    for tighter sensitivity to abrupt shifts.
     # -----------------------------------------------------------------------
     drift_positions = []
     p_values = []
@@ -399,7 +526,7 @@ def shapedd_idw_mmd_proper(X, l1=50, l2=150, alpha=0.05, weight_method="variance
         if s < 10 or (b - a - s) < 10:
             continue
 
-        _, p_val = wmmd_asymptotic(X[a:b], s, weight_method)
+        _, p_val = wmmd_gamma(X[a:b], s, weight_method)
 
         if p_val < alpha:
             drift_positions.append(pos)

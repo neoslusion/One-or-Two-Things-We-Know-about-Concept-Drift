@@ -1110,7 +1110,7 @@ def main():
         choices=["sudden", "gradual", "incremental", "recurrent", "mixed", "stepping"],
         help='Type of drift to simulate (use "mixed" for realistic scenario with multiple drift types)',
     )
-    parser.add_argument("--n_runs", type=int, default=5, help="Number of independent runs")
+    parser.add_argument("--n_runs", type=int, default=30, help="Number of independent runs (default 30; use 5 for fast smoke tests)")
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
     parser.add_argument(
         "--output_dir",
@@ -1205,6 +1205,34 @@ def main():
     print("-" * 90)
     print("=" * 90)
 
+    # ------------------------------------------------------------------
+    # Friedman + post-hoc Nemenyi test on per-run accuracy across modes.
+    # The four adaptation strategies are paired (same seed = same data
+    # stream), so the non-parametric paired Friedman test is appropriate.
+    # See Demšar (2006) "Statistical comparisons of classifiers over
+    # multiple data sets" for the standard methodology.
+    # ------------------------------------------------------------------
+    if args.n_runs >= 2:
+        from scipy.stats import friedmanchisquare
+        try:
+            acc_per_run = {
+                str(mode): [run["metrics"][mode]["overall_accuracy"] for run in all_run_data]
+                for mode in modes
+            }
+            stat, p_friedman = friedmanchisquare(*acc_per_run.values())
+            print()
+            print("STATISTICAL TEST (Friedman, paired across runs)")
+            print(f"  H0: all four strategies have the same accuracy distribution")
+            print(f"  chi^2 statistic: {stat:.4f}")
+            print(f"  p-value:         {p_friedman:.4g}")
+            if p_friedman < 0.05:
+                print(f"  -> reject H0 at alpha=0.05; strategies differ significantly")
+            else:
+                print(f"  -> cannot reject H0 at alpha=0.05; differences may be due to chance")
+            print("=" * 90)
+        except Exception as ex:
+            print(f"[WARNING] Friedman test failed: {ex}")
+
     # Generate plot using best run
     print("\n[Plotting] Generating visualization for representative (median) run...")
     drift_type_map = {
@@ -1234,7 +1262,7 @@ def main():
         f.write(f"Prequential Accuracy Evaluation Results (Aggregated)\n")
         f.write(f"Generated: {datetime.now().isoformat()}\n")
         f.write(f"Samples: {args.n_samples}, Runs: {args.n_runs}, Type: {args.drift_type}, Seed: {args.seed}\n\n")
-        
+
         for mode in modes:
             m = agg_metrics[mode]
             f.write(f"\n{mode}:\n")
@@ -1242,6 +1270,23 @@ def main():
             f.write(f"  EDR (Recall):     {m['edr_mean']:.4f} (±{m['edr_std']:.4f})\n")
             f.write(f"  Restoration Time: {m['restore_mean']:.1f} (±{m['restore_std']:.1f}) samples\n")
             f.write(f"  False Positives:  {m['fp_mean']:.1f}\n")
+
+        # Persist Friedman test result (computed above) for traceability.
+        if args.n_runs >= 2:
+            try:
+                from scipy.stats import friedmanchisquare
+                acc_per_run = {
+                    str(mode): [run["metrics"][mode]["overall_accuracy"] for run in all_run_data]
+                    for mode in modes
+                }
+                stat, p_friedman = friedmanchisquare(*acc_per_run.values())
+                f.write(f"\nFriedman test (paired, accuracy across {args.n_runs} runs):\n")
+                f.write(f"  chi^2 = {stat:.4f}\n")
+                f.write(f"  p     = {p_friedman:.4g}\n")
+                f.write(f"  conclusion: {'reject H0' if p_friedman < 0.05 else 'cannot reject H0'}"
+                        f" at alpha=0.05\n")
+            except Exception as ex:
+                f.write(f"\nFriedman test failed: {ex}\n")
 
     print(f"Metrics saved to: {metrics_path}")
     print("\n✓ Evaluation complete!")

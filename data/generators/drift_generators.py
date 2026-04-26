@@ -499,12 +499,28 @@ def generate_mixed_stream_rigorous(
     # concept k-2, so P(X) at event k cannot exactly match P(X) at any
     # earlier event of the same type. Recurrent drift continues to use
     # the alternating pattern, which is the correct definition.
-    for evt in events:
+    # Pre-compute "next event start" so each event can be bounded to its
+    # own segment.  Without this bound the Recurrent branch (which iterates
+    # ``range(pos, length, period)``) overlaps with all subsequent
+    # Recurrent events and accumulates additive shifts on samples that
+    # later events also touch -- producing a stream that is *not* a clean
+    # A↔B alternation when more than one Recurrent event is scheduled in
+    # the same stream (e.g. the ``Repeated_Recurrent`` benchmark scenario
+    # in ``benchmark_proper.py``).  See M9 audit note in the thesis.
+    next_evt_pos = []
+    for i, evt in enumerate(events):
+        if i + 1 < len(events):
+            next_evt_pos.append(events[i + 1]['pos'])
+        else:
+            next_evt_pos.append(length)
+
+    for i_evt, evt in enumerate(events):
         dtype = evt['type']
         pos = evt['pos']
         width = evt.get('width', 200)
         magnitude = evt.get('magnitude', 2.0)
-        
+        seg_end = next_evt_pos[i_evt]   # exclusive upper bound for this event's effect
+
         n_shift = max(1, n_features // 2)
 
         def _shifted_features(concept_idx: int) -> np.ndarray:
@@ -576,12 +592,18 @@ def generate_mixed_stream_rigorous(
             # drift, so we keep it intact (and we deliberately do NOT
             # rotate the feature subset — the whole point is that the
             # post-cycle distribution matches an earlier cycle).
+            #
+            # M9 fix: bound the alternation to ``seg_end`` (the next
+            # event's position) so that scenarios with multiple Recurrent
+            # events in the same stream do not accumulate additive shifts
+            # on overlapping segments.  Each Recurrent event therefore
+            # produces *one* clean A↔B cycle within its own segment.
             period = max(1, width // 2)
-            
-            for t in range(pos, length, period):
-                cycle_end = min(t + period, length)
+
+            for t in range(pos, seg_end, period):
+                cycle_end = min(t + period, seg_end)
                 cycle = ((t - pos) // period) % 2
-                
+
                 if cycle == 1:
                     X[t:cycle_end, :n_shift] += magnitude
                     concept_id[t:cycle_end] = current_concept + 1
