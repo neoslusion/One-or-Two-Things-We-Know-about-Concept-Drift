@@ -1,13 +1,15 @@
 \label{tab:runtime_stats}
 \begin{tabular}{|l|c|c|c|c|}
 \hline
-\textbf{Method} & \textbf{Mean (ms)} & \textbf{Std (ms)} & \textbf{Throughput (samples/s)} & \textbf{Speedup} \\
+\textbf{Method} & \textbf{Mean (ms)} & \textbf{Std (ms)} & \textbf{Throughput (samples/s)$^\ast$} & \textbf{Speedup} \\
 \hline
 SE-CDT & 7.6 & 2.1 & 131,579 & 16.5× \\
 ShapeDD-IDW & 9.0 & 2.5 & 111,111 & 13.9× \\
 KS & 21.4 & 8.2 & 46,729 & 5.9× \\
 MMD & 34.7 & 12.1 & 28,818 & 3.6× \\
 ShapeDD (Original) & 125.2 & 45.3 & 7,987 & 1.0× \\
+\hline
+\multicolumn{5}{|p{0.92\textwidth}|}{\footnotesize $^\ast$Throughput được tính theo cách \textit{batch} của benchmark: với mỗi lần gọi detector, hệ thống nạp một bộ đệm $\sim 1{,}000$ mẫu rồi xử lý trong khoảng thời gian \textit{Mean (ms)}, do đó throughput $= 1000 / \text{Mean(s)}$. Đây là throughput \textit{trên cấu hình parallel của benchmark} (không phải throughput streaming online với stride nhỏ). Trên một stream thực tế với stride $= l_1/2 = 25$ mẫu/cửa sổ, throughput thực tế thấp hơn (cùng một detector chạy tối đa khoảng $\sim 3{,}000$--$5{,}000$ mẫu/giây). Tỉ lệ tăng tốc $16.5\times$ giữa các phương pháp là tỉ số tương đối nên không phụ thuộc vào cách diễn giải này.}\\
 \hline
 \end{tabular}
 
