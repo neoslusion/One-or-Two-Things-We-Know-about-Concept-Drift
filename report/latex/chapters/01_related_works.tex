@@ -458,7 +458,7 @@ Tóm lại, chiến lược cập nhật mô hình là cầu nối giữa phát 
 
 Từ khảo sát ở các phần trên, có thể rút ra nhận xét chung để định hướng cho phần đề xuất của luận văn.
 
-Các phương pháp theo dõi hiệu năng mô hình (DDM, EDDM, ADWIN\ldots) hoạt động tốt nhưng \textbf{cần nhãn dữ liệu} ($y$) để đo lỗi. Yêu cầu này không khả thi trong môi trường sản xuất công nghiệp mà luận văn nhắm đến. Các phương pháp thống kê thuần túy như KS-Test có thể hoạt động không cần nhãn, nhưng không xác định được \textit{vị trí chính xác} của điểm drift và có tỉ lệ báo động giả cao. Các phương pháp kernel-based như MMD chuẩn và DAWIDD gần hơn với yêu cầu, nhưng chi phí tính toán lớn (2500 lần permutation test mỗi lần đánh giá) và không có sẵn cơ chế phân loại loại drift.
+Các phương pháp theo dõi hiệu năng mô hình (DDM, EDDM, ADWIN\ldots) hoạt động tốt nhưng \textbf{cần nhãn dữ liệu} ($y$) để đo lỗi. Yêu cầu này không khả thi trong môi trường sản xuất công nghiệp mà luận văn nhắm đến. Các phương pháp thống kê thuần túy như KS-Test có thể hoạt động không cần nhãn, nhưng không xác định được \textit{vị trí chính xác} của điểm drift và có tỉ lệ báo động giả cao. Các phương pháp kernel-based như MMD chuẩn và DAWIDD gần hơn với yêu cầu, nhưng chi phí tính toán lớn (mỗi lần đánh giá phải chạy permutation test nhiều vòng) và không có sẵn cơ chế phân loại loại drift.
 
 \textbf{ShapeDD} có ba điểm phù hợp với mục tiêu của luận văn: (1) hoạt động hoàn toàn \textit{không giám sát} (không cần nhãn), (2) xác định được \textit{vị trí chính xác} của điểm drift nhờ đặc trưng hình học tam giác (Triangle Shape Property), và (3) có nền tảng lý thuyết rõ ràng nên dễ cải tiến có chủ đích. ShapeDD gốc vẫn phụ thuộc vào permutation test tốn kém và chưa có cơ chế phân loại loại drift.
 

@@ -138,7 +138,7 @@
 		\begin{column}{0.48\textwidth}
 			\begin{block}{Three Main Contributions}
 				\begin{enumerate}
-					\item \textbf{Detection (ShapeDD-IDW):} inverse density weighting + asymptotic p-value $\to$ \textbf{16.5$\times$ throughput} and \textbf{0 false positives}.
+					\item \textbf{Detection (ShapeDD-IDW):} inverse density weighting + Gamma-null p-value $\to$ a properly calibrated test ($\alpha = 0.05$) at the same end-to-end runtime as the baseline.
 					\item \textbf{Classification (SE-CDT):} an unsupervised geometric analyzer that labels 5 drift types directly from the MMD signal $\sigma(t)$.
 					\item \textbf{Adaptation:} a type-aware router that picks an update strategy (full reset, warm-start, model cache, ignore) based on the detected drift type.
 				\end{enumerate}
@@ -215,7 +215,7 @@
 			\vspace{0.2em}
 			\begin{alertblock}{\footnotesize Bottleneck}
 				\scriptsize
-				The permutation test needs $\sim$2,500 reshuffles per window $\to$ throughput caps at \textbf{$\sim$8,000 samples/s}.
+				The permutation test re-builds the kernel thousands of times $\to$ heavy compute and the null distribution must still be estimated correctly.
 			\end{alertblock}
 		\end{column}
 		\begin{column}{0.42\textwidth}
@@ -336,9 +336,9 @@
 			\end{block}
 
 			\vspace{0.1em}
-			\begin{alertblock}{\footnotesize Speed: from permutation to asymptotic test}
+			\begin{alertblock}{\footnotesize Statistical fix: from permutation to Gamma null}
 				\scriptsize
-				Replacing the permutation test (2{,}500 reshuffles per window, $O(N_{\text{perm}} n^2)$) with a Gamma-approximation p-value ($O(n^2)$) gives the $16.5\times$ speedup.
+				The permutation test is replaced by a Gamma-approximation p-value (Gretton et al.\ 2009). This avoids re-computing the kernel at every shuffle and matches the moments of the true null, giving a properly calibrated test ($\alpha = 0.05$) at a runtime comparable to the baseline.
 			\end{alertblock}
 		\end{column}
 	\end{columns}
@@ -520,9 +520,9 @@
 			\vspace{0.5em}
 			\begin{block}{Key Results}
 				\begin{itemize}
-					\item SE-CDT keeps \textbf{0 FP} on all stationary windows (verified by H0-calibration test).
-					\item Throughput: \textbf{131,000} samples/s --- $16.5\times$ over the original ShapeDD.
-					\item On virtual drift datasets (label-only changes), F1 = 0 \textcolor{darkgreen}{(expected behavior for an unsupervised $P(X)$ detector)}.
+					\item Empirical Type-I error stays inside the 95\% CI of $\alpha = 0.05$ (H0-calibration test).
+					\item Runtime end-to-end matches the original ShapeDD (1.94 vs.\ 1.99 s per 10k-sample stream).
+					\item On virtual-drift datasets (label-only changes), $F_1 = 0$ \textcolor{darkgreen}{(expected behavior for an unsupervised $P(X)$ detector)}.
 				\end{itemize}
 			\end{block}
 		\end{column}
@@ -660,7 +660,7 @@
 			\begin{block}{\small Contribution Summary}
 				\footnotesize
 				\begin{enumerate}
-					\item \textbf{Detection:} ShapeDD-IDW with asymptotic p-value $\to$ \textbf{16.5$\times$} throughput, \textbf{0 FP} (H0-verified).
+					\item \textbf{Detection:} ShapeDD-IDW with Gamma-null p-value $\to$ a properly calibrated test ($\alpha = 0.05$, H0-verified) at runtime parity with the baseline.
 					\item \textbf{Classification:} SE-CDT label-free, CAT = \textbf{79.2\%}, SUB = \textbf{50.8\%}, EDR = \textbf{94.7\%}.
 					\item \textbf{Concept Memory + Self-Calibration:} lift Recurrent (0\% $\to$ 33\%) and Gradual (55\% $\to$ 64\%).
 					\item \textbf{Adaptation:} Type-Specific gains \textbf{+24.8 pp} on Sudden, \textbf{+21.1 pp} on Stepping vs No Adaptation.
@@ -770,22 +770,22 @@
 			\begin{itemize}
 				\item Frequent FPs $\to$ \textbf{alert fatigue}, lost trust in the monitor.
 				\item Investigating one false alarm typically costs more than missing one event.
-				\item Standard MMD permutation test is also $\sim$16$\times$ slower.
+				\item A miscalibrated permutation-style test inflates either FPs or misses.
 			\end{itemize}
 		\end{column}
 		\begin{column}{0.48\textwidth}
 			\textbf{What SE-CDT actually adds:}
 			\begin{enumerate}
-				\item \textbf{0 FP} --- verified by H0-calibration (Type-I error $= 0$ on 3 stationary distributions).
+				\item \textbf{Properly calibrated test ($\alpha = 0.05$)} --- empirical Type-I error inside the 95\% CI on 3 stationary distributions.
 				\item \textbf{Classification module on top of detection} --- gives a drift type, not just a flag.
-				\item \textbf{16.5$\times$ throughput} thanks to asymptotic p-value.
+				\item \textbf{Runtime on par with baseline} thanks to the Gamma-null p-value (no kernel re-build per shuffle).
 				\item Stays \textbf{fully unsupervised} at runtime.
 			\end{enumerate}
 
 			\vspace{0.5em}
 			\centering
 			\includegraphics[width=0.9\linewidth]{figure_4_stationary_fp.png}
-			\captionof{figure}{\scriptsize Zero false-positive rate compared to noisy baselines.}
+			\captionof{figure}{\scriptsize Empirical Type-I error of SE-CDT on three stationary distributions.}
 		\end{column}
 	\end{columns}
 \end{frame}
@@ -904,41 +904,6 @@
 	\end{columns}
 \end{frame}
 
-% --- Backup 6: Throughput inconsistency ---
-\begin{frame}[noframenumbering,shrink]{Backup: detector throughput vs end-to-end throughput}
-	\textbf{Question:} ``Is the throughput 131,000 samples/s or 500--2,000 samples/s?''
-
-	\vspace{0.5em}
-	\begin{columns}[T]
-		\begin{column}{0.48\textwidth}
-			\centering
-			\includegraphics[width=\linewidth]{figure_6_runtime.png}
-			\captionof{figure}{\scriptsize Runtime per window across detectors.}
-		\end{column}
-		\begin{column}{0.48\textwidth}
-			\textbf{The two numbers measure different things:}
-
-			\vspace{0.5em}
-			\begin{block}{Detector-only benchmark}
-				\begin{itemize}
-					\item Times the IDW-MMD computation alone (kernel matrix + asymptotic p-value).
-					\item Result: $\sim$\textbf{131{,}000 samples/s}.
-				\end{itemize}
-			\end{block}
-
-			\begin{exampleblock}{End-to-end Kafka pipeline}
-				\begin{itemize}
-					\item Includes Kafka serialization, classification on detection, model adaptation, prediction.
-					\item Result: $\sim$\textbf{500--2{,}000 samples/s}.
-				\end{itemize}
-			\end{exampleblock}
-
-			\vspace{0.3em}
-			\small \textbf{Context:} CDT-MSW runs at $\sim$5{,}000 samples/s end-to-end. SE-CDT trades a bit of speed for unsupervised, multi-class typing.
-		\end{column}
-	\end{columns}
-\end{frame}
-
 % --- Backup 7: Mild drift weakness ---
 \begin{frame}[noframenumbering,shrink]{Backup: weakness on mild drift}
 	\textbf{Question:} ``On the mild-drift scenario SE-CDT scored F1 $\approx$ 0.006 --- why so low?''
@@ -976,36 +941,34 @@
 	\end{columns}
 \end{frame}
 
-% --- Backup 8: Permutation vs Asymptotic ---
-\begin{frame}[noframenumbering]{Backup: Permutation test vs asymptotic p-value}
-	\textbf{Question:} ``Removing the permutation test --- is the asymptotic p-value still trustworthy?''
+% --- Backup 8: Permutation vs Gamma null ---
+\begin{frame}[noframenumbering]{Backup: Permutation test vs Gamma-null p-value}
+	\textbf{Question:} ``Removing the permutation test --- is the Gamma-null p-value still trustworthy?''
 
 	\vspace{0.5em}
 	\begin{columns}[T]
 		\begin{column}{0.48\textwidth}
 			\begin{alertblock}{Permutation test (original ShapeDD)}
 				\begin{itemize}
-					\item Shuffles labels 2,500 times per window.
-					\item Exact p-value, no distributional assumption.
-					\item Complexity $O(N_{\text{perm}} \cdot n^2)$, $\sim$6.25 M ops/window.
-					\item Throughput cap: $\sim$\textbf{8,000 samples/s}.
+					\item Reshuffles indices many times per window.
+					\item Empirical null, no distributional assumption.
+					\item Each shuffle re-builds the kernel matrix $\to$ heavy compute.
 				\end{itemize}
 			\end{alertblock}
 		\end{column}
 		\begin{column}{0.48\textwidth}
-			\begin{exampleblock}{Asymptotic p-value (IDW-MMD)}
+			\begin{exampleblock}{Gamma-null p-value (IDW-MMD)}
 				\begin{itemize}
-					\item Gamma approximation of the null MMD distribution (Gretton et al., 2012).
-					\item Convergence holds for $n \geq 50$ (we use $n = 50$).
-					\item Complexity $O(n^2)$ (one eigenvalue computation).
-					\item Throughput: \textbf{$\sim$131,000 samples/s}.
+					\item Moment-matched Gamma fit to the null MMD distribution (Gretton et al.\ 2009).
+					\item Estimates the first two moments from a small number of index shuffles, reusing the kernel matrix.
+					\item Complexity $O(n^2)$ for the kernel plus a few cheap shuffles.
 				\end{itemize}
 			\end{exampleblock}
 		\end{column}
 	\end{columns}
 
 	\vspace{0.5em}
-	\textbf{Verification:} F1 is essentially the same (0.484 vs 0.481 with permutation), but FP drops to 0 because the Gamma threshold is calibrated more tightly than the empirical permutation quantile. H0-calibration on 3 stationary distributions confirms Type-I error $= 0$.
+	\textbf{Verification:} The detection $F_1$ remains comparable to the permutation baseline, while H0-calibration on three stationary distributions reports an empirical Type-I error of $0.04$--$0.10$, inside the 95\% CI of $\alpha = 0.05$. End-to-end runtime stays at parity with the baseline.
 \end{frame}
 
 % --- Backup 9: Subcategory 50% ---

@@ -1,21 +1,21 @@
 \chapter{Mô hình ShapeDD-IDW và Hệ thống SE-CDT}
 \label{chap:proposed-model}
 
-\textit{Tóm tắt: Trên cơ sở lý thuyết về ShapeDD ở Chương~\ref{chap:theoretical-foundation} và khảo sát các phương pháp phát hiện~--~phân loại concept drift ở Chương~\ref{chap:related-work}, chương này tích hợp \textbf{Weighted MMD với Gamma-approximation null} vào framework ShapeDD để cải thiện hiệu suất tính toán, đồng thời đề xuất phương pháp mới SE-CDT cho phân loại drift không giám sát. Luận văn cũng trình bày kiến trúc hệ thống xử lý luồng dữ liệu. Các đóng góp chính gồm: (1) tích hợp Inverse Density-Weighted MMD (IDW-MMD) với Gamma-approximation p-value~\cite{gretton2009gamma} để tăng tốc độ xử lý mà vẫn hiệu chỉnh đúng theo lý thuyết, (2) xây dựng khung chiến lược thích ứng đa dạng dựa trên loại drift, và (3) thiết kế kiến trúc hệ thống có khả năng mở rộng và chịu lỗi cao.}
+\textit{Tóm tắt: Trên cơ sở lý thuyết ShapeDD ở Chương~\ref{chap:theoretical-foundation} và khảo sát các phương pháp phát hiện -- phân loại drift ở Chương~\ref{chap:related-work}, chương này tích hợp \textbf{Weighted MMD với Gamma-approximation null} vào framework ShapeDD, đồng thời đề xuất phương pháp mới SE-CDT cho phân loại drift không giám sát. Luận văn cũng trình bày kiến trúc hệ thống xử lý luồng dữ liệu. Các đóng góp chính gồm: (1) tích hợp Inverse Density-Weighted MMD (IDW-MMD) với p-value Gamma-approximation~\cite{gretton2009gamma}, đem lại kiểm định được hiệu chỉnh đúng theo lý thuyết với chi phí tính toán thấp; (2) xây dựng khung chiến lược thích ứng theo loại drift; và (3) thiết kế kiến trúc hệ thống có khả năng mở rộng và chịu lỗi cao.}
 
 \section{Động lực và tổng quan cách tiếp cận}
 
 Mặc dù ShapeDD gốc thể hiện nhiều ưu điểm về độ chính xác định vị và khả năng khử nhiễu, việc áp dụng phương pháp này trong các hệ thống thời gian thực quy mô lớn gặp phải ba thách thức chính:
 
 \begin{enumerate}
-	\item \textbf{Chi phí tính toán cao:} Việc sử dụng kiểm định hoán vị với số lượng lớn (thường là 2500 lần để đảm bảo kết quả có ý nghĩa về mặt thống kê) để ước lượng p-value tạo ra nghẽn cổ chai về hiệu năng, giới hạn tốc độ xử lý.
+	\item \textbf{Chi phí tính toán cao:} Việc dùng kiểm định hoán vị với số vòng lớn để ước lượng p-value tạo ra nghẽn cổ chai về hiệu năng, giới hạn tốc độ xử lý.
 	\item \textbf{Độ nhạy với tham số:} Hiệu suất của ShapeDD phụ thuộc nhiều vào việc lựa chọn độ rộng hạt nhân (kernel bandwidth) và kích thước cửa sổ, làm giảm khả năng tổng quát hóa trên các luồng dữ liệu có đặc tính drift đa dạng.
 	\item \textbf{Thiếu cơ chế thích ứng:} Phát hiện drift chỉ là bước đầu; hệ thống cần một cơ chế để tự động cập nhật mô hình một cách phù hợp với bản chất của sự thay đổi (đột ngột hay dần dần)~\cite{yuan2022advances}.
 \end{enumerate}
 
 Để giải quyết các thách thức trên, luận văn xây dựng hệ thống \textbf{SE-CDT}, gồm ba phần chính:
 \begin{itemize}
-	\item \textbf{Tầng thuật toán:} Cải tiến ShapeDD bằng cách tích hợp IDW-MMD (Inverse Density-Weighted MMD), gọi tắt là ShapeDD-IDW, kết hợp Gamma-approximation null~\cite{gretton2009gamma} để giảm số lần resampling từ $\sim 2500$ xuống $\sim 20$ trong khi vẫn giữ kiểm định được hiệu chỉnh đúng tại $\alpha = 0.05$.
+	\item \textbf{Tầng thuật toán:} Cải tiến ShapeDD bằng cách tích hợp IDW-MMD (Inverse Density-Weighted MMD), gọi tắt là ShapeDD-IDW, kết hợp Gamma-approximation null~\cite{gretton2009gamma} để giảm chi phí của bước p-value mà vẫn giữ kiểm định được hiệu chỉnh đúng tại $\alpha = 0.05$.
 	\item \textbf{Tầng chiến lược:} Xây dựng khung thích ứng thông minh, dùng kết quả phân loại từ SE-CDT để kích hoạt chiến lược cập nhật mô hình phù hợp (Reset, Incremental, hoặc Reuse)~\cite{gama2014survey, lu2018learning}.
 	\item \textbf{Tầng kiến trúc:} Triển khai hệ thống trên nền tảng Apache Kafka, hỗ trợ xử lý luồng dữ liệu phân tán, độ trễ thấp và khả năng chịu lỗi.
 \end{itemize}
@@ -35,7 +35,7 @@ trong đó các tổng chạy qua tất cả các cặp chỉ số, kể cả $i
 Phương pháp này có hai vấn đề chính:
 \begin{enumerate}
 	\item \textbf{Kết quả không ổn định:} Khi cửa sổ nhỏ ($n, m < 200$), giá trị MMD dao động nhiều, khó phân biệt drift thật với nhiễu.
-	\item \textbf{Chậm:} Cần chạy permutation test khoảng 2500 lần để tính p-value, tốn $O(N_{perm} \cdot n^2)$ thời gian.
+	\item \textbf{Chậm:} Cần chạy permutation test nhiều lần để ước lượng p-value, tốn $O(N_{\text{perm}} \cdot n^2)$ thời gian.
 \end{enumerate}
 
 Vấn đề cốt lõi: Phương pháp uniform coi tất cả điểm dữ liệu quan trọng như nhau. Nhưng thực tế, drift thường xuất hiện đầu tiên ở \textbf{biên phân phối} (nơi có ít điểm) chứ không phải ở vùng trung tâm đông đúc.
@@ -119,39 +119,31 @@ Luận văn trình bày IDW-MMD theo thuật toán cụ thể như sau. Lưu ý 
 		Kernel Matrix           & $O(n^2)$             & $O(n^2)$        & $n$ = window size   \\
 		Density weights         & $O(n)$               & $O(n)$          & Sum over rows       \\
 		Weighted MMD            & $O(n^2)$             & $O(1)$          & Scalar output       \\
-		Gamma null fit          & $O(B \cdot n^2)$     & $O(n^2)$        & $B = 20$ index-permutations, tái sử dụng $K$ \\
+		Gamma null fit          & $O(B \cdot n^2)$     & $O(n^2)$        & Hoán vị chỉ số, tái sử dụng $K$ \\
 		\hline
-		\textbf{IDW-MMD + Gamma null} & $O(B \cdot n^2)$ & $O(n^2)$        & $\sim 125\times$ nhanh hơn $N_{\text{perm}} = 2500$ \\
+		\textbf{IDW-MMD + Gamma null} & $O(B \cdot n^2)$ & $O(n^2)$        & Bỏ vòng tính lại kernel \\
 		\hline
-		ShapeDD gốc (2500 perm) & $O(n^2 \times 2500)$ & $O(n^2)$        & Permutation test    \\
+		ShapeDD gốc (permutation) & $O(N_{\text{perm}} \cdot n^2)$ & $O(n^2)$  & Tính lại kernel mỗi vòng \\
 		\hline
 	\end{tabular}
 \end{table}
 
-IDW-MMD có độ phức tạp $O(n^2)$, tương đương MMD chuẩn. Permutation test gốc đòi hỏi tính lại MMD² $N_{\text{perm}} = 2500$ lần, tốn $O(N_{\text{perm}} \cdot n^2)$. Để tăng tốc, luận văn thay permutation test bằng kiểm định \textbf{Gamma-approximation null} kế thừa từ Gretton et al.~\cite{gretton2009gamma}, kết hợp với kỹ thuật \textit{index-permutation tái sử dụng kernel matrix} để giảm số lần tính kernel xuống $O(B \cdot n^2)$ với $B = 20$ permutations --- nhanh hơn $\sim 125\times$ so với $N_{\text{perm}} = 2500$.
+IDW-MMD có độ phức tạp $O(n^2)$, tương đương MMD chuẩn. Permutation test gốc phải tính lại MMD$^2$ rất nhiều lần (vài nghìn vòng) để ước lượng phân phối null, tốn $O(N_{\text{perm}} \cdot n^2)$. Luận văn thay bước này bằng kiểm định \textbf{Gamma-approximation null} kế thừa từ Gretton et al.~\cite{gretton2009gamma}, kết hợp với kỹ thuật \textit{hoán vị chỉ số tái sử dụng kernel matrix} để giảm chi phí xuống $O(B \cdot n^2)$ với $B$ nhỏ hơn nhiều bậc so với $N_{\text{perm}}$.
+ 
+\textbf{Vì sao chọn Gamma-approximation thay cho Gaussian asymptotic.}
+Theo Gretton et al.~\cite{gretton2012kernel}, phân phối giới hạn của thống kê MMD$^2_u$ phụ thuộc vào giả thuyết. Dưới giả thuyết có drift, MMD$^2_u$ tiệm cận một Gaussian xoay quanh giá trị MMD$^2$ thực. Nhưng dưới giả thuyết không có drift, MMD$^2_u$ \textit{không} tiệm cận Gaussian; nó tiệm cận một $\chi^2$ có trọng. Do đó, một test áp dụng Gaussian dưới null không có cơ sở lý thuyết và sẽ mất calibration.
 
-\textbf{Lý do dùng Gamma-approximation thay cho Gaussian asymptotic.}
-Theo Gretton et al.~\cite{gretton2012kernel}, phân phối tiệm cận của thống kê MMD$^2_u$ khác nhau theo giả thuyết:
-\begin{itemize}
-	\item Dưới $H_1$ ($P \neq Q$): $\sqrt{n}(\text{MMD}^2_u - \text{MMD}^2(P,Q)) \xrightarrow{d} \mathcal{N}(0,\,\sigma^2_{H_1})$ --- Gaussian \textbf{centered tại giá trị MMD$^2$ thực}, không phải tại 0.
-	\item Dưới $H_0$ ($P = Q$): $n \cdot \text{MMD}^2_u \xrightarrow{d} \sum_l \lambda_l (Z_l^2 - 1)$ với $Z_l$ là các Gaussian iid --- một \textbf{tổng có trọng của các $\chi^2$}, KHÔNG phải Gaussian centered tại 0.
-\end{itemize}
-Vì lý do này, một asymptotic test áp dụng phân phối Gaussian dưới $H_0$ không có cơ sở lý thuyết và sẽ mất calibration thống kê (xem ghi chú lịch sử ở Mục~\ref{sec:detection-hybrid}). Cách tiếp cận đúng theo \cite{gretton2009gamma} là khớp một phân phối Gamma$(k, \theta)$ với hai moment đầu của null distribution:
-\begin{equation}
-	k = \frac{(\mathbb{E}[\xi])^2}{\mathrm{Var}[\xi]}, \qquad \theta = \frac{\mathrm{Var}[\xi]}{\mathbb{E}[\xi]},
-\end{equation}
-trong đó $\xi$ là biến ngẫu nhiên thống kê dưới $H_0$. Hai moment $\mathbb{E}[\xi]$ và $\mathrm{Var}[\xi]$ được ước lượng từ $B = 20$ index-permutations \textit{tái sử dụng cùng một kernel matrix} (tránh tính lại $K$ ở mỗi permutation, là chi phí chính của permutation test gốc).
+Cách tiếp cận đúng theo \cite{gretton2009gamma} là khớp một phân phối Gamma vào hai moment đầu (trung bình và phương sai) của null. Hai moment này được ước lượng bằng một số ít lần hoán vị chỉ số trên cùng một kernel matrix đã tính sẵn --- đây chính là điểm tiết kiệm so với permutation test gốc, vốn phải tính lại kernel ở mỗi vòng.
 
-\textbf{Thuật toán}. Sau khi đã có $K$ đã tính một lần:
+\textbf{Tóm tắt thuật toán.} Sau khi tính kernel matrix $K$ một lần cho hai cửa sổ:
 \begin{enumerate}
-	\item Tính $\widehat{\text{MMD}}^2_{\text{IDW}}$ với cấu hình ban đầu (X chiếm $m$ chỉ số đầu, Y chiếm $n_y$ chỉ số sau).
-	\item Với mỗi $b = 1, \dots, B$: hoán vị ngẫu nhiên các chỉ số $\{1, \dots, n\}$ và tính lại $\widehat{\text{MMD}}^2_{\text{IDW}}$ trên các chỉ số đã hoán vị --- đây là một mẫu của null distribution. Lưu ý: phép hoán vị chỉ tác động lên \textit{cách đọc $K$}, không tác động lên \textit{nội dung} của $K$, do đó không cần tính lại kernel matrix.
-	\item Tính $\hat{\mu}_0 = \overline{\xi}_b$ và $\hat{\sigma}^2_0 = \mathrm{Var}_b(\xi_b)$ từ $B$ mẫu null trên.
-	\item Khớp Gamma: $\hat{k} = \hat{\mu}_0^2 / \hat{\sigma}^2_0$, $\hat{\theta} = \hat{\sigma}^2_0 / \hat{\mu}_0$. P-value (đuôi phải): $p = 1 - F_\Gamma(\widehat{\text{MMD}}^2_{\text{IDW}}; \hat{k}, \hat{\theta})$.
+	\item Tính $\widehat{\text{MMD}}^2_{\text{IDW}}$ trên cấu hình ban đầu của hai cửa sổ.
+	\item Hoán vị ngẫu nhiên các chỉ số một số ít lần và tính lại $\widehat{\text{MMD}}^2_{\text{IDW}}$ cho mỗi lần. Mỗi lần là một mẫu của null distribution; vì $K$ đã sẵn, mỗi lần chỉ tốn $O(n^2)$ phép cộng-nhân.
+	\item Khớp Gamma vào trung bình và phương sai của các mẫu null vừa thu được, sau đó tính p-value (đuôi phải).
 	\item Nếu $p < \alpha$ (mặc định $\alpha = 0.05$), kết luận có drift.
 \end{enumerate}
 
-\textbf{Tại sao hiệu quả?} Mỗi permutation chỉ tốn $O(n^2)$ phép cộng (chứ không phải $O(n^2)$ phép tính kernel) vì $K$ đã sẵn. Với $B = 20$ và $N_{\text{perm}} = 2500$, tăng tốc lý thuyết là $\sim 125\times$. Trong thực nghiệm (với hệ thống IO/parallel overhead), tốc độ tăng đo được là $16.5\times$ so với ShapeDD gốc (xem Mục~\ref{sec:detection-eval}, Bảng~\ref{tab:runtime_stats}).
+\textbf{Vì sao đạt cùng runtime mà tốt hơn về thống kê.} Permutation test gốc tốn nhiều thời gian vì phải tính lại kernel ở mỗi lần hoán vị. Gamma null bỏ chi phí đó. Trong thực nghiệm cuối chương (Mục~\ref{sec:detection-eval}, Bảng~\ref{tab:runtime_stats}), ShapeDD-IDW có runtime end-to-end gần như ngang ShapeDD baseline (cả hai đều khoảng 1.9~s/stream, vì baseline cũng đã được tối ưu hoá tốt qua BLAS batching). Lợi thế chính nằm ở chỗ Gamma null cho \textit{statistical correctness}: Type-I error thực nghiệm đúng tại $\alpha = 0.05$, đã được kiểm chứng ở Mục~\ref{sec:h0-calibration}.
 
 \subsubsection{Hạn chế và khi nào nên dùng}
 Mặc dù IDW-MMD cải thiện đáng kể về tốc độ và độ ổn định, phương pháp có hai giới hạn cần lưu ý:
@@ -169,7 +161,7 @@ Một điểm then chốt cần làm rõ trước khi chuyển sang phần phân
 	\item \textbf{Vai trò 1 --- Tín hiệu trace (cho Classification Module):}
 	Bước trượt cửa sổ tính tín hiệu $\sigma(t)$ làm đầu vào cho phân loại sử dụng \textbf{Standard MMD} (unbiased U-statistic, không trọng số). Lý do: cơ chế triệt mật độ trung tâm của IDW-MMD vô tình làm mờ các đặc trưng hình dạng (đặc biệt với gradual/incremental, vốn xuất hiện ở vùng trung tâm phân phối). Thực nghiệm nội bộ cho thấy nếu dùng tín hiệu IDW-MMD cho classification thì CAT giảm từ $85.8\%$ xuống $20\%$, MDR cho gradual đạt $1.0$ (bỏ sót toàn bộ).
 	\item \textbf{Vai trò 2 --- Kiểm định p-value tại candidate (cho Detection Module):}
-	Sau khi tìm peak từ trace standard MMD, mỗi candidate được kiểm định bằng \textbf{IDW-MMD với Gamma-approximation null} (xem Mục~\ref{sec:idw-mmd}) để xác nhận drift có ý nghĩa thống kê. IDW-MMD ở đây phát huy lợi thế: nó nhạy với các thay đổi rõ ràng ở biên phân phối (sudden, boundary shifts); kiểm định Gamma null nhanh hơn $\sim 125\times$ so với permutation test gốc trong khi vẫn được hiệu chỉnh đúng tại $\alpha = 0.05$ (đã được kiểm chứng bằng H0-calibration test ở Mục~\ref{sec:h0-calibration}).
+	Sau khi tìm peak từ trace standard MMD, mỗi candidate được kiểm định bằng \textbf{IDW-MMD với Gamma-approximation null} (xem Mục~\ref{sec:idw-mmd}) để xác nhận drift có ý nghĩa thống kê. IDW-MMD ở đây phát huy lợi thế nhạy với các thay đổi rõ ràng ở biên phân phối (sudden, boundary shifts); kiểm định Gamma null vừa tránh chi phí tính lại kernel ở mỗi vòng permutation, vừa được hiệu chỉnh đúng tại $\alpha = 0.05$ (đã kiểm chứng bằng H0-calibration test ở Mục~\ref{sec:h0-calibration}).
 \end{enumerate}
 
 Cụ thể, bandwidth $\gamma$ được ước lượng một lần bằng median heuristic trên đoạn đầu của luồng (mặc định 500 mẫu đầu), sau đó dùng nhất quán cho cả ba ma trận kernel $K_{XX}, K_{YY}, K_{XY}$ trong toàn bộ trace. Việc này tránh sự bất nhất khi mỗi cửa sổ tự ước lượng $\gamma$ riêng (sự bất nhất giữa các cửa sổ trượt là một trong những nguyên nhân chính gây dao động trace trong các phiên bản trước).
@@ -266,7 +258,7 @@ Quy trình phân loại của SE-CDT được mô tả trong Algorithm~\ref{alg:
 		\Statex
 		\State $\ell \leftarrow \text{EstimateDriftDuration}(\sigma_s)$ \Comment{ước lượng qua FWHM của đỉnh MMD; thay thế Growth Process của CDT-MSW (vốn dùng accuracy variance có nhãn)}
 		\If{$\ell > 1$} \Comment{đỉnh rộng $\Rightarrow$ PCD, phân loại subcategory ngay theo đặc trưng thời gian}
-			\If{$\text{LTS} > 0.5$ \textbf{or} ($\text{MS} > 0.6$ \textbf{and} $\text{LTS} > 0.3$) \textbf{or} ($\text{SDS} > 0.12$ \textbf{and} $\text{LTS} > 0.3$) \textbf{or} $n_p \geq 7$ \textbf{or} ($n_p = 0$ \textbf{and} $\overline{\sigma} > 10^{-4}$ \textbf{and} $\text{LTS} > 0.5$)}
+			\If{$\text{LTS} > 0.5$ \textbf{or} ($\text{MS} > 0.6$ \textbf{and} $\text{LTS} > 0.3$) \textbf{or} ($\text{SDS} > 0.12$ \textbf{and} $\text{LTS} > 0.3$) \textbf{or} $n_p \geq 7$}
 				\Return \textbf{PCD-Incremental}
 			\Else
 				\Return \textbf{PCD-Gradual} \Comment{drift chậm, mượt mà, không có xu hướng rõ}
@@ -283,7 +275,7 @@ Quy trình phân loại của SE-CDT được mô tả trong Algorithm~\ref{alg:
 			\Return \textbf{TCD-Recurrent}
 		\EndIf
 		\Statex
-		\If{$\text{LTS} > 0.5$ \textbf{or} ($\text{MS} > 0.6$ \textbf{and} $\text{LTS} > 0.3$) \textbf{or} ($\text{SDS} > 0.12$ \textbf{and} $\text{LTS} > 0.3$) \textbf{or} $n_p \geq 7$ \textbf{or} ($n_p = 0$ \textbf{and} $\overline{\sigma} > 10^{-4}$ \textbf{and} $\text{LTS} > 0.5$)} \Comment{Step 4 — fallback PCD (kể cả trường hợp không có peak rõ nhưng tín hiệu trung bình cao)}
+		\If{$\text{LTS} > 0.5$ \textbf{or} ($\text{MS} > 0.6$ \textbf{and} $\text{LTS} > 0.3$) \textbf{or} ($\text{SDS} > 0.12$ \textbf{and} $\text{LTS} > 0.3$) \textbf{or} $n_p \geq 7$} \Comment{Step 4 — fallback PCD theo xu hướng thời gian}
 			\Return \textbf{PCD-Incremental}
 		\Else
 			\Return \textbf{PCD-Gradual} \Comment{drift chậm, là trường hợp mặc định}
@@ -374,13 +366,13 @@ Về độ phức tạp tính toán của toàn pipeline:
 \subsection{Giải thích lựa chọn ngưỡng}
 Các ngưỡng trong Algorithm~\ref{alg:se-cdt} được xác định qua phân tích thực nghiệm trên synthetic datasets (với cửa sổ chuẩn $n, m \approx 200$) và tinh chỉnh qua nhiều vòng lặp:
 \begin{itemize}
-	\item \textbf{Blip:} $n_p = 2$, PPR $< 0.20$, DPAR $> 0.60$, WR $< 0.30$. Blip drift tạo hai peaks gần nhau (PPR thấp) với biên độ tương đương (DPAR cao), phản ánh mẫu ``drift rồi quay lại''. Ràng buộc WR $< 0.30$ tránh nhầm hai đỉnh rộng từ một drift Gradual có dao động phụ.
-	\item \textbf{Sudden:} $n_p \leq 3$, WR $< \tau_{\text{WR}} = 0.15$ (giá trị mặc định, có thể được nới lên thông qua self-calibration), SNR $> \tau_{\text{SNR}} = 2.0$. Sudden drift tạo đỉnh sắc nét, hẹp (FWHM chiếm dưới 30\% khoảng quan sát) với tín hiệu nổi rõ trên nền nhiễu. Lưu ý rằng ngưỡng WR $< 0.12$ ở bước Growth Process chặt hơn, nên mọi trường hợp TCD được xác nhận ở đó đều tự động thỏa WR $< 0.15$ ở bước này.
-	\item \textbf{Recurrent:} $n_p \geq 4$, CV $< \tau_{\text{CV}} = 0.30$, LTS $< 0.5$. Nhiều peaks đều đặn (CV thấp) mà \textit{không} có xu hướng tuyến tính (LTS thấp, để tránh nhầm với Incremental).
-	\item \textbf{Incremental vs Gradual:} Phân biệt bằng đặc trưng thời gian. Incremental có xu hướng tuyến tính mạnh (LTS $> 0.5$), tính đơn điệu cao (MS $> 0.6$ và LTS $> 0.3$), nhiều bước nhảy (SDS $> 0.12$ và LTS $> 0.3$), nhiều peak ($n_p \geq 7$), hoặc không phát hiện peak rõ nhưng trace có giá trị trung bình cao và xu hướng tuyến tính ($n_p = 0$, $\overline{\sigma} > 10^{-4}$, LTS $> 0.5$). Gradual là trường hợp mặc định khi không thoả các điều kiện trên.
+	\item \textbf{Blip:} đúng hai peaks gần nhau, biên độ tương đương, độ rộng đỉnh nhỏ. Cấu hình này phản ánh mẫu ``drift rồi quay lại''; ràng buộc thêm về độ rộng đỉnh tránh nhầm với hai dao động phụ của một drift Gradual.
+	\item \textbf{Sudden:} ít peaks, đỉnh hẹp, SNR cao. Sudden tạo đỉnh sắc nét nổi rõ trên nền nhiễu. Ngưỡng WR ở bước này lỏng hơn ngưỡng WR ở bước Growth Process, nên mọi trường hợp TCD được xác nhận ở Growth Process đều tự động thoả ngưỡng phân loại Sudden.
+	\item \textbf{Recurrent:} nhiều peaks đều đặn (CV thấp) mà không có xu hướng tuyến tính (LTS thấp, để tránh nhầm với Incremental).
+	\item \textbf{Incremental vs Gradual:} phân biệt bằng đặc trưng thời gian. Incremental có một trong các dấu hiệu sau: xu hướng tuyến tính mạnh, tính đơn điệu cao, nhiều bước nhảy, hoặc nhiều peak. Trong trường hợp tín hiệu trung bình cao mà không phát hiện peak rõ ràng, vẫn có thể quy về Incremental nếu xu hướng tuyến tính đủ mạnh. Gradual là trường hợp mặc định khi không thoả các điều kiện trên.
 \end{itemize}
 
-Các ngưỡng trên được tối ưu cho cửa sổ chuẩn $n, m \approx 200$. Nếu thay đổi kích thước cửa sổ, WR, SNR, PPR cần được hiệu chỉnh lại; với dữ liệu thực tế, khuyến nghị tinh chỉnh (hyperparameter tuning) trên một tập dữ liệu domain-specific nhỏ.
+Toàn bộ giá trị ngưỡng cụ thể nằm trong Algorithm~\ref{alg:se-cdt} và được tối ưu cho cửa sổ chuẩn $n, m \approx 200$. Nếu thay đổi kích thước cửa sổ, các ngưỡng về độ rộng đỉnh, SNR, hay khoảng cách peak cần được hiệu chỉnh lại; với dữ liệu thực tế, khuyến nghị tinh chỉnh trên một tập dữ liệu domain-specific nhỏ.
 
 \textbf{Lưu ý:} Các ngưỡng cố định trên mang tính \textit{heuristic}, được xác định qua quan sát thực nghiệm chứ không suy ra từ phân tích thống kê lý thuyết. Để giảm bớt sự phụ thuộc vào con số cứng và giúp SE-CDT thích nghi giữa các luồng dữ liệu khác nhau \textit{mà vẫn không cần nhãn}, luận văn bổ sung thêm một cơ chế \textbf{tự hiệu chỉnh ngưỡng theo baseline} (Mục~\ref{sec:se-cdt-self-calibration}). Luận văn vẫn frame phần Classification này như một \textbf{proof-of-concept}; các hạn chế còn lại và hướng cải tiến được thảo luận trong Chương~\ref{chap:conclusion}.
 
@@ -389,22 +381,11 @@ Các ngưỡng trên được tối ưu cho cửa sổ chuẩn $n, m \approx 200
 
 Một điểm yếu cố hữu của bộ ngưỡng cứng là: cùng một giá trị SNR $> 2.0$ có thể vừa đủ ``sắc nét'' đối với một stream Gaussian sạch, nhưng lại quá khó đạt trên một stream có nhiễu nền cao. Để giải quyết vấn đề này theo hướng \textit{vẫn không cần nhãn} (runtime-unsupervised), luận văn bổ sung một mô-đun \textbf{Rolling Feature Baseline} chạy song song với detector.
 
-\textbf{Ý tưởng.} Mỗi khi cửa sổ hiện tại được kết luận là \textit{không có drift}, ba đặc trưng then chốt --- SNR, WR, và CV --- được trích xuất từ tín hiệu MMD và đưa vào một bộ đệm vòng kích thước $B$ (mặc định $B = 200$). Với bộ đệm này, hệ thống ước lượng các phân vị (quantile) thực nghiệm của từng đặc trưng trong điều kiện \textit{không có drift}. Khi cần phân loại một drift mới phát hiện, SE-CDT điều chỉnh các ngưỡng cứng theo phân vị quan sát được trên baseline. Cụ thể, vì các ngưỡng có hai dạng (\textit{phải lớn hơn} với SNR, \textit{phải nhỏ hơn} với WR/CV), self-calibration tác động khác nhau lên hai dạng:
-\begin{equation}
-	\tau^{\text{adapt}}_{\text{SNR}} = \max\bigl(\tau^{\text{static}}_{\text{SNR}},\; q_{0.90}(\text{SNR baseline})\bigr),
-	\qquad
-	\tau^{\text{adapt}}_{\text{WR}} = \max\bigl(\tau^{\text{static}}_{\text{WR}},\; q_{0.25}(\text{WR baseline})\bigr),
-\end{equation}
-và tương tự cho CV với $q_{0.25}(\text{CV baseline})$.
+\textbf{Ý tưởng.} Mỗi khi cửa sổ hiện tại được kết luận là \textit{không có drift}, ba đặc trưng then chốt --- SNR, WR, và CV --- được trích xuất từ tín hiệu MMD và đưa vào một bộ đệm vòng. Với các giá trị tích luỹ trong bộ đệm, hệ thống ước lượng phân vị thực nghiệm của từng đặc trưng trong điều kiện không có drift. Khi cần phân loại một drift mới, SE-CDT so sánh ngưỡng tĩnh với phân vị quan sát được và lấy giá trị lớn hơn làm ngưỡng adaptive.
 
-\textbf{Diễn giải hiệu ứng:}
-\begin{itemize}
-	\item \textbf{SNR} (điều kiện ``\textit{phải lớn hơn} $\tau$''): khi nhiễu nền cao kéo SNR no-drift lên, ngưỡng tự động kéo lên theo $q_{0.90}$, làm điều kiện trở nên \textbf{khó đạt hơn} (\textit{stricter}). Đây là chiều cần thiết để tránh nhầm peak nhiễu thành Sudden.
-	\item \textbf{WR, CV} (điều kiện ``\textit{phải nhỏ hơn} $\tau$''): khi nhiễu nền làm peak có FWHM thực rộng hơn (WR no-drift cao hơn), ngưỡng tự động được nới lên theo $q_{0.25}$, làm điều kiện trở nên \textbf{dễ đạt hơn} (\textit{looser}). Đây là chiều cần thiết để các peak Sudden vốn vẫn ``hẹp một cách tương đối'' trên stream nhiễu vẫn được bắt.
-\end{itemize}
-Chính vì vậy, mặc dù tất cả ngưỡng cùng được \textit{kéo lên} bằng phép $\max$, hiệu ứng phân loại không đồng nhất. Lý do chọn cơ chế ``$\max$ với baseline'' (one-sided) thay vì \textit{thay thế hoàn toàn} là để bảo toàn hành vi đã được kiểm chứng trên benchmark synthetic: nếu baseline rất sạch (quantile thấp), ngưỡng cứng tiếp tục được dùng; chỉ khi baseline cho thấy nhiễu nền cao bất thường, ngưỡng mới được điều chỉnh.
+Cơ chế này có hai hiệu ứng tự nhiên. Với SNR, vì điều kiện phân loại Sudden là ``SNR phải lớn hơn ngưỡng'', việc kéo ngưỡng lên cao theo phân vị trên của baseline làm điều kiện khó đạt hơn, giúp tránh nhầm peak nhiễu thành Sudden khi nền nhiễu cao. Với WR và CV, điều kiện phân loại là ``phải nhỏ hơn ngưỡng''; việc kéo ngưỡng lên cao theo phân vị thấp của baseline làm điều kiện dễ đạt hơn, giúp các peak Sudden trên stream nhiễu (vốn có WR/CV cao hơn bình thường) vẫn được bắt đúng. Lý do chọn cơ chế ``một chiều'' (chỉ kéo lên, không kéo xuống) là để bảo toàn hành vi đã kiểm chứng trên benchmark synthetic: trên stream sạch, ngưỡng tĩnh tiếp tục được dùng; chỉ khi nền nhiễu cao bất thường, ngưỡng mới được điều chỉnh.
 
-\textbf{Quy tắc kích hoạt.} Baseline chỉ được cập nhật khi (i) cửa sổ vừa rồi không phát hiện drift và (ii) tín hiệu MMD trace có độ dài tối thiểu (mặc định $\geq 3$ điểm) để đảm bảo SNR/WR/CV có ý nghĩa thống kê. Bộ đệm có \textit{cửa sổ làm nóng} (warm-up): trước khi tích lũy đủ $B_{\min} = 30$ mẫu, hệ thống vẫn dùng ngưỡng cứng và bỏ qua mọi sự nới lỏng. Cơ chế này tránh việc adaptive threshold ``chạy theo'' nhiễu trong giai đoạn đầu của stream.
+\textbf{Quy tắc kích hoạt.} Baseline chỉ được cập nhật khi cửa sổ vừa rồi không phát hiện drift và tín hiệu MMD đủ dài để các đặc trưng có ý nghĩa thống kê. Bộ đệm có cửa sổ làm nóng (warm-up): trước khi tích luỹ đủ một số mẫu tối thiểu, hệ thống vẫn dùng ngưỡng tĩnh, tránh việc adaptive threshold chạy theo nhiễu trong giai đoạn đầu của stream.
 
 \textbf{Ưu điểm chính.}
 \begin{enumerate}

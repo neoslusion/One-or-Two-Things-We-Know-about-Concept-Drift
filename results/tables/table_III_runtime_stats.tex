@@ -1,15 +1,17 @@
 \label{tab:runtime_stats}
-\begin{tabular}{|l|c|c|c|c|}
+\begin{tabular}{|l|c|c|c|}
 \hline
-\textbf{Method} & \textbf{Mean (ms)} & \textbf{Std (ms)} & \textbf{Throughput (samples/s)$^\ast$} & \textbf{Speedup} \\
+\textbf{Method} & \textbf{Runtime (s/stream)$^\dagger$} & \textbf{Throughput (samples/s)} & \textbf{Speedup vs ShapeDD} \\
 \hline
-SE-CDT & 7.6 & 2.1 & 131,579 & 16.5× \\
-ShapeDD-IDW & 9.0 & 2.5 & 111,111 & 13.9× \\
-KS & 21.4 & 8.2 & 46,729 & 5.9× \\
-MMD & 34.7 & 12.1 & 28,818 & 3.6× \\
-ShapeDD (Original) & 125.2 & 45.3 & 7,987 & 1.0× \\
+IDW-MMD (standalone) & 0.59 & 16{,}949 & 3.37$\times$ \\
+KS & 0.88 & 11{,}364 & 2.26$\times$ \\
+D3 & 1.13 & 8{,}850 & 1.76$\times$ \\
+MMD & 1.51 & 6{,}623 & 1.32$\times$ \\
+SE-CDT & 1.92 & 5{,}208 & 1.04$\times$ \\
+ShapeDD-IDW & 1.94 & 5{,}155 & 1.03$\times$ \\
+ShapeDD (gốc) & 1.99 & 5{,}025 & 1.00$\times$ \\
+DAWIDD & 13.95 & 717 & 0.14$\times$ \\
 \hline
-\multicolumn{5}{|p{0.92\textwidth}|}{\footnotesize $^\ast$Throughput được tính theo cách \textit{batch} của benchmark: với mỗi lần gọi detector, hệ thống nạp một bộ đệm $\sim 1{,}000$ mẫu rồi xử lý trong khoảng thời gian \textit{Mean (ms)}, do đó throughput $= 1000 / \text{Mean(s)}$. Đây là throughput \textit{trên cấu hình parallel của benchmark} (không phải throughput streaming online với stride nhỏ). Trên một stream thực tế với stride $= l_1/2 = 25$ mẫu/cửa sổ, throughput thực tế thấp hơn (cùng một detector chạy tối đa khoảng $\sim 3{,}000$--$5{,}000$ mẫu/giây). Tỉ lệ tăng tốc $16.5\times$ giữa các phương pháp là tỉ số tương đối nên không phụ thuộc vào cách diễn giải này.}\\
+\multicolumn{4}{|p{0.92\textwidth}|}{\footnotesize $^\dagger$Runtime đo bằng \texttt{time.process\_time()} cho toàn bộ một stream 10{,}000 mẫu, lấy trung bình trên 14 dataset $\times$ 15 lần chạy. Mỗi run chạy trên một process độc lập với 1 thread BLAS (\texttt{OMP\_NUM\_THREADS=1}) để tránh thread contention làm sai số đo. Throughput $= 10{,}000 / \text{Runtime}$. Đáng chú ý: ShapeDD, ShapeDD-IDW, và SE-CDT có runtime end-to-end gần như nhau, vì ShapeDD đã được vector hoá qua BLAS batch matmul. Đóng góp chính của Gamma null không nằm ở wall-clock mà ở \textit{statistical correctness} (Type-I error đúng $\alpha = 0.05$, kiểm chứng ở Mục~\ref{sec:h0-calibration}).}\\
 \hline
 \end{tabular}
-
