@@ -31,7 +31,7 @@ output/
 *~
 
 # Generated PDFs (for LaTeX source documents, we use PNG outputs)
-*.pdf
+# *.pdf
 
 # Publication figures - keep only benchmark results (no PDFs, ignore logs)
 experiments/drift_detection_benchmark/publication_figures/*.pdf
