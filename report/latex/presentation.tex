@@ -511,7 +511,7 @@
 				\textbf{Method}         & \textbf{F1}   & \textbf{Prec.} & \textbf{FP}  \\ \midrule
 				\textcolor{darkgreen}{\textbf{IDW-MMD}}      & \textbf{0.538} & 0.575          & 2.1          \\
 				D3                      & 0.494          & 0.563          & 0.8          \\
-				\textcolor{darkgreen}{\textbf{SE-CDT}}       & 0.484          & 0.533          & \textbf{0}   \\
+				\textcolor{darkgreen}{\textbf{SE-CDT}}       & 0.454          & 0.339          & 14.7         \\
 				MMD (baseline)          & 0.460          & 0.345          & 15.1         \\
 				KS-Test                 & 0.294          & 0.190          & 37.6         \\
 				\bottomrule
@@ -551,13 +551,13 @@
 		\begin{column}{0.46\textwidth}
 			\centering
 			\includegraphics[width=0.85\linewidth]{confusion_matrix_category.png}
-			\captionof{figure}{\scriptsize Category Matrix (TCD vs PCD) --- CAT = \textbf{79.2\%}}
+			\captionof{figure}{\scriptsize Category Matrix (TCD vs PCD) --- CAT = \textbf{82.2\%}}
 
 			\vspace{0.3em}
 			\begin{exampleblock}{\footnotesize Two enhancements added}
 				\scriptsize
-				\textbf{Concept Memory:} ringbuffer of post-drift snapshots; matched via Standard MMD ($\mu = 0.15$). Lifts Recurrent from 0\% $\to$ 33\%.\\
-				\textbf{Online Self-Calibration:} rolling quantile baseline that loosens SNR/WR/CV thresholds when no drift is present. Lifts Gradual from 55\% $\to$ 64\%.
+				\textbf{Concept Memory:} ring buffer of post-drift snapshots, matched via Standard MMD. Recovers Recurrent classification when the same concept reappears.\\
+				\textbf{Online Self-Calibration:} rolling quantile baseline that adapts SNR/WR/CV thresholds when no drift is present, improving robustness on noisy streams.
 			\end{exampleblock}
 		\end{column}
 		\begin{column}{0.52\textwidth}
@@ -569,9 +569,9 @@
 				\toprule
 				                   & \textbf{SE-CDT}                          & \textbf{CDT-MSW}    & \textbf{Note}        \\ \midrule
 				\textbf{Labels}    & \textcolor{darkgreen}{\textbf{None}}     & Required            & Unsupervised win     \\
-				\textbf{CAT}       & 79.2\%                                   & 87.0\%              & Close at $-7.8$pp    \\
-				\textbf{SUB}       & 50.8\%                                   & 86.7\%              & Conditional metric   \\
-				\textbf{Recall}    & \textcolor{darkgreen}{\textbf{94.7\%}}   & 82.5\%              & $1-\overline{\text{MDR}}$ from paper Table 5 \\
+				\textbf{CAT}       & 82.2\%                                   & 87.0\%              & Close at $-4.8$pp    \\
+				\textbf{SUB}       & 65.8\% / 55.7\%                          & 86.7\%              & micro / macro        \\
+				\textbf{Recall}    & \textcolor{darkgreen}{\textbf{94.2\%}}   & 82.5\%              & $1-\overline{\text{MDR}}$ from paper Table 5 \\
 				\bottomrule
 			\end{tabular}}
 
@@ -583,10 +583,10 @@
 				\toprule
 				\textbf{Drift Type} & \textbf{Acc.} & \textbf{Notes}                         \\ \midrule
 				Sudden              & \textbf{82.4\%}   & Sharp, well-separated peaks   \\
-				Gradual             & 63.8\%            & Improved by Self-Calibration  \\
-				Recurrent           & 33.1\%            & Enabled by Concept Memory     \\
-				Incremental         & 28.5\%            & Hard to separate from Gradual \\
-				Blip                & 5.0\%             & Trade-off after removing magic constant \\
+				Recurrent           & \textbf{91.5\%}   & Enabled by Concept Memory     \\
+				Incremental         & 60.8\%            & Helped by temporal features   \\
+				Gradual             & 43.8\%            & Sliding-window MMD returns to baseline \\
+				Blip                & 0.0\%             & Sliding-window MMD returns to baseline \\
 				\bottomrule
 			\end{tabular}}
 		\end{column}
@@ -594,22 +594,22 @@
 \end{frame}
 
 % --- Slide 17: Adaptation Results ---
-\begin{frame}[shrink]{Result 3: Model Adaptation (Prequential Accuracy)}
+\begin{frame}[shrink]{Result 3: Model Adaptation (Prequential Accuracy, $N = 30$)}
 	\begin{columns}[T]
 		\begin{column}{0.55\textwidth}
 			\centering
 			\includegraphics[width=\linewidth]{fig_prequential_stepping.png}
-			\captionof{figure}{\scriptsize Stepping Drift: Type-Specific (blue) holds 77\%, No Adaptation (red) drops to 56\% as the distribution keeps moving away.}
+			\captionof{figure}{\scriptsize Stepping Drift: Type-Specific (blue) holds 71.4\%, No Adaptation (red) drops to 54.8\% as the distribution keeps moving away.}
 		\end{column}
 		\begin{column}{0.43\textwidth}
 			{\small
 			\begin{tabular}{@{}lcc@{}}
 				\toprule
 				\textbf{Strategy}                                & \textbf{Step.}  & \textbf{Sudd.} \\ \midrule
-				\textcolor{darkgreen}{\textbf{Type-Specific}}    & \textbf{77.3\%} & \textbf{76.6\%} \\
-				Periodic Retrain                                 & 64.9\%          & 64.2\%          \\
-				Simple Retrain                                   & 64.9\%          & 61.8\%          \\
-				No Adaptation                                    & 56.2\%          & 51.8\%          \\
+				\textcolor{darkgreen}{\textbf{Type-Specific}}    & \textbf{71.4\%} & \textbf{70.8\%} \\
+				Periodic Retrain                                 & 64.0\%          & 63.7\%          \\
+				Simple Retrain                                   & 63.0\%          & 62.2\%          \\
+				No Adaptation                                    & 54.8\%          & 53.7\%          \\
 				\bottomrule
 			\end{tabular}}
 
@@ -617,7 +617,7 @@
 			\begin{exampleblock}{\small Why Type-Specific helps}
 				\small
 				A single ``always reset'' policy (Simple Retrain) discards still-useful history when the drift is gradual; a fixed schedule (Periodic) ignores the drift signal altogether.\\
-				Routing the update strategy by drift type --- \textit{Sudden $\to$ full reset}, \textit{Gradual $\to$ warm-start} --- adds \textbf{+12.4 pp} on Stepping and \textbf{+12.4 pp} on Sudden over the best non-typed baseline.
+				Routing the update strategy by drift type --- \textit{Sudden $\to$ full reset}, \textit{Gradual $\to$ warm-start} --- adds \textbf{+16.6 pp} on Stepping and \textbf{+17.1 pp} on Sudden over No Adaptation, with Friedman $p < 10^{-15}$.
 			\end{exampleblock}
 		\end{column}
 	\end{columns}
@@ -661,9 +661,9 @@
 				\footnotesize
 				\begin{enumerate}
 					\item \textbf{Detection:} ShapeDD-IDW with Gamma-null p-value $\to$ a properly calibrated test ($\alpha = 0.05$, H0-verified) at runtime parity with the baseline.
-					\item \textbf{Classification:} SE-CDT label-free, CAT = \textbf{79.2\%}, SUB = \textbf{50.8\%}, EDR = \textbf{94.7\%}.
-					\item \textbf{Concept Memory + Self-Calibration:} lift Recurrent (0\% $\to$ 33\%) and Gradual (55\% $\to$ 64\%).
-					\item \textbf{Adaptation:} Type-Specific gains \textbf{+24.8 pp} on Sudden, \textbf{+21.1 pp} on Stepping vs No Adaptation.
+					\item \textbf{Classification:} SE-CDT label-free, CAT = \textbf{82.2\%}, SUB = \textbf{65.8\%} (micro), EDR = \textbf{94.2\%}.
+					\item \textbf{Concept Memory + Self-Calibration:} restore Recurrent classification and stabilise SNR/WR/CV thresholds online.
+					\item \textbf{Adaptation:} Type-Specific gains \textbf{+17.1 pp} on Sudden, \textbf{+16.6 pp} on Stepping vs No Adaptation ($N = 30$, Friedman $p < 10^{-15}$).
 					\item \textbf{System:} end-to-end Kafka closed-loop validated.
 				\end{enumerate}
 			\end{block}
@@ -673,7 +673,7 @@
 				\footnotesize
 				\begin{itemize}
 					\item Gradual/Incremental still hard to separate --- sliding-window MMD returns to baseline.
-					\item Concept Memory threshold $\mu = 0.15$ is hand-tuned.
+					\item Concept Memory threshold $\mu = 0.15$ chosen empirically from H0 noise floor.
 					\item Adaptation: 3 scenarios, $N = 30$ runs (Friedman $p < 10^{-15}$).
 				\end{itemize}
 			\end{exampleblock}
@@ -747,7 +747,7 @@
 
 % --- Backup 2: F1 low ---
 \begin{frame}[noframenumbering,shrink]{Backup: ``F1 close to MMD baseline --- where is the contribution?''}
-	\textbf{Question:} ``SE-CDT's F1 (0.484) is only marginally above MMD (0.460). Where is the gain?''
+	\textbf{Question:} ``SE-CDT's F1 (0.454) is only marginally below MMD (0.460). Where is the gain?''
 
 	\vspace{0.5em}
 	\begin{columns}[T]
@@ -758,10 +758,10 @@
 			\begin{tabular}{@{}lccc@{}}
 				\toprule
 				             & \textbf{SE-CDT} & \textbf{MMD} & \textbf{KS}  \\ \midrule
-				F1           & 0.484           & 0.460        & 0.294        \\
-				\textbf{FP}  & \textcolor{darkgreen}{\textbf{0}}  & 15.1  & 37.6         \\
-				Recall       & 0.470           & 0.757        & 0.824        \\
-				Precision    & 0.533           & 0.345        & 0.190        \\
+				F1           & 0.454           & 0.460        & 0.294        \\
+				\textbf{FP}  & \textcolor{darkgreen}{\textbf{14.7}} & 15.1  & 37.6         \\
+				Recall       & 0.758           & 0.757        & 0.824        \\
+				Precision    & 0.339           & 0.345        & 0.190        \\
 				\bottomrule
 			\end{tabular}}
 
@@ -790,22 +790,21 @@
 	\end{columns}
 \end{frame}
 
-% --- Backup 3: Recurrent = 33% ---
-\begin{frame}[noframenumbering,shrink]{Backup: How does Concept Memory work for Recurrent drift?}
-	\textbf{Question:} ``Recurrent drift used to be 0\% --- what was added, and why is it now 33\%?''
+% --- Backup 3: Concept Memory mechanism ---
+\begin{frame}[noframenumbering,shrink]{Backup: Why does Concept Memory matter for Recurrent drift?}
+	\textbf{Question:} ``Recurrent drift requires concept matching --- how does Concept Memory provide it?''
 
 	\vspace{0.5em}
 	\begin{columns}[T]
 		\begin{column}{0.52\textwidth}
-			\textbf{Original limitation:}
+			\textbf{The detection challenge:}
 			\begin{itemize}
-				\item The rule tree only looks at the \textit{shape of one MMD event}.
-				\item A Recurrent stream is a sequence of \textit{repeated} sudden events --- each one looked exactly like an isolated Sudden drift.
-				\item Result: Recurrent samples were systematically labelled Sudden $\to$ 0\% accuracy.
+				\item A Recurrent stream is a sequence of \textit{repeated} concept switches; each switch produces an MMD peak that, in isolation, looks like a Sudden drift.
+				\item Without memory of past concepts, repeated visits are scored independently $\to$ Recurrent collapses into the Sudden branch.
 			\end{itemize}
 
 			\vspace{0.5em}
-			\textbf{What was added (Concept Memory):}
+			\textbf{How Concept Memory resolves it:}
 			\begin{enumerate}
 				\item During every \textit{stable period}, take a snapshot of the current data window and store it in a ring buffer of size $K = 8$.
 				\item When a new drift fires, compute Standard MMD between the new post-drift window and every snapshot.
@@ -815,18 +814,18 @@
 		\begin{column}{0.45\textwidth}
 			\begin{exampleblock}{Why $\mu = 0.15$?}
 				\small
-				$\mu = 0.05$ was below the MMD noise floor (false matches even between independent stationary windows). Empirical sweep on the H0 calibration data showed $\mu = 0.15$ separates ``revisited concept'' from ``new concept'' reliably.
+				$\mu = 0.05$ falls inside the MMD noise floor (false matches between independent stationary windows). An empirical sweep on H0 calibration data shows $\mu = 0.15$ separates ``revisited concept'' from ``new concept'' reliably.
 			\end{exampleblock}
 
 			\vspace{0.3em}
-			\begin{alertblock}{Why only 33\%?}
+			\begin{alertblock}{Remaining limitations}
 				\small
-				Two failure modes remain:
+				Two failure modes remain on the harder Recurrent variants:
 				\begin{itemize}
 					\item Recurrent events that are \textit{too far apart} push the original snapshot out of the ring buffer.
-					\item ``Repeated Gradual'' streams produce flattened MMD signals that no snapshot matches well.
+					\item Repeated Gradual streams produce flattened MMD signals that no snapshot matches well.
 				\end{itemize}
-				$\to$ Future work: learned threshold + longer memory.
+				$\to$ Future work: learned threshold and longer memory.
 			\end{alertblock}
 		\end{column}
 	\end{columns}
@@ -845,10 +844,10 @@
 					\toprule
 					              & \textbf{SE-CDT}                        & \textbf{CDT-MSW} \\ \midrule
 					Labels        & \textcolor{darkgreen}{\textbf{None}}   & Required           \\
-					CAT           & 79.2\%                                 & 87.0\%             \\
-					SUB           & 50.8\%                                 & 86.7\%             \\
-					Recall        & \textcolor{darkgreen}{\textbf{94.7\%}} & 82.5\%             \\
-					Effective     & \textbf{75.0\%}                        & 71.8\%             \\
+					CAT           & 82.2\%                                 & 87.0\%             \\
+					SUB           & 65.8\%                                 & 86.7\%             \\
+					Recall        & \textcolor{darkgreen}{\textbf{94.2\%}} & 82.5\%             \\
+					Effective     & \textbf{77.4\%}                        & 71.8\%             \\
 					\bottomrule
 				\end{tabular}}
 				\vspace{0.2em}
@@ -859,8 +858,8 @@
 			\textbf{Reading the numbers in context:}
 			\begin{itemize}
 				\item CDT-MSW reports CAT and SUB \textit{conditionally} on drifts it detects; with paper recall $\approx 82.5\%$ it still misses $\sim 17\%$ of events.
-				\item SE-CDT detects $94.7\%$ of drifts and types every one of them without any labels.
-				\item End-to-end, both systems land within $\sim 3$pp on effective accuracy ($75.0\%$ vs $71.8\%$); the contribution is reaching this on \textbf{unsupervised $P(X)$}.
+				\item SE-CDT detects $94.2\%$ of drifts and types every one of them without any labels.
+				\item End-to-end, SE-CDT lands $\sim 5.6$pp above CDT-MSW on effective accuracy ($77.4\%$ vs $71.8\%$); the contribution is reaching this on \textbf{unsupervised $P(X)$}.
 			\end{itemize}
 
 			\vspace{0.3em}
@@ -973,7 +972,7 @@
 
 % --- Backup 9: Subcategory 50% ---
 \begin{frame}[noframenumbering,shrink]{Backup: ``Subcategory accuracy $\sim$51\% --- isn't that random?''}
-	\textbf{Question:} ``With 5 classes, 50\% sounds close to random guessing.''
+	\textbf{Question:} ``With 5 classes, 65\% sounds close to random guessing.''
 
 	\vspace{0.5em}
 	\begin{columns}[T]
@@ -986,7 +985,7 @@
 			\textbf{It is well above random:}
 			\begin{itemize}
 				\item Random baseline across 5 classes is 20\%.
-				\item 50.8\% is $\sim$2.5$\times$ random and well above the 95\% CI of a random predictor ($\sim$23\%).
+				\item Micro SUB $= 65.8\%$ is $\sim 3.3\times$ random and well above the 95\% CI of a random predictor ($\sim 23\%$).
 				\item Performance is \textbf{very uneven across classes}:
 			\end{itemize}
 
@@ -994,16 +993,16 @@
 			\begin{tabular}{@{}lc@{}}
 				\toprule
 				\textbf{Drift Type} & \textbf{Accuracy} \\ \midrule
+				Recurrent           & \textbf{91.5\%}   \\
 				Sudden              & \textbf{82.4\%}   \\
-				Gradual             & 63.8\%            \\
-				Recurrent           & 33.1\%            \\
-				Incremental         & 28.5\%            \\
-				Blip                & 5.0\%             \\
+				Incremental         & 60.8\%            \\
+				Gradual             & 43.8\%            \\
+				Blip                & 0.0\%             \\
 				\bottomrule
 			\end{tabular}}
 
 			\vspace{0.3em}
-			\textbf{Why the gap?} Sudden and Gradual have distinct geometric signatures; Incremental and ``Repeated Gradual'' look similar at the window scale ($\sim$150 samples) the detector sees. Future work: multi-scale reference window (Chapter 5).
+			\textbf{Why the gap?} Recurrent benefits from Concept Memory; Sudden has the cleanest peaks. Incremental and Gradual look similar at the window scale ($\sim 150$ samples) the detector sees, and Blip is too short to leave a stable signature. Future work: multi-scale reference window (Chapter 5).
 		\end{column}
 	\end{columns}
 \end{frame}
