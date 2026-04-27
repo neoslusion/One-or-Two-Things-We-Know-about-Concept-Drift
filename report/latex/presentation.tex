@@ -499,7 +499,7 @@
 
 			\vspace{0.5em}
 			\includegraphics[width=\linewidth]{figure_4_stationary_fp.png}
-			\captionof{figure}{\scriptsize False Positives across methods --- SE-CDT = \textbf{0 FP}}
+			\captionof{figure}{\scriptsize False Positives across methods --- SE-CDT $\approx 14.7$ FP/run, calibrated at $\alpha = 0.05$}
 		\end{column}
 		\begin{column}{0.5\textwidth}
 			\textbf{Compared against 7 baselines:}
@@ -674,7 +674,7 @@
 				\begin{itemize}
 					\item Gradual/Incremental still hard to separate --- sliding-window MMD returns to baseline.
 					\item Concept Memory threshold $\mu = 0.15$ is hand-tuned.
-					\item Adaptation: 3 scenarios, $N = 5$ runs.
+					\item Adaptation: 3 scenarios, $N = 30$ runs (Friedman $p < 10^{-15}$).
 				\end{itemize}
 			\end{exampleblock}
 
@@ -921,7 +921,7 @@
 			\vspace{0.5em}
 			\textbf{This is the intended trade-off:}
 			\begin{itemize}
-				\item IDW-MMD is tuned for 0 false positives (high precision).
+				\item IDW-MMD biases toward high precision (FP $\sim 2$/run, lowest among baselines).
 				\item Cost: lower recall on very small distributional shifts.
 			\end{itemize}
 		\end{column}
@@ -1008,41 +1008,42 @@
 	\end{columns}
 \end{frame}
 
-% --- Backup 10: N=5 prequential ---
-\begin{frame}[noframenumbering,shrink]{Backup: ``Are $N = 5$ runs enough for adaptation?''}
-	\textbf{Question:} ``Is $N = 5$ prequential runs enough to claim Type-Specific is better?''
+% --- Backup 10: Adaptation statistical test ---
+\begin{frame}[noframenumbering,shrink]{Backup: ``Is the adaptation gap statistically significant?''}
+	\textbf{Question:} ``Is Type-Specific really better, or is it run-to-run noise?''
 
 	\vspace{0.5em}
 	\begin{columns}[T]
 		\begin{column}{0.48\textwidth}
 			\centering
 			\includegraphics[width=\linewidth]{fig_prequential_sudden.png}
-			\captionof{figure}{\scriptsize Prequential accuracy on Sudden drift, $N = 5$ runs.}
+			\captionof{figure}{\scriptsize Prequential accuracy on Sudden drift, $N = 30$ runs.}
 
 			\vspace{0.3em}
-			\textbf{Effect size:}
+			\textbf{Sudden ($N = 30$):}
 			\begin{itemize}
-				\item Type-Specific: $76.6\% \pm 2.4$
-				\item No Adaptation: $51.8\% \pm 2.7$
-				\item Gap: \textbf{+24.8 pp}, std $\sim$2.5 pp.
-				\item Cohen's $d \approx 9.7$ --- gap is $\sim$10 standard deviations.
+				\item Type-Specific: $70.78\% \pm 2.85$
+				\item No Adaptation: $53.68\% \pm 3.46$
+				\item Gap: \textbf{+17.10 pp}.
 			\end{itemize}
 		\end{column}
 		\begin{column}{0.48\textwidth}
-			\textbf{Why $N = 5$ is acceptable here:}
+			\textbf{Friedman test (paired by seed):}
 			\begin{itemize}
-				\item The gap is far larger than the run-to-run noise (24.8 pp vs $\sim$2.5 pp).
-				\item Same ranking holds across all 3 scenarios (Sudden, Stepping, Mixed).
-				\item Per run takes $\sim$15--20 minutes on a laptop $\to$ $N = 5$ is the practical limit.
+				\item Stepping: $\chi^2 = 78.12$, $p = 7.8 \times 10^{-17}$
+				\item Sudden:   $\chi^2 = 86.76$, $p = 1.1 \times 10^{-18}$
+				\item Mixed:    $\chi^2 = 76.32$, $p = 1.9 \times 10^{-16}$
 			\end{itemize}
 
 			\vspace{0.5em}
-			\begin{alertblock}{Acknowledged limit}
-				To make a stronger statistical claim, future work should:
+			$p \ll 0.05$ on all three scenarios; the ranking among 4 strategies is not random.
+
+			\vspace{0.5em}
+			\begin{alertblock}{Remaining limits}
 				\begin{itemize}
-					\item Run $N \geq 30$ on a server.
-					\item Add paired Wilcoxon test per scenario.
-					\item Cover a broader scenario sweep.
+					\item Only 3 scenarios (Stepping, Sudden, Mixed).
+					\item No Gradual/Incremental adaptation scenario yet.
+					\item No real-world dataset with verified drift labels.
 				\end{itemize}
 				Listed in \textbf{Chapter 5: Future Directions}.
 			\end{alertblock}

@@ -67,7 +67,9 @@ Dựa trên những phân tích trên, luận văn đề xuất công thức IDW
 	\text{MMD}^2_{\text{IDW}}(X, Y) = \underbrace{\sum_{i \neq j} W^{XX}_{ij}\, k(x_i, x_j)}_{\text{Weighted } XX} + \underbrace{\sum_{p \neq q} W^{YY}_{pq}\, k(y_p, y_q)}_{\text{Weighted } YY} - 2\underbrace{\sum_{i=1}^n \sum_{p=1}^m \frac{1}{nm} k(x_i, y_p)}_{\text{Uniform } XY}
 \end{equation}
 
-\textbf{Lý do Cross-term dùng trọng số đều.} Thành phần so sánh chéo giữa hai cửa sổ giữ nguyên trọng số đồng nhất $1/(nm)$ vì đây là số hạng đo sự chồng chéo giữa hai phân phối: nếu gán trọng số IDW cho nó sẽ tạo ra khoảng cách giả ngay cả khi hai cửa sổ có cùng phân phối, chỉ do cấu trúc mật độ cục bộ khác nhau. Nói cách khác, Cross-term đóng vai trò ``neo'' trung lập, còn Weighted XX và YY đóng vai trò ``kính lúp'' khuếch đại tín hiệu biên. Do thiết kế này, $\text{MMD}^2_{\text{IDW}}$ có một bias dương nhỏ ngay cả khi $P = Q$. Đây là đặc điểm đã biết và được xử lý qua asymptotic p-value (Mục~\ref{sec:idw-mmd}), cho phép ngưỡng phát hiện được hiệu chỉnh tự động mà không cần permutation test.
+\textbf{Lý do Cross-term dùng trọng số đều.} Thành phần so sánh chéo giữa hai cửa sổ giữ trọng số đồng nhất $1/(nm)$ vì đây là số hạng đo sự chồng chéo giữa hai phân phối: nếu gán trọng số IDW cho cross-term, nó sẽ tạo ra khoảng cách giả ngay cả khi hai cửa sổ có cùng phân phối, chỉ do cấu trúc mật độ cục bộ khác nhau. Cross-term vì vậy đóng vai trò trung lập, còn Weighted XX và YY làm rõ tín hiệu ở biên.
+
+Hệ quả của thiết kế này là $\text{MMD}^2_{\text{IDW}}$ có một bias dương nhỏ ngay cả khi $P = Q$. Bias đó được xử lý qua p-value của Gamma-approximation null (Mục~\ref{sec:idw-mmd}), cho phép ngưỡng phát hiện được hiệu chỉnh tự động mà không cần permutation test.
 
 \subsubsection{Tại sao IDW-MMD cải thiện hiệu năng phát hiện?}
 Khi dùng MMD gốc, tất cả các cặp điểm đóng góp ngang nhau vào kết quả. Điều này khiến tín hiệu trôi dạt (concept drift signal) dễ bị ``chìm'' vào lượng lớn các điểm dữ liệu không thay đổi ở trung tâm phân phối. IDW-MMD khắc phục bằng hai cơ chế: (1) giảm trọng số các điểm trung tâm đông đúc, tránh để chúng ``lấn át'' tín hiệu drift; (2) tăng trọng số các điểm vùng biên, nơi sudden drift thường biểu hiện đầu tiên qua sự xuất hiện đột ngột của phân phối mới. Nhờ vậy IDW-MMD nhạy hơn với các thay đổi rõ ràng ở biên phân phối. Tuy nhiên, chính cơ chế này cũng làm IDW-MMD ít nhạy hơn với gradual drift (thay đổi dần từ vùng trung tâm). Hạn chế này được thảo luận ở cuối mục.
@@ -159,12 +161,12 @@ Một điểm then chốt cần làm rõ trước khi chuyển sang phần phân
 
 \begin{enumerate}
 	\item \textbf{Vai trò 1 --- Tín hiệu trace (cho Classification Module):}
-	Bước trượt cửa sổ tính tín hiệu $\sigma(t)$ làm đầu vào cho phân loại sử dụng \textbf{Standard MMD} (unbiased U-statistic, không trọng số). Lý do: cơ chế triệt mật độ trung tâm của IDW-MMD vô tình làm mờ các đặc trưng hình dạng (đặc biệt với gradual/incremental, vốn xuất hiện ở vùng trung tâm phân phối). Thực nghiệm nội bộ cho thấy nếu dùng tín hiệu IDW-MMD cho classification thì CAT giảm từ $85.8\%$ xuống $20\%$, MDR cho gradual đạt $1.0$ (bỏ sót toàn bộ).
+	Bước trượt cửa sổ tính tín hiệu $\sigma(t)$ làm đầu vào cho phân loại sử dụng \textbf{Standard MMD} (unbiased U-statistic, không trọng số). Lý do: cơ chế triệt mật độ trung tâm của IDW-MMD vô tình làm mờ các đặc trưng hình dạng, đặc biệt với gradual/incremental vốn xuất hiện ở vùng trung tâm phân phối. Thực nghiệm ablation nội bộ cho thấy thay tín hiệu trace bằng IDW-MMD làm CAT sụt mạnh và bỏ sót gần như toàn bộ gradual drift (chi tiết ở Bảng ablation, Chương~\ref{chap:experiments}).
 	\item \textbf{Vai trò 2 --- Kiểm định p-value tại candidate (cho Detection Module):}
 	Sau khi tìm peak từ trace standard MMD, mỗi candidate được kiểm định bằng \textbf{IDW-MMD với Gamma-approximation null} (xem Mục~\ref{sec:idw-mmd}) để xác nhận drift có ý nghĩa thống kê. IDW-MMD ở đây phát huy lợi thế nhạy với các thay đổi rõ ràng ở biên phân phối (sudden, boundary shifts); kiểm định Gamma null vừa tránh chi phí tính lại kernel ở mỗi vòng permutation, vừa được hiệu chỉnh đúng tại $\alpha = 0.05$ (đã kiểm chứng bằng H0-calibration test ở Mục~\ref{sec:h0-calibration}).
 \end{enumerate}
 
-Cụ thể, bandwidth $\gamma$ được ước lượng một lần bằng median heuristic trên đoạn đầu của luồng (mặc định 500 mẫu đầu), sau đó dùng nhất quán cho cả ba ma trận kernel $K_{XX}, K_{YY}, K_{XY}$ trong toàn bộ trace. Việc này tránh sự bất nhất khi mỗi cửa sổ tự ước lượng $\gamma$ riêng (sự bất nhất giữa các cửa sổ trượt là một trong những nguyên nhân chính gây dao động trace trong các phiên bản trước).
+Cụ thể, bandwidth $\gamma$ được ước lượng một lần bằng median heuristic trên đoạn đầu của luồng, sau đó dùng nhất quán cho cả ba ma trận kernel $K_{XX}, K_{YY}, K_{XY}$ trong toàn bộ trace. Cách này tránh dao động trace khi mỗi cửa sổ tự ước lượng $\gamma$ riêng.
 
 Với cấu hình hybrid này, detection có thuộc tính: tín hiệu trace giàu thông tin (phù hợp cho phân loại), nhưng quyết định cuối cùng ``có drift hay không'' đi qua một filter khắt khe hơn (kiểm định IDW-MMD), đem lại tỷ lệ False Positive thấp trong các benchmark detection (xem Mục~\ref{sec:detection-eval} và H0-calibration ở Mục~\ref{sec:h0-calibration}).
 
@@ -196,20 +198,22 @@ Vì vậy SE-CDT thực chất phân loại \textbf{hình dạng của sự thay
 \subsection{Đặc trưng phân loại từ tín hiệu \texorpdfstring{$\sigma(t)$}{sigma(t)}}
 SE-CDT trích xuất hai nhóm đặc trưng từ tín hiệu MMD. \textbf{Nhóm 1 --- Đặc trưng hình học} gồm:
 \begin{enumerate}
-	\item \textbf{Peak Width Ratio:} $\text{WR} = \frac{\text{FWHM}}{2l_1}$, trong đó FWHM (Full Width at Half Maximum) là độ rộng của đỉnh MMD đo tại nửa chiều cao cực đại. WR đo xem đỉnh drift chiếm bao nhiêu phần khoảng quan sát: đỉnh hẹp (WR nhỏ) tương ứng với drift đột ngột, đỉnh rộng (WR lớn) tương ứng với drift kéo dài. Ngưỡng WR $< 0.12$ dùng để loại nhanh TCD/PCD trong bước ước lượng độ dài drift; ngưỡng WR $< 0.15$ kết hợp SNR $> 2.0$ dùng để xác nhận Sudden ở bước phân loại subcategory (xem Algorithm~\ref{alg:se-cdt}).
-	\item \textbf{Peak Count ($n_p$):} Số lượng peaks. Sudden có ít peaks ($\leq 3$), Recurrent có nhiều peaks đều đặn ($\geq 4$).
-	\item \textbf{Periodicity CV:} Hệ số biến thiên khoảng cách giữa peaks. Recurrent có CV $< 0.3$ (đều đặn).
-	\item \textbf{Signal-to-Noise Ratio:} $\text{SNR} = \frac{\max(\sigma)}{\text{median}(\sigma)}$ --- TCD có SNR cao ($> 2.0$, peaks sắc nét).
-	\item \textbf{Peak Proximity Ratio (PPR):} Tỉ lệ khoảng cách gần nhất giữa hai peaks so với độ dài tín hiệu. Blip drift có PPR $< 0.20$.
-	\item \textbf{Dual-Peak Amplitude Ratio (DPAR):} Tỉ lệ chiều cao giữa hai peaks gần nhau. Blip drift có DPAR $> 0.60$ (hai peaks cao tương đương).
+	\item \textbf{Peak Width Ratio:} $\text{WR} = \frac{\text{FWHM}}{2l_1}$, trong đó FWHM (Full Width at Half Maximum) là độ rộng của đỉnh MMD đo tại nửa chiều cao cực đại. Đỉnh hẹp ứng với drift đột ngột, đỉnh rộng ứng với drift kéo dài.
+	\item \textbf{Peak Count ($n_p$):} Số lượng peaks. Sudden ít peak; Recurrent nhiều peak đều đặn.
+	\item \textbf{Periodicity CV:} Hệ số biến thiên khoảng cách giữa peaks. Recurrent có CV nhỏ (peak xuất hiện đều đặn).
+	\item \textbf{Signal-to-Noise Ratio:} $\text{SNR} = \frac{\max(\sigma)}{\text{median}(\sigma)}$. TCD có SNR cao do peak sắc nét, PCD có SNR thấp.
+	\item \textbf{Peak Proximity Ratio (PPR):} Khoảng cách gần nhất giữa hai peak chia cho độ dài tín hiệu. Blip drift có PPR nhỏ (hai peak gần nhau).
+	\item \textbf{Dual-Peak Amplitude Ratio (DPAR):} Tỉ lệ chiều cao giữa hai peak gần nhất. Blip có DPAR lớn (hai peak cao tương đương).
 \end{enumerate}
 
 \textbf{Nhóm 2 --- Đặc trưng thời gian} gồm:
 \begin{enumerate}
-	\item \textbf{Linear Trend Strength (LTS):} Hệ số $R^2$ của hồi quy tuyến tính trên tín hiệu. Incremental có LTS cao ($> 0.5$).
-	\item \textbf{Step Detection Score (SDS):} Tỉ lệ các bước nhảy có ý nghĩa ($> 1.5\sigma$) trong tín hiệu.
+	\item \textbf{Linear Trend Strength (LTS):} Hệ số $R^2$ của hồi quy tuyến tính trên tín hiệu; Incremental có LTS cao.
+	\item \textbf{Step Detection Score (SDS):} Tỉ lệ các bước nhảy đáng kể trong tín hiệu.
 	\item \textbf{Monotonicity Score (MS):} Tỉ lệ chiều hướng thống trị (tăng hoặc giảm) trong tín hiệu.
 \end{enumerate}
+
+Ngưỡng cụ thể của từng đặc trưng dùng trong cây quyết định được liệt kê ở Bảng~\ref{tab:se-cdt-features} và Algorithm~\ref{alg:se-cdt}.
 
 Bảng~\ref{tab:se-cdt-features} tổng hợp toàn bộ 9 đặc trưng của SE-CDT, giúp tra cứu nhanh ý nghĩa và điều kiện phân loại:
 
@@ -351,13 +355,13 @@ SE-CDT có một số ưu điểm nổi bật so với CDT-MSW:
 
 Về độ phức tạp tính toán của toàn pipeline:
 \begin{itemize}
-	\item \textbf{Detection (ShapeDD-IDW):} $O(n^2 \cdot T/\text{step})$ với $n$ = window size, $T$ = độ dài stream, step = bước trượt. Đây là bước chiếm chi phí chính.
+	\item \textbf{Detection (ShapeDD-IDW):} $O(n^2 \cdot T/\text{step})$ với $n$ = kích thước cửa sổ, $T$ = độ dài stream, step = bước trượt. Đây là bước chiếm chi phí chính.
 	\item \textbf{Classification (SE-CDT)}, chạy sau khi detection trả về $\sigma(t)$ với $m$ điểm:
 	\begin{itemize}
-		\item Gaussian smoothing: $O(m)$
-		\item Peak detection: $O(m)$ --- scipy.signal.find\_peaks
-		\item Feature extraction: $O(n_p)$ với $n_p$ = số peaks
-		\item Classification: $O(1)$ --- so sánh ngưỡng
+		\item Làm mượt tín hiệu: $O(m)$
+		\item Tìm cực đại cục bộ: $O(m)$
+		\item Trích đặc trưng từ các peak: $O(n_p)$ với $n_p$ là số peak
+		\item So sánh ngưỡng để phân loại: $O(1)$
 	\end{itemize}
 	\item \textbf{Tổng classification:} $O(m)$ --- tuyến tính, không đáng kể so với detection.
 	\item \textbf{Tổng pipeline:} Bottleneck nằm ở detection: $O(n^2 \cdot T/\text{step})$.
@@ -379,11 +383,16 @@ Toàn bộ giá trị ngưỡng cụ thể nằm trong Algorithm~\ref{alg:se-cdt
 \subsection{Tự hiệu chỉnh ngưỡng phân loại (Online Self-Calibration)}
 \label{sec:se-cdt-self-calibration}
 
-Một điểm yếu cố hữu của bộ ngưỡng cứng là: cùng một giá trị SNR $> 2.0$ có thể vừa đủ ``sắc nét'' đối với một stream Gaussian sạch, nhưng lại quá khó đạt trên một stream có nhiễu nền cao. Để giải quyết vấn đề này theo hướng \textit{vẫn không cần nhãn} (runtime-unsupervised), luận văn bổ sung một mô-đun \textbf{Rolling Feature Baseline} chạy song song với detector.
+Một điểm yếu của bộ ngưỡng cứng là: một ngưỡng SNR vừa đủ ``sắc nét'' với stream Gaussian sạch có thể quá khó đạt trên stream có nhiễu nền cao. Để giải quyết theo hướng \textit{vẫn không cần nhãn} (runtime-unsupervised), luận văn bổ sung một mô-đun \textbf{Rolling Feature Baseline} chạy song song với detector.
 
 \textbf{Ý tưởng.} Mỗi khi cửa sổ hiện tại được kết luận là \textit{không có drift}, ba đặc trưng then chốt --- SNR, WR, và CV --- được trích xuất từ tín hiệu MMD và đưa vào một bộ đệm vòng. Với các giá trị tích luỹ trong bộ đệm, hệ thống ước lượng phân vị thực nghiệm của từng đặc trưng trong điều kiện không có drift. Khi cần phân loại một drift mới, SE-CDT so sánh ngưỡng tĩnh với phân vị quan sát được và lấy giá trị lớn hơn làm ngưỡng adaptive.
 
-Cơ chế này có hai hiệu ứng tự nhiên. Với SNR, vì điều kiện phân loại Sudden là ``SNR phải lớn hơn ngưỡng'', việc kéo ngưỡng lên cao theo phân vị trên của baseline làm điều kiện khó đạt hơn, giúp tránh nhầm peak nhiễu thành Sudden khi nền nhiễu cao. Với WR và CV, điều kiện phân loại là ``phải nhỏ hơn ngưỡng''; việc kéo ngưỡng lên cao theo phân vị thấp của baseline làm điều kiện dễ đạt hơn, giúp các peak Sudden trên stream nhiễu (vốn có WR/CV cao hơn bình thường) vẫn được bắt đúng. Lý do chọn cơ chế ``một chiều'' (chỉ kéo lên, không kéo xuống) là để bảo toàn hành vi đã kiểm chứng trên benchmark synthetic: trên stream sạch, ngưỡng tĩnh tiếp tục được dùng; chỉ khi nền nhiễu cao bất thường, ngưỡng mới được điều chỉnh.
+Cơ chế này có hai hiệu ứng tự nhiên trên ba đặc trưng:
+\begin{itemize}
+	\item \textbf{Với SNR:} Sudden cần $\text{SNR}$ lớn hơn ngưỡng. Kéo ngưỡng lên theo phân vị trên của baseline làm điều kiện khó đạt hơn, giúp tránh nhầm peak nhiễu thành Sudden khi nền nhiễu cao.
+	\item \textbf{Với WR và CV:} điều kiện phân loại là ``phải nhỏ hơn ngưỡng''. Kéo ngưỡng lên theo phân vị thấp của baseline làm điều kiện dễ đạt hơn, giúp các peak Sudden trên stream nhiễu (vốn có WR/CV cao hơn bình thường) vẫn được bắt đúng.
+\end{itemize}
+Cơ chế chỉ ``một chiều'' (chỉ kéo lên, không kéo xuống) để bảo toàn hành vi trên các stream sạch. Khi đó ngưỡng tĩnh tiếp tục được dùng; chỉ khi nền nhiễu cao bất thường, ngưỡng mới được điều chỉnh.
 
 \textbf{Quy tắc kích hoạt.} Baseline chỉ được cập nhật khi cửa sổ vừa rồi không phát hiện drift và tín hiệu MMD đủ dài để các đặc trưng có ý nghĩa thống kê. Bộ đệm có cửa sổ làm nóng (warm-up): trước khi tích luỹ đủ một số mẫu tối thiểu, hệ thống vẫn dùng ngưỡng tĩnh, tránh việc adaptive threshold chạy theo nhiễu trong giai đoạn đầu của stream.
 
@@ -397,19 +406,21 @@ Cơ chế này có hai hiệu ứng tự nhiên. Với SNR, vì điều kiện p
 \subsection{Bộ nhớ khái niệm cho Recurrent Drift (Concept Memory)}
 \label{sec:se-cdt-concept-memory}
 
-Trong phiên bản đầu tiên của SE-CDT, các điểm Recurrent drift bị phân loại như một chuỗi sự kiện Sudden riêng lẻ (oracle SUB Recurrent $= 0\%$ trong báo cáo trước cải tiến) vì decision tree không có cách nào ``ghi nhớ'' rằng cùng một concept đã xuất hiện trước đó. Để khắc phục, luận văn bổ sung một mô-đun \textbf{Concept Memory} dạng ring buffer.
+Để nhận diện được Recurrent drift, decision tree cần một cơ chế ``ghi nhớ'' rằng cùng một concept đã xuất hiện trước đó. Nếu không có cơ chế này, mỗi lần concept lặp lại sẽ bị phân loại như một sự kiện Sudden độc lập. Luận văn bổ sung một mô-đun \textbf{Concept Memory} dạng ring buffer để giải quyết.
 
-\textbf{Cấu trúc.} Memory chứa tối đa $M$ snapshot (mặc định $M = 8$), mỗi snapshot là một mẫu $S_k$ kích thước $n_s$ điểm (mặc định $n_s = 200$) lấy ngay sau khi một drift được phát hiện và \textit{ổn định} trở lại. Cùng với mỗi $S_k$, hệ thống lưu cả median-heuristic gamma $\gamma_k$ tại thời điểm chụp.
+\textbf{Cấu trúc.} Memory chứa tối đa $M$ snapshot, mỗi snapshot là một mẫu $S_k$ kích thước $n_s$ điểm lấy ngay sau khi một drift được phát hiện và \textit{ổn định} trở lại. Cùng với mỗi $S_k$, hệ thống lưu cả median-heuristic gamma $\gamma_k$ tại thời điểm chụp.
 
 \textbf{Quy trình tra cứu.} Khi SE-CDT phát hiện một drift mới:
 \begin{enumerate}
 	\item Trích xuất snapshot post-drift $S^{\text{new}}$ từ cửa sổ trượt hiện tại.
 	\item Với mỗi $S_k \in \text{Memory}$, tính \textit{Standard MMD} giữa $S^{\text{new}}$ và $S_k$ bằng RBF kernel với $\gamma$ là trung bình $(\gamma_k + \gamma_{\text{new}})/2$.
-	\item Nếu tồn tại $k^\ast$ sao cho $\text{MMD}^2(S^{\text{new}}, S_{k^\ast}) < \tau_{\text{match}}$ (mặc định $\tau_{\text{match}} = 0.15$, được hiệu chỉnh thực nghiệm sao cho gấp khoảng $2\times$ độ nhiễu MMD nền $\approx 0.08$ trên dữ liệu Gaussian đồng nhất), drift được \textit{relabel} thành \textbf{TCD-Recurrent} với chỉ số concept $k^\ast$.
+	\item Nếu tồn tại $k^\ast$ sao cho $\text{MMD}^2(S^{\text{new}}, S_{k^\ast})$ nhỏ hơn ngưỡng so khớp $\tau_{\text{match}}$, drift được \textit{relabel} thành \textbf{TCD-Recurrent} với chỉ số concept $k^\ast$.
 	\item Nếu không match được, $S^{\text{new}}$ được \textit{thêm vào memory} và đẩy snapshot cũ nhất ra (chính sách FIFO).
 \end{enumerate}
 
-\textbf{Vì sao dùng Standard MMD thay vì IDW-MMD trong concept memory?} Bài toán so khớp concept ở đây không phải là phát hiện sự thay đổi tinh vi ở biên, mà là \textit{trả lời câu hỏi nhị phân}: hai mẫu này có cùng nguồn gốc phân phối hay không? Standard MMD (unbiased U-statistic) cho ước lượng không thiên lệch của khoảng cách phân phối và có ngưỡng diễn giải dễ hơn theo lý thuyết, do đó phù hợp hơn cho phép so sánh ``ghi nhớ vs. mới''. IDW-MMD vẫn được dùng ở bước detection để giữ tốc độ.
+Ngưỡng $\tau_{\text{match}}$ được chọn cao hơn rõ rệt so với độ nhiễu nền của MMD trên dữ liệu Gaussian đồng nhất, đủ để tránh báo nhầm hai concept khác nhau là giống nhau. Giá trị cụ thể của $M$, $n_s$, $\tau_{\text{match}}$ và độ nhiễu nền tham chiếu được liệt kê ở bảng tham số thực nghiệm (Chương~\ref{chap:experiments}).
+
+\textbf{Vì sao dùng Standard MMD thay vì IDW-MMD trong concept memory?} Bài toán so khớp concept ở đây không phải là phát hiện sự thay đổi tinh vi ở biên, mà là trả lời câu hỏi nhị phân: hai mẫu này có cùng nguồn gốc phân phối hay không? Standard MMD (unbiased U-statistic) cho ước lượng không thiên lệch của khoảng cách phân phối và có ngưỡng dễ diễn giải hơn theo lý thuyết, nên phù hợp với phép so sánh ``ghi nhớ vs. mới''. IDW-MMD vẫn được dùng ở bước detection để giữ tốc độ.
 
 \textbf{Tích hợp vào Algorithm~\ref{alg:se-cdt}.} Concept Memory chạy như một \textit{post-processor} của decision tree: khi nhánh ban đầu trả về một subcategory bất kỳ trong nhóm TCD (Sudden, Blip, Recurrent), bước Concept Memory được gọi và có quyền \textit{override} kết quả thành Recurrent nếu match thành công. Nhóm PCD (Gradual, Incremental) không kích hoạt Concept Memory vì bản chất tích lũy của chúng không phù hợp với khái niệm ``concept lặp lại đột ngột''.
 
