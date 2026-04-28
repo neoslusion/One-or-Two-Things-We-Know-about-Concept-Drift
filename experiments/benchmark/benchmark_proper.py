@@ -885,6 +885,17 @@ def run_quick_validation(scenarios=None, n_seeds=2):
 
 
 def run_benchmark_proper():
+    arg_parser = argparse.ArgumentParser(add_help=False)
+    arg_parser.add_argument(
+        "--n-seeds",
+        "--n_seeds",
+        dest="n_seeds",
+        type=int,
+        default=None,
+        help="Number of independent seeds per classification scenario.",
+    )
+    known_args, _ = arg_parser.parse_known_args()
+
     tasks = []
     # Recurrent scenario added explicitly so that Concept Memory has a stream
     # in which post-drift snapshots actually re-occur (the alternating Recurrent
@@ -900,10 +911,16 @@ def run_benchmark_proper():
         "Repeated_Recurrent",
     ]
     
-    # Check for Quick Mode
+    # Check for Quick Mode / reproducibility overrides.
     if os.environ.get("QUICK_MODE") == "True":
         n_seeds = 2
         logger.info("Running in QUICK MODE (n_seeds=2)")
+    elif known_args.n_seeds is not None:
+        n_seeds = known_args.n_seeds
+        logger.info(f"Running with CLI override (n_seeds={n_seeds})")
+    elif os.environ.get("BENCHMARK_PROPER_N_SEEDS") is not None:
+        n_seeds = int(os.environ["BENCHMARK_PROPER_N_SEEDS"])
+        logger.info(f"Running with BENCHMARK_PROPER_N_SEEDS={n_seeds}")
     else:
         n_seeds = 10 # Standard for comprehensive run
     
@@ -940,8 +957,8 @@ def run_benchmark_proper():
     # Generate Per-Drift-Type Accuracy Table
     generate_by_drift_type_table(results)
     
-    # Run Supervised CDT comparison
-    run_supervised_comparison(n_seeds=5)
+    # Run Supervised CDT comparison with the same seed budget for consistency.
+    run_supervised_comparison(n_seeds=n_seeds)
 
 def generate_latex_table(results):
     """

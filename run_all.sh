@@ -1,59 +1,79 @@
 #!/bin/bash
 # =============================================================================
-# UNIFIED BENCHMARK & THESIS PIPELINE
+# FINAL REPRODUCIBILITY PIPELINE (N=30)
 # =============================================================================
-# This script unifies the workflow for running benchmarks, generating results,
-# and building the final thesis report.
+# Runs the thesis experiments and rebuilds all generated thesis artifacts using
+# one consistent final configuration:
+#
+#   - H0 calibration: 200 stationary windows per cell (script default)
+#   - Detection benchmark: 30 independent runs
+#   - SE-CDT/CDT-MSW comparison: 30 seeds per scenario
+#   - Adaptation benchmark: 30 runs on stepping, sudden, mixed
+#   - Figures/tables regenerated after the experiments
+#   - Thesis and presentation PDFs rebuilt from a clean LaTeX state
 #
 # Usage:
 #   ./run_all.sh [options]
 #
 # Options:
-#   --quick             Run benchmarks in quick mode (fewer iterations)
-#   --skip-benchmark    Skip benchmark execution (only plot/build)
+#   --quick             Smoke test only (2 runs/seeds where supported)
+#   --skip-benchmark    Skip experiments; regenerate plots/tables and PDFs only
+#   --skip-h0           Skip H0 calibration
+#   --skip-build        Skip LaTeX PDF compilation
 #   --help              Show this help message
 #
-# Workflow:
-#   1. Setup Environment
-#   2. Run Detection Benchmark (main.py benchmark)
-#   3. Run Comparison Benchmark (main.py compare)
-#   4. Run Monitoring Benchmark (main.py monitoring)
-#   5. Generate Visualizations (main.py plot)
-#   6. Build LaTeX Report
+# Optional environment overrides:
+#   PYTHON=python3
+#   BENCHMARK_N_RUNS=30
+#   BENCHMARK_PROPER_N_SEEDS=30
+#   ADAPTATION_N_RUNS=30
 # =============================================================================
 
-set -e  # Exit on error
+set -euo pipefail
 
-# Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
-# Project root
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$PROJECT_ROOT"
 
-# Parse arguments
+PYTHON="${PYTHON:-python3}"
+BENCHMARK_N_RUNS="${BENCHMARK_N_RUNS:-30}"
+BENCHMARK_PROPER_N_SEEDS="${BENCHMARK_PROPER_N_SEEDS:-30}"
+ADAPTATION_N_RUNS="${ADAPTATION_N_RUNS:-30}"
+
 QUICK_MODE=false
 SKIP_BENCHMARK=false
+SKIP_H0=false
+SKIP_BUILD=false
 
 while [[ $# -gt 0 ]]; do
-    case $1 in
+    case "$1" in
         --quick)
             QUICK_MODE=true
             export QUICK_MODE=True
+            BENCHMARK_N_RUNS=2
+            BENCHMARK_PROPER_N_SEEDS=2
+            ADAPTATION_N_RUNS=2
             shift
             ;;
         --skip-benchmark)
             SKIP_BENCHMARK=true
             shift
             ;;
+        --skip-h0)
+            SKIP_H0=true
+            shift
+            ;;
+        --skip-build)
+            SKIP_BUILD=true
+            shift
+            ;;
         --help)
-            echo "Usage: ./run_all.sh [options]"
-            echo "  --quick             Run in quick mode"
-            echo "  --skip-benchmark    Skip benchmark runs"
+            echo "Usage: ./run_all.sh [--quick] [--skip-benchmark] [--skip-h0] [--skip-build]"
             exit 0
             ;;
         *)
@@ -63,10 +83,9 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Logging
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-LOG_FILE="results/logs/run_all_${TIMESTAMP}.log"
+TIMESTAMP="$(date +%Y%m%d_%H%M%S)"
 mkdir -p results/logs results/plots results/tables results/raw
+LOG_FILE="${PROJECT_ROOT}/results/logs/run_all_${TIMESTAMP}.log"
 
 print_header() {
     echo ""
@@ -79,98 +98,84 @@ print_success() {
     echo -e "${GREEN}✓ $1${NC}"
 }
 
-print_error() {
-    echo -e "${RED}✗ $1${NC}"
+run_logged() {
+    echo "+ $*" | tee -a "$LOG_FILE"
+    "$@" 2>&1 | tee -a "$LOG_FILE"
 }
 
-# =============================================================================
-# 1. Environment Setup
-# =============================================================================
-print_header "1. Environment Setup"
+run_env_logged() {
+    echo "+ $*" | tee -a "$LOG_FILE"
+    env "$@" 2>&1 | tee -a "$LOG_FILE"
+}
 
-if [ ! -d ".venv" ]; then
-    print_error "Virtual environment not found. Creating..."
-    python3 -m venv .venv
-    source .venv/bin/activate
-    pip install -r requirements.txt
-else
+print_header "1. Environment"
+if [ -f ".venv/bin/activate" ]; then
+    # Use the local environment when it exists, but do not create one here.
     source .venv/bin/activate
 fi
 
-export PYTHONPATH="${PROJECT_ROOT}:${PYTHONPATH}"
+export PYTHONPATH="${PROJECT_ROOT}:${PYTHONPATH:-}"
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export OPENBLAS_NUM_THREADS=1
+
+echo "Python: $($PYTHON --version 2>&1)" | tee -a "$LOG_FILE"
+echo "Detection runs: ${BENCHMARK_N_RUNS}" | tee -a "$LOG_FILE"
+echo "Classification seeds/scenario: ${BENCHMARK_PROPER_N_SEEDS}" | tee -a "$LOG_FILE"
+echo "Adaptation runs/scenario: ${ADAPTATION_N_RUNS}" | tee -a "$LOG_FILE"
 print_success "Environment ready"
 
-# =============================================================================
-# 2. Run Benchmarks
-# =============================================================================
 if [ "$SKIP_BENCHMARK" = false ]; then
-    
-    # 2a. Detection Benchmark
-    print_header "2a. Detection Benchmark (Window-based)"
-    if [ "$QUICK_MODE" = true ]; then
-        echo "Running in QUICK mode..."
-        python3 main.py benchmark --quick 2>&1 | tee -a "$LOG_FILE"
-    else
-        echo "Running in FULL mode (this may take time)..."
-        python3 main.py benchmark 2>&1 | tee -a "$LOG_FILE"
+    if [ "$SKIP_H0" = false ]; then
+        print_header "2a. H0 Calibration"
+        if [ "$QUICK_MODE" = true ]; then
+            run_logged "$PYTHON" scripts/h0_calibration.py --quick
+        else
+            run_logged "$PYTHON" scripts/h0_calibration.py
+        fi
+        print_success "H0 calibration complete"
     fi
-    print_success "Detection Benchmark Complete"
 
-    # 2b. Comparison Benchmark
-    print_header "2b. Comparison Benchmark (SE-CDT vs CDT_MSW)"
-    # Note: benchmark_proper.py now respects QUICK_MODE env var
-    python3 main.py compare 2>&1 | tee -a "$LOG_FILE"
-    print_success "Comparison Benchmark Complete"
+    print_header "2b. Detection Benchmark (N=${BENCHMARK_N_RUNS})"
+    run_env_logged \
+        "BENCHMARK_N_RUNS=${BENCHMARK_N_RUNS}" \
+        "$PYTHON" main.py benchmark
+    print_success "Detection benchmark complete"
 
-    # 2c. Monitoring Benchmark (Prequential)
-    print_header "2c. Monitoring Benchmark (Prequential)"
-    echo "Running adaptation evaluation for all drift types..."
-    for dtype in sudden gradual incremental recurrent mixed; do
-        echo "  → Scenario: $dtype"
-        python3 main.py monitoring --drift_type $dtype 2>&1 | tee -a "$LOG_FILE"
+    print_header "2c. SE-CDT vs CDT-MSW Classification (N=${BENCHMARK_PROPER_N_SEEDS})"
+    run_env_logged \
+        "BENCHMARK_PROPER_N_SEEDS=${BENCHMARK_PROPER_N_SEEDS}" \
+        "$PYTHON" main.py compare
+    print_success "Classification benchmark complete"
+
+    print_header "2d. Type-Specific Adaptation (N=${ADAPTATION_N_RUNS})"
+    for dtype in stepping sudden mixed; do
+        echo "Scenario: ${dtype}" | tee -a "$LOG_FILE"
+        run_logged "$PYTHON" main.py monitoring --drift_type "$dtype" --n_runs "$ADAPTATION_N_RUNS"
     done
-    print_success "Monitoring Benchmark Complete"
-
+    print_success "Adaptation benchmark complete"
 else
-    echo "Skipping benchmarks..."
+    echo "Skipping benchmark execution." | tee -a "$LOG_FILE"
 fi
 
-# =============================================================================
-# 3. Generate Visualizations
-# =============================================================================
-print_header "3. Generating Visualizations"
-python3 main.py plot 2>&1 | tee -a "$LOG_FILE"
-print_success "Visualizations generated in results/plots/"
+print_header "3. Generate Tables and Figures"
+run_logged "$PYTHON" main.py plot
+print_success "Tables and figures regenerated"
 
-# =============================================================================
-# 4. Build LaTeX Report
-# =============================================================================
-print_header "4. Building LaTeX Report"
-
-cd report/latex
-# Clean build
-rm -f main.aux main.bbl main.blg main.log main.out main.toc main.pdf
-
-echo "Compiling LaTeX..."
-pdflatex -interaction=nonstopmode main.tex > /dev/null 2>&1 || true
-bibtex main > /dev/null 2>&1 || true
-pdflatex -interaction=nonstopmode main.tex > /dev/null 2>&1 || true
-pdflatex -interaction=nonstopmode main.tex > /dev/null 2>&1 || true
-
-if [ -f "main.pdf" ]; then
-    print_success "Report built: report/latex/main.pdf"
-else
-    print_error "LaTeX build failed. Check logs in report/latex/"
+if [ "$SKIP_BUILD" = false ]; then
+    print_header "4. Build Thesis and Presentation"
+    cd report/latex
+    rm -f main.aux main.bbl main.blg main.log main.out main.toc main.lof main.lot main.fdb_latexmk main.fls
+    rm -f presentation.aux presentation.log presentation.nav presentation.out presentation.snm presentation.toc presentation.fdb_latexmk presentation.fls
+    run_logged latexmk -pdf -interaction=nonstopmode main.tex
+    run_logged latexmk -pdf -interaction=nonstopmode presentation.tex
+    cd "$PROJECT_ROOT"
+    print_success "PDF build complete"
 fi
 
-cd "$PROJECT_ROOT"
-
-# =============================================================================
-# Summary
-# =============================================================================
 print_header "Execution Summary"
-echo "Log file: $LOG_FILE"
-echo "Tables:   results/tables/"
-echo "Plots:    results/plots/"
-echo "Report:   report/latex/main.pdf"
-echo ""
+echo "Log file:      $LOG_FILE"
+echo "Tables:        results/tables/"
+echo "Plots:         results/plots/"
+echo "Thesis PDF:    report/latex/main.pdf"
+echo "Slides PDF:    report/latex/presentation.pdf"

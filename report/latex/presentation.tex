@@ -490,7 +490,7 @@
 \section{Experiments \& Evaluation}
 
 % --- Slide 14: Detection Results ---
-\begin{frame}[shrink]{Result 1: Drift Detection (15 runs, 14 datasets)}
+\begin{frame}[shrink]{Result 1: Drift Detection (30 runs, 14 datasets)}
 	\begin{columns}[T]
 		\begin{column}{0.48\textwidth}
 			\centering
@@ -499,7 +499,7 @@
 
 			\vspace{0.5em}
 			\includegraphics[width=\linewidth]{figure_4_stationary_fp.png}
-			\captionof{figure}{\scriptsize False Positives across methods --- SE-CDT $\approx 14.7$ FP/run, calibrated at $\alpha = 0.05$}
+			\captionof{figure}{\scriptsize False Positives across methods --- SE-CDT $\approx 14.5$ FP/run, calibrated at $\alpha = 0.05$}
 		\end{column}
 		\begin{column}{0.5\textwidth}
 			\textbf{Compared against 7 baselines:}
@@ -511,7 +511,7 @@
 				\textbf{Method}         & \textbf{F1}   & \textbf{Prec.} & \textbf{FP}  \\ \midrule
 				\textcolor{darkgreen}{\textbf{IDW-MMD}}      & \textbf{0.538} & 0.575          & 2.1          \\
 				D3                      & 0.494          & 0.563          & 0.8          \\
-				\textcolor{darkgreen}{\textbf{SE-CDT}}       & 0.454          & 0.339          & 14.7         \\
+				\textcolor{darkgreen}{\textbf{SE-CDT}}       & 0.459          & 0.346          & 14.5         \\
 				MMD (baseline)          & 0.460          & 0.345          & 15.1         \\
 				KS-Test                 & 0.294          & 0.190          & 37.6         \\
 				\bottomrule
@@ -551,7 +551,7 @@
 		\begin{column}{0.46\textwidth}
 			\centering
 			\includegraphics[width=0.85\linewidth]{confusion_matrix_category.png}
-			\captionof{figure}{\scriptsize Category Matrix (TCD vs PCD) --- CAT = \textbf{82.2\%}}
+			\captionof{figure}{\scriptsize Category Matrix (TCD vs PCD) --- CAT = \textbf{81.9\%}}
 
 			\vspace{0.3em}
 			\begin{exampleblock}{\footnotesize Two enhancements added}
@@ -569,9 +569,9 @@
 				\toprule
 				                   & \textbf{SE-CDT}                          & \textbf{CDT-MSW}    & \textbf{Note}        \\ \midrule
 				\textbf{Labels}    & \textcolor{darkgreen}{\textbf{None}}     & Required            & Unsupervised win     \\
-				\textbf{CAT}       & 82.2\%                                   & 87.0\%              & Close at $-4.8$pp    \\
+				\textbf{CAT}       & 81.9\%                                   & 87.0\%              & Close at $-5.1$pp    \\
 				\textbf{SUB}       & 65.8\% / 55.7\%                          & 86.7\%              & micro / macro        \\
-				\textbf{Recall}    & \textcolor{darkgreen}{\textbf{94.2\%}}   & 82.5\%              & $1-\overline{\text{MDR}}$ from paper Table 5 \\
+				\textbf{Recall}    & \textcolor{darkgreen}{\textbf{92.6\%}}   & 82.5\%              & $1-\overline{\text{MDR}}$ from paper Table 5 \\
 				\bottomrule
 			\end{tabular}}
 
@@ -583,9 +583,9 @@
 				\toprule
 				\textbf{Drift Type} & \textbf{Acc.} & \textbf{Notes}                         \\ \midrule
 				Sudden              & \textbf{82.4\%}   & Sharp, well-separated peaks   \\
-				Recurrent           & \textbf{91.5\%}   & Enabled by Concept Memory     \\
-				Incremental         & 60.8\%            & Helped by temporal features   \\
-				Gradual             & 43.8\%            & Sliding-window MMD returns to baseline \\
+				Recurrent           & \textbf{89.0\%}   & Enabled by Concept Memory     \\
+				Incremental         & 64.4\%            & Helped by temporal features   \\
+				Gradual             & 42.6\%            & Sliding-window MMD returns to baseline \\
 				Blip                & 0.0\%             & Sliding-window MMD returns to baseline \\
 				\bottomrule
 			\end{tabular}}
@@ -661,7 +661,7 @@
 				\footnotesize
 				\begin{enumerate}
 					\item \textbf{Detection:} ShapeDD-IDW with Gamma-null p-value $\to$ a properly calibrated test ($\alpha = 0.05$, H0-verified) at runtime parity with the baseline.
-					\item \textbf{Classification:} SE-CDT label-free, CAT = \textbf{82.2\%}, SUB = \textbf{65.8\%} (micro), EDR = \textbf{94.2\%}.
+					\item \textbf{Classification:} SE-CDT label-free, CAT = \textbf{81.9\%}, SUB = \textbf{65.8\%} (micro), EDR = \textbf{92.6\%}.
 					\item \textbf{Concept Memory + Self-Calibration:} restore Recurrent classification and stabilise SNR/WR/CV thresholds online.
 					\item \textbf{Adaptation:} Type-Specific gains \textbf{+17.1 pp} on Sudden, \textbf{+16.6 pp} on Stepping vs No Adaptation ($N = 30$, Friedman $p < 10^{-15}$).
 					\item \textbf{System:} end-to-end Kafka closed-loop validated.
@@ -747,7 +747,7 @@
 
 % --- Backup 2: F1 low ---
 \begin{frame}[noframenumbering,shrink]{Backup: ``F1 close to MMD baseline --- where is the contribution?''}
-	\textbf{Question:} ``SE-CDT's F1 (0.454) is only marginally below MMD (0.460). Where is the gain?''
+	\textbf{Question:} ``SE-CDT's F1 (0.459) is only marginally below MMD (0.466). Where is the gain?''
 
 	\vspace{0.5em}
 	\begin{columns}[T]
@@ -758,10 +758,10 @@
 			\begin{tabular}{@{}lccc@{}}
 				\toprule
 				             & \textbf{SE-CDT} & \textbf{MMD} & \textbf{KS}  \\ \midrule
-				F1           & 0.454           & 0.460        & 0.294        \\
-				\textbf{FP}  & \textcolor{darkgreen}{\textbf{14.7}} & 15.1  & 37.6         \\
-				Recall       & 0.758           & 0.757        & 0.824        \\
-				Precision    & 0.339           & 0.345        & 0.190        \\
+				F1           & 0.459           & 0.466        & 0.294        \\
+				\textbf{FP}  & \textcolor{darkgreen}{\textbf{14.5}} & 15.0  & 37.8         \\
+				Recall       & 0.760           & 0.760        & 0.826        \\
+				Precision    & 0.346           & 0.351        & 0.189        \\
 				\bottomrule
 			\end{tabular}}
 
@@ -844,10 +844,10 @@
 					\toprule
 					              & \textbf{SE-CDT}                        & \textbf{CDT-MSW} \\ \midrule
 					Labels        & \textcolor{darkgreen}{\textbf{None}}   & Required           \\
-					CAT           & 82.2\%                                 & 87.0\%             \\
+					CAT           & 81.9\%                                 & 87.0\%             \\
 					SUB           & 65.8\%                                 & 86.7\%             \\
-					Recall        & \textcolor{darkgreen}{\textbf{94.2\%}} & 82.5\%             \\
-					Effective     & \textbf{77.4\%}                        & 71.8\%             \\
+					Recall        & \textcolor{darkgreen}{\textbf{92.6\%}} & 82.5\%             \\
+					Effective     & \textbf{75.8\%}                        & 71.8\%             \\
 					\bottomrule
 				\end{tabular}}
 				\vspace{0.2em}
@@ -858,8 +858,8 @@
 			\textbf{Reading the numbers in context:}
 			\begin{itemize}
 				\item CDT-MSW reports CAT and SUB \textit{conditionally} on drifts it detects; with paper recall $\approx 82.5\%$ it still misses $\sim 17\%$ of events.
-				\item SE-CDT detects $94.2\%$ of drifts and types every one of them without any labels.
-				\item End-to-end, SE-CDT lands $\sim 5.6$pp above CDT-MSW on effective accuracy ($77.4\%$ vs $71.8\%$); the contribution is reaching this on \textbf{unsupervised $P(X)$}.
+				\item SE-CDT detects $92.6\%$ of drifts and types every one of them without any labels.
+				\item End-to-end, SE-CDT lands $\sim 4.0$pp above CDT-MSW on effective accuracy ($75.8\%$ vs $71.8\%$); the contribution is reaching this on \textbf{unsupervised $P(X)$}.
 			\end{itemize}
 
 			\vspace{0.3em}
@@ -993,10 +993,10 @@
 			\begin{tabular}{@{}lc@{}}
 				\toprule
 				\textbf{Drift Type} & \textbf{Accuracy} \\ \midrule
-				Recurrent           & \textbf{91.5\%}   \\
+				Recurrent           & \textbf{89.0\%}   \\
 				Sudden              & \textbf{82.4\%}   \\
-				Incremental         & 60.8\%            \\
-				Gradual             & 43.8\%            \\
+				Incremental         & 64.4\%            \\
+				Gradual             & 42.6\%            \\
 				Blip                & 0.0\%             \\
 				\bottomrule
 			\end{tabular}}

@@ -19,7 +19,7 @@ Luận văn giải quyết bài toán phát hiện và thích ứng với concep
 
 \subsection{Đóng góp về thực nghiệm}
 \begin{itemize}
-	\item \textbf{Benchmark mở rộng và chặt chẽ hơn:} Đánh giá có hệ thống 8 phương pháp phát hiện drift (MMD, IDW-MMD, KS, ShapeDD, ShapeDD-IDW, SE-CDT, D3, DAWIDD) trên 14 tập dữ liệu, có bổ sung \texttt{stagger\_recurrent\_explicit} (recurrent đối xứng), \texttt{gaussian\_gradual\_synthetic} (gradual có khoảng chuyển tiếp xác định trước) và \texttt{stagger\_none} (stationary, baseline FP). Kết quả được kiểm chứng bằng kiểm định Friedman và Nemenyi với 15 lần chạy độc lập, $\alpha = 0.05$.
+	\item \textbf{Benchmark mở rộng và chặt chẽ hơn:} Đánh giá có hệ thống 8 phương pháp phát hiện drift (MMD, IDW-MMD, KS, ShapeDD, ShapeDD-IDW, SE-CDT, D3, DAWIDD) trên 14 tập dữ liệu, có bổ sung \texttt{stagger\_recurrent\_explicit} (recurrent đối xứng), \texttt{gaussian\_gradual\_synthetic} (gradual có khoảng chuyển tiếp xác định trước) và \texttt{stagger\_none} (stationary, baseline FP). Kết quả được kiểm chứng bằng kiểm định Friedman và Nemenyi với 30 lần chạy độc lập, $\alpha = 0.05$.
 	\item \textbf{Kiểm tra Type-I error:} Đo Type-I error trực tiếp trên ba phân phối tĩnh (Gauss-iid $d=5$, $d=10$, AR(1)). Kết quả cho thấy MMD chuẩn và IDW-MMD với xấp xỉ Gamma nằm gần mức danh nghĩa $\alpha = 0.05$; SE-CDT có thể cao hơn nhẹ do kiểm định nhiều đỉnh ứng viên trong cùng một cửa sổ (Mục~\ref{sec:h0-calibration}).
 	\item \textbf{Đánh giá thích ứng có ý nghĩa thống kê:} Prequential evaluation với $N = 30$ runs trên 3 kịch bản (Stepping, Sudden, Mixed) bổ sung kiểm định Friedman, cho $p < 10^{-15}$ trên cả ba, xác lập rằng các baseline thích ứng (Type-Specific, Simple Retrain, Periodic Retrain, No Adaptation) khác biệt có ý nghĩa thống kê chứ không phải dao động ngẫu nhiên.
 	\item \textbf{Phân tích thời gian chạy:} Đo trên luồng tiêu chuẩn của benchmark (Bảng~\ref{tab:runtime_stats}). ShapeDD-IDW và SE-CDT chạy gần tương đương ShapeDD gốc và nhanh hơn DAWIDD đáng kể. Việc dùng xấp xỉ Gamma không rút ngắn mạnh thời gian thực thi trong thiết lập này, vì ShapeDD gốc đã được tối ưu hoá tốt nhờ tính kernel theo lô.
@@ -39,7 +39,7 @@ Quá trình nghiên cứu và thực nghiệm cho thấy mấy điểm sau:
 \begin{enumerate}
 	\item \textbf{Cấu hình cửa sổ ảnh hưởng mạnh đến kết quả:} Các thí nghiệm cho thấy kích thước cửa sổ và độ trễ chấp nhận cần được chọn theo mục tiêu đánh giá. Drift đột ngột cần cửa sổ và ngưỡng định vị chặt hơn, trong khi drift dần dần hoặc thích ứng mô hình cần khoảng quan sát rộng hơn.
 
-	\item \textbf{Đánh đổi giữa độ nhạy và báo động giả:} Việc tích hợp IDW-MMD với p-value dựa trên xấp xỉ Gamma giữ được độ chính xác cạnh tranh ($F_1 = 0.454$, so với KS $0.294$ và ShapeDD gốc $0.433$). Thời gian chạy vẫn gần ShapeDD gốc. Đóng góp chính nằm ở chỗ bước kiểm định có cơ sở thống kê rõ hơn, không phải ở việc rút ngắn mạnh thời gian thực thi.
+	\item \textbf{Đánh đổi giữa độ nhạy và báo động giả:} Việc tích hợp IDW-MMD với p-value dựa trên xấp xỉ Gamma giữ được độ chính xác cạnh tranh ($F_1 = 0.459$, so với KS $0.294$ và ShapeDD gốc $0.433$). Thời gian chạy vẫn gần ShapeDD gốc. Đóng góp chính nằm ở chỗ bước kiểm định có cơ sở thống kê rõ hơn, không phải ở việc rút ngắn mạnh thời gian thực thi.
 
 	\item \textbf{Hiệu quả của Type-Specific Adaptation.} Trên kết quả $N=30$, Type-Specific Adaptation hơn No Adaptation $+16.57$pp trên Stepping ($71.37\%$ vs $54.80\%$), $+17.10$pp trên Sudden ($70.78\%$ vs $53.68\%$), và $+3.51$pp trên Mixed ($86.20\%$ vs $82.69\%$). Type-Specific cũng vượt Simple Retrain và Periodic Retrain trên cả ba kịch bản. Kiểm định Friedman cho $p < 10^{-15}$, cho thấy khác biệt giữa các chiến lược khó quy cho dao động ngẫu nhiên. Phần lớn cải thiện đến từ bước phân loại drift trước khi chọn chiến lược thích ứng.
 
@@ -51,7 +51,7 @@ Quá trình nghiên cứu và thực nghiệm cho thấy mấy điểm sau:
 Bên cạnh kết quả đạt được, nghiên cứu vẫn còn một số hạn chế:
 
 \subsection{Trade-off giữa Recall và False Positives}
-Trên đánh giá phân loại ($\delta = 250$), SE-CDT (Std) đạt EDR $\approx 94.2\%$ với FP cao hơn; SE-CDT (IDW) có FP thấp hơn nhưng cũng giảm EDR. Trên đánh giá phát hiện ($\delta = 75$), cùng phương pháp đạt $F_1 = 0.454$ với $\sim 14.7$ FP/run. Hai cấu hình phục vụ hai mục tiêu sử dụng khác nhau:
+Trên đánh giá phân loại ($\delta = 250$), SE-CDT (Std) đạt EDR $\approx 92.6\%$ với FP cao hơn; SE-CDT (IDW) có FP thấp hơn nhưng cũng giảm EDR. Trên đánh giá phát hiện ($\delta = 75$), cùng phương pháp đạt $F_1 = 0.459$ với $\sim 14.5$ FP/run. Hai cấu hình phục vụ hai mục tiêu sử dụng khác nhau:
 \begin{itemize}
 	\item Nếu ưu tiên \textbf{không bỏ sót drift} trong giám sát vận hành: dùng SE-CDT (Std).
 	\item Nếu ưu tiên \textbf{giảm báo động giả} trong hệ thống cảnh báo có chi phí phản ứng cao: dùng SE-CDT (IDW) với ngưỡng chặt hơn.
@@ -139,7 +139,7 @@ Bài toán concept drift là một bài toán mở. Luận văn đóng góp các
 \begin{enumerate}
 	\item \textbf{Phát hiện có cơ sở thống kê hơn:} IDW-MMD kết hợp p-value dựa trên xấp xỉ Gamma đạt Type-I error $0.040$--$0.075$ trên ba phân phối tĩnh (Bảng~\ref{tab:h0_calibration}). Khi tích hợp trong ShapeDD-IDW, phương pháp đạt F1 nhỉnh hơn ShapeDD gốc trên benchmark phát hiện (Bảng~\ref{tab:comprehensive_performance}) và thời gian chạy gần tương đương (Bảng~\ref{tab:runtime_stats}).
 	\item \textbf{Báo động giả cần được đọc theo ngữ cảnh:} Số False Positive phụ thuộc vào số ứng viên được kiểm định, độ trễ chấp nhận và mức $\alpha$. Nếu ứng dụng cần FP thấp hơn, có thể siết $\alpha$ hoặc dùng hiệu chỉnh đa kiểm định, đổi lại khả năng phát hiện có thể giảm.
-	\item \textbf{Phân loại không giám sát:} SE-CDT phân loại drift không cần nhãn, đạt CAT $= 82.2\%$ và SUB micro $= 65.8\%$; Concept Memory giúp độ chính xác Recurrent đạt $91.5\%$. So sánh với CDT-MSW chỉ mang tính tham khảo vì hai phương pháp dùng dữ liệu và mức giám sát khác nhau.
+	\item \textbf{Phân loại không giám sát:} SE-CDT phân loại drift không cần nhãn, đạt CAT $= 81.9\%$ và SUB micro $= 65.8\%$; Concept Memory giúp độ chính xác Recurrent đạt $89.0\%$. So sánh với CDT-MSW chỉ mang tính tham khảo vì hai phương pháp dùng dữ liệu và mức giám sát khác nhau.
 	\item \textbf{Thích ứng hiệu quả:} Type-Specific Adaptation cải thiện hai chữ số phần trăm trên Stepping và Sudden so với No Adaptation, đồng thời vượt Simple Retrain và Periodic Retrain trên cả ba kịch bản (chi tiết ở Bảng so sánh adaptation, Chương~\ref{chap:experiments}). Các khác biệt có $p < 10^{-15}$ qua kiểm định Friedman ($N = 30$ runs).
 \end{enumerate}
 

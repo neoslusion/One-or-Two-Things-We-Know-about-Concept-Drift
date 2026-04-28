@@ -12,6 +12,6 @@ ShapeDD-IDW & 1.94 & 5{,}155 & 1.03$\times$ \\
 ShapeDD (gốc) & 1.99 & 5{,}025 & 1.00$\times$ \\
 DAWIDD & 13.95 & 717 & 0.14$\times$ \\
 \hline
-\multicolumn{4}{|p{0.92\textwidth}|}{\footnotesize $^\dagger$Runtime đo bằng \texttt{time.process\_time()} cho toàn bộ một stream 10{,}000 mẫu, lấy trung bình trên 14 dataset $\times$ 15 lần chạy. Mỗi run chạy trên một process độc lập với 1 thread BLAS (\texttt{OMP\_NUM\_THREADS=1}) để tránh thread contention làm sai số đo. Throughput $= 10{,}000 / \text{Runtime}$. Đáng chú ý: ShapeDD, ShapeDD-IDW, và SE-CDT có runtime end-to-end gần như nhau, vì ShapeDD đã được vector hoá qua BLAS batch matmul. Đóng góp chính của Gamma null không nằm ở wall-clock mà ở \textit{statistical correctness} (Type-I error đúng $\alpha = 0.05$, kiểm chứng ở Mục~\ref{sec:h0-calibration}).}\\
+\multicolumn{4}{|p{0.92\textwidth}|}{\footnotesize $^\dagger$Runtime đo bằng \texttt{time.process\_time()} cho toàn bộ một stream 10{,}000 mẫu, lấy trung bình trên 14 dataset $\times$ 30 lần chạy. Mỗi run chạy trên một process độc lập với 1 thread BLAS (\texttt{OMP\_NUM\_THREADS=1}) để tránh thread contention làm sai số đo. Throughput $= 10{,}000 / \text{Runtime}$. ShapeDD, ShapeDD-IDW, và SE-CDT có thời gian chạy đầu-cuối gần như nhau, vì ShapeDD đã được vector hoá qua phép nhân ma trận kernel theo lô. Đóng góp chính của Gamma null không nằm ở việc rút ngắn mạnh thời gian thực thi, mà ở việc kiểm định bám sát mức danh nghĩa $\alpha = 0.05$ (Mục~\ref{sec:h0-calibration}).}\\
 \hline
 \end{tabular}
