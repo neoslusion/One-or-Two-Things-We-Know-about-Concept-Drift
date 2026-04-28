@@ -193,7 +193,7 @@ Cần làm rõ một điểm về bản chất phương pháp. Các khái niệm
 
 Vì vậy SE-CDT thực chất phân loại \textbf{hình dạng của sự thay đổi phân phối đầu vào} (covariate shift pattern), không phải loại concept drift theo nghĩa supervised truyền thống. Cách tiếp cận này dựa trên \textbf{giả định joint drift}: trong nhiều ứng dụng thực tế, sự thay đổi $P(X)$ và $P(Y|X)$ có tương quan cao, khi phân phối đầu vào dịch chuyển đột ngột thì ranh giới quyết định cũng thường thay đổi đột ngột, và ngược lại~\cite{lu2018learning}. Giả định này được kiểm chứng ở Chương~\ref{chap:experiments} bằng các bộ sinh dữ liệu tạo ra sự thay đổi đồng thời trên $P(X)$ và $P(Y|X)$.
 
-\textit{Khi giả định joint drift không thỏa mãn} (ví dụ Virtual Drift thuần, $P(Y|X)$ thay đổi nhưng $P(X)$ giữ nguyên), SE-CDT sẽ không phát hiện và không phân loại. Đây là hành vi mong đợi, không phải lỗi, vì hệ thống được thiết kế chỉ phản ứng với các thay đổi quan sát được từ dữ liệu không nhãn.
+\textit{Khi giả định joint drift không thỏa mãn} (ví dụ Virtual Drift thuần, $P(Y|X)$ thay đổi nhưng $P(X)$ giữ nguyên), SE-CDT sẽ không phát hiện và không phân loại. Trường hợp này nằm ngoài phạm vi thiết kế của SE-CDT, vì hệ thống chỉ phản ứng với các thay đổi quan sát được từ dữ liệu không nhãn.
 
 \subsection{Đặc trưng phân loại từ tín hiệu \texorpdfstring{$\sigma(t)$}{sigma(t)}}
 SE-CDT trích xuất hai nhóm đặc trưng từ tín hiệu MMD. \textbf{Nhóm 1 --- Đặc trưng hình học} gồm:

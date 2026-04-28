@@ -336,7 +336,7 @@
 			\end{block}
 
 			\vspace{0.1em}
-			\begin{alertblock}{\footnotesize Statistical fix: from permutation to Gamma null}
+			\begin{alertblock}{\footnotesize Statistical calibration: Gamma-null p-value}
 				\scriptsize
 				The permutation test is replaced by a Gamma-approximation p-value (Gretton et al.\ 2009). This avoids re-computing the kernel at every shuffle and matches the moments of the true null, giving a properly calibrated test ($\alpha = 0.05$) at a runtime comparable to the baseline.
 			\end{alertblock}
@@ -970,8 +970,8 @@
 	\textbf{Verification:} The detection $F_1$ remains comparable to the permutation baseline, while H0-calibration on three stationary distributions reports an empirical Type-I error of $0.04$--$0.10$, inside the 95\% CI of $\alpha = 0.05$. End-to-end runtime stays at parity with the baseline.
 \end{frame}
 
-% --- Backup 9: Subcategory 50% ---
-\begin{frame}[noframenumbering,shrink]{Backup: ``Subcategory accuracy $\sim$51\% --- isn't that random?''}
+% --- Backup 9: Subcategory accuracy ---
+\begin{frame}[noframenumbering,shrink]{Backup: ``Subcategory accuracy 65.8\% --- is it close to random?''}
 	\textbf{Question:} ``With 5 classes, 65\% sounds close to random guessing.''
 
 	\vspace{0.5em}
