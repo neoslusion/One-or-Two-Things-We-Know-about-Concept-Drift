@@ -32,7 +32,7 @@ phát hiện drift trong thời gian thực hoặc gần thời gian thực là 
 bắt buộc để giữ chất lượng và độ tin cậy của hệ thống~\cite{jourdan2023process}.
 Việc xây dựng một hệ thống như vậy có ba thách thức chính: (i) độ trễ thấp khi phát hiện thời điểm drift; (ii) phân loại được loại drift (sudden, gradual, incremental, recurrent) để chọn chiến lược thích ứng phù hợp; và (iii) cập nhật mô hình nhanh mà không làm gián đoạn hoạt động.
 
-Từ ba thách thức trên, đề tài đặt mục tiêu nghiên cứu và phát triển một hệ thống tự động phát hiện và thích ứng với concept drift trong luồng dữ liệu thời gian thực, đặc biệt trong môi trường không giám sát.
+Từ ba thách thức trên, đề tài đặt mục tiên nghiên cứu và phát triển một hệ thống tự động phát hiện, phân loại và thích ứng với concept drift trong luồng dữ liệu thời gian thực, đặc biệt trong môi trường không giám sát. Hệ thống được xây dựng trên nền tảng ShapeDD~\cite{shapeDD2024} với hai cải tiến chính: (1) thay thế bước kiểm định bằng IDW-MMD với xấp xỉ Gamma để giảm chi phí tính toán, và (2) bổ sung mô-đun phân loại drift không giám sát (SE-CDT) để cung cấp thông tin cho chiến lược thích ứng mô hình phù hợp.
 \section{Mục tiêu đề tài}
 
 \subsection{Khảo sát các phương pháp phát hiện drift}

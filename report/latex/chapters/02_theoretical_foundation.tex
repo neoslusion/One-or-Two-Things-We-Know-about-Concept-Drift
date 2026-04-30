@@ -180,12 +180,9 @@ Nhờ đó, ShapeDD có thể:
 
 \subsection{Maximum Mean Discrepancy (MMD)}
 
-Như đã nhắc đến ở trên, ShapeDD dựa trên Maximum Mean Discrepancy (MMD)~\cite{gretton2012kernel}, một thước đo thống kê được sử dụng để
-so sánh hai phân phối xác suất $P$ và $Q$. Ý tưởng cốt lõi là ánh xạ dữ liệu từ không gian
-gốc vào không gian feature nhiều chiều nơi việc so sánh trở nên nhạy cảm hơn với sự khác biệt phân phối.
-MMD đo lường khoảng cách giữa hai phân phối bằng cách tìm hàm $f$ có thể phân biệt tốt nhất giữa chúng.
-Nếu hai phân phối giống nhau, giá trị kỳ vọng của bất kỳ hàm nào áp dụng lên chúng sẽ giống nhau.
-Ngược lại, nếu khác nhau, sẽ tồn tại một hàm cho phép phân biệt rõ ràng.
+Như đã nhắc đến ở trên, ShapeDD dựa trên Maximum Mean Discrepancy (MMD)~\cite{gretton2012kernel}, một thước đo thống kê được sử dụng để so sánh hai phân phối xác suất $P$ và $Q$. Ý tưởng cốt lõi là ánh xạ dữ liệu từ không gian gốc vào không gian feature nhiều chiều, nơi việc so sánh trở nên nhạy cảm hơn với sự khác biệt phân phối.
+
+MMD đo lường khoảng cách giữa hai phân phối bằng cách tìm hàm $f$ có thể phân biệt tốt nhất giữa chúng. Nếu hai phân phối giống nhau, giá trị kỳ vọng của bất kỳ hàm nào áp dụng lên chúng sẽ giống nhau. Ngược lại, nếu khác nhau, sẽ tồn tại một hàm cho phép phân biệt rõ ràng.
 
 MMD được định nghĩa chính thức như:
 \begin{equation}
@@ -361,7 +358,9 @@ Tín hiệu shape được tính bằng convolution:
 
 \textbf{Độ phức tạp tính toán:} Permutation test là bước tốn thời gian nhất: $O(N_{\text{perm}} \cdot l_1^2)$. Tuy nhiên, vì chỉ áp dụng cho các candidate (không phải mọi thời điểm), chi phí trung bình vẫn chấp nhận được.
 
-\textbf{Hạn chế của permutation test và động lực cải tiến:} Số lần resampling $N_{\text{perm}}$ thường lấy ở mức vài nghìn để p-value có độ phân giải tốt; mỗi lần lại phải tính lại kernel matrix, làm cho chi phí của bước kiểm định lớn hơn nhiều lần so với chi phí tính MMD thô. Quan trọng hơn, độ chính xác thống kê của ngưỡng phát hiện chỉ đảm bảo nếu phân phối dưới giả thuyết không trôi dạt được ước lượng phù hợp. Hạn chế này là động lực cho việc đề xuất \textbf{Weighted MMD} kết hợp với p-value dựa trên xấp xỉ Gamma thay cho permutation test, được trình bày trong Chương~\ref{chap:proposed-model}. Phương pháp này lấy cảm hứng từ ý tưởng ``Optimally-Weighted MMD'' của Bharti et al.~\cite{bharti2023owmmd}, dùng một heuristic đơn giản hơn (trọng số nghịch biến với mật độ kernel), với kỳ vọng giữ được độ chính xác phát hiện và đem lại kiểm định có cơ sở thống kê rõ ràng hơn.
+\textbf{Hạn chế của permutation test:} Số lần resampling $N_{\text{perm}}$ thường lấy ở mức vài nghìn để p-value có độ phân giải tốt; mỗi lần lại phải tính lại kernel matrix, làm cho chi phí của bước kiểm định lớn hơn nhiều lần so với chi phí tính MMD thô. Quan trọng hơn, độ chính xác thống kê của ngưỡng phát hiện chỉ đảm bảo nếu phân phối dưới giả thuyết không trôi dạt được ước lượng phù hợp.
+
+\textbf{Động lực cải tiến:} Hạn chế này là động lực cho việc đề xuất \textbf{Weighted MMD} kết hợp với p-value dựa trên xấp xỉ Gamma thay cho permutation test, được trình bày trong Chương~\ref{chap:proposed-model}. Phương pháp này lấy cảm hứng từ ý tưởng ``Optimally-Weighted MMD'' của Bharti et al.~\cite{bharti2023owmmd}, dùng một heuristic đơn giản hơn (trọng số nghịch biến với mật độ kernel), với kỳ vọng giữ được độ chính xác phát hiện và đem lại kiểm định có cơ sở thống kê rõ ràng hơn.
 
 \begin{algorithm}[H]
 	\caption{Shape-based Drift Detector (ShapeDD)}

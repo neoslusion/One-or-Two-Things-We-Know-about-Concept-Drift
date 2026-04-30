@@ -19,11 +19,11 @@ Luận văn giải quyết bài toán phát hiện và thích ứng với concep
 
 \subsection{Đóng góp về thực nghiệm}
 \begin{itemize}
-	\item \textbf{Benchmark mở rộng và chặt chẽ hơn:} Đánh giá có hệ thống 8 phương pháp phát hiện drift (MMD, IDW-MMD, KS, ShapeDD, ShapeDD-IDW, SE-CDT, D3, DAWIDD) trên 14 tập dữ liệu, có bổ sung \texttt{stagger\_recurrent\_explicit} (recurrent đối xứng), \texttt{gaussian\_gradual\_synthetic} (gradual có khoảng chuyển tiếp xác định trước) và \texttt{stagger\_none} (stationary, baseline FP). Kết quả được kiểm chứng bằng kiểm định Friedman và Nemenyi với 30 lần chạy độc lập, $\alpha = 0.05$.
+	\item \textbf{Benchmark mở rộng và chặt chẽ hơn:} Đánh giá có hệ thống 8 phương pháp phát hiện drift (MMD, IDW-MMD, KS, ShapeDD, ShapeDD-IDW, SE-CDT, D3, DAWIDD) trên 14 tập dữ liệu, có bổ sung tập Stagger Recurrent Explicit (recurrent đối xứng A→B→A→B), tập Gaussian Gradual Synthetic (gradual có khoảng chuyển tiếp xác định trước) và tập stationary (baseline đo false positive). Kết quả được kiểm chứng bằng kiểm định Friedman và Nemenyi với 30 lần chạy độc lập, $\alpha = 0.05$.
 	\item \textbf{Kiểm tra Type-I error:} Đo Type-I error trực tiếp trên ba phân phối tĩnh (Gauss-iid $d=5$, $d=10$, AR(1)). Kết quả cho thấy MMD chuẩn và IDW-MMD với xấp xỉ Gamma nằm gần mức danh nghĩa $\alpha = 0.05$; SE-CDT có thể cao hơn nhẹ do kiểm định nhiều đỉnh ứng viên trong cùng một cửa sổ (Mục~\ref{sec:h0-calibration}).
 	\item \textbf{Đánh giá thích ứng có ý nghĩa thống kê:} Prequential evaluation với $N = 30$ runs trên 3 kịch bản (Stepping, Sudden, Mixed) bổ sung kiểm định Friedman, cho $p < 10^{-15}$ trên cả ba, xác lập rằng các baseline thích ứng (Type-Specific, Simple Retrain, Periodic Retrain, No Adaptation) khác biệt có ý nghĩa thống kê chứ không phải dao động ngẫu nhiên.
 	\item \textbf{Phân tích thời gian chạy:} Đo trên luồng tiêu chuẩn của benchmark (Bảng~\ref{tab:runtime_stats}). ShapeDD-IDW và SE-CDT chạy gần tương đương ShapeDD gốc và nhanh hơn DAWIDD đáng kể. Việc dùng xấp xỉ Gamma không rút ngắn mạnh thời gian thực thi trong thiết lập này, vì ShapeDD gốc đã được tối ưu hoá tốt nhờ tính kernel theo lô.
-	\item \textbf{Xác nhận hành vi đúng:} SE-CDT và ShapeDD-IDW không phát hiện ``drift'' trên các dataset virtual drift (hyperplane, led\_abrupt, sea), đúng với kỳ vọng vì $P(X)$ không đổi.
+	\item \textbf{Xác nhận hành vi đúng:} SE-CDT và ShapeDD-IDW không phát hiện ``drift'' trên các dataset virtual drift (Hyperplane, Led Abrupt, Standard Sea), đúng với kỳ vọng vì $P(X)$ không đổi.
 \end{itemize}
 
 \subsection{Đóng góp về hệ thống}
@@ -41,7 +41,7 @@ Quá trình nghiên cứu và thực nghiệm cho thấy mấy điểm sau:
 
 	\item \textbf{Đánh đổi giữa độ nhạy và báo động giả:} Việc tích hợp IDW-MMD với p-value dựa trên xấp xỉ Gamma giữ được độ chính xác cạnh tranh ($F_1 = 0.459$, so với KS $0.294$ và ShapeDD gốc $0.433$). Thời gian chạy vẫn gần ShapeDD gốc. Đóng góp chính nằm ở chỗ bước kiểm định có cơ sở thống kê rõ hơn, không phải ở việc rút ngắn mạnh thời gian thực thi.
 
-	\item \textbf{Hiệu quả của Type-Specific Adaptation.} Trên kết quả $N=30$, Type-Specific Adaptation hơn No Adaptation $+16.57$pp trên Stepping ($71.37\%$ vs $54.80\%$), $+17.10$pp trên Sudden ($70.78\%$ vs $53.68\%$), và $+3.51$pp trên Mixed ($86.20\%$ vs $82.69\%$). Type-Specific cũng vượt Simple Retrain và Periodic Retrain trên cả ba kịch bản. Kiểm định Friedman cho $p < 10^{-15}$, cho thấy khác biệt giữa các chiến lược khó quy cho dao động ngẫu nhiên. Phần lớn cải thiện đến từ bước phân loại drift trước khi chọn chiến lược thích ứng.
+	\item \textbf{Hiệu quả của Type-Specific Adaptation:} Trên kết quả $N=30$, Type-Specific Adaptation hơn No Adaptation $+16.57$pp trên Stepping ($71.37\%$ vs $54.80\%$), $+17.10$pp trên Sudden ($70.78\%$ vs $53.68\%$), và $+3.51$pp trên Mixed ($86.20\%$ vs $82.69\%$). Type-Specific cũng vượt Simple Retrain và Periodic Retrain trên cả ba kịch bản. Kiểm định Friedman cho $p < 10^{-15}$, cho thấy khác biệt giữa các chiến lược khó quy cho dao động ngẫu nhiên. Phần lớn cải thiện đến từ bước phân loại drift trước khi chọn chiến lược thích ứng.
 
 	\item \textbf{Vai trò của Phân loại Drift:} Xác định đúng loại drift (ví dụ Blip với Sudden) giúp tránh phản ứng thái quá với nhiễu. Chiến lược thích ứng theo loại drift giúp hệ thống vận hành ổn định và tiết kiệm tài nguyên.
 \end{enumerate}
