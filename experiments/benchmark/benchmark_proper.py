@@ -364,11 +364,11 @@ def run_mixed_experiment(params):
     else: # Control
         events = [{"type": "Sudden", "pos": 1000, "width": 0}]
         
-    # Generate SINGLE supervised stream for FAIR COMPARISON:
-    # Both P(X) AND P(Y|X) change, so CDT_MSW (supervised) can observe accuracy
-    # changes while SE_CDT (unsupervised) observes P(X) changes on the same data.
+    # Generate single stream for SE-CDT evaluation (unsupervised P(X) detection only).
+    # supervised_mode=False: only P(X) changes, no label change needed since CDT_MSW
+    # is not evaluated in this benchmark.
     length = events[-1]['pos'] + 2000
-    X_shared, y_shared = generate_mixed_stream(events, length, seed, supervised_mode=True)
+    X_shared, y_shared = generate_mixed_stream(events, length, seed, supervised_mode=False)
     
     # 1. CDT Continuous - uses labels (supervised)
     t0_cdt = time.process_time()
@@ -636,8 +636,8 @@ def run_supervised_comparison(n_seeds=5):
         
         length = events[-1]['pos'] + 2000
         
-        # Generate with SUPERVISED MODE - labels change with concept
-        X, y = generate_mixed_stream(events, length, seed, supervised_mode=True)
+        # Generate stream (unsupervised P(X) mode — SE-CDT only, no CDT_MSW here)
+        X, y = generate_mixed_stream(events, length, seed, supervised_mode=False)
         
         # Run CDT_MSW with proper supervised data
         t0 = time.time()

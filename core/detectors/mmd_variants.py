@@ -388,70 +388,109 @@ def wmmd_asymptotic(X_window, s, weight_method="variance_reduction"):
 
 def shapedd_idw_mmd_proper(X, l1=50, l2=150, alpha=0.05, weight_method="variance_reduction"):
     """
-    ShapeDD + IDW-MMD — Hybrid two-role detector.
+    PROPER ShapeDD + IDW-MMD — Hybrid MMD design.
 
-    Architecture (matches original ShapeDD evaluation paradigm):
+    Architecture (two-role design):
     -----------------------------------------------------------------------
-    Role 1 — MMD TRACE (compact 2×l1 windows, same as original ShapeDD):
-        Uses *Standard* (unweighted) MMD computed via sliding contrast
-        weight vectors over the full n×n kernel — produces a dense trace
-        with step=1. Fits any window >= 2*l1 samples.
+    Role 1 — MMD TRACE  (used by Classification Module for shape analysis):
+        Uses *Standard* (unweighted) MMD.
+        Rationale: Standard MMD preserves the full distributional signal
+        uniformly across the sample, making slow/gradual drifts (which
+        occur in high-density regions) visible in the trace shape.
+        IDW-MMD suppresses high-density regions → gradual drift signals
+        are over-smoothed and lost (CAT accuracy drops from 85.8% → 20%).
 
-    Role 2 — VALIDATION p-value (IDW-MMD + Gamma null):
-        At each trace peak, extracts a validation window of size l2,
-        runs wmmd_gamma (IDW-MMD statistic, Gamma-approximation p-value).
+    Role 2 — VALIDATION p-value  (used by Detection Module):
+        Uses *IDW-MMD* with **Gamma-approximation null** (wmmd_gamma).
+        Rationale: IDW up-weights boundary points → higher sensitivity to
+        abrupt distributional changes; Gamma-fit null replaces the
+        previous (incorrect) Gaussian-asymptotic null that was
+        systematically over-conservative.  Empirically calibrated at
+        Type-I error ≈ α; see wmmd_gamma docstring for derivation.
+    -----------------------------------------------------------------------
 
     Pipeline:
-    1. Compute n×n kernel once
-    2. Trace: sliding 2×l1 contrast vectors → MMD² signal
-    3. Peaks: local maxima above mean + std
-    4. Validate: wmmd_gamma at each peak → confirm/reject
+    1. Trace: Sliding standard-MMD signal  →  shape analysis for classification
+    2. Peaks: Local maxima above threshold  →  candidate drift positions
+    3. Validate: IDW asymptotic p-value    →  confirm statistical significance
 
     Returns: is_drift, positions, mmd_trace, p_values
     """
+    from sklearn.metrics.pairwise import pairwise_kernels as _sklearn_rbf
+
     n = len(X)
 
-    # Fallback for tiny windows
-    if n < 2 * l1:
-        return False, [], np.array([]), []
+    # Handle small windows
+    if n < 2 * l1 + l2:
+        if n < 2 * l1:
+            return False, [], np.array([]), []
+
+        split = n // 2
+        mmd_val, p_val = wmmd_gamma(X, split, weight_method)
+        mmd_trace = np.array([mmd_val])
+        if p_val < alpha:
+            return True, [split], mmd_trace, [p_val]
+        return False, [], mmd_trace, []
 
     # -----------------------------------------------------------------------
-    # 1. TRACE: Compact 2×l1 sliding contrast vectors (same as original
-    #    ShapeDD).  This avoids the l1+l2 per-trace-point cost and
-    #    yields step=1 trace density for any window >= 2*l1.
+    # 1. TRACE: Standard (unweighted) MMD sliding signal
+    #    Preserves the full shape of gradual/incremental drifts for
+    #    downstream classification by the SE-CDT Classification Module.
+    #
+    # NOTE (D1 fix): the median-heuristic bandwidth `gamma` is computed on
+    # an early slice of the stream and is reused for *every* sliding window
+    # below. Previously this gamma was dropped on the floor and sklearn's
+    # `pairwise_kernels(metric="rbf")` silently fell back to gamma=1/n_features,
+    # which makes the trace effectively dimension-dependent and breaks the
+    # downstream classification features (WR, SNR, CV ...).
     # -----------------------------------------------------------------------
     gamma = compute_gamma_median_heuristic(X[:min(500, n)])
-    K = rbf_kernel(X, X, gamma)       # n×n kernel, computed once
 
-    # Contrast weight vector: [+1/l1 repeated l1 times, -1/l1 repeated l1 times]
-    w = np.empty(2 * l1, dtype=float)
-    w[:l1] = 1.0 / l1
-    w[l1:] = -1.0 / l1
+    mmd_sequence = []
+    mmd_positions = []
+    step = max(1, l1 // 2)
 
-    trace_len = n - 2 * l1 + 1
-    mmd_trace = np.empty(trace_len, dtype=float)
-    mmd_positions = np.arange(l1, n - l1 + 1)  # centre of each window
+    for i in range(0, n - l1 - l2, step):
+        ref_window = X[i : i + l1]
+        test_window = X[i + l1 : i + l1 + l2]
 
-    # Precompute the weight matrix W (trace_len × n) and compute all
-    # MMD² trace values via efficient matrix multiply, matching the
-    # original ShapeDD formulation.
-    W = np.zeros((trace_len, n), dtype=float)
-    for i in range(trace_len):
-        W[i, i : i + 2 * l1] = w
+        # Standard (unweighted) MMD²: E[k(x,x')] + E[k(y,y')] - 2E[k(x,y)]
+        # Pass the precomputed median-heuristic gamma to every RBF call so
+        # the kernel bandwidth is consistent across the trace.
+        K_XX = _sklearn_rbf(ref_window,  metric="rbf", filter_params=True, gamma=gamma)
+        K_YY = _sklearn_rbf(test_window, metric="rbf", filter_params=True, gamma=gamma)
+        K_XY = _sklearn_rbf(ref_window, test_window, metric="rbf", filter_params=True, gamma=gamma)
 
-    # stat[i] = w^T K_sub w = MMD²(ref[i:i+l1], test[i+l1:i+2*l1])
-    WK = np.dot(W, K)                                    # (trace_len, n)
-    mmd_sq_trace = np.einsum("ij,ij->i", WK, W)         # (trace_len,)
-    mmd_trace = np.sqrt(np.maximum(0.0, mmd_sq_trace))
+        m, nw = l1, l2
+        # Unbiased U-statistic estimator (zero diagonal for XX and YY)
+        np.fill_diagonal(K_XX, 0)
+        np.fill_diagonal(K_YY, 0)
+        mmd_sq = (
+            K_XX.sum() / (m * (m - 1))
+            + K_YY.sum() / (nw * (nw - 1))
+            - 2 * K_XY.mean()
+        )
+        mmd_val = np.sqrt(max(0.0, mmd_sq))
+
+        mmd_sequence.append(mmd_val)
+        mmd_positions.append(i + l1)
+    
+    mmd_trace = np.array(mmd_sequence)
+
+    if len(mmd_trace) < 3:
+        if len(mmd_trace) > 0 and np.max(mmd_trace) > 0.05:
+            pos = mmd_positions[np.argmax(mmd_trace)]
+            _, p_val = wmmd_gamma(X, len(X) // 2, weight_method)
+            if p_val < alpha:
+                return True, [pos], mmd_trace, [p_val]
+        return False, [], mmd_trace, []
 
     # -----------------------------------------------------------------------
     # 2. PEAK DETECTION on the standard-MMD trace
     # -----------------------------------------------------------------------
-    if len(mmd_trace) < 3:
-        return False, [], mmd_trace, []
-
-    threshold = np.mean(mmd_trace) + np.std(mmd_trace)
     peaks = []
+    threshold = np.mean(mmd_trace) + np.std(mmd_trace)
+
     for i in range(1, len(mmd_trace) - 1):
         if mmd_trace[i] > mmd_trace[i - 1] and mmd_trace[i] > mmd_trace[i + 1]:
             if mmd_trace[i] > threshold:
@@ -466,13 +505,19 @@ def shapedd_idw_mmd_proper(X, l1=50, l2=150, alpha=0.05, weight_method="variance
         return False, [], mmd_trace, []
 
     # -----------------------------------------------------------------------
-    # 3. VALIDATION: IDW-MMD + Gamma-approximation p-value at each peak
+    # 3. VALIDATION: IDW + Gamma-approximation p-value (wmmd_gamma)
+    #    Confirms that the candidate drift position is statistically
+    #    significant under H0: same distribution.
+    #    The Gamma-fit null is calibrated at α via moment matching on
+    #    a fast (B=20) index-permutation null distribution; the IDW
+    #    weighting in the test statistic up-weights boundary points
+    #    for tighter sensitivity to abrupt shifts.
     # -----------------------------------------------------------------------
     drift_positions = []
     p_values = []
 
     for peak_idx in peaks:
-        pos = int(mmd_positions[peak_idx])
+        pos = mmd_positions[peak_idx]
 
         a = max(0, pos - l2 // 2)
         b = min(n, pos + l2 // 2)
