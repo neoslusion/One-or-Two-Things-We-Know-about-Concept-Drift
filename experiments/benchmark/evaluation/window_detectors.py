@@ -29,7 +29,7 @@ from core.detectors.d3 import d3
 from core.detectors.dawidd import dawidd
 from core.detectors.mmd import mmd
 from core.detectors.mmd_variants import (
-    mmd_idw,                  # IDW-MMD split test
+    wmmd_gamma,               # IDW-MMD with Gamma-approximation p-value
     shapedd_idw_mmd_proper,   # PROPER ShapeDD + IDW-MMD with asymptotic p-value
 )
 from core.detectors.ks import ks
@@ -131,9 +131,9 @@ def evaluate_drift_detector(
                 trigger = p_value < 0.05
 
             elif method_name == "IDW_MMD":
-                # Stand-alone IDW-MMD without ShapeDD (ablation)
-                stat, threshold = mmd_idw(window, gamma="auto")
-                trigger = stat > threshold
+                # Stand-alone IDW-MMD with Gamma-approximation p-value (ablation)
+                _, p_val = wmmd_gamma(window, len(window)//2, weight_method="variance_reduction")
+                trigger = p_val < 0.05
 
             elif method_name == "D3":
                 # Deep-learning-based discriminative detector

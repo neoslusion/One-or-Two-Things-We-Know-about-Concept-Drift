@@ -58,7 +58,7 @@ N_JOBS = -1 # Number of parallel jobs (-1 = all cores)
 CHUNK_SIZE = 150        # Detection window size
 OVERLAP = 100           # Overlap between windows
 SHAPE_L1 = 50          # ShapeDD reference window
-SHAPE_L2 = 150         # ShapeDD test window (matches CHUNK_SIZE)
+SHAPE_L2 = 150         # ShapeDD test window
 SHAPE_N_PERM = 2500    # ShapeDD permutation count
 COOLDOWN = 75          # Minimum samples between detections
 

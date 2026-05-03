@@ -71,16 +71,7 @@ except ImportError:
     USE_RIGOROUS_GENERATOR = False
     logger.warning("Rigorous generator not available, using legacy generator")
 
-# Import supervised generator for fair CDT_MSW comparison
-try:
-    from data.generators.drift_generators_supervised import (
-        generate_supervised_stream,
-        generate_concept_aware_labels
-    )
-    USE_SUPERVISED_GENERATOR = True
-except ImportError:
-    USE_SUPERVISED_GENERATOR = False
-    logger.warning("Supervised generator not available, CDT_MSW comparison may be unfair")
+
 
 
 def generate_mixed_stream(events, length=None, seed=42, supervised_mode=False):
@@ -373,74 +364,33 @@ def run_mixed_experiment(params):
     else: # Control
         events = [{"type": "Sudden", "pos": 1000, "width": 0}]
         
-    # Generate Dual Data Streams for FAIR COMPARISON
+    # Generate SINGLE supervised stream for FAIR COMPARISON:
+    # Both P(X) AND P(Y|X) change, so CDT_MSW (supervised) can observe accuracy
+    # changes while SE_CDT (unsupervised) observes P(X) changes on the same data.
     length = events[-1]['pos'] + 2000
+    X_shared, y_shared = generate_mixed_stream(events, length, seed, supervised_mode=True)
     
-    # Stream 1: Unsupervised (P(X) change) for SE-CDT
-    X_unsup, y_unsup = generate_mixed_stream(events, length, seed, supervised_mode=False)
-    
-    # Stream 2: Supervised (P(Y|X) change) for CDT_MSW
-    # Convert event structure to drift_scenario format
-    if USE_SUPERVISED_GENERATOR and len(events) > 0:
-        # Determine dominant drift type from events
-        drift_types_count = {}
-        for evt in events:
-            dtype = evt['type']
-            if dtype not in drift_types_count:
-                drift_types_count[dtype] = 0
-            drift_types_count[dtype] += 1
-        
-        # Use most common drift type
-        dominant_type = max(drift_types_count, key=drift_types_count.get)
-        
-        # Map to supervised generator drift types
-        type_mapping = {
-            'Sudden': 'sudden',
-            'Gradual': 'gradual',
-            'Incremental': 'incremental',
-            'Recurrent': 'recurrent',
-            'Blip': 'blip'
-        }
-        supervised_type = type_mapping.get(dominant_type, 'sudden')
-        
-        drift_scenario = {
-            'type': supervised_type,
-            'n_drift_events': len(events),
-            'drift_magnitude': 0.5
-        }
-        
-        X_sup, y_sup, drift_pos_sup, info_sup = generate_supervised_stream(
-            drift_scenario, total_size=length, n_features=X_unsup.shape[1], random_state=seed
-        )
-        logger.info(f"Generated supervised stream with P(Y|X) change: {supervised_type}")
-    else:
-        # Fallback: use unsupervised stream (but note this is UNFAIR for CDT_MSW)
-        X_sup, y_sup = X_unsup, y_unsup
-        logger.warning("Using unsupervised stream for CDT_MSW - comparison is UNFAIR!")
-    
-    # 1. CDT Continuous - use SUPERVISED stream
-    t0 = time.time()
-    cdt_detections = run_continuous_cdt(X_sup, y_sup)
-    dt_cdt = time.time() - t0
+    # 1. CDT Continuous - uses labels (supervised)
+    t0_cdt = time.process_time()
+    cdt_detections = run_continuous_cdt(X_shared, y_shared)
+    dt_cdt = time.process_time() - t0_cdt
     
 
-    # 2. SE Classification - use UNSUPERVISED stream
+    # 2. SE Classification - same stream, ignores labels (unsupervised)
     # Use SE_CDT.monitor() to run full pipeline: Detection + Growth + Classification
-    t0 = time.time()
-    mmd_sig = compute_mmd_sequence(X_unsup, WINDOW_SIZE, step=10, use_standard=True)
+    t0_se = time.process_time()
+    mmd_sig = compute_mmd_sequence(X_shared, WINDOW_SIZE, step=10, use_standard=True)
     se = SE_CDT(WINDOW_SIZE)
     
     se_classifications = []
     for evt in events:
-        # Extract a data window centered around the drift event
         evt_pos = evt['pos']
         half_window = 750  # ~1500 samples total for reliable traces
         win_start = max(0, evt_pos - half_window)
-        win_end = min(len(X_unsup), evt_pos + half_window)
-        data_window = X_unsup[win_start:win_end]
+        win_end = min(len(X_shared), evt_pos + half_window)
+        data_window = X_shared[win_start:win_end]
         
         if len(data_window) >= 500:  # Minimum for reliable analysis
-            # Full pipeline: detect + growth (single-scale WR) + classify
             res_se = se.monitor(data_window)
             
             if res_se.is_drift:
@@ -449,41 +399,13 @@ def run_mixed_experiment(params):
                     "pred": res_se.subcategory,
                     "features": res_se.features
                 })
-            else:
-                # Detection missed — fallback to direct classify on MMD signal
-                target_idx = evt_pos // 10
-                if target_idx + 50 < len(mmd_sig):
-                    slice_start = max(0, target_idx - 50)
-                    slice_end = target_idx + 50
-                    sig_slice = mmd_sig[slice_start:slice_end]
-                    
-                    res_se = se.classify(sig_slice)
-                    se_classifications.append({
-                        "gt_type": evt['type'],
-                        "pred": res_se.subcategory,
-                        "features": res_se.features
-                    })
-        else:
-            # Window too small — fallback to direct classify on MMD signal
-            target_idx = evt_pos // 10
-            if target_idx + 50 < len(mmd_sig):
-                slice_start = max(0, target_idx - 50)
-                slice_end = target_idx + 50
-                sig_slice = mmd_sig[slice_start:slice_end]
-                
-                res_se = se.classify(sig_slice)
-                se_classifications.append({
-                    "gt_type": evt['type'],
-                    "pred": res_se.subcategory,
-                    "features": res_se.features
-                })
-    dt_se = time.time() - t0
+    dt_se = time.process_time() - t0_se
     
-    # 3. SE Detection with BOTH MMD variants - use UNSUPERVISED stream
+    # 3. SE Detection with BOTH MMD variants
     # 3a. Standard MMD Signal (better for PCD)
-    mmd_sig_std = compute_mmd_sequence(X_unsup, WINDOW_SIZE, step=10, use_standard=True)
+    mmd_sig_std = compute_mmd_sequence(X_shared, WINDOW_SIZE, step=10, use_standard=True)
     # 3b. IDW-MMD Signal (faster, better precision)
-    mmd_sig_idw = compute_mmd_sequence(X_unsup, WINDOW_SIZE, step=10, use_standard=False)
+    mmd_sig_idw = compute_mmd_sequence(X_shared, WINDOW_SIZE, step=10, use_standard=False)
     
     def detect_peaks_from_signal(sig, height=SHAPE_HEIGHT, prom=SHAPE_PROMINENCE):
         """Detect peaks and return detection points."""
@@ -577,10 +499,10 @@ def run_mixed_experiment(params):
     e2e_adaptive = run_e2e_classification(se_det_adaptive, mmd_sig_std, events)
             
     # 5. Calculate Metrics for ALL methods
-    cdt_metrics = calculate_metrics(cdt_detections, events, len(X_unsup))
-    se_std_metrics = calculate_metrics(se_det_std, events, len(X_unsup))
-    se_idw_metrics = calculate_metrics(se_det_idw, events, len(X_unsup))
-    se_adaptive_metrics = calculate_metrics(se_det_adaptive, events, len(X_unsup))
+    cdt_metrics = calculate_metrics(cdt_detections, events, len(X_shared))
+    se_std_metrics = calculate_metrics(se_det_std, events, len(X_shared))
+    se_idw_metrics = calculate_metrics(se_det_idw, events, len(X_shared))
+    se_adaptive_metrics = calculate_metrics(se_det_adaptive, events, len(X_shared))
         
     return {
         "Scenario": scenario,
@@ -596,7 +518,7 @@ def run_mixed_experiment(params):
         "Events": events,
         "Runtime_CDT": dt_cdt,
         "Runtime_SE": dt_se,
-        "Stream_Length": len(X_unsup),
+        "Stream_Length": len(X_shared),
         "CDT_Metrics": cdt_metrics,
         "SE_STD_Metrics": se_std_metrics,
         "SE_IDW_Metrics": se_idw_metrics,
