@@ -385,25 +385,25 @@ SE-CDT có một số ưu điểm nổi bật so với CDT-MSW:
 \begin{itemize}
 	\item \textbf{Không giám sát:} Hoạt động theo kiểu không giám sát, không cần nhãn dữ liệu, phù hợp với dữ liệu luồng.
 	\item \textbf{Tích hợp:} Sử dụng tín hiệu Standard MMD $\sigma(t)$ đã tính trong quá trình phát hiện ứng viên drift, không cần thêm một nguồn tín hiệu riêng.
-	\item \textbf{Thời gian thực:} Phân loại ngay sau khi phát hiện drift với chi phí $O(m)$ tuyến tính --- rất nhỏ so với bước detection.
+	\item \textbf{Thời gian thực:} Phân loại ngay sau khi phát hiện drift với chi phí $O(m)$ tuyến tính --- rất nhỏ so với bước phát hiện.
 	\item \textbf{Phân tách phát hiện và phân loại:} Bước phát hiện dùng IDW-MMD để kiểm định ứng viên, còn bước phân loại dùng hình dạng của tín hiệu Standard MMD để xác định loại drift.
 \end{itemize}
 
-Về độ phức tạp tính toán của toàn pipeline:
+Về độ phức tạp tính toán của toàn bộ quy trình:
 \begin{itemize}
 	\item \textbf{Detection (ShapeDD-IDW):} $O(n^2 \cdot T/\text{step})$ với $n$ = kích thước cửa sổ, $T$ = độ dài stream, step = bước trượt. Đây là bước chiếm chi phí chính.
-	\item \textbf{Classification (SE-CDT)}, chạy sau khi detection trả về $\sigma(t)$ với $m$ điểm:
+	\item \textbf{Classification (SE-CDT)}, chạy sau khi bước phát hiện trả về $\sigma(t)$ với $m$ điểm:
 	\begin{itemize}
 		\item Làm mượt tín hiệu: $O(m)$
 		\item Tìm cực đại cục bộ: $O(m)$
 		\item Trích đặc trưng từ các peak: $O(n_p)$ với $n_p$ là số peak
 		\item So sánh ngưỡng để phân loại: $O(1)$
 	\end{itemize}
-	\item \textbf{Tổng classification:} $O(m)$ --- tuyến tính, không đáng kể so với detection.
-	\item \textbf{Tổng pipeline:} Bottleneck nằm ở detection: $O(n^2 \cdot T/\text{step})$.
+	\item \textbf{Tổng chi phí phân loại:} $O(m)$ --- tuyến tính, không đáng kể so với bước phát hiện.
+	\item \textbf{Tổng chi phí quy trình:} Chi phí chính nằm ở bước phát hiện: $O(n^2 \cdot T/\text{step})$.
 \end{itemize}
 
-Nói gọn lại: bước classification về cơ bản không tốn thêm chi phí đáng kể. Toàn bộ gánh nặng tính toán nằm ở bước detection.
+Nói gọn lại: bước phân loại về cơ bản không tốn thêm chi phí đáng kể. Toàn bộ gánh nặng tính toán nằm ở bước phát hiện.
 
 \subsection{Giải thích lựa chọn ngưỡng}
 Các ngưỡng trong Algorithm~\ref{alg:se-cdt} được xác định qua phân tích thực nghiệm trên synthetic datasets (với cửa sổ chuẩn $n, m \approx 200$) và tinh chỉnh qua nhiều vòng lặp:

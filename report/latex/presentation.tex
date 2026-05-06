@@ -138,7 +138,7 @@
 		\begin{column}{0.48\textwidth}
 			\begin{block}{Three Main Contributions}
 				\begin{enumerate}
-					\item \textbf{Detection (ShapeDD-IDW):} inverse density weighting + Gamma-null p-value $\to$ a properly calibrated test ($\alpha = 0.05$) at the same end-to-end runtime as the baseline.
+					\item \textbf{Detection (ShapeDD-IDW):} inverse density weighting + Gamma-null p-value $\to$ a calibrated test ($\alpha = 0.05$) with a modest end-to-end speedup over ShapeDD.
 					\item \textbf{Classification (SE-CDT):} an unsupervised geometric analyzer that labels 5 drift types directly from the MMD signal $\sigma(t)$.
 					\item \textbf{Adaptation:} a type-aware router that picks an update strategy (full reset, warm-start, model cache, ignore) based on the detected drift type.
 				\end{enumerate}
@@ -499,7 +499,7 @@
 
 			\vspace{0.5em}
 			\includegraphics[width=\linewidth]{figure_4_stationary_fp.png}
-			\captionof{figure}{\scriptsize False Positives across methods --- SE-CDT $\approx 14.5$ FP/run, calibrated at $\alpha = 0.05$}
+			\captionof{figure}{\scriptsize Stationary false positives, total counts; FP/run is reported in the table.}
 		\end{column}
 		\begin{column}{0.5\textwidth}
 			\textbf{Compared against 7 baselines:}
@@ -778,7 +778,7 @@
 			\begin{enumerate}
 				\item \textbf{Properly calibrated test ($\alpha = 0.05$)} --- empirical Type-I error inside the 95\% CI on 3 stationary distributions.
 				\item \textbf{Classification module on top of detection} --- gives a drift type, not just a flag.
-				\item \textbf{Runtime on par with baseline} thanks to the Gamma-null p-value (no kernel re-build per shuffle).
+				\item \textbf{Modest runtime speedup over ShapeDD} thanks to the Gamma-null p-value (no kernel re-build per shuffle).
 				\item Stays \textbf{fully unsupervised} at runtime.
 			\end{enumerate}
 

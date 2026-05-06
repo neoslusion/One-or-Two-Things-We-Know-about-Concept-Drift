@@ -211,18 +211,34 @@ def plot_critical_difference_diagram(results_df, metric='F1', output_dir=None, a
     # ===== Draw Tick Marks and Labels =====
     rank_to_x = lambda r: (r - 1) / (n_methods - 1) * 0.85 + 0.075
 
+    # Assign nearby labels to different vertical levels to avoid unreadable overlap.
+    min_label_gap = 0.045
+    occupied_by_level = []
+    label_level_by_method = {}
+    for method, rank in sorted_methods.items():
+        x_pos = rank_to_x(rank)
+        for level, occupied in enumerate(occupied_by_level):
+            if all(abs(x_pos - prev_x) >= min_label_gap for prev_x in occupied):
+                occupied.append(x_pos)
+                label_level_by_method[method] = level
+                break
+        else:
+            occupied_by_level.append([x_pos])
+            label_level_by_method[method] = len(occupied_by_level) - 1
+
     for i, (method, rank) in enumerate(sorted_methods.items()):
         x_pos = rank_to_x(rank)
+        level = label_level_by_method[method]
         
         # Tick mark
         ax.vlines(x_pos, 0.47, 0.53, colors='black', linewidth=1.5)
         
         # Rank number above axis
-        ax.text(x_pos, 0.56, f'{rank:.2f}', ha='center', va='bottom', 
+        ax.text(x_pos, 0.56 + level * 0.045, f'{rank:.2f}', ha='center', va='bottom', 
                 fontsize=10, fontweight='bold')
         
-        # Method name below axis (rotated)
-        ax.text(x_pos, 0.44, method, ha='right', va='top', fontsize=9, 
+        # Method name below axis (rotated). Offset tied ranks to keep labels readable.
+        ax.text(x_pos, 0.44 - level * 0.08, method, ha='right', va='top', fontsize=9, 
                 rotation=45, rotation_mode='anchor')
 
     # ===== Draw CD Bar =====
@@ -617,7 +633,7 @@ def generate_all_figures(all_results, output_dir=PLOTS_DIR):
     print("\n[8/8] Critical Difference Diagram...")
 
     try:
-        plot_critical_difference_diagram(drift_results, metric='F1', output_dir=output_dir)
+        plot_critical_difference_diagram(results_df, metric='F1', output_dir=output_dir)
     except Exception as e:
         print(f"  Warning: Could not generate CD diagram: {e}")
 
