@@ -3,15 +3,15 @@
 \hline
 \textbf{Method} & \textbf{Runtime (s/stream)$^\dagger$} & \textbf{Throughput (samples/s)} & \textbf{Speedup vs ShapeDD} \\
 \hline
-IDW-MMD (standalone) & 0.59 & 16{,}949 & 3.37$\times$ \\
-KS & 0.88 & 11{,}364 & 2.26$\times$ \\
-D3 & 1.13 & 8{,}850 & 1.76$\times$ \\
-MMD & 1.51 & 6{,}623 & 1.32$\times$ \\
-SE-CDT & 1.92 & 5{,}208 & 1.04$\times$ \\
-ShapeDD-IDW & 1.94 & 5{,}155 & 1.03$\times$ \\
-ShapeDD (gốc) & 1.99 & 5{,}025 & 1.00$\times$ \\
-DAWIDD & 13.95 & 717 & 0.14$\times$ \\
+KS & 1.57 & 6{,}354 & 2.39$\times$ \\
+D3 & 2.49 & 4{,}009 & 1.51$\times$ \\
+ShapeDD-IDW & 2.96 & 3{,}373 & 1.27$\times$ \\
+IDW-MMD (standalone) & 2.98 & 3{,}357 & 1.26$\times$ \\
+SE-CDT & 3.00 & 3{,}331 & 1.25$\times$ \\
+MMD & 3.28 & 3{,}048 & 1.15$\times$ \\
+ShapeDD (gốc) & 3.77 & 2{,}655 & 1.00$\times$ \\
+DAWIDD & 40.55 & 247 & 0.09$\times$ \\
 \hline
-\multicolumn{4}{|p{0.92\textwidth}|}{\footnotesize $^\dagger$Runtime đo bằng \texttt{time.process\_time()} cho toàn bộ một stream 10{,}000 mẫu, lấy trung bình trên 14 dataset $\times$ 30 lần chạy. Mỗi run chạy trên một process độc lập với 1 thread BLAS (\texttt{OMP\_NUM\_THREADS=1}) để tránh thread contention làm sai số đo. Throughput $= 10{,}000 / \text{Runtime}$. ShapeDD, ShapeDD-IDW, và SE-CDT có thời gian chạy đầu-cuối gần như nhau, vì ShapeDD đã được vector hoá qua phép nhân ma trận kernel theo lô. Đóng góp chính của Gamma null không nằm ở việc rút ngắn mạnh thời gian thực thi, mà ở việc kiểm định bám sát mức danh nghĩa $\alpha = 0.05$ (Mục~\ref{sec:h0-calibration}).}\\
+\multicolumn{4}{|p{0.92\textwidth}|}{\footnotesize $^\dagger$Runtime đo bằng \texttt{time.process\_time()} cho toàn bộ một stream 10{,}000 mẫu, lấy trung bình trên tất cả dataset và 30 lần chạy. Throughput $= \text{số mẫu} / \text{Runtime}$. Speedup được tính tương đối với ShapeDD gốc trong cùng benchmark.}\\
 \hline
 \end{tabular}

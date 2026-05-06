@@ -509,11 +509,11 @@
 			\begin{tabular}{@{}lccc@{}}
 				\toprule
 				\textbf{Method}         & \textbf{F1}   & \textbf{Prec.} & \textbf{FP}  \\ \midrule
-				\textcolor{darkgreen}{\textbf{IDW-MMD}}      & \textbf{0.538} & 0.575          & 2.1          \\
-				D3                      & 0.494          & 0.563          & 0.8          \\
+				D3                      & \textbf{0.492} & 0.555          & 0.8          \\
+				\textcolor{darkgreen}{\textbf{IDW-MMD}}      & 0.459          & 0.346          & 14.5         \\
 				\textcolor{darkgreen}{\textbf{SE-CDT}}       & 0.459          & 0.346          & 14.5         \\
-				MMD (baseline)          & 0.460          & 0.345          & 15.1         \\
-				KS-Test                 & 0.294          & 0.190          & 37.6         \\
+				MMD (baseline)          & 0.466          & 0.352          & 15.0         \\
+				KS-Test                 & 0.294          & 0.189          & 37.8         \\
 				\bottomrule
 			\end{tabular}}
 
@@ -521,8 +521,8 @@
 			\begin{block}{Key Results}
 				\begin{itemize}
 					\item Empirical Type-I error stays inside the 95\% CI of $\alpha = 0.05$ (H0-calibration test).
-					\item Runtime end-to-end matches the original ShapeDD (1.94 vs.\ 1.99 s per 10k-sample stream).
-					\item On virtual-drift datasets (label-only changes), $F_1 = 0$ \textcolor{darkgreen}{(expected behavior for an unsupervised $P(X)$ detector)}.
+					\item ShapeDD-IDW is faster than ShapeDD in the end-to-end benchmark (2.96 vs.\ 3.77 s per 10k-sample stream).
+					\item On label-dominant drift datasets, $F_1$ remains low \textcolor{darkgreen}{(expected for an unsupervised $P(X)$ detector)}.
 				\end{itemize}
 			\end{block}
 		\end{column}
@@ -551,7 +551,7 @@
 		\begin{column}{0.46\textwidth}
 			\centering
 			\includegraphics[width=0.85\linewidth]{confusion_matrix_category.png}
-			\captionof{figure}{\scriptsize Category Matrix (TCD vs PCD) --- CAT = \textbf{81.9\%}}
+			\captionof{figure}{\scriptsize Category Matrix (TCD vs PCD) --- CAT = \textbf{81.5\%}}
 
 			\vspace{0.3em}
 			\begin{exampleblock}{\footnotesize Two enhancements added}
@@ -560,33 +560,33 @@
 				\textbf{Online Self-Calibration:} rolling quantile baseline that adapts SNR/WR/CV thresholds when no drift is present, improving robustness on noisy streams.
 			\end{exampleblock}
 		\end{column}
-		\begin{column}{0.52\textwidth}
+		\begin{column}{0.50\textwidth}
 			\textbf{Compared with CDT-MSW (supervised baseline):}
 
 			\vspace{0.3em}
-			{\footnotesize
+			\resizebox{\linewidth}{!}{\footnotesize
 			\begin{tabular}{@{}lccc@{}}
 				\toprule
 				                   & \textbf{SE-CDT}                          & \textbf{CDT-MSW}    & \textbf{Note}        \\ \midrule
 				\textbf{Labels}    & \textcolor{darkgreen}{\textbf{None}}     & Required            & Unsupervised win     \\
-				\textbf{CAT}       & 81.9\%                                   & 87.0\%              & Close at $-5.1$pp    \\
-				\textbf{SUB}       & 65.8\% / 55.7\%                          & 86.7\%              & micro / macro        \\
+				\textbf{CAT}       & 81.5\%                                   & 87.0\%              & Close at $-5.5$pp    \\
+				\textbf{SUB}       & 65.6\% / 54.0\%                          & 86.7\%              & micro / macro        \\
 				\textbf{Recall}    & \textcolor{darkgreen}{\textbf{92.6\%}}   & 82.5\%              & $1-\overline{\text{MDR}}$ from paper Table 5 \\
 				\bottomrule
 			\end{tabular}}
 
 			\vspace{0.5em}
-			\textbf{Per-type accuracy (oracle mode, 600 events):}
+			\textbf{Per-type accuracy (oracle mode, 1800 events):}
 
-			{\footnotesize
-			\begin{tabular}{@{}llp{3.6cm}@{}}
+			\resizebox{\linewidth}{!}{\footnotesize
+			\begin{tabular}{@{}llp{3.0cm}@{}}
 				\toprule
 				\textbf{Drift Type} & \textbf{Acc.} & \textbf{Notes}                         \\ \midrule
 				Sudden              & \textbf{82.4\%}   & Sharp, well-separated peaks   \\
 				Recurrent           & \textbf{89.0\%}   & Enabled by Concept Memory     \\
-				Incremental         & 64.4\%            & Helped by temporal features   \\
-				Gradual             & 42.6\%            & Sliding-window MMD returns to baseline \\
-				Blip                & 0.0\%             & Sliding-window MMD returns to baseline \\
+				Incremental         & 65.6\%            & Helped by temporal features   \\
+				Gradual             & 32.9\%            & Window signal returns to baseline \\
+				Blip                & 0.0\%             & Short transient, noisy peaks \\
 				\bottomrule
 			\end{tabular}}
 		\end{column}
@@ -660,8 +660,8 @@
 			\begin{block}{\small Contribution Summary}
 				\footnotesize
 				\begin{enumerate}
-					\item \textbf{Detection:} ShapeDD-IDW with Gamma-null p-value $\to$ a properly calibrated test ($\alpha = 0.05$, H0-verified) at runtime parity with the baseline.
-					\item \textbf{Classification:} SE-CDT label-free, CAT = \textbf{81.9\%}, SUB = \textbf{65.8\%} (micro), EDR = \textbf{92.6\%}.
+					\item \textbf{Detection:} ShapeDD-IDW with Gamma-null p-value $\to$ a calibrated test ($\alpha = 0.05$, H0-verified) with a modest end-to-end speedup over ShapeDD.
+					\item \textbf{Classification:} SE-CDT label-free, CAT = \textbf{81.5\%}, SUB = \textbf{65.6\%} (micro), EDR = \textbf{92.6\%}.
 					\item \textbf{Concept Memory + Self-Calibration:} restore Recurrent classification and stabilise SNR/WR/CV thresholds online.
 					\item \textbf{Adaptation:} Type-Specific gains \textbf{+17.1 pp} on Sudden, \textbf{+16.6 pp} on Stepping vs No Adaptation ($N = 30$, Friedman $p < 10^{-15}$).
 					\item \textbf{System:} end-to-end Kafka closed-loop validated.
@@ -844,10 +844,10 @@
 					\toprule
 					              & \textbf{SE-CDT}                        & \textbf{CDT-MSW} \\ \midrule
 					Labels        & \textcolor{darkgreen}{\textbf{None}}   & Required           \\
-					CAT           & 81.9\%                                 & 87.0\%             \\
-					SUB           & 65.8\%                                 & 86.7\%             \\
+					CAT           & 81.5\%                                 & 87.0\%             \\
+					SUB           & 65.6\%                                 & 86.7\%             \\
 					Recall        & \textcolor{darkgreen}{\textbf{92.6\%}} & 82.5\%             \\
-					Effective     & \textbf{75.8\%}                        & 71.8\%             \\
+					Effective     & \textbf{75.5\%}                        & 71.8\%             \\
 					\bottomrule
 				\end{tabular}}
 				\vspace{0.2em}
@@ -967,11 +967,11 @@
 	\end{columns}
 
 	\vspace{0.5em}
-	\textbf{Verification:} The detection $F_1$ remains comparable to the permutation baseline, while H0-calibration on three stationary distributions reports an empirical Type-I error of $0.04$--$0.10$, inside the 95\% CI of $\alpha = 0.05$. End-to-end runtime stays at parity with the baseline.
+	\textbf{Verification:} The detection $F_1$ remains comparable to the permutation baseline, while H0-calibration on three stationary distributions reports an empirical Type-I error of $0.04$--$0.10$, inside the 95\% CI of $\alpha = 0.05$. End-to-end runtime is slightly faster than the ShapeDD baseline.
 \end{frame}
 
 % --- Backup 9: Subcategory accuracy ---
-\begin{frame}[noframenumbering,shrink]{Backup: ``Subcategory accuracy 65.8\% --- is it close to random?''}
+\begin{frame}[noframenumbering,shrink]{Backup: ``Subcategory accuracy 65.6\% --- is it close to random?''}
 	\textbf{Question:} ``With 5 classes, 65\% sounds close to random guessing.''
 
 	\vspace{0.5em}
@@ -985,7 +985,7 @@
 			\textbf{It is well above random:}
 			\begin{itemize}
 				\item Random baseline across 5 classes is 20\%.
-				\item Micro SUB $= 65.8\%$ is $\sim 3.3\times$ random and well above the 95\% CI of a random predictor ($\sim 23\%$).
+				\item Micro SUB $= 65.6\%$ is $\sim 3.3\times$ random and well above the 95\% CI of a random predictor ($\sim 23\%$).
 				\item Performance is \textbf{very uneven across classes}:
 			\end{itemize}
 
@@ -995,8 +995,8 @@
 				\textbf{Drift Type} & \textbf{Accuracy} \\ \midrule
 				Recurrent           & \textbf{89.0\%}   \\
 				Sudden              & \textbf{82.4\%}   \\
-				Incremental         & 64.4\%            \\
-				Gradual             & 42.6\%            \\
+				Incremental         & 65.6\%            \\
+				Gradual             & 32.9\%            \\
 				Blip                & 0.0\%             \\
 				\bottomrule
 			\end{tabular}}

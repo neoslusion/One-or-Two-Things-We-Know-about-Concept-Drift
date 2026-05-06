@@ -147,4 +147,60 @@ def export_all_tables(all_results, stream_size, output_dir=TABLES_DIR):
     with open(output_dir / "table_II_f1_by_dataset.tex", "w") as f:
         f.write(full_output)
 
+    # ========================================================================
+    # TABLE III: Runtime Statistics
+    # ========================================================================
+    runtime_summary = results_df.groupby("Method").agg({
+        "Runtime_s": "mean"
+    }).round(4)
+    runtime_summary = runtime_summary.sort_values("Runtime_s")
+
+    def display_method_name(method):
+        return {
+            "IDW_MMD": "IDW-MMD (standalone)",
+            "ShapeDD_IDW": "ShapeDD-IDW",
+            "SE_CDT": "SE-CDT",
+            "ShapeDD": "ShapeDD (gốc)",
+        }.get(method, method)
+
+    shapedd_runtime = runtime_summary.loc["ShapeDD", "Runtime_s"] if "ShapeDD" in runtime_summary.index else np.nan
+    runtime_rows = []
+    for method, row in runtime_summary.iterrows():
+        runtime = float(row["Runtime_s"])
+        throughput = int(round(stream_size / runtime)) if runtime > 0 else 0
+        speedup = shapedd_runtime / runtime if runtime > 0 and not pd.isna(shapedd_runtime) else np.nan
+        speedup_str = f"{speedup:.2f}$\\times$" if not pd.isna(speedup) else "--"
+        runtime_rows.append([
+            display_method_name(method),
+            f"{runtime:.2f}",
+            f"{throughput:,}".replace(",", "{,}"),
+            speedup_str,
+        ])
+
+    stream_size_tex = f"{stream_size:,}".replace(",", "{,}")
+    runtime_footnote = (
+        "\\multicolumn{4}{|p{0.92\\textwidth}|}{\\footnotesize "
+        "$^\\dagger$Runtime đo bằng \\texttt{time.process\\_time()} cho toàn bộ một stream "
+        f"{stream_size_tex} mẫu, lấy trung bình trên tất cả dataset và 30 lần chạy. "
+        "Throughput $= \\text{số mẫu} / \\text{Runtime}$. "
+        "Speedup được tính tương đối với ShapeDD gốc trong cùng benchmark.}\\\\\n"
+        "\\hline\n"
+        "\\end{tabular}"
+    )
+    runtime_table = generate_standard_table(
+        ["Method", "Runtime (s/stream)$^\\dagger$", "Throughput (samples/s)", "Speedup vs ShapeDD"],
+        runtime_rows,
+        align="|l|c|c|c|",
+    )
+    runtime_table = (
+        "\\label{tab:runtime_stats}\n"
+        + runtime_table.replace(
+            "\\end{tabular}",
+            runtime_footnote
+        )
+    )
+    with open(output_dir / "table_III_runtime_stats.tex", "w") as f:
+        f.write(runtime_table + "\n")
+    print("  Generated table_III_runtime_stats.tex")
+
     print(f"  All tables exported to {output_dir}")

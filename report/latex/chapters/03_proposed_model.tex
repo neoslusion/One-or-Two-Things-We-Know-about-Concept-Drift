@@ -16,7 +16,7 @@ Mặc dù ShapeDD gốc thể hiện nhiều ưu điểm về độ chính xác 
 Để giải quyết các thách thức trên, luận văn xây dựng hệ thống \textbf{SE-CDT}, gồm ba phần chính:
 \begin{itemize}
 	\item \textbf{Tầng thuật toán:} Cải tiến ShapeDD bằng cách kết hợp tín hiệu Standard MMD với bước kiểm định IDW-MMD (Inverse Density-Weighted MMD) dựa trên xấp xỉ Gamma~\cite{gretton2009gamma}.
-	\item \textbf{Tầng chiến lược:} Xây dựng khủng thích ứng dựa trên loại drift, dùng kết quả phân loại từ SE-CDT để kích hoạt chiến lược cập nhật mô hình phù hợp (Reset, Incremental, hoặc Reuse)~\cite{gama2014survey, lu2018learning}.
+	\item \textbf{Tầng chiến lược:} Xây dựng khung thích ứng dựa trên loại drift, dùng kết quả phân loại từ SE-CDT để kích hoạt chiến lược cập nhật mô hình phù hợp (Reset, Incremental, hoặc Reuse)~\cite{gama2014survey, lu2018learning}.
 	\item \textbf{Tầng kiến trúc:} Triển khai hệ thống trên nền tảng Apache Kafka, hỗ trợ xử lý luồng dữ liệu phân tán, độ trễ thấp và khả năng chịu lỗi.
 \end{itemize}
 
@@ -214,7 +214,7 @@ SE-CDT chỉ nhìn thấy dữ liệu đầu vào $X$, không nhìn thấy nhãn
 
 Phương pháp hoạt động dựa trên một giả định thực tế: khi $P(X)$ thay đổi đột ngột thì $P(Y|X)$ cũng thường thay đổi đột ngột, và ngược lại --- hai thứ này thường đi cùng nhau~\cite{lu2018learning}. Giả định này (gọi là \textbf{joint drift}) được kiểm chứng trong Chương~\ref{chap:experiments} với các bộ dữ liệu tổng hợp tạo ra sự thay đổi đồng thời trên cả $P(X)$ lẫn $P(Y|X)$.
 
-Trường hợp giả định không thỏa --- ví dụ khi dữ liệu đầu vào giữ nguyên nhưng nhãn thay đổi (virtual drift) --- SE-CDT sẽ không phát hiện và không phân loại. Đây là giới hạn thiết kế, không phải lỗi kỹ thuật.
+Trường hợp giả định không thỏa --- ví dụ khi dữ liệu đầu vào giữ nguyên nhưng nhãn thay đổi (virtual drift) --- SE-CDT sẽ không phát hiện và không phân loại. Trường hợp này nằm ngoài phạm vi thiết kế của phương pháp, vì hệ thống chỉ phản ứng với thay đổi quan sát được từ dữ liệu không nhãn.
 
 \subsection{Đặc trưng phân loại từ tín hiệu \texorpdfstring{$\sigma(t)$}{sigma(t)}}
 

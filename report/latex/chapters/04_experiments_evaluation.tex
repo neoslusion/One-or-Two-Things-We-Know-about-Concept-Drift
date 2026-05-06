@@ -96,7 +96,7 @@ Quy ước này thể hiện rằng cùng một detector có thể có $\text{ED
 \section{Đánh giá phương pháp phát hiện Drift}
 \label{sec:detection-eval}
 
-Mục này tập trung đối chiếu hiệu năng của Detection Module so với các phương pháp tiên tiến đại diện cho các trường phái khác nhau: KS-Test (thống kê cổ điển), MMD (kernel-based), DAWIDD (window-based), D3 (discriminative classifier), và ShapeDD gốc (2021). Trọng tâm phân tích được đặt vào khả năng nhận diện \textbf{Sự thay đổi phân phối đầu vào} $P(X)$ (Distribution Shift / Covariate Shift).
+Mục này tập trung đối chiếu hiệu năng của Detection Module so với các phương pháp tiên tiến đại diện cho các trường phái khác nhau: KS-Test (thống kê cổ điển), MMD (kernel-based), DAWIDD (window-based), D3 (discriminative classifier), và ShapeDD gốc~\cite{shapeDD2024}. Trọng tâm phân tích được đặt vào khả năng nhận diện \textbf{Sự thay đổi phân phối đầu vào} $P(X)$ (Distribution Shift / Covariate Shift).
 
 \subsection{Thiết lập thực nghiệm (Detection Setup)}
 Các tham số cho bài toán benchmark phát hiện drift được thiết lập như sau:
@@ -123,9 +123,9 @@ Bảng~\ref{tab:comprehensive_performance} so sánh hiệu suất của \textbf{
 \end{table}
 
 \begin{itemize}
-	\item \textbf{IDW-MMD, ShapeDD-IDW và SE-CDT cùng đạt F1 = 0.459:} Ba phương pháp đề xuất cho kết quả hoàn toàn như nhau trên mọi tập dữ liệu — Precision $= 0.346$, Recall/EDR $= 0.760$ và $14.5$ báo động giả trung bình mỗi run — vì cả ba đều dùng chung bộ kiểm định IDW-MMD với p-value xấp xỉ Gamma (\texttt{wmmd\_gamma}). Cấu hình này thiên về Recall cao, phù hợp các ứng dụng giám sát nơi bỏ sót drift tốn kém hơn xử lý báo nhầm. F1 $= 0.459$ cao hơn ShapeDD gốc dùng permutation test ($F_1 = 0.432$, 18.4 FP). Thời gian chạy của ShapeDD-IDW nhanh hơn ShapeDD gốc gần $6\times$ (Bảng~\ref{tab:runtime_stats}).
+	\item \textbf{IDW-MMD, ShapeDD-IDW và SE-CDT cùng đạt F1 = 0.459:} Ba phương pháp đề xuất có cùng kết quả tổng hợp — Precision $= 0.346$, Recall/EDR $= 0.760$ và $14.5$ báo động giả trung bình mỗi run — vì cùng dùng kiểm định IDW-MMD với p-value xấp xỉ Gamma ở bước xác nhận drift. Cấu hình này thiên về Recall cao, phù hợp các ứng dụng giám sát nơi bỏ sót drift tốn kém hơn xử lý báo nhầm. F1 $= 0.459$ cao hơn ShapeDD gốc dùng permutation test ($F_1 = 0.433$, 18.4 FP). Về thời gian chạy, ShapeDD-IDW đạt $2.96$s/stream so với $3.77$s/stream của ShapeDD gốc, tương đương khoảng $1.27\times$ nhanh hơn trong benchmark này (Bảng~\ref{tab:runtime_stats}).
 	\item \textbf{D3 dẫn đầu về F1 (0.492):} Phương pháp discriminative này hoạt động tốt với Precision cao (0.555) và FP thấp (0.8), nhưng Recall hạn chế (0.479) do phụ thuộc vào khả năng học của classifier.
-	\item \textbf{MMD chuẩn (F1 = 0.465):} Phương pháp MMD chuẩn (không có bước phát hiện theo hình dạng) đạt Recall $= 0.760$, Precision $= 0.351$, với 15.0 FP/run. Số liệu này gần với ba phương pháp đề xuất vì đều dựa trên tín hiệu MMD theo cửa sổ trượt. Khác biệt nhỏ về FP (15.0 → 14.5) đến từ bước lọc hình dạng và kiểm định IDW-MMD tại đỉnh ứng viên.
+	\item \textbf{MMD chuẩn (F1 = 0.466):} Phương pháp MMD chuẩn (không có bước phát hiện theo hình dạng) đạt Recall $= 0.760$, Precision $= 0.352$, với 15.0 FP/run. Số liệu này gần với ba phương pháp đề xuất vì đều dựa trên tín hiệu MMD theo cửa sổ trượt. Khác biệt nhỏ về FP (15.0 → 14.5) đến từ bước lọc hình dạng và kiểm định IDW-MMD tại đỉnh ứng viên.
 	\item \textbf{Sự đánh đổi của KS-Test (F1 = 0.294):} Phương pháp Kolmogorov-Smirnov đạt Recall cao nhất (0.826) nhưng lại có Precision thấp nhất (0.189) với số lượng báo động giả lớn (37.8 FP/run). Điều này cho thấy KS quá nhạy cảm với nhiễu, không phù hợp cho các hệ thống giám sát tự động yêu cầu độ tin cậy cao.
 \end{itemize}
 
@@ -339,7 +339,7 @@ Bảng~\ref{tab:se-cdt-results} trình bày kết quả tổng hợp trên 1800 
 	\input{../../results/tables/table_se_cdt_aggregate.tex}
 \end{table}
 
-SE-CDT (Std) đạt \textbf{CAT $= 81.9\%$} và \textbf{SUB micro-average $= 65.8\%$} ở oracle mode. Vì micro-average bị chi phối bởi lớp đông nhất (Sudden), bảng \ref{tab:se-cdt-performance-by-type} cũng báo cáo \textbf{macro-average per-class $= 55.7\%$} để phản ánh độ cân bằng giữa 5 nhóm drift. Khi đọc kết quả trong các phần sau, cần lưu ý sự khác biệt giữa hai metric này: macro-average mới phản ánh đúng độ cân bằng của bộ phân loại trên 5 nhóm drift, trong khi micro-average tỏ ra cao hơn nhờ phân phối lớp lệch về Sudden và Recurrent trong các kịch bản benchmark.
+SE-CDT (Std) đạt \textbf{CAT $= 81.5\%$} và \textbf{SUB micro-average $= 65.6\%$} ở oracle mode. Vì micro-average bị chi phối bởi lớp đông nhất (Sudden), bảng \ref{tab:se-cdt-performance-by-type} cũng báo cáo \textbf{macro-average per-class $= 54.0\%$} để phản ánh độ cân bằng giữa 5 nhóm drift. Khi đọc kết quả trong các phần sau, cần lưu ý sự khác biệt giữa hai metric này: macro-average mới phản ánh đúng độ cân bằng của bộ phân loại trên 5 nhóm drift, trong khi micro-average tỏ ra cao hơn nhờ phân phối lớp lệch về Sudden và Recurrent trong các kịch bản benchmark.
 
 Khi không có Concept Memory, Recurrent drift bị xử lý như một chuỗi sự kiện Sudden độc lập và độ chính xác là $0\%$. Sau khi bổ sung Concept Memory (so khớp ring buffer bằng Standard MMD), độ chính xác Recurrent đạt \textbf{89.0\%}, vượt cả CDT-MSW gốc ($83.9\%$ trên benchmark UCI khác). Kết quả này cho thấy Concept Memory hoạt động đúng nguyên lý khi dữ liệu đầu vào tuân theo đúng định nghĩa Recurrent của Lu et al.~\cite{lu2018learning}.
 
@@ -358,14 +358,14 @@ Bảng~\ref{tab:se-cdt-performance-by-type} và Hình~\ref{fig:confusion-5class}
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=0.95\textwidth]{../../results/plots/confusion_matrix_se_cdt.png}
-	\caption[Confusion Matrix --- 5 Classes]{Confusion Matrix cho 5 loại drift (oracle mode, cấu hình SE-CDT đầy đủ với Concept Memory và Online Self-Calibration). Sudden $\approx 82\%$, Recurrent $\approx 89\%$, Incremental $\approx 64\%$, Gradual $\approx 43\%$, Blip $\approx 0\%$. Tổng SUB micro-average $= 65.8\%$, macro-average per-class $= 55.7\%$.}
+	\caption[Confusion Matrix --- 5 Classes]{Confusion Matrix cho 5 loại drift (oracle mode, cấu hình SE-CDT đầy đủ với Concept Memory và Online Self-Calibration). Sudden $\approx 82\%$, Recurrent $\approx 89\%$, Incremental $\approx 66\%$, Gradual $\approx 33\%$, Blip $\approx 0\%$. Tổng SUB micro-average $= 65.6\%$, macro-average per-class $= 54.0\%$.}
 	\label{fig:confusion-5class}
 \end{figure}
 
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=0.85\textwidth]{../../results/plots/confusion_matrix_category.png}
-	\caption[Confusion Matrix --- Category Level]{Confusion Matrix ở mức nhóm (TCD vs PCD, oracle mode). Độ chính xác nhóm đạt $81.9\%$; drift chậm (Gradual, Incremental) tiếp tục chồng lấn tín hiệu nhiều hơn drift nhanh (Sudden, Blip).}
+	\caption[Confusion Matrix --- Category Level]{Confusion Matrix ở mức nhóm (TCD vs PCD, oracle mode). Độ chính xác nhóm đạt $81.5\%$; drift chậm (Gradual, Incremental) tiếp tục chồng lấn tín hiệu nhiều hơn drift nhanh (Sudden, Blip).}
 	\label{fig:confusion-category}
 \end{figure}
 
@@ -374,9 +374,9 @@ Bảng~\ref{tab:se-cdt-performance-by-type} và Hình~\ref{fig:confusion-5class}
 
 	\item \textbf{Recurrent Drift ($89.0\%$):} Cao nhất trong 5 loại. Có hai thành phần chính tạo nên kết quả này: (i) mô-đun \textbf{Concept Memory} (Mục~\ref{sec:se-cdt-concept-memory}) cho phép cây quyết định ghi nhớ các khái niệm đã xuất hiện thay vì coi mỗi lần như một sự kiện Sudden độc lập; (ii) kịch bản dữ liệu recurrent được xây dựng theo chu kỳ A$\leftrightarrow$B rõ ràng, đúng với định nghĩa của Lu et al.~\cite{lu2018learning}.
 
-	\item \textbf{Incremental Drift ($64.4\%$):} Nhánh phân loại Incremental dùng các đặc trưng theo thời gian (LTS, MS, SDS) trong cây quyết định: khi tín hiệu MMD không có đỉnh rõ nhưng xu hướng tăng tuyến tính đủ mạnh, mẫu vẫn được nhận đúng là Incremental. Phần còn lại bị nhầm lẫn với Gradual do hai loại có hình dạng tín hiệu tương đồng (Hình~\ref{fig:signal_incremental}).
+	\item \textbf{Incremental Drift ($65.6\%$):} Nhánh phân loại Incremental dùng các đặc trưng theo thời gian (LTS, MS, SDS) trong cây quyết định: khi tín hiệu MMD không có đỉnh rõ nhưng xu hướng tăng tuyến tính đủ mạnh, mẫu vẫn được nhận đúng là Incremental. Phần còn lại bị nhầm lẫn với Gradual do hai loại có hình dạng tín hiệu tương đồng (Hình~\ref{fig:signal_incremental}).
 
-	\item \textbf{Gradual Drift ($42.6\%$):} Hai nguyên nhân chính: (i) trong khoảng chuyển tiếp dài, tín hiệu có thể tạo nhiều đỉnh phụ và một số trường hợp bị nhầm thành Recurrent; (ii) lớp Incremental có thêm đặc trưng theo thời gian nên một số trường hợp Gradual có xu hướng tuyến tính nhẹ bị phân nhầm. Đây là hạn chế của luật phân loại dạng cây với ngưỡng cố định; hướng cải tiến là thay bằng mô hình xác suất như thảo luận ở Chương~\ref{chap:conclusion}.
+	\item \textbf{Gradual Drift ($32.9\%$):} Hai nguyên nhân chính: (i) trong khoảng chuyển tiếp dài, tín hiệu có thể tạo nhiều đỉnh phụ và một số trường hợp bị nhầm thành Recurrent; (ii) lớp Incremental có thêm đặc trưng theo thời gian nên một số trường hợp Gradual có xu hướng tuyến tính nhẹ bị phân nhầm. Đây là hạn chế của luật phân loại dạng cây với ngưỡng cố định; hướng cải tiến là thay bằng mô hình xác suất như thảo luận ở Chương~\ref{chap:conclusion}.
 
 	\item \textbf{Blip Drift ($0.0\%$):} Đây là điểm yếu lớn nhất hiện tại. Bộ phân loại Blip dùng các đặc trưng tương đối (PPR, DPAR, WR) để giữ tính độc lập với kích thước cửa sổ, không dùng ngưỡng khoảng cách peak tuyệt đối. Luật yêu cầu đúng hai peak cô lập với khoảng cách gần nhau, biên độ tương đương và độ rộng đỉnh nhỏ, nhưng tín hiệu Blip thực tế thường có nhiễu phụ làm xuất hiện ba đến bốn peak nên không thoả luật. Hướng cải tiến tiếp theo là nới luật để chấp nhận thêm trường hợp ba peak và đánh giá lại trên benchmark mở rộng.
 \end{itemize}
@@ -397,7 +397,7 @@ Bảng~\ref{tab:cdt-comparison-by-type} so sánh với CDT-MSW~\cite{guo2022cdtm
 \begin{itemize}
 	\item \textbf{Dữ liệu khác nhau:} CDT-MSW chạy trên 10 tập UCI thực tế (Banana, Titanic, Thyroid, KDDCup99, MITface, USPS, \dots) với số lượng features và độ phức tạp khác nhau; SE-CDT chạy trên 6 kịch bản synthetic Gaussian 5 chiều đã mô tả ở Mục~\ref{sec:classification-setup}.
 	\item \textbf{Mức giám sát khác nhau:} CDT-MSW là phương pháp \textit{supervised}, dùng nhãn $y$ để tính accuracy ratio; SE-CDT là \textit{unsupervised}, chỉ dựa trên $P(X)$.
-	\item \textbf{Cách tính khác nhau:} ACC\_subcat của CDT-MSW là \textit{conditional} (tính trên các drift đã được phát hiện đúng và phân nhóm đúng); SUB của SE-CDT là \textit{unconditional} (tính trên toàn bộ sự kiện ground truth, kể cả những lần phát hiện sai). Với SE-CDT, macro-average theo lớp là $55.7\%$ như đã trình bày ở Bảng~\ref{tab:se-cdt-performance-by-type}.
+	\item \textbf{Cách tính khác nhau:} ACC\_subcat của CDT-MSW là \textit{conditional} (tính trên các drift đã được phát hiện đúng và phân nhóm đúng); SUB của SE-CDT là \textit{unconditional} (tính trên toàn bộ sự kiện ground truth, kể cả những lần phát hiện sai). Với SE-CDT, macro-average theo lớp là $54.0\%$ như đã trình bày ở Bảng~\ref{tab:se-cdt-performance-by-type}.
 	\item \textbf{Recall không cùng metric:} Trên paper gốc, CDT-MSW đạt MDR trung bình $17.5\%$, tương đương $\text{Recall} = 1 - \overline{\text{MDR}} = 82.5\%$\footnote{Trong paper~\cite{guo2022cdtmsw}, từ ``EDR'' được định nghĩa là \textit{Error Detection Rate} (tỉ lệ báo nhầm, càng thấp càng tốt), khác với cách đặt tên EDR (\textit{Event Detection Rate}, tương đương Recall) ở luận văn này. Vì vậy giá trị 82.5\% được suy từ MDR Bảng 5 của paper.}.
 \end{itemize}
 Vì các điều kiện vận hành khác nhau, bảng nên được đọc theo nghĩa: SE-CDT chạy không cần nhãn trên dữ liệu Gaussian 5-D có ground truth chính xác, và đạt được mức accuracy phân loại nằm trong phạm vi cạnh tranh với CDT-MSW supervised trên dữ liệu UCI thực tế. Luận văn không khẳng định SE-CDT vượt CDT-MSW trên cùng setup. Một so sánh đối đầu thực sự cần triển khai SE-CDT trên chính các tập UCI gốc và đo lại CDT-MSW trên dữ liệu synthetic của luận văn; đây là hướng phát triển tự nhiên (Chương~\ref{chap:conclusion}).
@@ -519,8 +519,8 @@ Hình~\ref{fig:kafka_real_results} trình bày dashboard giám sát từ lần c
 
 Có thể tóm tắt các kết quả thực nghiệm như sau:
 \begin{enumerate}
-	\item \textbf{Detection:} ShapeDD-IDW (tín hiệu Standard MMD + kiểm định IDW-MMD bằng xấp xỉ Gamma) đạt $F_1 = 0.459$ với $\sim 14.5$ FP/run trên benchmark phát hiện ($\delta = 75$, 14 datasets, 30 seeds), nhỉnh hơn ShapeDD gốc ($F_1 = 0.433$, $18.4$ FP) với thời gian chạy tương đương (Bảng~\ref{tab:runtime_stats}). Kiểm định IDW-MMD bằng xấp xỉ Gamma đạt Type-I error $0.040$--$0.075$ trên ba phân phối tĩnh; khi ghép vào SE-CDT, Type-I error có thể tăng tới $0.100$ do kiểm định nhiều đỉnh ứng viên (Mục~\ref{sec:h0-calibration}).
-	\item \textbf{Classification:} SE-CDT (Standard MMD + Concept Memory + Self-Calibration) đạt CAT $= \textbf{81.9\%}$, SUB micro-average $= \textbf{65.8\%}$, SUB macro-average $= \textbf{55.7\%}$ ở oracle mode mà không cần nhãn. Tỉ lệ phát hiện sự kiện EDR đạt \textbf{92.6\%}. Recurrent đạt $\textbf{89.0\%}$ nhờ Concept Memory; Incremental đạt $64.4\%$ nhờ bổ sung các đặc trưng theo thời gian vào cây quyết định.
+	\item \textbf{Detection:} ShapeDD-IDW (tín hiệu Standard MMD + kiểm định IDW-MMD bằng xấp xỉ Gamma) đạt $F_1 = 0.459$ với $\sim 14.5$ FP/run trên benchmark phát hiện ($\delta = 75$, 14 datasets, 30 seeds), nhỉnh hơn ShapeDD gốc ($F_1 = 0.433$, $18.4$ FP) và chạy nhanh hơn khoảng $1.27\times$ trong phép đo đầu-cuối (Bảng~\ref{tab:runtime_stats}). Kiểm định IDW-MMD bằng xấp xỉ Gamma đạt Type-I error $0.040$--$0.075$ trên ba phân phối tĩnh; khi ghép vào SE-CDT, Type-I error có thể tăng tới $0.100$ do kiểm định nhiều đỉnh ứng viên (Mục~\ref{sec:h0-calibration}).
+	\item \textbf{Classification:} SE-CDT (Standard MMD + Concept Memory + Self-Calibration) đạt CAT $= \textbf{81.5\%}$, SUB micro-average $= \textbf{65.6\%}$, SUB macro-average $= \textbf{54.0\%}$ ở oracle mode mà không cần nhãn. Tỉ lệ phát hiện sự kiện EDR đạt \textbf{92.6\%}. Recurrent đạt $\textbf{89.0\%}$ nhờ Concept Memory; Incremental đạt $65.6\%$ nhờ bổ sung các đặc trưng theo thời gian vào cây quyết định.
 	\item \textbf{Adaptation:} Trên kết quả $N = 30$ với kiểm định Friedman, Type-Specific Adaptation hơn No Adaptation $+16.57$pp trên Stepping ($71.37\%$ vs $54.80\%$), $+17.10$pp trên Sudden ($70.78\%$ vs $53.68\%$), và $+3.51$pp trên Mixed ($86.20\%$ vs $82.69\%$). Type-Specific cũng vượt Simple Retrain ($+1.96$ đến $+8.62$pp) và Periodic Retrain ($+0.11$ đến $+7.34$pp) trên cả ba kịch bản, với khác biệt có ý nghĩa thống kê mạnh ($p < 10^{-15}$). Cơ chế thu hẹp bộ đệm sau mỗi lần thích ứng giữ FP thấp ($\sim 2$/run) cho Type-Specific và Simple Retrain so với $\sim 16$/run của các baseline không dùng detector signal.
 \end{enumerate}
 
