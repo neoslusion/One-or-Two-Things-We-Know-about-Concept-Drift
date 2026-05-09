@@ -1,6 +1,114 @@
 \chapter*{PHỤ LỤC}
 \addcontentsline{toc}{chapter}{PHỤ LỤC}
 
+\section*{A. Bảng cấu hình tham số thực nghiệm}
 
+Bảng dưới đây tổng hợp các tham số chính được sử dụng trong toàn bộ thực nghiệm. Các giá trị được lấy từ mã nguồn triển khai và giữ cố định trong suốt quá trình đánh giá, trừ khi được ghi chú riêng.
 
-\noindent\textit{---Hết Phụ lục---}
+\begin{table}[H]
+	\centering
+	\caption*{Bảng A.1: Cấu hình tham số Detection Module (ShapeDD-IDW)}
+	\begin{tabular}{|l|c|p{7cm}|}
+		\hline
+		\textbf{Tham số} & \textbf{Giá trị} & \textbf{Mô tả} \\
+		\hline
+		$l_1$ (window\_size) & 50 & Kích thước cửa sổ tham chiếu (reference window) \\
+		$l_2$ & 150 & Kích thước cửa sổ kiểm tra (test window) \\
+		$\alpha$ & 0.05 & Mức ý nghĩa thống kê cho kiểm định drift \\
+		$N_{\text{perm}}$ & 2\,500 & Số vòng hoán vị cho ShapeDD gốc (permutation test) \\
+		Stride ($s$) & 10 & Bước trượt cửa sổ \\
+		Kernel & RBF & Hạt nhân Gaussian $k(x,y) = \exp(-\gamma \|x-y\|^2)$ \\
+		$\gamma$ & median heuristic & Ước lượng một lần trên đoạn đầu của luồng \\
+		$\epsilon$ & 0.5 & Hằng số ổn định số học trong IDW weighting \\
+		Weight method & variance\_reduction & Phương pháp tính trọng số IDW-MMD \\
+		Gaussian filter $\sigma_g$ & 4 & Độ lệch chuẩn bộ lọc Gauss làm mượt tín hiệu \\
+		Peak threshold & $\bar{\sigma}_s + 0.3\sigma_{\text{std}}$ & Ngưỡng phát hiện đỉnh ứng viên \\
+		\hline
+	\end{tabular}
+\end{table}
+
+\begin{table}[H]
+	\centering
+	\caption*{Bảng A.2: Cấu hình tham số Classification Module (SE-CDT)}
+	\begin{tabular}{|l|c|p{7cm}|}
+		\hline
+		\textbf{Tham số} & \textbf{Giá trị} & \textbf{Mô tả} \\
+		\hline
+		\multicolumn{3}{|c|}{\textit{Ngưỡng phân loại (mặc định / trước self-calibration)}} \\
+		\hline
+		WR threshold ($\tau_{\text{WR}}$) & 0.15 & Ngưỡng Peak Width Ratio cho Sudden \\
+		SNR threshold ($\tau_{\text{SNR}}$) & 2.0 & Ngưỡng Signal-to-Noise cho TCD \\
+		CV threshold ($\tau_{\text{CV}}$) & 0.3 & Ngưỡng Periodicity CV cho Recurrent \\
+		LTS threshold & 0.5 & Ngưỡng Linear Trend Strength cho Incremental \\
+		MS threshold & 0.6 & Ngưỡng Monotonicity Score (kết hợp với LTS) \\
+		SDS threshold & 0.12 & Ngưỡng Step Detection Score (kết hợp với LTS) \\
+		PPR threshold & 0.20 & Ngưỡng Peak Proximity Ratio cho Blip \\
+		DPAR threshold & 0.60 & Ngưỡng Dual-Peak Amplitude Ratio cho Blip \\
+		\hline
+		\multicolumn{3}{|c|}{\textit{Concept Memory}} \\
+		\hline
+		$M$ (concept\_memory\_size) & 8 & Số lượng snapshot tối đa trong bộ nhớ vòng \\
+		$n_s$ (snapshot\_size) & 150 & Số điểm dữ liệu mỗi snapshot \\
+		$\tau_{\text{match}}$ & 0.15 & Ngưỡng Standard-MMD để so khớp concept ($\approx 2\times$ nhiễu nền) \\
+		\hline
+		\multicolumn{3}{|c|}{\textit{Self-Calibration}} \\
+		\hline
+		baseline\_size & 200 & Kích thước bộ đệm vòng rolling baseline \\
+		baseline\_min\_history & 20 & Số mẫu tối thiểu trước khi kích hoạt tự hiệu chỉnh \\
+		\hline
+	\end{tabular}
+\end{table}
+
+\begin{table}[H]
+	\centering
+	\caption*{Bảng A.3: Cấu hình Benchmark đánh giá}
+	\begin{tabular}{|l|c|p{7cm}|}
+		\hline
+		\textbf{Tham số} & \textbf{Giá trị} & \textbf{Mô tả} \\
+		\hline
+		\multicolumn{3}{|c|}{\textit{Detection Benchmark}} \\
+		\hline
+		Stream size ($T$) & 10\,000 & Số mẫu mỗi luồng \\
+		Số drift events & 10 & Đặt cách đều mỗi 1\,000 mẫu \\
+		$N$ runs & 30 & Số lần chạy độc lập (seed spacing: $42 + i \times 137$) \\
+		$\delta$ (tolerance) & 75 & Độ trễ chấp nhận cho TP (cửa sổ đối xứng) \\
+		Cooldown & 75 & Khoảng cách tối thiểu giữa hai lần phát hiện \\
+		\hline
+		\multicolumn{3}{|c|}{\textit{Classification Benchmark}} \\
+		\hline
+		Số kịch bản & 6 & Mixed A, Mixed B, Repeated $\times$ 4 loại \\
+		Seeds/kịch bản & 30 & Tổng cộng 180 luồng, 1\,800 sự kiện \\
+		$\delta$ (tolerance) & 250 & Phù hợp với drift kéo dài \\
+		$\delta_{\text{early}}$ & 50 & Cảnh báo sớm \\
+		\hline
+		\multicolumn{3}{|c|}{\textit{Adaptation Benchmark}} \\
+		\hline
+		Stream size & 5\,000 & Mẫu/luồng \\
+		Drift events & 5 & Sự kiện/luồng \\
+		$N$ runs & 30 & Số lần chạy \\
+		$\delta$ (tolerance) & 400 & Đánh giá khả năng phục hồi \\
+		Mô hình nền & Logistic Regression & max\_iter = 1\,000 \\
+		Prequential window & 100 & Cửa sổ tính Prequential Accuracy \\
+		\hline
+	\end{tabular}
+\end{table}
+
+\begin{table}[H]
+	\centering
+	\caption*{Bảng A.4: Cấu hình nguyên mẫu Kafka}
+	\begin{tabular}{|l|c|p{7cm}|}
+		\hline
+		\textbf{Tham số} & \textbf{Giá trị} & \textbf{Mô tả} \\
+		\hline
+		Broker & localhost:19092 & Redpanda (tương thích Kafka API) \\
+		Topic (input) & sensor.stream & Luồng dữ liệu đầu vào \\
+		Topic (results) & drift.results & Kết quả phát hiện drift \\
+		Topic (accuracy) & model.accuracy & Chỉ số độ chính xác real-time \\
+		Group ID & shapedd-detector & Consumer group \\
+		Buffer size & 750 & Kích thước bộ đệm phát hiện \\
+		Chunk size & 150 & Tần suất kiểm tra drift \\
+		Adaptation delay & 50 & Mẫu chờ sau phát hiện trước khi thích ứng \\
+		Adaptation window & 800 & Mẫu dùng cho huấn luyện lại \\
+		\hline
+	\end{tabular}
+\end{table}

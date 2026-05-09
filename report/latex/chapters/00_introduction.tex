@@ -32,7 +32,7 @@ phát hiện drift trong thời gian thực hoặc gần thời gian thực là 
 bắt buộc để giữ chất lượng và độ tin cậy của hệ thống~\cite{jourdan2023process}.
 Việc xây dựng một hệ thống như vậy có ba thách thức chính: (i) độ trễ thấp khi phát hiện thời điểm drift; (ii) phân loại được loại drift (sudden, gradual, incremental, recurrent) để chọn chiến lược thích ứng phù hợp; và (iii) cập nhật mô hình nhanh mà không làm gián đoạn hoạt động.
 
-Từ ba thách thức trên, đề tài đặt mục tiêu nghiên cứu và phát triển một hệ thống tự động phát hiện, phân loại và thích ứng với concept drift trong luồng dữ liệu thời gian thực, đặc biệt trong môi trường không giám sát. Hệ thống được xây dựng trên nền tảng ShapeDD~\cite{shapeDD2024} với hai cải tiến chính: (1) thay thế bước kiểm định bằng IDW-MMD với xấp xỉ Gamma để giảm chi phí tính toán, và (2) bổ sung mô-đun phân loại drift không giám sát (SE-CDT) để cung cấp thông tin cho chiến lược thích ứng mô hình phù hợp.
+Từ ba thách thức trên, đề tài đặt mục tiêu nghiên cứu và phát triển một hệ thống tự động phát hiện, phân loại và thích ứng với concept drift trong luồng dữ liệu thời gian thực, đặc biệt trong môi trường không giám sát. Hệ thống được xây dựng trên nền tảng ShapeDD~\cite{shapeDD2021} với hai cải tiến chính: (1) thay thế bước kiểm định bằng IDW-MMD với xấp xỉ Gamma để giảm chi phí tính toán, và (2) bổ sung mô-đun phân loại drift không giám sát (SE-CDT) để cung cấp thông tin cho chiến lược thích ứng mô hình phù hợp.
 \section{Mục tiêu đề tài}
 
 \subsection{Khảo sát các phương pháp phát hiện drift}
@@ -80,4 +80,14 @@ Luận văn tập trung phát triển một hệ thống kết hợp các thành
 	\item \textbf{Mô hình phân loại drift:} SE-CDT, phương pháp xác định loại \textit{drift} dựa trên hình dạng tín hiệu MMD, lấy ý tưởng từ CDT-MSW.
 	\item \textbf{Dữ liệu streaming:} Các tập dữ liệu tổng hợp (Gaussian, multimodal, high-dimensional, \dots) với nhiều loại \textit{drift} khác nhau (sudden, gradual, incremental, recurrent, blip).
 	\item \textbf{Nền tảng xử lý streaming:} Apache Kafka cho việc triển khai hệ thống giám sát \textit{real-time}.
+\end{itemize}
+
+\section{Cấu trúc luận văn}
+Luận văn được tổ chức thành năm chương chính:
+\begin{itemize}
+	\item \textbf{Chương~\ref{chap:theoretical-foundation} --- Cơ sở lý thuyết:} Trình bày nền tảng toán học về concept drift, Maximum Mean Discrepancy (MMD), và phương pháp ShapeDD.
+	\item \textbf{Chương~\ref{chap:related-work} --- Tổng quan nghiên cứu liên quan:} Khảo sát các phương pháp phát hiện drift hiện có, từ thống kê cổ điển đến học sâu, cùng với phương pháp phân loại drift CDT-MSW.
+	\item \textbf{Chương~\ref{chap:proposed-model} --- Mô hình đề xuất:} Trình bày chi tiết IDW-MMD, phương pháp phân loại SE-CDT, khung thích ứng mô hình, và kiến trúc hệ thống trên Apache Kafka.
+	\item \textbf{Chương~\ref{chap:experiments} --- Thực nghiệm và đánh giá:} Đánh giá có hệ thống ba module (phát hiện, phân loại, thích ứng) trên 14 tập dữ liệu với 30 lần chạy độc lập.
+	\item \textbf{Chương~\ref{chap:conclusion} --- Kết luận và hướng phát triển:} Tổng kết đóng góp, phân tích hạn chế, và đề xuất các hướng nghiên cứu tiếp theo.
 \end{itemize}

@@ -30,7 +30,7 @@ hoạt báo động drift.
 
 ADWIN có giới hạn lý thuyết trên tỉ lệ báo động giả và tự động điều chỉnh kích thước cửa sổ thay vì yêu cầu người dùng cố định trước, nhờ đó phát hiện được cả drift đột ngột lẫn dần dần và là nền tảng cho nhiều kỹ thuật nâng cao sau này. Hai nhược điểm chính là chi phí tính toán cao do phải kiểm tra nhiều kích thước cửa sổ, và độ nhạy với nhiễu trong dữ liệu~\cite{hinder2024survey_partA}.
 
-Một phương pháp khác là \textbf{KSWIN} (Kolmogorov–Smirnov WINdowing~\cite{raab2020kswin}), kết hợp kiểm định Kolmogorov–Smirnov với cửa
+Một phương pháp khác là \textbf{KSWIN} (Kolmogorov–Smirnov WINdowing~\cite{raab2020reactive}), kết hợp kiểm định Kolmogorov–Smirnov với cửa
 sổ trượt nhằm phát hiện thay đổi phân phối mà không cần giả định trước về dạng phân phối. Các phương pháp thống kê thuần túy này có ưu điểm là không phụ
 thuộc vào mô hình học máy cụ thể, do đó có thể áp dụng trong môi trường phi giám sát (không cần nhãn). Mặt khác, chúng thường đòi
 hỏi giả định mạnh về độc lập và phân phối dữ liệu, và có thể bỏ sót những thay đổi nhỏ nếu kích thước mẫu không đủ lớn.
@@ -63,7 +63,7 @@ phát hiện drift khi khoảng cách giảm mạnh so với giá trị tối đ
 hơn DDM trong nhiều trường hợp~\cite{baena2006early}. Sau DDM và EDDM, hàng loạt thuật toán dựa trên theo dõi hiệu năng ra đời, cho thấy sự phát
 triển đáng kể trong giai đoạn sau này.
 
-\textbf{HDDM (Hoeffding's Drift Detection Method)}~\cite{HDDM} là một hướng cải tiến quan trọng, áp dụng các công cụ thống kê chặt chẽ hơn để giảm
+\textbf{HDDM (Hoeffding's Drift Detection Method)}~\cite{friasblanco2015hddm} là một hướng cải tiến quan trọng, áp dụng các công cụ thống kê chặt chẽ hơn để giảm
 giả định phân phối. Thay vì giả định rằng tỷ lệ lỗi tuân theo phân phối cụ thể (như DDM giả định phân phối nhị thức), HDDM sử dụng bất đẳng thức Hoeffding
 để xây dựng tiêu chí phát hiện drift mà không cần giả định về dạng phân phối. HDDM có hai biến thể chính:
 \begin{itemize}
@@ -210,17 +210,17 @@ Các phương pháp cũng đã được thực nghiệm trên các tập dữ li
 		\midrule
 		\textbf{DDM}        & Statistical Process Control & Binomial Distribution    & Ít tốn bộ nhớ, chạy nhanh~\cite{gama2004learning}             & Hiệu suất giảm khi cửa sổ lớn~\cite{hinder2024survey_partA}              \\
 		\addlinespace
-		\textbf{EDDM}       & Statistical Process Control & Distance between errors  & Nhạy với gradual drift~\cite{baena2006early}                  & Dễ báo động giả lúc mới học~\cite{santos2024evolving}                    \\
+		\textbf{EDDM}       & Statistical Process Control & Distance between errors  & Nhạy với gradual drift~\cite{baena2006early}                  & Dễ báo động giả lúc mới học~\cite{hovakimyan2024evolving}                    \\
 		\addlinespace
 		\textbf{ADWIN}      & Sliding Window              & Adaptive Windowing       & Có đảm bảo lý thuyết (theoretical bounds) về tỷ lệ FP~\cite{bifet2007learning}      & Tốn bộ nhớ hơn DDM/EDDM~\cite{hinder2024survey_partA}                    \\
 		\addlinespace
-		\textbf{HDDM}       & Sliding Window              & Hoeffding's Bound        & Phù hợp cho abrupt/gradual drift~\cite{friasblanco2015hddm}   & Cần dữ liệu nhãn liên tục~\cite{santos2024evolving}                      \\
+		\textbf{HDDM}       & Sliding Window              & Hoeffding's Bound        & Phù hợp cho abrupt/gradual drift~\cite{friasblanco2015hddm}   & Cần dữ liệu nhãn liên tục~\cite{hovakimyan2024evolving}                      \\
 		\addlinespace
 		\textbf{FHDDM}      & Sliding Window              & Hoeffding + Sliding Win. & Chỉ duy trì 2 biến số, cực nhẹ~\cite{pesaranghader2016fhddm}  & Cần chọn kích thước cửa sổ phù hợp~\cite{hinder2024survey_partA}         \\
 		\addlinespace
 		\textbf{D3}         & Virtual Classifier          & Unsupervised Separation  & Tốc độ nhanh, không cần nhãn~\cite{gozuacik2019d3}            & Chỉ phát hiện Covariate Shift (thay đổi $P(X)$)~\cite{hinder2024survey_partA} \\
 		\addlinespace
-		\textbf{ShapeDD}    & Meta-Statistic              & Shape-based Filtering    & Pinpointing điểm drift chính xác~\cite{shapeDD2024}           & Độ trễ phụ thuộc kích thước cửa sổ~\cite{shapeDD2024}                    \\
+		\textbf{ShapeDD}    & Meta-Statistic              & Shape-based Filtering    & Pinpointing điểm drift chính xác~\cite{shapeDD2021}           & Độ trễ phụ thuộc kích thước cửa sổ~\cite{shapeDD2021}                    \\
 		\addlinespace
 		\textbf{DAWIDD}     & Block-Based                 & Independence Test (HSIC) & Phù hợp với gradual/reoccurring drift~\cite{hinder2020dawidd} & Tỷ lệ báo động giả khá cao~\cite{hinder2024survey_partA}                 \\
 		\bottomrule
@@ -262,7 +262,7 @@ Số lượng công trình kết hợp giữa deep learning và phát hiện con
 	\end{threeparttable}
 \end{table}
 
-Như bảng~\ref{tab:drift-history} tóm tắt, lĩnh vực phát hiện concept drift đã phát triển nhiều qua thời gian. Từ những ý tưởng sơ khai về cửa sổ trượt và loại bỏ mẫu, các nghiên cứu đã tiến tới các thuật toán kiểm định thống kê và cơ chế giám sát sai số mô hình. Giai đoạn 2004--2010 chứng kiến các phương pháp nền tảng như DDM, EDDM, ADWIN định hình lĩnh vực. Giai đoạn 2010--2020 là thời kỳ nở rộ với nhiều cải tiến và biến thể (HDDM, FHDDM, RDDM\ldots), cùng các cách tiếp cận mới dựa trên ensemble và meta-learning~\cite{santos2024evolving}. Từ 2020 trở đi, xu hướng tích hợp với học sâu trở nên rõ nét, hướng tới các hệ thống vừa có khả năng học biểu diễn mạnh vừa linh hoạt thích ứng với dữ liệu biến đổi. Sự kết hợp giữa thống kê, học máy và học sâu đang tiếp tục mở ra hướng nghiên cứu mới cho bài toán concept drift.
+Như bảng~\ref{tab:drift-history} tóm tắt, lĩnh vực phát hiện concept drift đã phát triển nhiều qua thời gian. Từ những ý tưởng sơ khai về cửa sổ trượt và loại bỏ mẫu, các nghiên cứu đã tiến tới các thuật toán kiểm định thống kê và cơ chế giám sát sai số mô hình. Giai đoạn 2004--2010 chứng kiến các phương pháp nền tảng như DDM, EDDM, ADWIN định hình lĩnh vực. Giai đoạn 2010--2020 là thời kỳ nở rộ với nhiều cải tiến và biến thể (HDDM, FHDDM, RDDM\ldots), cùng các cách tiếp cận mới dựa trên ensemble và meta-learning~\cite{hovakimyan2024evolving}. Từ 2020 trở đi, xu hướng tích hợp với học sâu trở nên rõ nét, hướng tới các hệ thống vừa có khả năng học biểu diễn mạnh vừa linh hoạt thích ứng với dữ liệu biến đổi. Sự kết hợp giữa thống kê, học máy và học sâu đang tiếp tục mở ra hướng nghiên cứu mới cho bài toán concept drift.
 
 \section{Phương pháp xác định và phân loại drift - CDT\_MSW}
 \label{sec:drift_type_identification}
