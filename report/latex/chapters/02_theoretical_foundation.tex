@@ -110,7 +110,7 @@ Với hai cửa sổ $W_l(t) = [t - \frac{l}{2}, \, t + \frac{l}{2}]$ và $W_l(s
 \end{equation}
 trong đó $P_{W_l(t)}$ là phân phối trung bình trên cửa sổ $W_l(t)$ và $d(\cdot,\cdot)$ là độ đo khoảng cách (ví dụ: MMD, Wasserstein, KL, v.v.).
 
-\subsubsection{Hình dạng đặc trưng của drift đột ngột (Định lý 1)}
+\subsubsection{Hình dạng đặc trưng của drift đột ngột}
 
 Kết quả lý thuyết trung tâm của ShapeDD được phát biểu chính thức như sau:
 
@@ -141,7 +141,7 @@ Kết quả lý thuyết trung tâm của ShapeDD được phát biểu chính t
 	Do đó, phương pháp SE-CDT (Chương~\ref{chap:proposed-model}) bổ sung các đặc trưng hình học và thống kê khác trên tín hiệu MMD để phân loại các loại drift này, thay vì chỉ dựa vào hình dạng tam giác.
 \end{quote}
 
-\subsubsection{Tổng quát hoá cho nhiều sự kiện drift (Hệ quả 1)}
+\subsubsection{Tổng quát hoá cho nhiều sự kiện drift}
 
 Khi tồn tại nhiều điểm trôi dạt đột ngột tại các thời điểm $t_1 < t_2 < \dots < t_n$, và độ dài cửa sổ $l$ đủ nhỏ để các tam giác không chồng lên nhau,
 tổng tín hiệu trôi dạt được biểu diễn như:
@@ -152,7 +152,7 @@ tổng tín hiệu trôi dạt được biểu diễn như:
 
 Như vậy, tín hiệu tổng thể $\sigma(t)$ có thể xem là tổng chập (linear superposition) của nhiều “hình tam giác” trôi dạt độc lập.
 
-\subsection{Ứng dụng vào Lọc Nhiễu và Phát hiện Drift}
+\subsection{Ứng dụng vào lọc nhiễu và phát hiện drift}
 
 Nhận biết được dạng hình học của tín hiệu trôi dạt cho phép thực hiện \textbf{ước lượng tham số (parametric estimation)} cho $\sigma$.
 Cụ thể, thay vì dùng giá trị ước lượng nhiễu $\hat{\sigma}$, ShapeDD tiến hành \textbf{khớp hàm tham số} $\tilde{\sigma}$ có dạng:

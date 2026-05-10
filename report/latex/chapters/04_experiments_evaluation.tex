@@ -201,6 +201,15 @@ Hiệu suất của các phương pháp thay đổi tùy thuộc vào đặc tí
 	      Bảng~\ref{tab:comprehensive_performance} báo cáo FP trung bình theo mỗi run trên toàn bộ bộ đánh giá: KS-Test cao nhất (37.8 FP/run), trong khi ba phương pháp đề xuất (SE-CDT, ShapeDD-IDW, IDW-MMD) ở mức $\sim 14.5$ FP/run, thấp hơn ShapeDD gốc (18.4 FP/run) và gần MMD chuẩn (15.0 FP/run). Riêng Hình~\ref{fig:stationary_fp} hiển thị tổng số báo động giả trên tập dữ liệu tĩnh; do đó con số trong hình là tổng cộng sau khi gộp nhiều lần chạy, không phải FP/run. Có hai lý do giúp bước lọc này phát huy tác dụng: (i) cơ chế phát hiện hình dạng yêu cầu tín hiệu MMD phải khớp dạng tam giác đặc trưng; (ii) băng thông kernel $\gamma$ được ước lượng một lần bằng median heuristic và dùng chung cho cả ba kernel $K_{XX}, K_{YY}, K_{XY}$.
 \end{enumerate}
 
+\paragraph{Hiện tượng F1 giảm khi cường độ drift tăng trên tập Random.}
+Một quan sát đáng chú ý từ Bảng~\ref{tab:f1_by_dataset_part2}: mặc dù Random Severe ($\text{intens}=1.0$) và Random Ultra Severe ($\text{intens}=2.0$) có cường độ drift cao hơn hẳn Random Moderate ($\text{intens}=0.25$), F1 của SE-CDT lại giảm từ $0.685$ xuống $0.581$ và $0.572$. Phân tích nguyên nhân cho thấy hiện tượng này không phải do detector trở nên kém hơn, mà là tác động phụ của giao thức đánh giá dựa trên ghép cặp một-một (one-to-one matching) với ngưỡng chấp nhận $\delta=75$.
+
+\textbf{Nguyên nhân: phát hiện kép (double-detection).} Trên các tập drift mạnh, tín hiệu MMD dương tính (statistically significant) lan rộng trên nhiều cửa sổ trượt liên tiếp, tạo thành hai đỉnh báo ở hai phía của điểm drift thật. Do bước trượt cửa sổ là $\text{step}=50$ và khoảng cách tối thiểu giữa hai báo là $\text{cooldown}=75$, báo thứ nhất thường nằm ở $\sim t_{\text{drift}}-40$, báo thứ hai ở $\sim t_{\text{drift}}+60$. Cả hai đều nằm trong cửa sổ chấp nhận $\delta=75$, nhưng giao thức đánh giá chỉ cho phép ghép một báo đúng (TP) với mỗi drift; báo còn lại bị tính thành FP.
+
+\textbf{Số liệu phân rã.} Phân tích 30 lần chạy trên tập Random cho thấy tỉ lệ FP thực sự (báo cách xa mọi drift thật hơn $150$ mẫu) gần như không đổi qua các mức cường độ ($\sim 8$ FP/run). Sự gia tăng FP từ $8.9$ (Moderate) lên $14.1$ (Severe) và $14.6$ (Ultra Severe) hoàn toàn đến từ các phát hiện kép: một drift bị báo hai lần, lần thứ hai bị tính sai. Recall trên ba tập này đều ổn định ở mức cao ($0.967$--$0.977$), xác nhận detector không bỏ sót drift.
+
+\textbf{Giải thích tại sao F1 không phản ánh đúng khả năng phát hiện.} Khi cường độ drift tăng, detector phản ứng \textit{nhạy hơn} (nhiều cửa sổ dương tính), nhưng metric F1 lại \textit{giảm} vì báo dư bị tính thành FP. Đây là hạn chế đã biết của đánh giá điểm-một (point-based evaluation) trong phát hiện drift dùng cửa sổ trượt: detector càng nhạy, càng dễ bị phạt bởi giao thức ghép cặp một-một. Phương pháp D3 không gặp hiện tượng này vì thiết kế discriminative của nó chỉ tạo ra một báo mỗi drift (FP $\approx 0$), nhưng đổi lại Recall rất thấp trên drift nhẹ. Trong ngữ cảnh hệ thống SE-CDT, đóng góp chính không nằm ở việc cải thiện F1 phát hiện so với các baseline kernel-based, mà ở việc tích hợp phát hiện, phân loại và thích ứng thành một pipeline thống nhất.
+
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=0.9\textwidth]{../../results/plots/vis_mixed_a_SE.png}
@@ -388,7 +397,7 @@ Bảng~\ref{tab:se-cdt-performance-by-type} và Hình~\ref{fig:confusion-5class}
 	\item \textbf{Blip Drift ($0.0\%$):} Đây là điểm yếu lớn nhất hiện tại. Bộ phân loại Blip dùng các đặc trưng tương đối (PPR, DPAR, WR) để giữ tính độc lập với kích thước cửa sổ, không dùng ngưỡng khoảng cách peak tuyệt đối. Luật yêu cầu đúng hai peak cô lập với khoảng cách gần nhau, biên độ tương đương và độ rộng đỉnh nhỏ, nhưng tín hiệu Blip thực tế thường có nhiễu phụ làm xuất hiện ba đến bốn peak nên không thoả luật. Hướng cải tiến tiếp theo là nới luật để chấp nhận thêm trường hợp ba peak và đánh giá lại trên benchmark mở rộng.
 \end{itemize}
 
-\subsection{So sánh với State-of-the-Art}
+\subsection{So sánh với CDT-MSW}
 \label{sec:classification-sota}
 
 Bảng~\ref{tab:cdt-comparison-by-type} so sánh với CDT-MSW~\cite{guo2022cdtmsw}, một phương pháp supervised sử dụng label và dữ liệu UCI thực tế.
@@ -473,7 +482,7 @@ Trên cả ba kịch bản, $p \ll 0.05$ nên có đủ bằng chứng thống k
 	\item \textbf{Sudden ($+17.10$pp so với No Adaptation):} Type-Specific đạt $70.78\%$, hơn Simple Retrain $+8.62$pp và Periodic Retrain $+7.13$pp. Mỗi sự kiện ở đây là concept mới, vì vậy chiến lược Full Reset trên cửa sổ post-drift hoạt động đúng nhịp: mô hình cũ bị thay thế ngay khi không còn phù hợp, tránh kéo theo dữ liệu pre-drift đã không còn giá trị.
 	\item \textbf{Mixed ($+3.51$pp so với No Adaptation):} Type-Specific đạt $86.20\%$, hơn Simple Retrain $+1.96$pp và Periodic Retrain $+0.11$pp. Trên kịch bản này, Periodic Retrain bám sát Type-Specific vì lịch retrain định kỳ ($500$ mẫu) trùng nhịp với mật độ drift dày đặc; nhưng Periodic Retrain có FP cao gấp $\sim 6\times$ ($15.5$ vs $2.7$), thể hiện chi phí của việc retrain mù.
 	\item \textbf{False Positives.} Type-Specific và Simple Retrain có FP thấp ($1.8$--$2.7$/run) nhờ cơ chế thu hẹp bộ đệm sau mỗi lần thích ứng, ngăn detector kích hoạt nhiều lần trên cùng một sự kiện. Periodic Retrain và No Adaptation không thay đổi bộ đệm theo tín hiệu detector nên ghi nhận nhiều cảnh báo lặp ($\sim 15$--$18$/run). Số FP $> 0$ ở đây phản ánh test Gamma-approximation đã được hiệu chỉnh đúng tại $\alpha = 0.05$ (Mục~\ref{sec:h0-calibration}).
-	\item \textbf{Độ tin cậy thống kê.} Với $N = 30$ và độ lệch chuẩn $\sim 3\%$, khoảng tin cậy 95\% khoảng $\pm 1.1\%$, giúp các chênh lệch lớn hơn 7 điểm phần trăm trên Stepping và Sudden ổn định hơn về mặt thực nghiệm. Kiểm định Friedman bổ sung bằng chứng rằng bốn chiến lược có khác biệt tổng thể rõ rệt ($p \ll 0.05$).
+	\item \textbf{Độ tin cậy thống kê.} Với $N = 30$ và độ lệch chuẩn $\sim 3\%$, khoảng tin cậy 95\% khoảng $\pm 1.1\%$, giúp các chênh lệch lớn hơn $7\%$ trên Stepping và Sudden ổn định hơn về mặt thực nghiệm. Kiểm định Friedman bổ sung bằng chứng rằng bốn chiến lược có khác biệt tổng thể rõ rệt ($p \ll 0.05$).
 \end{itemize}
 
 \begin{figure}[H]

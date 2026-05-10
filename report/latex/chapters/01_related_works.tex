@@ -11,7 +11,7 @@ Sự thay đổi diễn ra vào giữa những năm 2000 khi các thuật toán 
 \subsection{Các phương pháp thống kê}
 Nhóm phương pháp thống kê tập trung vào việc phát hiện thay đổi phân phối dữ liệu một cách trực tiếp, thường
 thông qua các phép kiểm định thống kê hoặc quan sát cửa sổ trượt trên dòng dữ liệu. Một trong những kỹ thuật
-kinh điển là sử dụng các biểu đồ kiểm soát thống kê liên tục như \textit{CUSUM} hay kiểm định \textit{Page-Hinkley (PH)}.
+kinh điển là sử dụng các biểu đồ kiểm soát thống kê liên tục như \textit{CUSUM}~\cite{page1954continuous} hay kiểm định \textit{Page-Hinkley (PH)}.
 
 Chẳng hạn, kiểm định PH~\cite{mouss2004pagehinkley} được áp dụng trong bối cảnh concept drift để giám sát trung bình của một chuỗi
 số liệu và phát hiện khi nào trung bình thay đổi đáng kể. PH thực chất triển khai biểu đồ CUSUM để nhạy với những thay đổi
@@ -104,9 +104,9 @@ Cải tiến này đặc biệt hữu ích trong các ứng dụng yêu cầu ph
 
 Những năm gần đây còn xuất hiện các biến thể hướng đến các tình huống đặc thù:
 \begin{itemize}
-	\item \textbf{ACDDM} (Accurate DDM, 2020): Cải thiện độ chính xác cho drift lặp lại bằng cách lưu trữ và tái sử dụng các concept cũ.
-	\item \textbf{DMDDM} (Diversity-Measure DDM, 2020): Tận dụng tính đa dạng (diversity) của ensemble classifier để tăng độ nhạy phát hiện drift.
-	\item \textbf{DDM-FPW} (2020): Kiểm soát tỷ lệ dương tính giả trong luồng dữ liệu IoT đa nhãn.
+	\item \textbf{ACDDM}~\cite{yan2020acddm} (Accurate DDM, 2020): Cải thiện độ chính xác cho drift lặp lại bằng cách lưu trữ và tái sử dụng các concept cũ.
+	\item \textbf{DMDDM}~\cite{mahdi2020dmddm} (Diversity-Measure DDM, 2020): Tận dụng tính đa dạng (diversity) của ensemble classifier để tăng độ nhạy phát hiện drift.
+	\item \textbf{DDM-FPW}~\cite{wang2020ddmfpw} (2020): Kiểm soát tỷ lệ dương tính giả trong luồng dữ liệu IoT đa nhãn.
 \end{itemize}
 Mục tiêu chung của các cải tiến này là tăng độ nhạy với nhiều loại drift, đồng thời giảm báo động giả và phân biệt được drift thực sự với nhiễu.
 
@@ -151,7 +151,7 @@ Một hướng khác là tận dụng \textbf{ensemble learning}, dùng nhiều 
 
 Ngoài ra, một số phương pháp sử dụng \textbf{Classifier-based Drift Detection}: huấn luyện một mô hình phân loại nhằm phân biệt "dữ liệu cũ"
 và "dữ liệu mới"; nếu mô hình này đạt độ chính xác cao nghĩa là hai phân phối khác nhau rõ (drift lớn). Trong môi trường unsupervised, các
-phương pháp \textbf{one-class} như OCDD (One-Class Drift Detector) dùng one-class SVM hoặc autoencoder để mô tả dữ liệu và khi reconstruction error
+phương pháp \textbf{one-class} như OCDD (One-Class Drift Detector)~\cite{gozuacik2021ocdd} dùng one-class SVM hoặc autoencoder để mô tả dữ liệu và khi reconstruction error
 tăng cao, đó là dấu hiệu drift.
 
 Nhóm phương pháp này phát triển mạnh khoảng 2008–2015, khi khả năng tính toán cho phép triển khai nhiều mô hình song song. Chúng tận
@@ -175,7 +175,7 @@ Tương tự, trong mô hình phát hiện bất thường dùng LSTM, các nghi
 
 \textbf{Hướng (II): Self-adaptive architectures.} Các mạng neural tự điều chỉnh cấu trúc khi drift xảy ra đang trở thành một hướng nghiên cứu được quan tâm. \textbf{NADINE}~\cite{pratama2019automatic} là một mạng MLP nhiều lớp có khả năng tiến hóa cấu trúc: NADINE tích hợp cơ chế phát hiện drift chủ động dựa trên cửa sổ trượt thích ứng kết hợp bất đẳng thức Hoeffding (tương tự ý tưởng của FHDDM) để liên tục kiểm tra dữ liệu mới. Mỗi khi detector phát hiện tín hiệu drift, NADINE sẽ ``tiến hóa'' bằng cách thêm hoặc bớt các nút ẩn và tầng ẩn tương ứng để thích nghi với concept mới. Cơ chế này giúp mạng tự điều chỉnh độ phức tạp: tăng nếu concept mới phức tạp hơn, hoặc giảm nếu cần tránh overfitting.
 
-\textbf{Hướng (III): Intrinsic detection.} Khai thác trực tiếp năng lực biểu diễn của mô hình deep để nhận biết drift. Ví dụ, một autoencoder có thể học nén dữ liệu đầu vào; nếu phân phối dữ liệu thay đổi, lỗi tái tạo (reconstruction error) của autoencoder sẽ tăng cao. \textbf{AEDetect} (2021) giám sát phân phối lỗi tái tạo của autoencoder, khi phân phối này dịch chuyển nhiều thì phát tín hiệu drift. Trong lĩnh vực chuỗi thời gian, \textbf{LSTM-NDT} (Neural Drift Detector dùng LSTM) học mô hình chuỗi và dùng sai số dự báo của LSTM làm tiêu chí phát hiện drift. Các phương pháp này tận dụng được thông tin trong dữ liệu nhờ đặc trưng học được của network, nhưng khó tách bạch giữa ``drift'' và ``nhiễu'' bên trong mô hình.
+\textbf{Hướng (III): Intrinsic detection.} Khai thác trực tiếp năng lực biểu diễn của mô hình deep để nhận biết drift. Ví dụ, một autoencoder có thể học nén dữ liệu đầu vào; nếu phân phối dữ liệu thay đổi, lỗi tái tạo (reconstruction error) của autoencoder sẽ tăng cao. \textbf{AEDetect}~\cite{jaworski2020aedetect} giám sát phân phối lỗi tái tạo của autoencoder, khi phân phối này dịch chuyển nhiều thì phát tín hiệu drift. Trong lĩnh vực chuỗi thời gian, \textbf{LSTM-NDT} (Neural Drift Detector dùng LSTM)~\cite{yuan2022advances} học mô hình chuỗi và dùng sai số dự báo của LSTM làm tiêu chí phát hiện drift. Các phương pháp này tận dụng được thông tin trong dữ liệu nhờ đặc trưng học được của network, nhưng khó tách bạch giữa ``drift'' và ``nhiễu'' bên trong mô hình.
 
 
 \begin{table}[H]
@@ -193,7 +193,7 @@ Tương tự, trong mô hình phát hiện bất thường dùng LSTM, các nghi
 		2016         & FHDDM~\cite{pesaranghader2016fhddm} & Phiên bản nhanh của HDDM, tăng tốc độ và độ nhạy khi drift (đột ngột và dần dần).                                                                                                       \\
 		2017         & RDDM~\cite{barros2017rddm}          & Phản ứng nhanh với drift đột ngột, rút ngắn giai đoạn cảnh báo của DDM; phù hợp cả drift lặp lại.                                                                                       \\
 		2020         & DAWIDD~\cite{hinder2020dawidd}      & Phương pháp phi tham số dùng kiểm định độc lập (independence test) thay vì mô hình dự đoán; linh hoạt với nhiều dạng drift khác nhau.                                                   \\
-		2019--22     & Học sâu thích ứng                   & Xuất hiện các mô hình deep learning tích hợp phát hiện drift (NADINE, ADL, DEVDAN,…); mạng tự mở rộng hoặc dùng detector gắn ngoài để duy trì hiệu năng dưới concept drift. \\
+		2019--22     & Học sâu thích ứng                   & Xuất hiện các mô hình deep learning tích hợp phát hiện drift (NADINE~\cite{pratama2019automatic}, ADL~\cite{ashfahani2019adl}, DEVDAN~\cite{ashfahani2020devdan},…); mạng tự mở rộng hoặc dùng detector gắn ngoài để duy trì hiệu năng dưới concept drift. \\
 		\bottomrule
 	\end{tabular}
 \end{table}
@@ -227,7 +227,7 @@ Các phương pháp cũng đã được thực nghiệm trên các tập dữ li
 	\end{tabular}
 \end{table}
 
-Số lượng công trình kết hợp giữa deep learning và phát hiện concept drift đã tăng nhanh trong những năm gần đây. Ban đầu, các mô hình deep thường dựa vào các ``cảm biến'' drift bên ngoài (như ADWIN, DDM) để quyết định khi nào cần tái huấn luyện. Sau đó, các kiến trúc deep thích ứng (NADINE, DEN, ADL, DEVDAN) ra đời với khả năng tự điều chỉnh cấu trúc khi drift xảy ra. Các phương pháp này vẫn đang phát triển, nhưng hứa hẹn giúp mô hình học sâu vận hành ổn định trong môi trường dữ liệu biến động.
+Số lượng công trình kết hợp giữa deep learning và phát hiện concept drift đã tăng nhanh trong những năm gần đây. Ban đầu, các mô hình deep thường dựa vào các ``cảm biến'' drift bên ngoài (như ADWIN, DDM) để quyết định khi nào cần tái huấn luyện. Sau đó, các kiến trúc deep thích ứng (NADINE~\cite{pratama2019automatic}, DEN~\cite{yoon2018den}, ADL~\cite{ashfahani2019adl}, DEVDAN~\cite{ashfahani2020devdan}) ra đời với khả năng tự điều chỉnh cấu trúc khi drift xảy ra. Các phương pháp này vẫn đang phát triển, nhưng hứa hẹn giúp mô hình học sâu vận hành ổn định trong môi trường dữ liệu biến động.
 
 \begin{table}[!htbp]
 	\centering
