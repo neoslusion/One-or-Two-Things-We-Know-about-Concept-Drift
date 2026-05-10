@@ -324,11 +324,13 @@
 
 % Front matter with roman numbering (simple style - only page number)
 \pagestyle{frontmatter}
+\hypersetup{pageanchor=false}
 \pagenumbering{roman}
 \setcounter{page}{1}
 
 % Title page (no page number)
 \input{titlepage}
+\hypersetup{pageanchor=true}
 
 % Declaration in Vietnamese
 \cleardoublepage
