@@ -509,11 +509,12 @@
 			\begin{tabular}{@{}lccc@{}}
 				\toprule
 				\textbf{Method}         & \textbf{F1}   & \textbf{Prec.} & \textbf{FP}  \\ \midrule
-				D3                      & \textbf{0.492} & 0.555          & 0.8          \\
-				\textcolor{darkgreen}{\textbf{IDW-MMD}}      & 0.459          & 0.346          & 14.5         \\
-				\textcolor{darkgreen}{\textbf{SE-CDT}}       & 0.459          & 0.346          & 14.5         \\
-				MMD (baseline)          & 0.466          & 0.352          & 15.0         \\
-				KS-Test                 & 0.294          & 0.189          & 37.8         \\
+				DAWIDD                  & \textbf{0.532} & 0.436          & 10.3         \\
+				\textcolor{darkgreen}{\textbf{IDW-MMD}}      & 0.531          & 0.432          & 9.6          \\
+				\textcolor{darkgreen}{\textbf{SE-CDT}}       & 0.531          & 0.432          & 9.6          \\
+				MMD (baseline)          & 0.524          & 0.426          & 10.6         \\
+				D3                      & 0.489          & 0.558          & 0.6          \\
+				KS-Test                 & 0.335          & 0.224          & 27.2         \\
 				\bottomrule
 			\end{tabular}}
 
@@ -521,7 +522,7 @@
 			\begin{block}{Key Results}
 				\begin{itemize}
 					\item Empirical Type-I error stays inside the 95\% CI of $\alpha = 0.05$ (H0-calibration test).
-					\item ShapeDD-IDW is faster than ShapeDD in the end-to-end benchmark (2.96 vs.\ 3.77 s per 10k-sample stream).
+					\item ShapeDD-IDW is faster than ShapeDD in the end-to-end benchmark (2.60 vs.\ 5.50 s per 10k-sample stream).
 					\item On label-dominant drift datasets, $F_1$ remains low \textcolor{darkgreen}{(expected for an unsupervised $P(X)$ detector)}.
 				\end{itemize}
 			\end{block}
@@ -747,7 +748,7 @@
 
 % --- Backup 2: F1 low ---
 \begin{frame}[noframenumbering,shrink]{Backup: ``F1 close to MMD baseline --- where is the contribution?''}
-	\textbf{Question:} ``SE-CDT's F1 (0.459) is only marginally below MMD (0.466). Where is the gain?''
+	\textbf{Question:} ``SE-CDT's F1 (0.531) is only marginally above MMD (0.524). Where is the gain?''
 
 	\vspace{0.5em}
 	\begin{columns}[T]
@@ -758,10 +759,10 @@
 			\begin{tabular}{@{}lccc@{}}
 				\toprule
 				             & \textbf{SE-CDT} & \textbf{MMD} & \textbf{KS}  \\ \midrule
-				F1           & 0.459           & 0.466        & 0.294        \\
-				\textbf{FP}  & \textcolor{darkgreen}{\textbf{14.5}} & 15.0  & 37.8         \\
-				Recall       & 0.760           & 0.760        & 0.826        \\
-				Precision    & 0.346           & 0.351        & 0.189        \\
+				F1           & 0.531           & 0.524        & 0.335        \\
+				\textbf{FP}  & \textcolor{darkgreen}{\textbf{9.6}} & 10.6  & 27.2         \\
+				Recall       & 0.737           & 0.732        & 0.775        \\
+				Precision    & 0.432           & 0.426        & 0.224        \\
 				\bottomrule
 			\end{tabular}}
 

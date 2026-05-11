@@ -41,7 +41,8 @@ from .metrics import calculate_detection_metrics_enhanced
 
 
 def evaluate_drift_detector(
-    method_name, X, true_drifts, chunk_size=None, overlap=None, verbose=False
+    method_name, X, true_drifts, chunk_size=None, overlap=None,
+    verbose=False, cooldown=None,
 ):
     """
     Unified sliding window evaluation for ALL drift detectors.
@@ -53,11 +54,20 @@ def evaluate_drift_detector(
     In a parallel benchmark (joblib multiprocessing) each worker is a separate
     process, so the value is unaffected by co-running workers and gives a fair
     algorithmic comparison.  It is *not* wall-clock elapsed time.
+
+    Parameters
+    ----------
+    cooldown : int, optional
+        Minimum samples between consecutive recorded detections.  When ``None``
+        the canonical ``COOLDOWN`` from :mod:`experiments.benchmark.config` is
+        used.
     """
     if chunk_size is None:
         chunk_size = CHUNK_SIZE  # e.g., 300
     if overlap is None:
         overlap = OVERLAP  # e.g., 150
+    if cooldown is None:
+        cooldown = COOLDOWN
 
     start_time = time.process_time()
     detections = []
@@ -149,7 +159,7 @@ def evaluate_drift_detector(
                 trigger = False
 
             # Record detection with cooldown
-            if trigger and (center_idx - last_detection >= COOLDOWN):
+            if trigger and (center_idx - last_detection >= cooldown):
                 detections.append(center_idx)
                 predicted_labels.append(window_pred_label)
                 last_detection = center_idx

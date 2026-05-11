@@ -60,7 +60,10 @@ OVERLAP = 100           # Overlap between windows
 SHAPE_L1 = 50          # ShapeDD reference window
 SHAPE_L2 = 150         # ShapeDD test window
 SHAPE_N_PERM = 2500    # ShapeDD permutation count
-COOLDOWN = 75          # Minimum samples between detections
+# Cooldown = 2 * acceptable_delta (= 2 * 75). Matches the width of the
+# TP-able neighbourhood [t_drift - delta, t_drift + delta] so that at most
+# one detection is recorded per true drift.
+COOLDOWN = 150         # Minimum samples between detections
 
 # ============================================================================
 # SPECTRA-DRIFT PARAMETERS
