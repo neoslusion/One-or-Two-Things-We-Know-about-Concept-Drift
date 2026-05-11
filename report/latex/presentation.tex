@@ -502,7 +502,7 @@
 			\captionof{figure}{\scriptsize Stationary false positives, total counts; FP/run is reported in the table.}
 		\end{column}
 		\begin{column}{0.5\textwidth}
-			\textbf{Compared against 7 baselines:}
+			\textbf{Top methods (full 8-method table in the thesis):}
 
 			\vspace{0.3em}
 			{\small
@@ -521,7 +521,7 @@
 			\vspace{0.5em}
 			\begin{block}{Key Results}
 				\begin{itemize}
-					\item Empirical Type-I error stays inside the 95\% CI of $\alpha = 0.05$ (H0-calibration test).
+					\item Empirical Type-I error on three stationary distributions: $0.025$--$0.075$ for Standard MMD / IDW-MMD, $0.045$--$0.100$ for the SE-CDT composite (close to $\alpha = 0.05$; the composite is slightly above on two distributions, discussed as multi-test inflation).
 					\item ShapeDD-IDW is faster than ShapeDD in the end-to-end benchmark (2.60 vs.\ 5.50 s per 10k-sample stream).
 					\item On label-dominant drift datasets, $F_1$ remains low \textcolor{darkgreen}{(expected for an unsupervised $P(X)$ detector)}.
 				\end{itemize}
@@ -777,7 +777,7 @@
 		\begin{column}{0.48\textwidth}
 			\textbf{What SE-CDT actually adds:}
 			\begin{enumerate}
-				\item \textbf{Properly calibrated test ($\alpha = 0.05$)} --- empirical Type-I error inside the 95\% CI on 3 stationary distributions.
+				\item \textbf{Test calibrated near $\alpha = 0.05$} --- empirical Type-I error in the $0.025$--$0.100$ band across detectors and three stationary distributions.
 				\item \textbf{Classification module on top of detection} --- gives a drift type, not just a flag.
 				\item \textbf{Modest runtime speedup over ShapeDD} thanks to the Gamma-null p-value (no kernel re-build per shuffle).
 				\item Stays \textbf{fully unsupervised} at runtime.
@@ -786,7 +786,7 @@
 			\vspace{0.5em}
 			\centering
 			\includegraphics[width=0.9\linewidth]{figure_4_stationary_fp.png}
-			\captionof{figure}{\scriptsize Empirical Type-I error of SE-CDT on three stationary distributions.}
+			\captionof{figure}{\scriptsize Total false-positive count on the stationary dataset (sum over runs); the H0-calibration table reports the corresponding Type-I error rate.}
 		\end{column}
 	\end{columns}
 \end{frame}
@@ -860,7 +860,7 @@
 			\begin{itemize}
 				\item CDT-MSW reports CAT and SUB \textit{conditionally} on drifts it detects; with paper recall $\approx 82.5\%$ it still misses $\sim 17\%$ of events.
 				\item SE-CDT detects $92.6\%$ of drifts and types every one of them without any labels.
-				\item End-to-end, SE-CDT lands $\sim 4.0$pp above CDT-MSW on effective accuracy ($75.8\%$ vs $71.8\%$); the contribution is reaching this on \textbf{unsupervised $P(X)$}.
+				\item End-to-end, SE-CDT lands $\sim 3.7$pp above CDT-MSW on effective accuracy ($75.5\%$ vs $71.8\%$); the contribution is reaching this on \textbf{unsupervised $P(X)$}.
 			\end{itemize}
 
 			\vspace{0.3em}
@@ -899,14 +899,14 @@
 			\end{exampleblock}
 
 			\vspace{0.3em}
-			\textbf{Future direction:} keep the kernel framework but plug in a learned feature extractor for high-dimensional inputs (Chapter 5).
+			\textbf{Future direction:} keep the kernel framework but plug in a learned feature extractor for high-dimensional inputs (Chapter 6).
 		\end{column}
 	\end{columns}
 \end{frame}
 
-% --- Backup 7: Mild drift weakness ---
-\begin{frame}[noframenumbering,shrink]{Backup: weakness on mild drift}
-	\textbf{Question:} ``On the mild-drift scenario SE-CDT scored F1 $\approx$ 0.006 --- why so low?''
+% --- Backup 6: Mild drift behaviour ---
+\begin{frame}[noframenumbering,shrink]{Backup: behaviour on mild drift}
+	\textbf{Question:} ``On the mild-drift scenario (Random Mild, $\delta = 0.125$) SE-CDT scored F1 $= 0.511$ vs MMD $= 0.563$ --- where does the gap come from?''
 
 	\vspace{0.5em}
 	\begin{columns}[T]
@@ -914,15 +914,15 @@
 			\textbf{Cause:}
 			\begin{itemize}
 				\item IDW down-weights points sitting in dense (stable) regions.
-				\item Mild drift, by definition, lives mostly inside those dense regions.
-				\item Net effect: the IDW signal is too smooth to cross threshold (Standard MMD reaches $\sim$0.585 on the same data).
+				\item Mild drift, by definition, lives mostly inside those dense regions, so the IDW peak is shorter than Standard MMD's on the same window.
+				\item Net effect: a few candidate peaks fall under threshold, so recall drops while precision is unchanged.
 			\end{itemize}
 
 			\vspace{0.5em}
 			\textbf{This is the intended trade-off:}
 			\begin{itemize}
-				\item IDW-MMD biases toward high precision (FP $\sim 2$/run, lowest among baselines).
-				\item Cost: lower recall on very small distributional shifts.
+				\item IDW-MMD biases toward fewer false alarms (FP $\sim 9.6$/run vs ShapeDD original $13.2$, Standard MMD $10.6$).
+				\item Cost: $\sim 5$pp F1 below MMD on the smallest shifts.
 			\end{itemize}
 		\end{column}
 		\begin{column}{0.48\textwidth}
@@ -941,7 +941,7 @@
 	\end{columns}
 \end{frame}
 
-% --- Backup 8: Permutation vs Gamma null ---
+% --- Backup 7: Permutation vs Gamma null ---
 \begin{frame}[noframenumbering]{Backup: Permutation test vs Gamma-null p-value}
 	\textbf{Question:} ``Removing the permutation test --- is the Gamma-null p-value still trustworthy?''
 
@@ -968,10 +968,10 @@
 	\end{columns}
 
 	\vspace{0.5em}
-	\textbf{Verification:} The detection $F_1$ remains comparable to the permutation baseline, while H0-calibration on three stationary distributions reports an empirical Type-I error of $0.04$--$0.10$, inside the 95\% CI of $\alpha = 0.05$. End-to-end runtime is slightly faster than the ShapeDD baseline.
+	\textbf{Verification:} The detection $F_1$ remains comparable to the permutation baseline; the H0-calibration on three stationary distributions reports an empirical Type-I error of $0.025$--$0.100$ across detectors (Standard MMD and IDW-MMD inside the 95\% CI of $\alpha = 0.05$, the SE-CDT composite slightly above on two distributions). End-to-end runtime is slightly faster than the ShapeDD baseline.
 \end{frame}
 
-% --- Backup 9: Subcategory accuracy ---
+% --- Backup 8: Subcategory accuracy ---
 \begin{frame}[noframenumbering,shrink]{Backup: ``Subcategory accuracy 65.6\% --- is it close to random?''}
 	\textbf{Question:} ``With 5 classes, 65\% sounds close to random guessing.''
 
@@ -1003,12 +1003,12 @@
 			\end{tabular}}
 
 			\vspace{0.3em}
-			\textbf{Why the gap?} Recurrent benefits from Concept Memory; Sudden has the cleanest peaks. Incremental and Gradual look similar at the window scale ($\sim 150$ samples) the detector sees, and Blip is too short to leave a stable signature. Future work: multi-scale reference window (Chapter 5).
+			\textbf{Why the gap?} Recurrent benefits from Concept Memory; Sudden has the cleanest peaks. Incremental and Gradual look similar at the window scale ($\sim 150$ samples) the detector sees, and Blip is too short to leave a stable signature. Future work: multi-scale reference window (Chapter 6).
 		\end{column}
 	\end{columns}
 \end{frame}
 
-% --- Backup 10: Adaptation statistical test ---
+% --- Backup 9: Adaptation statistical test ---
 \begin{frame}[noframenumbering,shrink]{Backup: ``Is the adaptation gap statistically significant?''}
 	\textbf{Question:} ``Is Type-Specific really better, or is it run-to-run noise?''
 
@@ -1045,7 +1045,7 @@
 					\item No Gradual/Incremental adaptation scenario yet.
 					\item No real-world dataset with verified drift labels.
 				\end{itemize}
-				Listed in \textbf{Chapter 5: Future Directions}.
+				Listed in \textbf{Chapter 6: Conclusion and Future Directions}.
 			\end{alertblock}
 		\end{column}
 	\end{columns}

@@ -57,7 +57,7 @@ Luận văn tập trung phát triển một hệ thống kết hợp các thành
 \begin{itemize}
 	\item Nghiên cứu và cải thiện phương pháp ShapeDD để phát hiện concept drift không giám sát, so sánh với các phương pháp truyền thống.
 	\item Xây dựng các chiến lược thích ứng mô hình tương ứng với từng loại drift được phát hiện.
-	\item Thiết kế và triển khai kiến trúc streaming real-time dùng Apache Kafka cho xử lý event-driven có khả năng mở rộng.
+	\item Thiết kế và triển khai kiến trúc xử lý dữ liệu luồng thời gian thực trên Apache Kafka theo mô hình event-driven, có khả năng mở rộng.
 	\item Tùy chỉnh tham số của phương pháp để đảm bảo hiệu quả với các kiểu dữ liệu và hiện tượng trôi dạt khác nhau.
 	\item Đánh giá hiệu năng trên các tập dữ liệu tổng hợp và các kịch bản drift khác nhau.
 \end{itemize}
@@ -69,7 +69,7 @@ Luận văn tập trung phát triển một hệ thống kết hợp các thành
 
 	\item \textbf{Phân tích đa tầng:} Đánh giá cả khả năng \textit{phát hiện} lẫn khả năng \textit{phân loại}, bao gồm phân loại theo nhóm (TCD và PCD) và theo loại cụ thể.
 
-	\item \textbf{So sánh với phương pháp CDT-MSW:} So sánh phương pháp đề xuất (SE-CDT không giám sát) với số liệu từ phương pháp CDT-MSW có giám sát trong cùng điều kiện thử nghiệm.
+	\item \textbf{Đối chiếu với phương pháp CDT-MSW:} Đặt cạnh số liệu công bố của CDT-MSW có giám sát để hình dung khoảng cách giữa hai cách tiếp cận. Đây không phải so sánh trực tiếp trên cùng một benchmark; sự khác biệt về dữ liệu và mức giám sát được thảo luận chi tiết ở Mục~\ref{sec:classification-sota}.
 \end{enumerate}
 
 

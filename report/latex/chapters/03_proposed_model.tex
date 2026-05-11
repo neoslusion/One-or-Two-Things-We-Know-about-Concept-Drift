@@ -60,7 +60,7 @@ Cụ thể, trọng số $w_i$ được tính dựa trên mật độ cục bộ
 \end{equation}
 trong đó $\epsilon$ là một hằng số nhỏ (ví dụ $\epsilon = 0.5$) để đảm bảo tính ổn định số học (numerical stability).
 
-Nói đơn giản: điểm ở vùng trung tâm có nhiều lân cận, $d(x_i)$ lớn, nên $w_i$ nhỏ. Điểm ở vùng biên có ít lân cận hơn, $d(x_i)$ nhỏ, nên $w_i$ lớn hơn --- phù hợp với trực giác rằng drift thường xuất hiện đầu tiên ở biên phân phối.
+Nói đơn giản: điểm ở vùng trung tâm có nhiều lân cận, $d(x_i)$ lớn, nên $w_i$ nhỏ. Điểm ở vùng biên có ít lân cận hơn, $d(x_i)$ nhỏ, nên $w_i$ lớn hơn --- phù hợp với trực giác rằng drift thường xuất hiện đầu tiên ở biên phân phối (Hình~\ref{fig:idw-weighting}).
 
 Tại sao chọn $1/\sqrt{d_i}$ thay vì $1/d_i$: nghịch đảo thẳng cho trọng số quá lớn ở vùng biên, dễ bị nhiễu chi phối. Căn bậc hai giúp tăng trọng số vừa phải và ổn định hơn trong thực nghiệm (xem Chương~\ref{chap:experiments}).
 
@@ -191,7 +191,7 @@ Cụ thể, băng thông $\gamma$ được ước lượng một lần bằng me
 
 Với cách kết hợp này, hệ thống giữ được đầy đủ thông tin cho bước phân loại, đồng thời dùng một phép kiểm định riêng để quyết định ``có drift hay không''. Kết quả thực nghiệm của hai phần này được trình bày ở Mục~\ref{sec:detection-eval} và Mục~\ref{sec:h0-calibration}.
 
-Sau khi tích hợp kiến trúc kết hợp trên, hệ thống có thể phát hiện drift với độ chính xác cao và chi phí tính toán thấp. Tuy nhiên phát hiện drift chỉ là bước đầu. Để chọn chiến lược thích ứng phù hợp, hệ thống cần biết loại drift đã xảy ra. Phần tiếp theo trình bày phương pháp SE-CDT cho bài toán phân loại drift không giám sát.
+Kiến trúc kết hợp trên cho phép hệ thống phát hiện drift với độ chính xác cao và chi phí tính toán thấp; tuy nhiên phát hiện chỉ là bước đầu, để chọn chiến lược thích ứng phù hợp hệ thống còn cần biết \textit{loại} drift đã xảy ra. Phương pháp SE-CDT, trình bày trong mục kế tiếp, đảm nhiệm bài toán phân loại drift không giám sát.
 
 \section{Phương pháp phân loại drift SE-CDT}
 \label{sec:shaped-cdt}
@@ -212,15 +212,15 @@ Theo phân loại của CDT-MSW, drift chia thành hai loại chính:
 \textbf{Giới hạn cần nói thẳng.}
 SE-CDT chỉ nhìn thấy dữ liệu đầu vào $X$, không nhìn thấy nhãn $Y$. Do đó, thứ nó thực sự phân loại là \textit{hình dạng thay đổi của $P(X)$} --- không phải sự thay đổi của ranh giới quyết định $P(Y|X)$.
 
-Phương pháp hoạt động dựa trên một giả định thực tế: khi $P(X)$ thay đổi đột ngột thì $P(Y|X)$ cũng thường thay đổi đột ngột, và ngược lại --- hai thứ này thường đi cùng nhau~\cite{lu2018learning}. Giả định này (gọi là \textbf{joint drift}) được kiểm chứng trong Chương~\ref{chap:experiments} với các bộ dữ liệu tổng hợp tạo ra sự thay đổi đồng thời trên cả $P(X)$ lẫn $P(Y|X)$.
+Phương pháp hoạt động dựa trên một giả định thực tế: khi $P(X)$ thay đổi đột ngột thì $P(Y|X)$ cũng thường thay đổi đột ngột, và ngược lại --- hai thứ này thường đi cùng nhau~\cite{lu2018learning}. Giả định này (gọi là \textbf{joint drift}) được đánh giá trong Chương~\ref{chap:experiments} trên các bộ dữ liệu tổng hợp có thay đổi đồng thời cả $P(X)$ và $P(Y|X)$; ở các tập chỉ thay đổi $P(Y|X)$ (Hyperplane, LED, Standard SEA) hệ thống không phát hiện, đúng phạm vi thiết kế của phương pháp không giám sát (Mục~\ref{sec:detection-eval}).
 
-Trường hợp giả định không thỏa --- ví dụ khi dữ liệu đầu vào giữ nguyên nhưng nhãn thay đổi (virtual drift) --- SE-CDT sẽ không phát hiện và không phân loại. Trường hợp này nằm ngoài phạm vi thiết kế của phương pháp, vì hệ thống chỉ phản ứng với thay đổi quan sát được từ dữ liệu không nhãn.
+Trường hợp giả định không thỏa --- ví dụ khi dữ liệu đầu vào giữ nguyên nhưng nhãn thay đổi (real drift theo định nghĩa Gama et al.~\cite{gama2014survey}) --- SE-CDT sẽ không phát hiện và không phân loại. Trường hợp này nằm ngoài phạm vi thiết kế của phương pháp, vì hệ thống chỉ phản ứng với thay đổi quan sát được từ dữ liệu không nhãn.
 
 \subsection{Đặc trưng phân loại từ tín hiệu \texorpdfstring{$\sigma(t)$}{sigma(t)}}
 
 Thay vì dùng một thống kê duy nhất, SE-CDT trích xuất 9 đặc trưng từ hình dạng của tín hiệu MMD $\sigma(t)$, chia thành hai nhóm: đặc trưng hình học (mô tả hình dạng các đỉnh) và đặc trưng thời gian (mô tả xu hướng toàn cục).
 
-\textbf{Nhóm 1 --- Đặc trưng hình học} gồm:
+\textbf{Nhóm 1 --- Đặc trưng hình học} (Hình~\ref{fig:peak-anatomy}) gồm:
 \begin{enumerate}
 	\item \textbf{Peak Width Ratio:} $\text{WR} = \frac{\text{FWHM}}{2l_1}$, trong đó FWHM (Full Width at Half Maximum) là độ rộng của đỉnh MMD đo tại nửa chiều cao cực đại. Đỉnh hẹp ứng với drift đột ngột, đỉnh rộng ứng với drift kéo dài.
 	\item \textbf{Peak Count ($n_p$):} Số lượng peaks. Sudden ít peak; Recurrent nhiều peak đều đặn.
@@ -251,7 +251,7 @@ Thay vì dùng một thống kê duy nhất, SE-CDT trích xuất 9 đặc trưn
 	\label{fig:drift-shapes}
 \end{figure}
 
-Bảng~\ref{tab:se-cdt-features} tổng hợp toàn bộ 9 đặc trưng, giúp tra cứu nhanh ý nghĩa và điều kiện phân loại của từng đặc trưng:
+Hình~\ref{fig:drift-shapes} minh hoạ hình dạng tín hiệu MMD đặc trưng của từng loại drift, là nền tảng trực quan cho các đặc trưng nói trên. Bảng~\ref{tab:se-cdt-features} tổng hợp toàn bộ 9 đặc trưng, giúp tra cứu nhanh ý nghĩa và điều kiện phân loại của từng đặc trưng:
 
 \begin{table}[H]
 	\centering
@@ -406,7 +406,7 @@ Về độ phức tạp tính toán của toàn bộ quy trình:
 Nói gọn lại: bước phân loại về cơ bản không tốn thêm chi phí đáng kể. Toàn bộ gánh nặng tính toán nằm ở bước phát hiện.
 
 \subsection{Giải thích lựa chọn ngưỡng}
-Các ngưỡng trong Algorithm~\ref{alg:se-cdt} được xác định qua phân tích thực nghiệm trên synthetic datasets (với cửa sổ chuẩn $n, m \approx 200$) và tinh chỉnh qua nhiều vòng lặp:
+Các ngưỡng trong Algorithm~\ref{alg:se-cdt} được xác định trên synthetic datasets với cửa sổ chuẩn $n, m \approx 200$, dựa trên các quan sát sau:
 \begin{itemize}
 	\item \textbf{Blip:} đúng hai peaks gần nhau, biên độ tương đương, độ rộng đỉnh nhỏ. Cấu hình này phản ánh mẫu ``drift rồi quay lại''; ràng buộc thêm về độ rộng đỉnh tránh nhầm với hai dao động phụ của một drift Gradual.
 	\item \textbf{Sudden:} ít peaks, đỉnh hẹp, SNR cao. Sudden tạo đỉnh sắc nét nổi rõ trên nền nhiễu. Ngưỡng WR ở đây được đặt cao hơn (lỏng hơn) so với ngưỡng ước lượng độ dài drift $\ell$ ở trên, nên bất kỳ đỉnh nào đã qua bước $\ell \leq 1$ đều tự động thoả điều kiện WR của Sudden --- điều kiện phân biệt chính thực ra là $n_p \leq 3$ và SNR đủ cao.
@@ -520,11 +520,7 @@ Trong phạm vi luận văn, chiến lược cho \textit{Sudden Drift} được 
 Để hiện thực hóa các phương pháp trên trong môi trường dữ liệu luồng, luận văn đề xuất một kiến trúc xử lý phân tán dựa trên Apache Kafka. Kiến trúc này được thiết kế theo hướng tách biệt thành phần, dễ mở rộng và dễ theo dõi.
 
 \begin{quotation}
-\textbf{Lưu ý về phạm vi triển khai:} Phần này trình bày \textbf{thiết kế kiến trúc và nguyên mẫu kiểm thử}, không phải hệ thống vận hành hoàn chỉnh trong sản xuất. Cụ thể:
-\begin{itemize}
-	\item \textbf{Đã triển khai:} Kiểm thử luồng dữ liệu qua nền tảng tương thích Kafka (Redpanda) với các thuật toán phát hiện và phân loại.
-	\item \textbf{Chưa đánh giá:} Hiệu năng hạ tầng phân tán như độ trễ dưới tải cao, thông lượng khi tăng số phân vùng, và thời gian phục hồi khi có lỗi.
-\end{itemize}
+\textbf{Lưu ý về phạm vi triển khai.} Phần này trình bày thiết kế kiến trúc và một nguyên mẫu kiểm thử trên nền tảng tương thích Kafka (Redpanda), không phải hệ thống vận hành hoàn chỉnh trong sản xuất. Các khía cạnh hạ tầng phân tán --- độ trễ dưới tải cao, thông lượng khi tăng số phân vùng, và thời gian phục hồi khi có lỗi --- nằm ngoài phạm vi đánh giá của luận văn và được xếp vào hướng phát triển tiếp theo (Chương~\ref{chap:conclusion}).
 Các đánh giá trong Chương~\ref{chap:experiments} tập trung vào hiệu năng thuật toán, không phải hiệu năng hạ tầng.
 \end{quotation}
 
