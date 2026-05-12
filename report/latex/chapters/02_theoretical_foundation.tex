@@ -18,11 +18,15 @@ Trong môi trường thực tế, sự thay đổi này làm cho các mô hình 
 Theo quy tắc nhân xác suất, xác suất liên hợp có thể được phân rã thành $P(X, y) = P(X) \times P(y|X)$. Dựa vào sự thay đổi của các thành phần này, concept drift được chia thành các nhóm chính như sau~\cite{hovakimyan2024evolving}:
 
 \subsubsection{Phân loại theo sự thay đổi phân phối}
+\label{sec:drift-pxpyx}
 \begin{itemize}
     \item \textbf{Sự trôi dạt ảo (Virtual Drift / Covariate Shift):} Đề cập đến tình huống phân phối của các đặc trưng đầu vào $P(X)$ thay đổi, nhưng xác suất hậu nghiệm của lớp mục tiêu $P(y|X)$ (tức là ranh giới quyết định) vẫn không đổi~\cite{moreno2012unifying}. Dù dữ liệu đầu vào biến đổi, mô hình có thể không bị giảm hiệu suất nghiêm trọng nếu ranh giới quyết định vẫn bao quát được.
     
     \item \textbf{Sự trôi dạt thực (Real Concept Drift):} Là sự thay đổi trực tiếp trong xác suất hậu nghiệm $P(y|X)$. Sự thay đổi này làm sai lệch ranh giới quyết định ban đầu và bắt buộc phải cập nhật lại mô hình học máy. Ví dụ điển hình là sự thay đổi trong sở thích của người dùng đối với các chủ đề tin tức: cùng một đặc trưng người dùng $X$, nhưng hành vi click $y$ đã thay đổi~\cite{gama2014survey}.
 \end{itemize}
+
+\paragraph{Giả định joint drift}
+Hai thành phần $P(X)$ và $P(y|X)$ trên lý thuyết có thể thay đổi độc lập, nhưng trong nhiều ứng dụng thực tế chúng thường thay đổi đồng thời (gọi là \textbf{joint drift})~\cite{lu2018learning}. Luận văn dùng giả định này như cơ sở để phát hiện drift theo hướng không giám sát: khi quan sát $P(X)$ thay đổi đáng kể, hệ thống coi đó là tín hiệu cảnh báo có khả năng $P(y|X)$ cũng đang lệch. Trường hợp ngoại lệ (chỉ $P(y|X)$ thay đổi mà $P(X)$ giữ nguyên) nằm ngoài phạm vi quan sát của phương pháp và được xác nhận trên các tập đối chứng ở Mục~\ref{sec:detection-eval}.
 
 \subsubsection{Phân loại theo tốc độ và mô hình thay đổi}
 \begin{itemize}

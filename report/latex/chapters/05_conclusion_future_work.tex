@@ -3,60 +3,39 @@
 
 \section{Tổng kết các đóng góp chính}
 
-Luận văn giải quyết bài toán phát hiện và thích ứng với concept drift trong môi trường dữ liệu luồng (streaming data) bằng cách kết hợp nền tảng lý thuyết và triển khai hệ thống thực tế. Có ba đóng góp chính:
+Luận văn giải quyết bài toán phát hiện và thích ứng với concept drift trong môi trường dữ liệu luồng bằng cách kết hợp nền tảng lý thuyết và triển khai hệ thống thực tế. Bảng~\ref{tab:contribution-summary} tóm tắt các số liệu chính theo ba trục đóng góp; phần văn bản tiếp theo chỉ thảo luận ý nghĩa, không lặp lại con số.
 
-\subsection{Đóng góp về phương pháp}
-\begin{itemize}
-	\item \textbf{Tích hợp ShapeDD-IDW:} Kết hợp tín hiệu Standard MMD để tìm ứng viên drift với bước kiểm định IDW-MMD (Inverse Density-Weighted MMD) dựa trên xấp xỉ Gamma (Mục~\ref{sec:detection-hybrid}).
+\begin{table}[H]
+	\centering
+	\caption{Tóm tắt số liệu chính của luận văn theo ba trục đóng góp. Chi tiết và phân tích thống kê trong Chương~\ref{chap:experiments}.}
+	\label{tab:contribution-summary}
+	\small
+	\begin{tabular}{p{0.22\textwidth}p{0.34\textwidth}p{0.34\textwidth}}
+		\toprule
+		Trục & Kết quả chính & Đối chứng \\
+		\midrule
+		Phát hiện (Mục~\ref{sec:detection-eval}) & ShapeDD-IDW / SE-CDT đạt F1 sát DAWIDD đứng đầu trong nhóm MMD-based; runtime end-to-end nhanh hơn ShapeDD gốc khoảng $2.11\times$ (Bảng~\ref{tab:runtime_stats}) & ShapeDD gốc dùng permutation; KS-Test có Recall cao nhưng FP nhiều \\
+		Phân loại (Mục~\ref{sec:classification-eval}) & SE-CDT phân loại drift không cần nhãn với CAT/SUB ở mức cạnh tranh CDT-MSW có giám sát; Concept Memory đưa accuracy Recurrent từ $0\%$ lên mức tương đương CDT-MSW & CDT-MSW (Guo et al.) dùng nhãn $y$ \\
+		Thích ứng (Mục~\ref{sec:adaptation-eval}) & Type-Specific Adaptation cải thiện Prequential Accuracy nhiều nhất trên Sudden/Stepping, mức nhỏ hơn trên Mixed; Friedman $p<10^{-15}$ trên cả ba & No Adaptation, Periodic Retrain, Simple Retrain \\
+		\bottomrule
+	\end{tabular}
+\end{table}
 
-	Trên benchmark phát hiện, ShapeDD-IDW đạt F1 cao hơn ShapeDD gốc và sát với DAWIDD đứng đầu; thời gian chạy đầu-cuối nhanh hơn ShapeDD gốc khoảng $2.11\times$ trong phép đo hiện tại (Bảng~\ref{tab:runtime_stats}). Phương pháp do đó vừa giảm chi phí tính toán so với ShapeDD gốc, vừa cho bước kiểm định một cơ sở thống kê rõ hơn.
+\paragraph{Ý nghĩa về phương pháp.}
+ShapeDD-IDW thay bước permutation đắt đỏ trong ShapeDD gốc bằng xấp xỉ Gamma cho IDW-MMD, vừa giảm chi phí kiểm định vừa cho cơ sở thống kê chặt hơn cho từng lần xác nhận drift; kiểm tra Type-I error trên dữ liệu tĩnh xác nhận xấp xỉ này hợp lý quanh mức danh nghĩa $\alpha = 0.05$. SE-CDT bổ sung bước phân loại drift không giám sát dựa trên hình dạng tín hiệu MMD, đồng thời tự hiệu chỉnh ngưỡng SNR/WR/CV theo phân vị quan sát --- nhờ vậy có thể vận hành mà không yêu cầu nhãn ở thời điểm dự đoán.
 
-	Thí nghiệm trên dữ liệu tĩnh cho thấy IDW-MMD với xấp xỉ Gamma có Type-I error gần mức $\alpha = 0.05$ hơn so với cách dùng xấp xỉ Gaussian dưới giả thuyết không drift (Mục~\ref{sec:h0-calibration}).
+\paragraph{Ý nghĩa về thực nghiệm.}
+Benchmark được mở rộng để bao phủ các thiết lập thường bị thiếu trong các nghiên cứu trước: tập STAGGER Recurrent đối xứng A$\to$B$\to$A$\to$B đúng định nghĩa Recurrent của Lu et al.~\cite{lu2018learning}, tập Gaussian Gradual Synthetic với khoảng chuyển tiếp xác định trước, và tập Stationary để định lượng báo động giả. Kiểm định Friedman/Nemenyi với 30 lần chạy độc lập đảm bảo các kết luận về thứ hạng phương pháp không phải nhiễu ngẫu nhiên. Phạm vi không giám sát được xác nhận rõ qua nhóm Hyperplane/LED Abrupt/Standard SEA: nơi $P(Y|X)$ thay đổi mà $P(X)$ giữ nguyên, các phương pháp dựa trên $P(X)$ đều có F1 thấp, đúng giới hạn lý thuyết.
 
-	\textit{Lưu ý phạm vi:} (i) phương pháp không phát hiện được real drift theo định nghĩa Gama et al.~\cite{gama2014survey} (chỉ thay đổi $P(Y|X)$ trong khi $P(X)$ giữ nguyên), đúng với bản chất không giám sát của thuật toán; (ii) trên benchmark phân loại với độ trễ chấp nhận lớn hơn, FP có thể tăng nhẹ do detector bắt thêm các thay đổi tạm thời trong khoảng chuyển tiếp dài (Mục~\ref{par:tolerance-convention}).
-	\item \textbf{Đề xuất SE-CDT:} Phương pháp phân loại drift không giám sát, tận dụng hình dạng tín hiệu MMD quanh thời điểm drift. SE-CDT kết hợp hai cơ chế tăng cường: (i) Concept Memory dạng bộ đệm vòng so khớp bằng Standard MMD, nhận diện recurrent drift thay vì coi mỗi lần xuất hiện như một sudden độc lập; (ii) tự hiệu chỉnh ngưỡng SNR/WR/CV theo phân vị quan sát trên cửa sổ không drift, không cần nhãn khi vận hành. Phương pháp tạo tiền đề cho chiến lược thích ứng theo loại drift.
-\end{itemize}
-
-\subsection{Đóng góp về thực nghiệm}
-\begin{itemize}
-	\item \textbf{Benchmark mở rộng và chặt chẽ hơn:} Đánh giá có hệ thống 8 phương pháp phát hiện drift (MMD, IDW-MMD, KS, ShapeDD, ShapeDD-IDW, SE-CDT, D3, DAWIDD) trên 14 tập dữ liệu, có bổ sung tập Stagger Recurrent Explicit (recurrent đối xứng A→B→A→B), tập Gaussian Gradual Synthetic (gradual có khoảng chuyển tiếp xác định trước) và tập stationary (baseline đo false positive). Kết quả được kiểm chứng bằng kiểm định Friedman và Nemenyi với 30 lần chạy độc lập, $\alpha = 0.05$.
-	\item \textbf{Kiểm tra Type-I error:} Đo Type-I error trực tiếp trên ba phân phối tĩnh (Gauss-iid $d=5$, $d=10$, AR(1)). Kết quả cho thấy MMD chuẩn và IDW-MMD với xấp xỉ Gamma nằm gần mức danh nghĩa $\alpha = 0.05$; SE-CDT có thể cao hơn nhẹ do kiểm định nhiều đỉnh ứng viên trong cùng một cửa sổ (Mục~\ref{sec:h0-calibration}).
-	\item \textbf{Đánh giá thích ứng có ý nghĩa thống kê:} Prequential evaluation với $N = 30$ runs trên 3 kịch bản (Stepping, Sudden, Mixed) bổ sung kiểm định Friedman, cho $p < 10^{-15}$ trên cả ba, xác lập rằng bốn chiến lược thích ứng (Type-Specific, Simple Retrain, Periodic Retrain, No Adaptation) có khác biệt tổng thể rõ rệt chứ không chỉ là dao động ngẫu nhiên.
-	\item \textbf{Phân tích thời gian chạy:} Đo trên luồng tiêu chuẩn của benchmark (Bảng~\ref{tab:runtime_stats}). ShapeDD-IDW và SE-CDT nhanh hơn ShapeDD gốc lần lượt khoảng $2.11\times$ và $2.09\times$, đồng thời nhanh hơn DAWIDD đáng kể. Vì cả hai biến thể đều dựa trên phép tính kernel theo cửa sổ trượt, đóng góp của xấp xỉ Gamma nên được hiểu là giảm chi phí kiểm định và làm rõ cơ sở thống kê, không phải thay đổi hoàn toàn bậc độ phức tạp của hệ thống.
-	\item \textbf{Xác nhận phạm vi không giám sát:} Trên các dataset chủ yếu thay đổi ở $P(Y|X)$ như Hyperplane, LED Abrupt và Standard SEA, điểm F1 của SE-CDT/ShapeDD-IDW rất thấp. Điều này phù hợp với phạm vi của phương pháp vì hệ thống chỉ quan sát thay đổi của $P(X)$; các báo động còn lại chủ yếu phản ánh nhiễu mẫu và cách đánh giá theo cửa sổ.
-\end{itemize}
-
-\subsection{Đóng góp về hệ thống}
-\begin{itemize}
-	\item \textbf{Kiến trúc dữ liệu luồng:} Thiết kế và kiểm thử nguyên mẫu hệ thống dựa trên \textbf{Apache Kafka}/Redpanda, cho phép tách biệt các phần phát hiện, phân loại và thích ứng.
-	\item \textbf{Khung Type-Specific Adaptation:} Triển khai 5 nhánh thích ứng tương ứng 5 loại drift (Sudden, Incremental, Gradual, Recurrent, Blip), được gọi tự động theo nhãn do SE-CDT phân loại. Bốn chế độ thích ứng cấp khung được so sánh trong Mục~\ref{sec:adaptation-eval} (No Adaptation, Periodic Retrain, Simple Retrain, Type-Specific).
-\end{itemize}
-
-\section{Những phát hiện và hiểu biết chính}
-
-Quá trình nghiên cứu và thực nghiệm cho thấy các điểm chính sau:
-
-\begin{enumerate}
-	\item \textbf{Cấu hình cửa sổ ảnh hưởng mạnh đến kết quả:} Các thí nghiệm cho thấy kích thước cửa sổ và độ trễ chấp nhận cần được chọn theo mục tiêu đánh giá. Drift đột ngột cần cửa sổ và ngưỡng định vị chặt hơn, trong khi drift dần dần hoặc thích ứng mô hình cần khoảng quan sát rộng hơn.
-
-	\item \textbf{Đánh đổi giữa độ nhạy và báo động giả:} Việc tích hợp IDW-MMD với p-value dựa trên xấp xỉ Gamma giữ được độ chính xác cạnh tranh ($F_1 = 0.531$, so với KS $0.335$ và ShapeDD gốc $0.489$). Thời gian chạy đầu-cuối nhanh hơn ShapeDD gốc khoảng $2.11\times$ trong benchmark hiện tại. Đóng góp chính nằm ở chỗ bước kiểm định có cơ sở thống kê rõ hơn, đồng thời giảm chi phí thực thi.
-
-	\item \textbf{Hiệu quả của Type-Specific Adaptation:} Trên kết quả $N=30$, Type-Specific Adaptation hơn No Adaptation $+16.57$pp trên Stepping ($71.37\%$ vs $54.80\%$), $+17.10$pp trên Sudden ($70.78\%$ vs $53.68\%$), và $+3.51$pp trên Mixed ($86.20\%$ vs $82.69\%$). Type-Specific cũng cao hơn Simple Retrain và Periodic Retrain trên cả ba kịch bản. Kiểm định Friedman cho $p < 10^{-15}$, cho thấy bốn chiến lược có khác biệt tổng thể rõ rệt; các chênh lệch theo từng cặp cần được đọc cùng độ lớn quan sát được ở Chương~\ref{chap:experiments}. Phần lớn cải thiện đến từ bước phân loại drift trước khi chọn chiến lược thích ứng.
-
-	\item \textbf{Vai trò của Phân loại Drift:} Xác định đúng loại drift (ví dụ Blip với Sudden) giúp tránh phản ứng thái quá với nhiễu. Chiến lược thích ứng theo loại drift giúp hệ thống vận hành ổn định và tiết kiệm tài nguyên.
-\end{enumerate}
+\paragraph{Ý nghĩa về hệ thống.}
+Khung Type-Specific Adaptation triển khai 5 nhánh thích ứng tương ứng 5 loại drift và được kích hoạt tự động theo nhãn do SE-CDT phân loại. Lợi ích chính không nằm ở việc chạy nhanh hay tiết kiệm tài nguyên, mà ở chỗ phân loại đúng loại drift trước khi thích ứng giúp tránh các phản ứng thái quá (ví dụ retrain toàn bộ vì một Blip cục bộ) và phản ứng đúng mức với các tình huống Recurrent đã thấy. Nguyên mẫu được triển khai trên Kafka/Redpanda để tách các module phát hiện, phân loại và thích ứng (Mục~\ref{sec:real-world-deployment}).
 
 \section{Hạn chế và Phạm vi nghiên cứu}
 
 Bên cạnh kết quả đạt được, nghiên cứu vẫn còn một số hạn chế:
 
 \subsection{Trade-off giữa Recall và False Positives}
-Trên đánh giá phân loại ($\delta = 250$), SE-CDT (Std) đạt EDR $\approx 92.6\%$ với FP cao hơn; SE-CDT (IDW) có FP thấp hơn nhưng cũng giảm EDR. Trên đánh giá phát hiện ($\delta = 75$, $\text{cooldown} = 150$), cùng phương pháp đạt $F_1 = 0.531$ với $\sim 9.6$ FP/run. Hai cấu hình phục vụ hai mục tiêu sử dụng khác nhau:
-\begin{itemize}
-	\item Nếu ưu tiên \textbf{không bỏ sót drift} trong giám sát vận hành: dùng SE-CDT (Std).
-	\item Nếu ưu tiên \textbf{giảm báo động giả} trong hệ thống cảnh báo có chi phí phản ứng cao: dùng SE-CDT (IDW) với ngưỡng chặt hơn.
-\end{itemize}
-Muốn giảm FP thêm thì có thể siết $\alpha$ xuống hoặc hiệu chỉnh đa kiểm định theo số đỉnh ứng viên, đổi lại recall có thể giảm.
+SE-CDT (Std) ưu tiên EDR cao và chấp nhận FP nhiều hơn; SE-CDT (IDW) ngược lại, FP thấp hơn nhưng cũng giảm EDR (số liệu cụ thể ở Mục~\ref{sec:detection-eval} và Mục~\ref{sec:classification-eval}). Hai cấu hình phục vụ hai mục tiêu sử dụng khác nhau: nếu ưu tiên không bỏ sót drift trong giám sát vận hành thì dùng SE-CDT (Std), còn nếu chi phí phản ứng cao và cần giảm báo động giả thì dùng SE-CDT (IDW) với ngưỡng chặt hơn. Muốn giảm FP thêm có thể siết $\alpha$ hoặc hiệu chỉnh đa kiểm định theo số đỉnh ứng viên, đổi lại recall có thể giảm.
 
 \subsection{Subcategory Accuracy còn hạn chế}
 Category Accuracy (TCD vs PCD) đạt mức tốt nhưng Subcategory Accuracy vẫn còn khoảng cách so với CAT. Cụ thể:
@@ -89,12 +68,7 @@ Phần phân loại hiện tại đã có khả năng tự nới một số ngư
 
 \subsection{Giả định joint drift trong phân loại}
 \label{sec:limitation-joint-drift}
-Như đã phân tích trong Chương~\ref{chap:proposed-model}, SE-CDT phân loại hình dạng của sự thay đổi phân phối đầu vào $P(X)$ (covariate shift pattern), không phải loại concept drift theo nghĩa supervised truyền thống (thay đổi $P(Y|X)$). Cách này dựa trên giả định $P(X)$ và $P(Y|X)$ có tương quan cao (joint drift). Giả định được kiểm chứng trong thực nghiệm bằng các bộ sinh dữ liệu kết hợp, nhưng có thể không đúng trong mọi ứng dụng thực tế, đặc biệt khi:
-\begin{itemize}
-	\item \textbf{Real drift thuần:} $P(Y|X)$ thay đổi nhưng $P(X)$ giữ nguyên, SE-CDT sẽ không phát hiện (đúng phạm vi thiết kế của một phương pháp không giám sát chỉ quan sát $P(X)$).
-	\item \textbf{Covariate shift thuần (virtual drift theo Gama et al.):} $P(X)$ thay đổi mạnh nhưng $P(Y|X)$ giữ nguyên, SE-CDT sẽ phát hiện và phân loại nhưng việc thích ứng có thể không cần thiết.
-\end{itemize}
-Đây là giới hạn chung của mọi phương pháp unsupervised drift detection, không riêng SE-CDT. Trong triển khai thực tế nên kết hợp SE-CDT với giám sát hiệu suất mô hình (performance monitoring) khi labels có sẵn (dù có độ trễ).
+SE-CDT phân loại hình dạng thay đổi của $P(X)$ dưới giả định joint drift (Mục~\ref{sec:drift-pxpyx}); các tình huống chỉ có $P(Y|X)$ thay đổi hoặc chỉ có $P(X)$ thay đổi mà ranh giới quyết định giữ nguyên đều nằm ngoài phạm vi thiết kế. Đây là giới hạn chung của mọi phương pháp unsupervised drift detection, nên trong triển khai thực tế cần kết hợp SE-CDT với giám sát hiệu suất mô hình khi nhãn có sẵn, dù có độ trễ.
 
 \subsection{Dữ liệu tổng hợp (Synthetic Data)}
 Đánh giá chủ yếu dựa trên các tập dữ liệu tổng hợp. Dữ liệu tổng hợp cho phép kiểm soát chính xác ground truth (thời điểm drift, loại drift) để đo F1-score và độ trễ, nhưng có thể chưa phản ánh hết độ phức tạp, nhiễu và tính bất định của dữ liệu thực tế trong các hệ thống sản xuất quy mô lớn.

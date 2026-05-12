@@ -83,15 +83,25 @@ Trước khi so sánh với các phương pháp hiện có, cần làm rõ kiế
 	Kích hoạt chiến lược thích ứng phù hợp dựa trên kết quả classification: Full Reset (sudden), Incremental Update (gradual/incremental), Concept Memory (recurrent).
 \end{enumerate}
 
-\paragraph{Quy ước về độ trễ chấp nhận ($\delta$).}
+\paragraph{Quy ước đánh giá tổng hợp.}
 \label{par:tolerance-convention}
-Ba mục đánh giá tiếp theo dùng ba giá trị $\delta$ khác nhau, tùy theo bản chất của bài toán mỗi mục đo. Sự khác biệt này được công bố ở đây để người đọc dễ đối chiếu các con số:
-\begin{itemize}
-	\item \textbf{Mục~\ref{sec:detection-eval} (Detection benchmark):} $\delta = 75$ mẫu (cửa sổ đối xứng). Mục tiêu là đo \textit{độ chính xác định vị} của detector. Drift trong benchmark này là dạng abrupt (chiều rộng $0$ với Sudden, hoặc chuyển tiếp ngắn) nên ngưỡng tương đối chặt là phù hợp.
-	\item \textbf{Mục~\ref{sec:classification-eval} (Classification benchmark):} $\delta = 250$ mẫu, kèm $\delta_{\text{early}} = 50$. Bộ sinh dữ liệu của benchmark này tạo các sự kiện kéo dài (Gradual width $= 400$, Recurrent period $= 200$, Incremental width $= 600$), do đó việc đòi hỏi định vị trong $\pm 75$ mẫu là không thực tế --- detector có thể báo drift ở bất kỳ thời điểm nào trong khoảng chuyển tiếp đó. Ngưỡng $250$ mẫu cho phép chấp nhận các báo phát hiện rơi trong khoảng chuyển tiếp đó như đúng sự kiện.
-	\item \textbf{Mục~\ref{sec:adaptation-eval} (Adaptation benchmark):} $\delta = 400$ mẫu. Mục tiêu là đo \textit{khả năng phục hồi} mô hình sau drift, không phải độ chính xác định vị. Detector chỉ cần báo \textit{trong khoảng thời gian} mà mô hình bị suy giảm hiệu suất là đủ để adaptation kích hoạt; do đó ngưỡng rộng hơn được chấp nhận.
-\end{itemize}
-Quy ước này thể hiện rằng cùng một detector có thể có $\text{EDR}/\text{FP}$ khác nhau ở ba mục, không phải vì thuật toán thay đổi mà vì mục đo đang trả lời câu hỏi khác. Khi cần so sánh trực tiếp giữa các mục, cần lưu ý sự khác biệt này.
+Ba mục thực nghiệm dưới đây trả lời ba câu hỏi khác nhau (độ chính xác định vị, độ chính xác phân loại, khả năng phục hồi của mô hình), nên dùng ba cấu hình $\delta$, cooldown và nghĩa của FP khác nhau (Bảng~\ref{tab:eval-conventions}). Khi đối chiếu số liệu giữa các mục cần lưu ý: cùng một detector có thể cho EDR/FP khác nhau không phải do thay đổi thuật toán mà do mục đo đang trả lời câu hỏi khác.
+
+\begin{table}[H]
+	\centering
+	\caption{Quy ước thiết lập ở ba mục đánh giá chính. Cùng detector nhưng đo dưới ba cấu hình khác nhau tùy mục tiêu.}
+	\label{tab:eval-conventions}
+	\small
+	\begin{tabular}{lcccl}
+		\toprule
+		Mục đánh giá & $\delta$ (mẫu) & Cooldown & Nghĩa của FP & Metric chính \\
+		\midrule
+		Detection (Mục~\ref{sec:detection-eval})        & 75  & 150 ($=2\delta$) & Báo trên dữ liệu tĩnh / lệch định vị & F1, EDR, MTTD \\
+		Classification (Mục~\ref{sec:classification-eval}) & 250 & --- & Báo sai vị trí ngoài khoảng chuyển tiếp & ACC$_\text{cat}$, ACC$_\text{sub}$, EDR \\
+		Adaptation (Mục~\ref{sec:adaptation-eval})     & 400 & --- & Báo dư trong khoảng phục hồi & Prequential Accuracy \\
+		\bottomrule
+	\end{tabular}
+\end{table}
 
 \section{Đánh giá phương pháp phát hiện Drift}
 \label{sec:detection-eval}
@@ -105,8 +115,7 @@ Các tham số cho bài toán benchmark phát hiện drift được thiết lậ
 	\item \textbf{Kích thước luồng:} $T = 10{,}000$ mẫu mỗi dataset.
 	\item \textbf{Số lượng drift:} 10 điểm drift được chèn tại các vị trí cố định (mỗi 1{,}000 mẫu) để tạo ground truth, trừ tập stationary (0 drift).
 	\item \textbf{Quy trình đánh giá:} Thực hiện 30 lần chạy độc lập (30 runs) với các random seed khác nhau (xem Mục~\ref{sec:dataset-config}).
-	\item \textbf{Độ trễ chấp nhận ($\delta$):} 75 mẫu. Một phát hiện được tính là True Positive nếu $|t_{det} - t_{drift}| \leq \delta$ (cửa sổ đối xứng), ngược lại được tính là False Positive.
-	\item \textbf{Khoảng cách tối thiểu giữa hai báo (cooldown):} 150 mẫu, đặt bằng $2\delta$. Sau khi một báo được ghi nhận, các lần báo phát sinh trong vòng 150 mẫu tiếp theo bị triệt tiêu để tránh báo trùng ở vùng lân cận của cùng một điểm drift; độ rộng này khớp với cửa sổ chấp nhận True Positive $[t_{\text{drift}}-\delta, t_{\text{drift}}+\delta]$ nên đảm bảo mỗi điểm drift thật chỉ tạo ra tối đa một báo.
+	\item \textbf{Độ trễ chấp nhận và cooldown:} $\delta = 75$, cooldown $= 150$ ($=2\delta$) như Bảng~\ref{tab:eval-conventions}. Cooldown đặt bằng độ rộng cửa sổ TP $[t_{\text{drift}}-\delta, t_{\text{drift}}+\delta]$ để mỗi drift thật chỉ tạo tối đa một báo, tránh tính kép báo trùng ở vùng lân cận.
 \end{itemize}
 
 \subsection{Kết quả so sánh tổng hợp}
@@ -201,9 +210,6 @@ Hiệu suất của các phương pháp thay đổi tùy thuộc vào đặc tí
 	\item \textbf{Báo động giả (False Positives trong detection):}
 	      Bảng~\ref{tab:comprehensive_performance} báo cáo FP trung bình theo mỗi run trên toàn bộ bộ đánh giá: KS-Test cao nhất (27.2 FP/run), trong khi ba phương pháp đề xuất (SE-CDT, ShapeDD-IDW, IDW-MMD) ở mức $\sim 9.6$ FP/run, thấp hơn ShapeDD gốc (13.2 FP/run) và gần MMD chuẩn (10.6 FP/run). Riêng Hình~\ref{fig:stationary_fp} hiển thị tổng số báo động giả trên tập dữ liệu tĩnh; do đó con số trong hình là tổng cộng sau khi gộp nhiều lần chạy, không phải FP/run. Có hai lý do giúp bước lọc này phát huy tác dụng: (i) cơ chế phát hiện hình dạng yêu cầu tín hiệu MMD phải khớp dạng tam giác đặc trưng; (ii) băng thông kernel $\gamma$ được ước lượng một lần bằng median heuristic và dùng chung cho cả ba kernel $K_{XX}, K_{YY}, K_{XY}$.
 \end{enumerate}
-
-\paragraph{Ghi chú về phát hiện trùng và vai trò của khoảng triệt báo (cooldown).}
-Một quan sát từ Bảng~\ref{tab:f1_by_dataset_part2}: F1 của SE-CDT tăng đều theo cường độ drift trên tập Random ($0.688 \to 0.708 \to 0.712$ qua Moderate $\to$ Severe $\to$ Ultra Severe), phù hợp với kỳ vọng từ một detector hoạt động ổn định. Hành vi này có được nhờ thiết kế $\text{cooldown} = 2\delta$: trên các tập drift mạnh, tín hiệu MMD dương tính có thể lan rộng trên nhiều cửa sổ trượt liên tiếp và tạo hai đỉnh báo hai bên của điểm drift thật, cả hai đều nằm trong cửa sổ chấp nhận True Positive $[t_{\text{drift}}-\delta, t_{\text{drift}}+\delta]$. Đặt khoảng triệt báo bằng đúng độ rộng của cửa sổ này đảm bảo sau khi đỉnh đầu được ghi nhận, đỉnh thứ hai cùng cửa sổ bị triệt tiêu --- nhờ vậy giao thức ghép cặp một-một không tính báo thứ hai như False Positive làm kéo F1 xuống.
 
 \begin{figure}[H]
 	\centering
@@ -339,8 +345,6 @@ Trước khi đọc kết quả số, Hình~\ref{fig:signal_sudden} và Hình~\r
 \subsection{Kết quả tổng hợp}
 \label{sec:classification-results}
 
-\textit{Lưu ý về thuật ngữ FP.} Ở phần detection (Mục~\ref{sec:detection-eval}), FP là số lần báo động sai trên dữ liệu không có drift. Ở đây, FP là số lần SE-CDT kích hoạt phân loại tại vị trí không khớp với bất kỳ điểm drift nào trong ground truth. Hai khái niệm khác nhau.
-
 Bảng~\ref{tab:se-cdt-results} trình bày kết quả tổng hợp trên 1800 sự kiện phân loại (180 luồng $\times$ 10 sự kiện). Hai cấu hình đều dùng Standard MMD cho tín hiệu phân loại nên CAT/SUB bằng nhau, khác biệt chỉ nằm ở tín hiệu detection. SE-CDT (Std) dùng Standard MMD, nhạy với cả 5 loại drift (EDR $\approx 92.6\%$) nhưng FP cao hơn. SE-CDT (IDW) dùng IDW-MMD, chặt hơn về FP nhưng bỏ sót Gradual/Incremental. Trong ngữ cảnh phân loại, ưu tiên là không bỏ sót sự kiện, vì vậy \textbf{SE-CDT (Std)} được chọn làm cấu hình chính.
 
 \begin{table}[H]
@@ -399,19 +403,12 @@ Bảng~\ref{tab:cdt-comparison-by-type} so sánh với CDT-MSW~\cite{guo2022cdtm
 
 \begin{table}[H]
 	\centering
-	\caption{So sánh độ chính xác phân loại theo từng loại drift: CDT-MSW (Guo et al.~2022) vs SE-CDT. \textit{Lưu ý:} ACC\_subcat của CDT-MSW được tính có điều kiện (trên các drift phát hiện đúng và phân nhóm đúng).}
+	\caption[So sánh phân loại CDT-MSW vs SE-CDT]{So sánh độ chính xác phân loại theo từng loại drift giữa CDT-MSW (Guo et al.~2022) và SE-CDT. Đây là đối chiếu tham khảo, không phải so sánh đồng điều kiện: CDT-MSW chạy có giám sát trên 10 tập UCI thực tế với ACC$_\text{subcat}$ tính có điều kiện trên các drift được phát hiện và phân nhóm đúng; SE-CDT chạy không giám sát trên 6 kịch bản Gaussian 5-D (Mục~\ref{sec:classification-setup}) với SUB tính trên toàn bộ ground truth. Ngoài ra ``EDR'' trong~\cite{guo2022cdtmsw} viết tắt cho \textit{Error Detection Rate} (càng thấp càng tốt), khác với ``EDR'' của luận văn (\textit{Event Detection Rate}, tương đương Recall); giá trị $82.5\%$ ở cột trái suy từ MDR Bảng~5 của bài báo gốc.}
 	\label{tab:cdt-comparison-by-type}
 	\input{../../results/tables/table_cdt_msw_vs_se_cdt_by_drift_type.tex}
 \end{table}
 
-\textbf{Cảnh báo về tính tham khảo của bảng so sánh.} Bảng~\ref{tab:cdt-comparison-by-type} đặt cạnh nhau các con số được công bố trong bài báo CDT-MSW~\cite{guo2022cdtmsw} (cột trái) và các con số đo trên benchmark synthetic của luận văn (cột phải). Đây \textit{không} phải là so sánh trực tiếp trên cùng một benchmark; hai cột vận hành trên hai phân phối dữ liệu, hai chế độ giám sát, và hai cách tính tổng hợp khác nhau:
-\begin{itemize}
-	\item \textbf{Dữ liệu khác nhau:} CDT-MSW chạy trên 10 tập UCI thực tế (Banana, Titanic, Thyroid, KDDCup99, MITface, USPS, \dots) với số lượng features và độ phức tạp khác nhau; SE-CDT chạy trên 6 kịch bản synthetic Gaussian 5 chiều đã mô tả ở Mục~\ref{sec:classification-setup}.
-	\item \textbf{Mức giám sát khác nhau:} CDT-MSW là phương pháp \textit{supervised}, dùng nhãn $y$ để tính accuracy ratio; SE-CDT là \textit{unsupervised}, chỉ dựa trên $P(X)$.
-	\item \textbf{Cách tính khác nhau:} ACC\_subcat của CDT-MSW là \textit{conditional} (tính trên các drift đã được phát hiện đúng và phân nhóm đúng); SUB của SE-CDT là \textit{unconditional} (tính trên toàn bộ sự kiện ground truth, kể cả những lần phát hiện sai). Với SE-CDT, macro-average theo lớp là $54.0\%$ như đã trình bày ở Bảng~\ref{tab:se-cdt-performance-by-type}.
-	\item \textbf{Recall không cùng metric:} Trong bài báo gốc, CDT-MSW đạt MDR trung bình $17.5\%$, tương đương $\text{Recall} = 1 - \overline{\text{MDR}} = 82.5\%$\footnote{Trong bài báo~\cite{guo2022cdtmsw}, từ ``EDR'' được định nghĩa là \textit{Error Detection Rate} (tỉ lệ báo nhầm, càng thấp càng tốt), khác với cách đặt tên EDR (\textit{Event Detection Rate}, tương đương Recall) ở luận văn này. Vì vậy giá trị 82.5\% được suy từ MDR Bảng 5 của bài báo.}.
-\end{itemize}
-Vì các điều kiện vận hành khác nhau, bảng nên được đọc theo nghĩa: SE-CDT chạy không cần nhãn trên dữ liệu Gaussian 5-D có ground truth chính xác, và đạt được mức accuracy phân loại nằm trong phạm vi cạnh tranh với CDT-MSW supervised trên dữ liệu UCI thực tế. Luận văn không khẳng định SE-CDT vượt CDT-MSW trên cùng thiết lập. Một so sánh trực tiếp thực sự cần triển khai SE-CDT trên chính các tập UCI gốc và đo lại CDT-MSW trên dữ liệu synthetic của luận văn; đây là hướng phát triển tự nhiên (Chương~\ref{chap:conclusion}).
+Vì hai cột vận hành trên hai phân phối dữ liệu và hai chế độ giám sát khác nhau, bảng nên đọc theo nghĩa: SE-CDT chạy không cần nhãn trên Gaussian 5-D có ground truth chính xác và đạt mức accuracy nằm trong phạm vi cạnh tranh với CDT-MSW có giám sát trên dữ liệu UCI thực tế. Luận văn không khẳng định SE-CDT vượt CDT-MSW trên cùng thiết lập; so sánh trực tiếp cần triển khai SE-CDT trên các tập UCI gốc, được liệt kê là hướng phát triển ở Chương~\ref{chap:conclusion}.
 
 \section{Đánh giá khả năng thích ứng mô hình}
 \label{sec:adaptation-eval}
@@ -437,7 +434,7 @@ Sau khi phát hiện drift, hệ thống kích hoạt quy trình thích ứng. P
 \paragraph{Bộ sinh dữ liệu.} Luồng được tạo từ hỗn hợp Gaussian năm chiều với năm điểm drift đều nhau. Theo định nghĩa của Lu và cộng sự~\cite{lu2018learning}, mỗi sự kiện Sudden, Gradual hoặc Incremental phải dẫn đến một concept mới, còn Recurrent là sự lặp lại có chu kỳ giữa hai concept. Để đáp ứng điều này, bộ sinh dùng cơ chế xoay vòng đặc trưng: mỗi sự kiện non-recurrent dịch chuyển một tập đặc trưng khác nhau, tránh quay về phân phối đã thấy. Riêng Recurrent giữ pattern luân phiên $A \leftrightarrow B$ đúng theo định nghĩa. Kịch bản Stepping bổ sung thêm thành phần dịch chuyển tích lũy theo cùng hướng để mô phỏng môi trường tiến hoá đơn điệu (ví dụ trôi cảm biến công nghiệp).
 
 \subsection{Phạm vi phát hiện trong thích ứng}
-Như đã thảo luận ở Mục~\ref{sec:overview} và Mục~\ref{sec:detection-eval}, các phương pháp không giám sát như SE-CDT chỉ quan sát $P(X)$; hệ thống do đó chỉ phản ứng khi phân phối đầu vào thay đổi và không thấy được các tình huống chỉ có ranh giới quyết định $P(Y|X)$ chuyển dịch (real drift theo định nghĩa Gama et al.~\cite{gama2014survey}). Các kết quả thích ứng dưới đây tập trung vào các kịch bản có thay đổi rõ ràng ở $P(X)$, nơi tín hiệu của SE-CDT có thể được dùng để kích hoạt cập nhật mô hình.
+Theo giả định joint drift (Mục~\ref{sec:drift-pxpyx}), các kịch bản thích ứng dưới đây tập trung vào kịch bản có thay đổi rõ ràng ở $P(X)$, nơi tín hiệu của SE-CDT có thể được dùng để kích hoạt cập nhật mô hình.
 
 \subsection{Kết quả phục hồi (Recovery)}
 
@@ -510,7 +507,7 @@ Trên Mixed (Hình~\ref{fig:prequential_mixed}), bốn chiến lược đều đ
 \section{Kiểm thử nguyên mẫu trên kiến trúc tương thích Kafka}
 \label{sec:real-world-deployment}
 
-Để kiểm tra luồng xử lý khép kín của kiến trúc đề xuất, luận văn xây dựng một nguyên mẫu trên Docker gồm Redpanda (nền tảng tương thích Kafka), SE-CDT Consumer và Adaptation Manager. Mục này nhằm kiểm tra khả năng phối hợp giữa các thành phần, không phải đánh giá hiệu năng hạ tầng ở quy mô sản xuất.
+Phạm vi của nguyên mẫu Kafka đã mô tả ở Mục~\ref{sec:system-architecture} (lưu ý về phạm vi triển khai); phần này chỉ báo cáo kết quả kiểm thử khép kín giữa các thành phần Redpanda, SE-CDT Consumer và Adaptation Manager trên Docker.
 
 \subsection{Kịch bản triển khai}
 \begin{itemize}
