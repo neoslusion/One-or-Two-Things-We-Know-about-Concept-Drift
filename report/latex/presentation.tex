@@ -389,14 +389,12 @@
 			\begin{itemize}
 				\item \textbf{Geometric (peak structure):}
 				    \begin{itemize}
-    				    \item $n_p$: number of local maxima.
-    				    \item $\text{WR}$ (Width Ratio): peak width at half maximum.
-    				    \item $\text{SNR}$: peak prominence over baseline noise.
+    				    \item $n_p$, WR, CV, SNR: count, width, periodicity, prominence.
+    				    \item PPR, DPAR: peak proximity and dual-peak amplitude ratio.
     				\end{itemize}
 				\item \textbf{Temporal (behaviour over time):}
 				    \begin{itemize}
-				        \item $\text{LTS}$: linear trend strength of $\sigma(t)$.
-				        \item $\text{MS}$: monotonicity score (Mann-Kendall).
+				        \item LTS, SDS, MS: trend strength, step score, monotonicity.
 				    \end{itemize}
 			\end{itemize}
 		\end{column}
@@ -421,10 +419,10 @@
 \end{frame}
 
 % --- Slide 12: SE-CDT Calculation Example ---
-\begin{frame}[shrink]{SE-CDT Decision Tree --- Worked Example}
+\begin{frame}[shrink]{SE-CDT Threshold Rules --- Worked Example}
 	\begin{columns}[T]
 		\begin{column}{0.48\textwidth}
-			\textbf{Rule-based decision tree:}
+			\textbf{Rule-based threshold classifier:}
 
 			\vspace{0.3em}
 			{\small
@@ -490,7 +488,7 @@
 \section{Experiments \& Evaluation}
 
 % --- Slide 14: Detection Results ---
-\begin{frame}[shrink]{Result 1: Drift Detection (30 runs, 14 datasets)}
+\begin{frame}[shrink]{Result 1: Drift Detection ($\delta=75$, cooldown $=150$)}
 	\begin{columns}[T]
 		\begin{column}{0.48\textwidth}
 			\centering
@@ -508,7 +506,7 @@
 			{\small
 			\begin{tabular}{@{}lccc@{}}
 				\toprule
-				\textbf{Method}         & \textbf{F1}   & \textbf{Prec.} & \textbf{FP}  \\ \midrule
+				\textbf{Method}         & \textbf{F1}   & \textbf{Prec.} & \textbf{FP/run}  \\ \midrule
 				DAWIDD                  & \textbf{0.532} & 0.436          & 10.3         \\
 				\textcolor{darkgreen}{\textbf{IDW-MMD}}      & 0.531          & 0.432          & 9.6          \\
 				\textcolor{darkgreen}{\textbf{SE-CDT}}       & 0.531          & 0.432          & 9.6          \\
@@ -518,7 +516,10 @@
 				\bottomrule
 			\end{tabular}}
 
-			\vspace{0.5em}
+			\vspace{0.3em}
+			{\scriptsize \emph{Protocol:} TP if alert is within $\pm 75$ samples of a true drift; cooldown $=150$ suppresses duplicate alerts. IDW-MMD and SE-CDT share the same detection gate here, so their detection F1/FP are identical.}
+
+			\vspace{0.4em}
 			\begin{block}{Key Results}
 				\begin{itemize}
 					\item Empirical Type-I error on three stationary distributions: $0.025$--$0.075$ for Standard MMD / IDW-MMD, $0.045$--$0.100$ for the SE-CDT composite (close to $\alpha = 0.05$; the composite is slightly above on two distributions, discussed as multi-test inflation).
