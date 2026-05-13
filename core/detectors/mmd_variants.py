@@ -509,12 +509,13 @@ def shapedd_idw_mmd_proper(X, l1=50, l2=150, alpha=0.05, weight_method="variance
     #    Confirms that the candidate drift position is statistically
     #    significant under H0: same distribution.
     #    The Gamma-fit null is calibrated at α via moment matching on
-    #    a fast (B=20) index-permutation null distribution; the IDW
-    #    weighting in the test statistic up-weights boundary points
-    #    for tighter sensitivity to abrupt shifts.
+    #    a fast (B=20) index-permutation null distribution; Bonferroni
+    #    controls the family-wise error from validating multiple peaks
+    #    in the same trace.
     # -----------------------------------------------------------------------
     drift_positions = []
     p_values = []
+    adjusted_alpha = alpha / max(1, len(peaks))
 
     for peak_idx in peaks:
         pos = mmd_positions[peak_idx]
@@ -528,7 +529,7 @@ def shapedd_idw_mmd_proper(X, l1=50, l2=150, alpha=0.05, weight_method="variance
 
         _, p_val = wmmd_gamma(X[a:b], s, weight_method)
 
-        if p_val < alpha:
+        if p_val < adjusted_alpha:
             drift_positions.append(pos)
             p_values.append(p_val)
 

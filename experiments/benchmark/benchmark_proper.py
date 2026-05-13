@@ -376,29 +376,50 @@ def run_mixed_experiment(params):
     dt_cdt = time.process_time() - t0_cdt
     
 
-    # 2. SE Classification - same stream, ignores labels (unsupervised)
-    # Use SE_CDT.monitor() to run full pipeline: Detection + Growth + Classification
+    # 2. SE Classification - oracle mode.
+    # The ground-truth drift position is used only to extract the MMD trace
+    # around each event; SE-CDT still classifies from X-only signal features.
+    # This keeps CAT/SUB separate from end-to-end detection (EDR/MDR below).
     t0_se = time.process_time()
     mmd_sig = compute_mmd_sequence(X_shared, WINDOW_SIZE, step=10, use_standard=True)
     se = SE_CDT(WINDOW_SIZE)
     
     se_classifications = []
-    for evt in events:
+    for evt in sorted(events, key=lambda e: e["pos"]):
         evt_pos = evt['pos']
         half_window = 750  # ~1500 samples total for reliable traces
         win_start = max(0, evt_pos - half_window)
         win_end = min(len(X_shared), evt_pos + half_window)
         data_window = X_shared[win_start:win_end]
+
+        trace_idx = evt_pos // 10
+        trace_half_window = max(10, half_window // 10)
+        trace_start = max(0, trace_idx - trace_half_window)
+        trace_end = min(len(mmd_sig), trace_idx + trace_half_window)
+        sig_slice = mmd_sig[trace_start:trace_end]
         
-        if len(data_window) >= 500:  # Minimum for reliable analysis
-            res_se = se.monitor(data_window)
-            
-            if res_se.is_drift:
-                se_classifications.append({
-                    "gt_type": evt['type'],
-                    "pred": res_se.subcategory,
-                    "features": res_se.features
-                })
+        if len(data_window) >= 500 and len(sig_slice) >= 10:
+            drift_length = se._growth_process(data_window, mmd_trace=sig_slice)
+            res_se = se.classify(sig_slice, drift_length=drift_length)
+
+            recurrent_idx = -1
+            recurrent_dist = float("nan")
+            if se.use_concept_memory:
+                snapshot = se._extract_post_drift_snapshot(X_shared, evt_pos)
+                if snapshot is not None:
+                    recurrent_idx, recurrent_dist = se._match_or_store_concept(snapshot)
+                    if recurrent_idx >= 0 and res_se.subcategory != "Blip":
+                        res_se.drift_type = "TCD"
+                        res_se.subcategory = "Recurrent"
+
+            se_classifications.append({
+                "gt_type": evt['type'],
+                "pred": res_se.subcategory,
+                "features": res_se.features,
+                "drift_length": drift_length,
+                "recurrent_match_idx": recurrent_idx,
+                "recurrent_distance": recurrent_dist,
+            })
     dt_se = time.process_time() - t0_se
     
     # 3. SE Detection with BOTH MMD variants

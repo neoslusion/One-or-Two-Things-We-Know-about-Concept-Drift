@@ -349,7 +349,7 @@ class SE_CDT:
                     recurrent_idx, recurrent_dist = self._match_or_store_concept(
                         snapshot
                     )
-                    if recurrent_idx >= 0:
+                    if recurrent_idx >= 0 and classification_res.subcategory != "Blip":
                         # Override the rule-based label: this is recurrent
                         # because the concept itself is in our memory.
                         classification_res.drift_type = "TCD"
@@ -478,16 +478,16 @@ class SE_CDT:
                 if len(peak_distances) > 0:
                     features['CV'] = np.std(peak_distances) / (np.mean(peak_distances) + 1e-10)
                 
-                # PPR (Peak Proximity Ratio) - for Blip detection
-                # Ratio of closest peak distance to signal length
-                min_peak_distance = np.min(peak_distances)
-                features['PPR'] = min_peak_distance / len(sigma_s)
-                
-                # DPAR (Dual-Peak Amplitude Ratio) - for Blip detection
-                # If 2 peaks close together with similar heights = Blip
-                if n_p == 2:
-                    peak_heights = properties['peak_heights']
-                    h1, h2 = peak_heights[0], peak_heights[1]
+                # PPR / DPAR (for Blip detection)
+                # Blip signals should have two dominant nearby peaks.  When
+                # a third low-amplitude noise peak appears, score the two
+                # highest peaks instead of rejecting the event outright.
+                peak_heights = properties['peak_heights']
+                if n_p >= 2:
+                    top_pair = np.argsort(peak_heights)[-2:]
+                    pair_positions = peaks[top_pair]
+                    h1, h2 = peak_heights[top_pair[0]], peak_heights[top_pair[1]]
+                    features['PPR'] = abs(pair_positions[1] - pair_positions[0]) / len(sigma_s)
                     features['DPAR'] = min(h1, h2) / (max(h1, h2) + 1e-10)
         
         # 4. Extract Temporal Features (for Incremental vs Gradual)
@@ -633,6 +633,27 @@ class SE_CDT:
             if q_cv_low is not None and q_cv_low > cv_thresh:
                 cv_thresh = float(q_cv_low)
 
+        # Blip is a short transient two-peak pattern. Check it before the
+        # broad PCD split because noisy blips can have FWHM just wide enough
+        # to make drift_length > 1.
+        if n_p in (2, 3) and len(peak_positions) >= 2:
+            compact_pair_blip = (
+                ppr > 0 and ppr < 0.20
+                and dpar > 0.60
+                and wr < 0.30
+            )
+            noisy_profile_blip = (
+                drift_length is not None and drift_length > 1
+                and wr < 0.17
+                and 1.45 < snr < 2.60
+                and 0.45 < dpar < 0.85
+                and lts < 0.12
+            )
+            if compact_pair_blip or noisy_profile_blip:
+                result.drift_type = "TCD"
+                result.subcategory = "Blip"
+                return result
+
         # =====================================================================
         # PRIMARY: Use drift_length from Growth process (CDT-MSW Algorithm 2)
         # drift_length > 1 -> PCD (distribution changed gradually)
@@ -653,34 +674,19 @@ class SE_CDT:
         # FALLBACK: shape-based decision tree (drift_length == 1)
         # =====================================================================
 
-        # 1. Blip Drift (TCD)
-        # A Blip is a short, transient up-then-down pattern.  Detected
-        # using only *relative* (length-independent) features (D3 fix):
-        #   n_p == 2, PPR < 0.20, DPAR > 0.60, WR < 0.30
-        if n_p == 2 and len(peak_positions) >= 2:
-            is_blip = (
-                ppr > 0 and ppr < 0.20
-                and dpar > 0.60
-                and wr < 0.30
-            )
-            if is_blip:
-                result.drift_type = "TCD"
-                result.subcategory = "Blip"
-                return result
-
-        # 2. Sudden Drift (TCD) -- adaptive WR & SNR thresholds.
+        # 1. Sudden Drift (TCD) -- adaptive WR & SNR thresholds.
         if n_p <= 3 and wr < wr_thresh and snr > snr_thresh:
             result.drift_type = "TCD"
             result.subcategory = "Sudden"
             return result
 
-        # 3. Recurrent Drift (TCD) -- adaptive CV threshold.
+        # 2. Recurrent Drift (TCD) -- adaptive CV threshold.
         if n_p >= 4 and cv < cv_thresh and lts < 0.5:
             result.drift_type = "TCD"
             result.subcategory = "Recurrent"
             return result
 
-        # 4. Gradual vs Incremental (PCD) -- fallback.
+        # 3. Gradual vs Incremental (PCD) -- fallback.
         result.drift_type = "PCD"
         is_incremental = (
             (lts > 0.5) or
