@@ -181,9 +181,10 @@ def export_all_tables(all_results, stream_size, output_dir=TABLES_DIR):
     runtime_footnote = (
         "\\multicolumn{4}{|p{0.92\\textwidth}|}{\\footnotesize "
         "$^\\dagger$Runtime đo bằng \\texttt{time.process\\_time()} cho toàn bộ một stream "
-        f"{stream_size_tex} mẫu, lấy trung bình trên tất cả dataset và 30 lần chạy. "
+        f"{stream_size_tex} mẫu, thực thi tuần tự để loại bỏ tranh chấp tài nguyên CPU, "
+        "lấy trung bình trên tất cả dataset và toàn bộ các lần chạy. "
         "Throughput $= \\text{số mẫu} / \\text{Runtime}$. "
-        "Speedup được tính tương đối với ShapeDD gốc trong cùng benchmark.}\\\\\n"
+        "Speedup được tính tương đối với ShapeDD gốc.}\\\\\n"
         "\\hline\n"
         "\\end{tabular}"
     )

@@ -3,15 +3,15 @@
 \hline
 \textbf{Method} & \textbf{Runtime (s/stream)$^\dagger$} & \textbf{Throughput (samples/s)} & \textbf{Speedup vs ShapeDD} \\
 \hline
-KS & 1.77 & 5{,}639 & 2.24$\times$ \\
-D3 & 2.75 & 3{,}632 & 1.44$\times$ \\
-ShapeDD-IDW & 3.28 & 3{,}048 & 1.21$\times$ \\
-SE-CDT & 3.29 & 3{,}036 & 1.21$\times$ \\
-IDW-MMD (standalone) & 3.31 & 3{,}021 & 1.20$\times$ \\
-MMD & 3.47 & 2{,}883 & 1.15$\times$ \\
-ShapeDD (gốc) & 3.98 & 2{,}514 & 1.00$\times$ \\
-DAWIDD & 42.24 & 237 & 0.09$\times$ \\
+KS & 0.35 & 28{,}433 & 14.31$\times$ \\
+D3 & 0.37 & 26{,}824 & 13.50$\times$ \\
+ShapeDD-IDW & 0.70 & 14{,}247 & 7.17$\times$ \\
+IDW-MMD (standalone) & 0.70 & 14{,}233 & 7.16$\times$ \\
+SE-CDT & 0.70 & 14{,}211 & 7.15$\times$ \\
+ShapeDD (gốc) & 5.03 & 1{,}987 & 1.00$\times$ \\
+MMD & 5.05 & 1{,}980 & 1.00$\times$ \\
+DAWIDD & 6.79 & 1{,}473 & 0.74$\times$ \\
 \hline
-\multicolumn{4}{|p{0.92\textwidth}|}{\footnotesize $^\dagger$Runtime đo bằng \texttt{time.process\_time()} cho toàn bộ một stream 10{,}000 mẫu, lấy trung bình trên tất cả dataset và 30 lần chạy. Throughput $= \text{số mẫu} / \text{Runtime}$. Speedup được tính tương đối với ShapeDD gốc trong cùng benchmark.}\\
+\multicolumn{4}{|p{0.92\textwidth}|}{\footnotesize $^\dagger$Runtime đo bằng \texttt{time.process\_time()} cho toàn bộ một stream 10{,}000 mẫu, lấy trung bình trên tất cả dataset và toàn bộ các lần chạy. Throughput $= \text{số mẫu} / \text{Runtime}$. Speedup được tính tương đối với ShapeDD gốc.}\\
 \hline
 \end{tabular}

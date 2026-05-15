@@ -264,7 +264,7 @@ def run_benchmark():
     logger.start_benchmark()
     benchmark_start_time = time.time()
 
-    print(f"\nStarting parallel execution with {N_JOBS} jobs...")
+    print(f"\nStarting benchmark execution (N_JOBS={N_JOBS})...")
 
     # ========================================================================
     # PARALLEL EXECUTION: Multiple Independent Runs

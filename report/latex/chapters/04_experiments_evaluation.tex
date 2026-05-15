@@ -123,7 +123,7 @@ Bảng~\ref{tab:comprehensive_performance} so sánh hiệu suất của \textbf{
 
 DAWIDD có F1 cao nhất về mặt số học ($0.531$ khi làm tròn), trong khi IDW-MMD, ShapeDD-IDW và SE-CDT cũng đạt $F_1 = 0.531$ với Precision $=0.432$, Recall/EDR $=0.737$ và $9.6$ báo động giả trung bình mỗi run. Theo kiểm định Nemenyi ở Mục~\ref{sec:statistical-analysis}, khác biệt này không có ý nghĩa thống kê; vì vậy kết quả nên được đọc là nhóm phương pháp MMD/DAWIDD có hiệu năng tương đương trên benchmark hiện tại, không phải một phương pháp thắng rõ ràng.
 
-So với ShapeDD gốc, ShapeDD-IDW giữ F1 cao hơn ($0.531$ so với $0.489$) và giảm FP từ $13.2$ xuống $9.6$. Về thời gian chạy, ShapeDD-IDW đạt $3.28$s/stream so với $3.98$s/stream của ShapeDD gốc, tương đương khoảng $1.21\times$ nhanh hơn trong phép đo đầu-cuối (Bảng~\ref{tab:runtime_stats}). D3 có Precision cao nhất và FP thấp nhất nhưng Recall thấp hơn, còn KS-Test có Recall cao nhưng tạo quá nhiều báo động giả để phù hợp với hệ thống giám sát tự động.
+So với ShapeDD gốc, ShapeDD-IDW giữ F1 cao hơn ($0.531$ so với $0.489$) và giảm FP từ $13.2$ xuống $9.6$. Về thời gian chạy, benchmark đơn luồng cho thấy ShapeDD-IDW nhanh hơn khoảng $7\times$ so với ShapeDD gốc (Bảng~\ref{tab:runtime_stats}). D3 có Precision cao nhất và FP thấp nhất nhưng Recall thấp hơn, còn KS-Test có Recall cao nhưng tạo quá nhiều báo động giả để phù hợp với hệ thống giám sát tự động.
 
 \textbf{Diễn giải số False Positive.} Số FP $\sim 9.6$/run của SE-CDT/ShapeDD-IDW/IDW-MMD cần được đọc cùng số lượng cửa sổ và số ứng viên được kiểm định. Trên bộ đánh giá này, mỗi seed có nhiều cửa sổ kiểm định và nhiều điểm drift thật. Bước lọc hình dạng giúp giảm số ứng viên trước khi kiểm định bằng IDW-MMD, vì vậy FP thực tế thấp hơn trường hợp kiểm định mọi cửa sổ một cách độc lập. Tham số khoảng triệt báo $\text{cooldown}=150$ (xem mục thiết lập) cũng giúp triệt tiêu phần lớn báo trùng trong vùng lân cận của mỗi điểm drift thật. Nếu muốn giảm FP hơn nữa, cần siết mức $\alpha$ hoặc dùng hiệu chỉnh đa kiểm định.
 
@@ -264,7 +264,7 @@ Bảng~\ref{tab:runtime_stats} so sánh thời gian và thông lượng.
 	\label{fig:runtime-comparison}
 \end{figure}
 
-ShapeDD-IDW, SE-CDT và MMD chuẩn đều nhanh hơn ShapeDD gốc trên luồng 10{,}000 mẫu (Bảng~\ref{tab:runtime_stats}, Hình~\ref{fig:runtime-comparison}). ShapeDD-IDW đạt $3.28$s/stream so với $3.98$s/stream của ShapeDD gốc, tức nhanh hơn khoảng $1.21\times$ trong phép đo đầu-cuối hiện tại. Điểm quan trọng hơn là bước kiểm định dựa trên xấp xỉ Gamma có diễn giải thống kê rõ hơn so với việc chỉ đặt ngưỡng thủ công trên trị MMD.
+ShapeDD-IDW và SE-CDT nhanh hơn rõ rệt so với ShapeDD gốc trên luồng 10{,}000 mẫu (Bảng~\ref{tab:runtime_stats}, Hình~\ref{fig:runtime-comparison}). Benchmark đơn luồng cho thấy ShapeDD-IDW nhanh hơn khoảng $7\times$ so với ShapeDD gốc nhờ thay permutation test bằng xấp xỉ Gamma; MMD chuẩn và DAWIDD chậm hơn do không có cơ chế kiểm định gần đúng. Điểm quan trọng hơn là bước kiểm định dựa trên xấp xỉ Gamma có diễn giải thống kê rõ hơn so với việc chỉ đặt ngưỡng thủ công trên trị MMD.
 
 \section{Đánh giá SE-CDT phân loại drift không giám sát}
 \label{sec:classification-eval}
@@ -508,7 +508,7 @@ Hình~\ref{fig:kafka_real_results} trình bày dashboard giám sát từ lần c
 
 \section{Kết luận chương}
 
-Các kết quả thực nghiệm cho thấy ShapeDD-IDW đạt $F_1 = 0.531$ với khoảng $9.6$ FP/run trên benchmark phát hiện, cao hơn ShapeDD gốc ($F_1 = 0.489$) và không khác biệt thống kê so với DAWIDD dưới kiểm định Nemenyi. Tốc độ đầu-cuối cải thiện ở mức vừa phải ($1.21\times$ so với ShapeDD gốc), trong khi kiểm định IDW-MMD với xấp xỉ Gamma giữ Type-I error đơn lẻ gần mức $\alpha = 0.05$; pipeline SE-CDT composite vẫn cần được đọc thận trọng vì Type-I error có thể lên đến $0.100$ trên dữ liệu AR(1).
+Các kết quả thực nghiệm cho thấy ShapeDD-IDW đạt $F_1 = 0.531$ với khoảng $9.6$ FP/run trên benchmark phát hiện, cao hơn ShapeDD gốc ($F_1 = 0.489$) và không khác biệt thống kê so với DAWIDD dưới kiểm định Nemenyi. Về tốc độ, benchmark đơn luồng cho thấy ShapeDD-IDW nhanh hơn $\approx7\times$ so với ShapeDD gốc nhờ xấp xỉ Gamma thay thế permutation test tốn kém, trong khi kiểm định IDW-MMD giữ Type-I error đơn lẻ gần mức $\alpha = 0.05$; pipeline SE-CDT composite vẫn cần được đọc thận trọng vì Type-I error có thể lên đến $0.100$ trên dữ liệu AR(1).
 
 Ở bài toán phân loại, SE-CDT đạt CAT $=80.1\%$, SUB micro $=50.5\%$ và SUB macro $=50.0\%$ ở oracle mode. Kết quả tốt nhất nằm ở Sudden, Blip và Recurrent; Gradual và nhất là Incremental còn yếu. Trong đánh giá thích ứng, Type-Specific cải thiện rõ trên Stepping và Sudden, còn trên Mixed thì gần ngang Periodic Retrain về accuracy nhưng ít FP hơn. Nhìn chung, kiến trúc đề xuất khả thi, nhưng các kết quả cũng chỉ ra rõ những phần cần cải thiện trước khi xem đây là một bộ phân loại drift hoàn chỉnh.
 

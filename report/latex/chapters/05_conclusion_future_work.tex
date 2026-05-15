@@ -14,7 +14,7 @@ Luận văn giải quyết bài toán phát hiện, phân loại và thích ứn
 		\toprule
 		Trục & Kết quả chính & Đối chứng \\
 		\midrule
-		Phát hiện (Mục~\ref{sec:detection-eval}) & ShapeDD-IDW / SE-CDT đạt $F_1 = 0.531$, không khác biệt thống kê với DAWIDD; runtime end-to-end nhanh hơn ShapeDD gốc khoảng $1.21\times$ & ShapeDD gốc dùng permutation; KS-Test có Recall cao nhưng FP nhiều \\
+		Phát hiện (Mục~\ref{sec:detection-eval}) & ShapeDD-IDW / SE-CDT đạt $F_1 = 0.531$, không khác biệt thống kê với DAWIDD; runtime đơn luồng nhanh hơn ShapeDD gốc khoảng $7\times$ & ShapeDD gốc dùng permutation; KS-Test có Recall cao nhưng FP nhiều \\
 		Phân loại (Mục~\ref{sec:classification-eval}) & SE-CDT đạt CAT $=80.1\%$, SUB micro $=50.5\%$, SUB macro $=50.0\%$; Blip và Recurrent cải thiện nhưng Incremental còn yếu & CDT-MSW (Guo et al.) dùng nhãn $y$ và không cùng thiết lập dữ liệu \\
 		Thích ứng (Mục~\ref{sec:adaptation-eval}) & Type-Specific Adaptation cải thiện rõ trên Sudden/Stepping; trên Mixed gần Periodic Retrain về accuracy nhưng ít FP hơn & No Adaptation, Periodic Retrain, Simple Retrain \\
 		\bottomrule

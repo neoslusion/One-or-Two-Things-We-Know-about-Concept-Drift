@@ -50,7 +50,7 @@ else:
     N_RUNS = 30
 
 RANDOM_SEEDS = [42 + i * 137 for i in range(N_RUNS)]  # Prime spacing avoids correlation
-N_JOBS = -1 # Number of parallel jobs (-1 = all cores)
+N_JOBS = 1  # Single-threaded for fair runtime comparison (each method timed without CPU contention)
 
 # ============================================================================
 # DETECTION PARAMETERS
