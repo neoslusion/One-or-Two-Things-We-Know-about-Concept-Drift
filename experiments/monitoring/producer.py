@@ -65,7 +65,12 @@ def generate_stream_with_sudden_drift(total_size, drift_position, seed=42):
 
 
 def main():
-    p = Producer({"bootstrap.servers": BROKERS})
+    p = Producer({
+        "bootstrap.servers": BROKERS,
+        "retries": 5,
+        "retry.backoff.ms": 100,
+        "acks": "all",
+    })
     
     # Generate complete stream once (matching notebook)
     X_stream, y_stream = generate_stream_with_sudden_drift(

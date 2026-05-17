@@ -135,7 +135,7 @@ Kết quả lý thuyết trung tâm của ShapeDD được phát biểu chính t
 Hàm $h_l(t)$ có dạng tam giác cân, đạt cực đại tại thời điểm xảy ra drift ($t=0$), và suy giảm tuyến tính về hai phía. Đặc tính này không phụ thuộc vào dạng phân phối hay độ đo khoảng cách sử dụng, mà chỉ tỷ lệ thuận với hệ số $\|P - Q\|$. Đây là cơ sở để ShapeDD có thể áp dụng cho nhiều miền dữ liệu khác nhau mà không cần thay đổi kernel hay metric.
 
 \begin{quote}
-	Triangle Shape Property chỉ đúng trực tiếp cho sudden drift. Các loại drift khác (gradual, incremental, recurrent) không tạo ra hình dạng tam giác đặc trưng:
+	Triangle Shape Property (Định lý~\ref{thm:triangle_shape}) chỉ đúng trực tiếp cho sudden drift. Các loại drift khác (gradual, incremental, recurrent) không tạo ra hình dạng tam giác đặc trưng:
 	\begin{itemize}
 		\item Gradual drift tạo peak rộng với slope thoải hơn.
 		\item Incremental drift có thể tạo chuỗi nhiều peak nhỏ liên tục.
@@ -350,7 +350,7 @@ Permutation test là bước tốn thời gian nhất: $O(N_{\text{perm}} \cdot 
 
 Hạn chế là số lần resampling $N_{\text{perm}}$ thường phải lấy vài nghìn để p-value có độ phân giải tốt, và mỗi lần phải tính lại kernel matrix. Chi phí kiểm định vì vậy lớn hơn nhiều lần so với chi phí tính MMD thô. Độ chính xác thống kê của ngưỡng phát hiện cũng chỉ đảm bảo nếu phân phối dưới giả thuyết không trôi dạt được ước lượng phù hợp.
 
-Hạn chế này là động lực cho IDW-MMD ở Chương~\ref{chap:proposed-model}: thay permutation test bằng p-value dựa trên xấp xỉ Gamma, đồng thời dùng trọng số nghịch biến mật độ để nhấn mạnh vùng biên phân phối. Phương pháp lấy cảm hứng từ ``Optimally-Weighted MMD'' của Bharti et al.~\cite{bharti2023owmmd}, nhưng dùng heuristic đơn giản hơn để phù hợp với dữ liệu luồng.
+Hạn chế này là động lực cho IDW-MMD ở Chương~\ref{chap:proposed-model}: thay permutation test (Thuật toán~\ref{alg:shapedd_theory}) bằng p-value dựa trên xấp xỉ Gamma, đồng thời dùng trọng số nghịch biến mật độ để nhấn mạnh vùng biên phân phối. Phương pháp lấy cảm hứng từ ``Optimally-Weighted MMD'' của Bharti et al.~\cite{bharti2023owmmd}, nhưng dùng heuristic đơn giản hơn để phù hợp với dữ liệu luồng.
 
 \begin{algorithm}[H]
 	\caption{Shape-based Drift Detector (ShapeDD)}

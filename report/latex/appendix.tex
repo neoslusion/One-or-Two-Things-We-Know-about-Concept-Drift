@@ -20,7 +20,7 @@ Bảng dưới đây tổng hợp các tham số chính được sử dụng tro
 		Kernel & RBF & Hạt nhân Gaussian $k(x,y) = \exp(-\gamma \|x-y\|^2)$ \\
 		$\gamma$ & median heuristic & Ước lượng một lần trên đoạn đầu của luồng \\
 		$\epsilon$ & 0.5 & Hằng số ổn định số học trong IDW weighting \\
-		Weight method & variance\_reduction & Phương pháp tính trọng số IDW-MMD \\
+		Weight method & inverse\_density & Phương pháp tính trọng số IDW-MMD (alias \texttt{variance\_reduction} trong mã nguồn) \\
 		Gaussian filter $\sigma_g$ & 4 & Độ lệch chuẩn bộ lọc Gauss làm mượt tín hiệu \\
 		Peak threshold & $\bar{\sigma}_s + 0.3\sigma_{\text{std}}$ & Ngưỡng phát hiện đỉnh ứng viên \\
 		\hline
@@ -37,6 +37,7 @@ Bảng dưới đây tổng hợp các tham số chính được sử dụng tro
 		\multicolumn{3}{|c|}{\textit{Ngưỡng phân loại (mặc định / trước self-calibration)}} \\
 		\hline
 		WR threshold ($\tau_{\text{WR}}$) & 0.15 & Ngưỡng Peak Width Ratio cho Sudden \\
+		WR threshold (TCD/PCD) & 0.12 & Ngưỡng WR trong EstimateDriftDuration: $\leq 0.12 \Rightarrow$ TCD, $> 0.12 \Rightarrow$ PCD \\
 		SNR threshold ($\tau_{\text{SNR}}$) & 2.0 & Ngưỡng Signal-to-Noise cho TCD \\
 		CV threshold ($\tau_{\text{CV}}$) & 0.3 & Ngưỡng Periodicity CV cho Recurrent \\
 		LTS threshold & 0.5 & Ngưỡng Linear Trend Strength cho Incremental \\
@@ -44,6 +45,14 @@ Bảng dưới đây tổng hợp các tham số chính được sử dụng tro
 		SDS threshold & 0.12 & Ngưỡng Step Detection Score (kết hợp với LTS) \\
 		PPR threshold & 0.20 & Ngưỡng Peak Proximity Ratio cho Blip \\
 		DPAR threshold & 0.60 & Ngưỡng Dual-Peak Amplitude Ratio cho Blip \\
+		\hline
+		\multicolumn{3}{|c|}{\textit{BlipProfile --- biến thể noisy (kết hợp với compact\_pair)}} \\
+		\hline
+		WR (noisy blip) & $< 0.17$ & Peak hẹp nhưng rộng hơn compact \\
+		SNR (noisy blip) & $(1.45,\; 2.60)$ & Tín hiệu trung bình, không quá mạnh \\
+		DPAR (noisy blip) & $(0.45,\; 0.85)$ & Hai đỉnh gần đối xứng \\
+		LTS (noisy blip) & $< 0.12$ & Không có xu hướng tuyến tính \\
+		drift\_length & $> 1$ & FWHM vượt ngưỡng TCD/PCD do nhiễu \\
 		\hline
 		\multicolumn{3}{|c|}{\textit{Concept Memory}} \\
 		\hline

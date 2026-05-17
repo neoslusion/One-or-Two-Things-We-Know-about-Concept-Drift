@@ -62,6 +62,7 @@ if __name__ == "__main__" and __package__ is None:
     from experiments.benchmark.config import (
         STREAM_SIZE,
         N_RUNS,
+        N_JOBS,
         RANDOM_SEEDS,
         CHUNK_SIZE,
         OVERLAP,
