@@ -116,7 +116,7 @@ Bảng~\ref{tab:comprehensive_performance} so sánh hiệu suất của \textbf{
 	\input{../../results/tables/table_I_comprehensive_performance.tex}
 \end{table}
 
-DAWIDD có F1 cao nhất về mặt số học ($0.531$ khi làm tròn), trong khi module phát hiện của SE-CDT (ShapeDD-IDW) cùng cấu hình IDW-MMD đứng riêng cũng đạt $F_1 = 0.531$ với Precision $=0.432$, Recall/EDR $=0.737$ và $9.6$ báo động giả trung bình mỗi run. Theo kiểm định Nemenyi ở Mục~\ref{sec:statistical-analysis}, khác biệt này không có ý nghĩa thống kê; vì vậy kết quả nên được đọc là nhóm phương pháp MMD/DAWIDD có hiệu năng tương đương trên benchmark hiện tại, không phải một phương pháp thắng rõ ràng.
+DAWIDD có F1 cao nhất về mặt số học ($0.531$ khi làm tròn), trong khi ShapeDD-IDW (cùng cấu hình IDW-MMD đứng riêng làm ablation) cũng đạt $F_1 = 0.531$ với Precision $=0.432$, Recall/EDR $=0.737$ và $9.6$ báo động giả trung bình mỗi run. Theo kiểm định Nemenyi ở Mục~\ref{sec:statistical-analysis}, khác biệt này không có ý nghĩa thống kê; vì vậy kết quả nên được đọc là nhóm phương pháp MMD/DAWIDD có hiệu năng tương đương trên benchmark hiện tại, không phải một phương pháp thắng rõ ràng.
 
 So với ShapeDD gốc, ShapeDD-IDW giữ F1 cao hơn ($0.531$ so với $0.492$) và giảm FP từ $13.1$ xuống $9.6$. Cải tiến này đến từ cơ chế trọng số nghịch biến mật độ (Thuật toán~\ref{alg:idw_mmd}) kết hợp xấp xỉ Gamma thay cho permutation test. Về thời gian chạy, benchmark cho thấy ShapeDD-IDW nhanh hơn khoảng $7\times$ so với ShapeDD gốc (Bảng~\ref{tab:runtime_stats}). D3 có Precision cao nhất và FP thấp nhất nhưng Recall thấp hơn, còn KS-Test có Recall cao nhưng tạo quá nhiều báo động giả để phù hợp với hệ thống giám sát tự động.
 
@@ -130,7 +130,7 @@ So với ShapeDD gốc, ShapeDD-IDW giữ F1 cao hơn ($0.531$ so với $0.492$)
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=0.9\textwidth]{../../results/plots/critical_difference_f1.png}
-	\caption[Biểu đồ Critical Difference (CD)]{Biểu đồ Critical Difference (CD) với mức ý nghĩa $\alpha = 0.05$. DAWIDD có thứ hạng trung bình tốt nhất; module phát hiện của SE-CDT (ShapeDD-IDW) và cấu hình IDW-MMD đứng riêng xếp ngay sau (cách DAWIDD $0.142$, nhỏ hơn ngưỡng CD $= 2.806$) nên không khác biệt có ý nghĩa thống kê với DAWIDD. Dòng \texttt{SE\_CDT} có cùng thứ hạng vì dùng chung thuật toán phát hiện.}
+	\caption[Biểu đồ Critical Difference (CD)]{Biểu đồ Critical Difference (CD) với mức ý nghĩa $\alpha = 0.05$. DAWIDD có thứ hạng trung bình tốt nhất; ShapeDD-IDW và cấu hình IDW-MMD đứng riêng xếp ngay sau (cách DAWIDD $0.142$, nhỏ hơn ngưỡng CD $= 2.806$) nên không khác biệt có ý nghĩa thống kê với DAWIDD. Dòng \texttt{SE\_CDT} có cùng thứ hạng vì dùng chung thuật toán phát hiện.}
 	\label{fig:critical_difference}
 \end{figure}
 
@@ -141,9 +141,9 @@ So với ShapeDD gốc, ShapeDD-IDW giữ F1 cao hơn ($0.531$ so với $0.492$)
 	\input{../../results/tables/table_statistical_tests.tex}
 \end{table}
 
-Kết quả kiểm định Friedman/Nemenyi trong Bảng~\ref{tab:statistical_tests} cho thấy DAWIDD có thứ hạng trung bình tốt nhất (3.679); module phát hiện của SE-CDT (ShapeDD-IDW) cùng cấu hình IDW-MMD đứng riêng đạt thứ hạng trung bình 3.821, sát ngay sau DAWIDD (dòng \texttt{SE\_CDT} có cùng thứ hạng vì dùng chung thuật toán phát hiện). Với ngưỡng Critical Difference CD $= 2.806$ ($\alpha = 0.05$), khoảng cách giữa module phát hiện của SE-CDT và DAWIDD chỉ $0.142 < $ CD, nên khác biệt thứ hạng F1 giữa hai phương pháp này không đạt mức ý nghĩa thống kê. Tương tự, khoảng cách so với MMD ($0.786$) cũng nhỏ hơn CD nên không thể kết luận khác biệt thống kê. Trong nhóm dựa trên MMD, các biến thể đề xuất có thứ hạng trung bình tốt hơn MMD ($3.821$ so với $4.607$) nhưng cách biệt nằm dưới ngưỡng Nemenyi, nên đọc là ``không khác biệt thống kê đáng kể'' chứ không phải bằng chứng cải thiện.
+Kết quả kiểm định Friedman/Nemenyi trong Bảng~\ref{tab:statistical_tests} cho thấy DAWIDD có thứ hạng trung bình tốt nhất (3.679); ShapeDD-IDW và cấu hình IDW-MMD đứng riêng đạt thứ hạng trung bình 3.821, sát ngay sau DAWIDD (dòng \texttt{SE\_CDT} có cùng thứ hạng vì dùng chung thuật toán phát hiện). Với ngưỡng CD $= 2.806$ ($\alpha = 0.05$), khoảng cách giữa ShapeDD-IDW và DAWIDD chỉ $0.142 < $ CD, nên khác biệt thứ hạng F1 không đạt mức ý nghĩa thống kê. Tương tự, khoảng cách so với MMD ($0.786$) cũng nhỏ hơn CD nên không thể kết luận khác biệt thống kê. Trong nhóm dựa trên MMD, các biến thể đề xuất có thứ hạng trung bình tốt hơn MMD ($3.821$ so với $4.607$) nhưng cách biệt nằm dưới ngưỡng Nemenyi, nên đọc là ``không khác biệt thống kê đáng kể'' chứ không phải bằng chứng cải thiện.
 
-Module phát hiện của SE-CDT (ShapeDD-IDW) có số FP trung bình thấp hơn ShapeDD gốc (Bảng~\ref{tab:comprehensive_performance}); hành vi của bước kiểm định được phân tích thêm ở Mục~\ref{sec:h0-calibration}.
+ShapeDD-IDW có số FP trung bình thấp hơn ShapeDD gốc (Bảng~\ref{tab:comprehensive_performance}); hành vi của bước kiểm định được phân tích thêm ở Mục~\ref{sec:h0-calibration}.
 
 \subsection{Đánh giá chi tiết trên từng loại dữ liệu}
 
@@ -182,7 +182,7 @@ Hiệu suất của các phương pháp thay đổi tùy thuộc vào đặc tí
 
 \begin{enumerate}
 	\item Kết quả trên các drift rõ:
-	      Trên các tập có thay đổi phân phối rõ như Random Moderate, Random Severe, Random Ultra Severe, Stagger và Stagger Recurrent Explicit, module phát hiện của SE-CDT (ShapeDD-IDW) đạt F1 khoảng $0.69$--$0.76$, ổn định hơn ShapeDD gốc ở phần lớn các trường hợp và giữ được tín hiệu Standard MMD cần cho bước phân loại. Hình~\ref{fig:sudden_drift_vis} minh họa dạng tín hiệu ShapeDD tại một kịch bản sudden drift.
+	      Trên các tập có thay đổi phân phối rõ như Random Moderate, Random Severe, Random Ultra Severe, Stagger và Stagger Recurrent Explicit, ShapeDD-IDW đạt F1 khoảng $0.69$--$0.76$, ổn định hơn ShapeDD gốc ở phần lớn các trường hợp và giữ được tín hiệu Standard MMD cần cho bước phân loại. Hình~\ref{fig:sudden_drift_vis} minh họa dạng tín hiệu ShapeDD tại một kịch bản sudden drift.
 	\item Drift nhẹ và drift dần dần:
 	      Trên Random Mild, ba phương pháp đề xuất đạt F1 $= 0.511$, thấp hơn MMD ($0.563$) nhưng không bị mất hoàn toàn tín hiệu. Với Gaussian Gradual Synthetic, cả ba phương pháp đề xuất đạt F1 $= 0.470$, cao hơn MMD ($0.459$) một chút (Hình~\ref{fig:gradual_drift_vis} minh họa tín hiệu trên kịch bản gradual). Bước kiểm định IDW-MMD với p-value Gamma vẫn đủ nhạy để phát hiện drift dần dần khi cửa sổ tham chiếu và cửa sổ kiểm tra đủ lớn ($l_1 = 50$, $l_2 = 150$).
 	\item Nhóm thay đổi chủ yếu ở nhãn:
@@ -190,7 +190,7 @@ Hiệu suất của các phương pháp thay đổi tùy thuộc vào đặc tí
 	\item Blip Drift:
 	      Trên tập RBF Blips, ba phương pháp đề xuất đạt F1 $= 0.744$ ở bài toán phát hiện, gần với MMD ($0.742$), trong khi D3 đạt cao hơn ($1.000$) nhờ classifier phân biệt cửa sổ trước và sau blip. Các thay đổi ngắn hạn vẫn có thể được phát hiện hiệu quả; việc phân loại đúng Blip vẫn còn khó hơn và được phân tích riêng ở Mục~\ref{sec:classification-by-type}.
 	\item Báo động giả trong detection:
-	      Bảng~\ref{tab:comprehensive_performance} báo cáo FP trung bình theo mỗi run trên toàn bộ bộ đánh giá: KS-Test cao nhất (27.2 FP/run), trong khi module phát hiện của SE-CDT (ShapeDD-IDW) cùng cấu hình IDW-MMD đứng riêng ở mức $\sim 9.6$ FP/run, thấp hơn ShapeDD gốc (13.1 FP/run) và gần MMD (10.5 FP/run). Riêng Hình~\ref{fig:stationary_fp} hiển thị tổng số báo động giả trên tập dữ liệu tĩnh; do đó con số trong hình là tổng cộng sau khi gộp nhiều lần chạy, không phải FP/run. Có hai lý do giúp bước lọc này phát huy tác dụng: (i) cơ chế phát hiện hình dạng yêu cầu tín hiệu MMD phải khớp dạng tam giác đặc trưng; (ii) băng thông kernel $\gamma$ được ước lượng một lần bằng median heuristic và dùng chung cho cả ba kernel $K_{XX}, K_{YY}, K_{XY}$.
+	      Bảng~\ref{tab:comprehensive_performance} báo cáo FP trung bình theo mỗi run trên toàn bộ bộ đánh giá: KS-Test cao nhất (27.2 FP/run), trong khi ShapeDD-IDW (và cấu hình IDW-MMD đứng riêng) ở mức $\sim 9.6$ FP/run, thấp hơn ShapeDD gốc (13.1 FP/run) và gần MMD (10.5 FP/run). Riêng Hình~\ref{fig:stationary_fp} hiển thị tổng số báo động giả trên tập dữ liệu tĩnh; do đó con số trong hình là tổng cộng sau khi gộp nhiều lần chạy, không phải FP/run. Có hai lý do giúp bước lọc này phát huy tác dụng: (i) cơ chế phát hiện hình dạng yêu cầu tín hiệu MMD phải khớp dạng tam giác đặc trưng; (ii) băng thông kernel $\gamma$ được ước lượng một lần bằng median heuristic và dùng chung cho cả ba kernel $K_{XX}, K_{YY}, K_{XY}$.
 \end{enumerate}
 
 \begin{figure}[H]
@@ -259,7 +259,7 @@ Bảng~\ref{tab:runtime_stats} so sánh thời gian và thông lượng.
 	\label{fig:runtime-comparison}
 \end{figure}
 
-Module phát hiện của SE-CDT (ShapeDD-IDW) nhanh hơn rõ rệt so với ShapeDD gốc trên luồng 10{,}000 mẫu (Bảng~\ref{tab:runtime_stats}, Hình~\ref{fig:runtime-comparison}). Benchmark cho thấy ShapeDD-IDW nhanh hơn khoảng $7\times$ so với ShapeDD gốc nhờ thay permutation test bằng xấp xỉ Gamma; MMD và DAWIDD chậm hơn do không có cơ chế kiểm định gần đúng. Điểm quan trọng hơn là bước kiểm định dựa trên xấp xỉ Gamma có diễn giải thống kê rõ hơn so với việc chỉ đặt ngưỡng thủ công trên trị MMD.
+ShapeDD-IDW nhanh hơn rõ rệt so với ShapeDD gốc trên luồng 10{,}000 mẫu (Bảng~\ref{tab:runtime_stats}, Hình~\ref{fig:runtime-comparison}), khoảng $7\times$, nhờ thay permutation test bằng xấp xỉ Gamma; MMD và DAWIDD chậm hơn do không có cơ chế kiểm định gần đúng. Điểm quan trọng hơn là bước kiểm định dựa trên xấp xỉ Gamma có diễn giải thống kê rõ hơn so với việc chỉ đặt ngưỡng thủ công trên trị MMD.
 
 \section{Đánh giá module phân loại của SE-CDT}
 \label{sec:classification-eval}
@@ -385,7 +385,7 @@ Vì hai cột vận hành trên hai phân phối dữ liệu và hai chế độ
 \section{Đánh giá khả năng thích ứng mô hình}
 \label{sec:adaptation-eval}
 
-Sau khi SE-CDT phát hiện và phân loại drift, khung thích ứng kích hoạt chiến lược cập nhật mô hình tương ứng. Phần này đánh giá hiệu quả của chiến lược thích ứng theo loại drift (Type-Specific Adaptation) --- nơi nhãn loại drift do module phân loại của SE-CDT sản xuất quyết định nhánh thích ứng nào được kích hoạt --- sử dụng chỉ số \textbf{Prequential Accuracy}.
+Sau khi SE-CDT phát hiện và phân loại drift, khung thích ứng dùng nhãn loại drift để chọn chiến lược cập nhật mô hình tương ứng. Phần này đánh giá hiệu quả của chiến lược thích ứng theo loại drift (Type-Specific Adaptation) bằng chỉ số \textbf{Prequential Accuracy}.
 
 \subsection{Thiết lập thực nghiệm}
 \begin{itemize}
