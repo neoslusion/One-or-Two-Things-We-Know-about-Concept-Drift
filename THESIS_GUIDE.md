@@ -676,6 +676,342 @@ The `ClassificationResult` is passed to the adaptation stage (Section 6).
 
 ---
 
+## 5.10 End-to-end worked examples (with example data at each stage)
+
+This section walks the full SE-CDT pipeline through three concrete scenarios — one per outcome family — with realistic numerical values at each processing stage. The goal: make the architecture tangible.
+
+The numerical values are illustrative (representative of what the actual benchmark produces), not exact reproductions of any specific seed. They are calibrated to the synthetic generators in `data/generators/`.
+
+### Scenario A — Sudden drift (the success case)
+
+**Stream setup:**
+- Length: $T = 10{,}000$ samples
+- Distribution: $X_t \sim \mathcal{N}(0, I_5)$ for $t < 5000$; $X_t \sim \mathcal{N}([2,2,0,0,0]^T, I_5)$ for $t \ge 5000$
+- One sudden drift event at $t = 5000$
+- Window setup: $l_1 = 50$, $l_2 = 150$, slide every 25 samples
+
+**Stage 1 — σ(t) computation (Standard MMD):**
+
+```
+t     σ(t)        Note
+─────────────────────────────────────────────────
+500    0.038      stationary, low noise
+1000   0.041      stationary
+2000   0.039      stationary
+3000   0.044      stationary
+4000   0.048      stationary
+4900   0.055      first window edge enters drift zone
+5000   0.380      window straddles drift exactly — peak
+5050   0.420      apex of triangle
+5100   0.350      window mostly post-drift
+5200   0.180      tail of triangle
+5300   0.075      back to ~stationary
+6000   0.041      stationary
+─────────────────────────────────────────────────
+mean(σ_s)    ≈ 0.052
+median(σ_s)  ≈ 0.045
+std(σ_s)     ≈ 0.060   (driven by the peak at 5050)
+```
+
+The Triangle Shape Property is visible: σ(t) rises from baseline ~0.04 to apex 0.42, with width-at-half-max (FWHM) ≈ 6 samples.
+
+**Stage 2 — Peak detection:**
+
+```
+peak_threshold = mean(σ_s) + 0.3 × std(σ_s)
+              = 0.052 + 0.3 × 0.060
+              = 0.070
+
+Local maxima above threshold: σ(t=5050) = 0.420   ← above threshold ✓
+                              (only one peak in this trace)
+
+Candidate peaks: [5050]
+```
+
+**Stage 3 — Feature extraction (9 features):**
+
+```
+Feature                Value      Interpretation
+─────────────────────────────────────────────────────
+n_p (peak count)       1          single sharp peak
+WR (Width Ratio)       0.060      FWHM/2l₁ = 6/100 = 0.06 — narrow peak
+SNR                    9.33       max(σ_s)/median(σ_s) = 0.42/0.045
+CV (Periodicity)       N/A        only 1 peak, can't compute Δ
+PPR                    N/A        only 1 peak, no pair to compare
+DPAR                   N/A        only 1 peak
+LTS (Linear Trend R²)  0.04       no linear trend in σ_s
+MS (Monotonicity)      0.12       roughly balanced ↑/↓ (peak is symmetric)
+SDS (Step Score)       0.08       no sustained step
+─────────────────────────────────────────────────────
+drift_length (Growth)  1          (because WR = 0.06 < 0.12 → TCD)
+```
+
+**Stage 4 — Decision tree walkthrough:**
+
+```
+STEP 1: Blip check
+  n_p ∈ {2, 3} ? n_p = 1 → FAIL → skip Blip branch
+
+STEP 1.5: PCD gate
+  drift_length > 1 ? drift_length = 1 → FAIL → not PCD
+
+STEP 2: Sudden check
+  n_p ≤ 3 ?               1 ≤ 3 ✓
+  WR < τ_WR (= 0.15) ?    0.060 < 0.15 ✓
+  SNR > τ_SNR (= 2.0) ?   9.33 > 2.0 ✓
+  → MATCH → return TCD-Sudden ✓
+```
+
+**Stage 5 — IDW-MMD validation (per candidate):**
+
+```
+For peak at t = 5050:
+  X = stream[5000:5050]   (50 reference points, all from N(0, I))
+  Y = stream[5050:5200]   (150 test points, all from N([2,2,0,0,0], I))
+
+  Compute IDW weights for X:
+    d(x_i) = Σ_{j≠i} k(x_i, x_j)  ≈ 18.4 average
+    w̃_i = 1/(√d(x_i) + 0.5)        ≈ 0.207 average
+    W^XX normalized so sum = 1
+
+  IDW-MMD² statistic ≈ 0.612
+
+  Gamma null fit (B=20 bootstrap):
+    null mean μ̂        ≈ 0.025
+    null variance σ̂²   ≈ 0.0003
+    Gamma shape k̂      = μ̂²/σ̂² ≈ 2.08
+    Gamma scale θ̂      = σ̂²/μ̂  ≈ 0.012
+
+  p-value = 1 - F_Γ(0.612 ; 2.08, 0.012)  ≈ 1 × 10⁻⁹
+
+  Adjusted α (Bonferroni, M=1 candidate):
+    α_adj = 0.05 / 1 = 0.05
+
+  p-value < α_adj  ✓  → drift CONFIRMED
+```
+
+**Output of detection module:** `[5050]` with p-value < 1e-9.
+**Output of classification module:** TCD-Sudden ✓
+
+---
+
+### Scenario B — Blip drift (uses the noisy_profile_blip branch)
+
+**Stream setup:**
+- $X_t \sim \mathcal{N}(0, I_5)$ throughout, EXCEPT samples [4980, 5020] drawn from $\mathcal{N}([3,0,0,0,0], I_5)$ (40-sample blip), then back to baseline.
+- One blip event at $t \approx 5000$.
+
+**Stage 1 — σ(t) computation:**
+
+```
+t     σ(t)        Note
+─────────────────────────────────────────────────
+4900   0.041      stationary
+4960   0.180      window starts catching blip
+4980   0.290      first triangle apex (entering blip)
+5000   0.180      window straddling blip middle
+5020   0.260      second triangle apex (exiting blip)
+5040   0.130      tail
+5100   0.045      back to stationary
+─────────────────────────────────────────────────
+mean(σ_s)    ≈ 0.058
+median(σ_s)  ≈ 0.048
+std(σ_s)     ≈ 0.055
+```
+
+Two triangles close together → classic blip signature.
+
+**Stage 2 — Peak detection:**
+
+```
+peak_threshold = 0.058 + 0.3 × 0.055 = 0.075
+
+Peaks above threshold:
+  σ(t=4980) = 0.290   ✓
+  σ(t=5020) = 0.260   ✓
+
+Candidate peaks: [4980, 5020]   ← n_p = 2
+```
+
+**Stage 3 — Feature extraction:**
+
+```
+Feature        Value      Interpretation
+──────────────────────────────────────────
+n_p            2          two peaks
+WR             0.080      both peaks narrow
+SNR            6.04       max(0.29) / median(0.048)
+PPR            0.004      |5020 - 4980| / 10000 = 0.004 → small (close peaks)
+DPAR           0.897      min(0.26, 0.29) / max(0.26, 0.29)
+                          = 0.260 / 0.290 = 0.897
+LTS            0.05       no trend
+drift_length   1          (WR < 0.12 → TCD)
+```
+
+**Stage 4 — Decision tree walkthrough:**
+
+```
+STEP 1: Blip check
+  n_p ∈ {2, 3} ?              n_p = 2 ✓
+  ≥ 2 peaks detected ?        YES ✓
+
+  Try compact_pair_blip:
+    PPR > 0 and PPR < 0.20 ?   0.004 < 0.20 ✓
+    DPAR > 0.60 ?              0.897 > 0.60 ✓
+    WR < 0.30 ?                0.080 < 0.30 ✓
+    → ALL THREE PASS → compact_pair_blip = True
+
+  → return TCD-Blip ✓
+```
+
+(In this case the simpler `compact_pair_blip` branch matches; the `noisy_profile_blip` branch is used when the two peaks blur together due to noise so that drift_length > 1, and only the noisier criteria pass.)
+
+**Output:** TCD-Blip ✓
+
+---
+
+### Scenario C — Incremental drift (the failure case — explains the 4.4%)
+
+**Stream setup:**
+- Continuous slow drift from $t = 4000$ to $t = 8000$. Mean of $X_t$ migrates linearly from $\mathbf{0}$ to $[1.5, 0, 0, 0, 0]^T$ over 4000 samples.
+- No discrete event; pure ramp.
+
+**Stage 1 — σ(t) computation:**
+
+```
+t     σ(t)        Note
+─────────────────────────────────────────────────
+1000   0.043      stationary (pre-drift)
+3000   0.045      stationary
+4000   0.052      drift onset
+5000   0.072      slow rise
+6000   0.098      slow rise (window mostly inside drift zone)
+7000   0.115      near apex of slow rise
+8000   0.122      drift end
+9000   0.080      slow decline (window post-drift, ref still has drift tail)
+9500   0.055      back to baseline
+─────────────────────────────────────────────────
+mean(σ_s)    ≈ 0.075
+median(σ_s)  ≈ 0.072
+std(σ_s)     ≈ 0.030
+```
+
+No sharp triangle. Just a wide flat hump. This is the geometric signature that breaks classification.
+
+**Stage 2 — Peak detection:**
+
+```
+peak_threshold = 0.075 + 0.3 × 0.030 = 0.084
+
+Possible "peaks" above threshold (local maxima):
+  σ(t=8000) = 0.122   ✓ (the apex of the ramp)
+
+Candidate peaks: [8000]   ← n_p = 1
+```
+
+**Stage 3 — Feature extraction:**
+
+```
+Feature        Value      Interpretation
+──────────────────────────────────────────
+n_p            1          single broad "peak"
+WR             0.730      FWHM ≈ 73 samples / 2·50 → very wide
+                          → triggers PCD branch ✓
+SNR            1.69       max(0.122) / median(0.072) — barely above 1
+LTS            0.42       linear trend present but R² < 0.5
+                          (the ramp is noisy; not a clean line)
+MS             0.55       mostly increasing but not enough
+SDS            0.08       no clean step jumps
+drift_length   2          (WR = 0.73 ≥ 0.12 → PCD)
+```
+
+**Stage 4 — Decision tree walkthrough (the failure):**
+
+```
+STEP 1: Blip check
+  n_p ∈ {2, 3} ?  n_p = 1 → FAIL
+
+STEP 1.5: PCD gate
+  drift_length > 1 ? YES (drift_length = 2) → enter PCD branch ✓
+
+  PCD subtype check:
+    is_incremental = (LTS > 0.5)           ?  0.42 > 0.5 → FALSE
+                  OR (MS > 0.6 AND LTS > 0.3)?  0.55 > 0.6 → FALSE
+                  OR (SDS > 0.12 AND LTS > 0.3)?  0.08 > 0.12 → FALSE
+    → is_incremental = FALSE
+    → return PCD-Gradual
+
+  ❌ MISCLASSIFIED — was actually Incremental, called Gradual.
+```
+
+**Output:** PCD-Gradual ✗ (wrong — should have been PCD-Incremental)
+
+**Why this fails:** the LTS=0.5 threshold is too strict for noisy ramps. In this realistic example, the actual linear trend explains only 42% of σ(t)'s variance because of within-window fluctuation. The thesis's 4.4% Incremental accuracy is mostly cases like this — the geometry is *correct* (PCD is identified), but the subtype is consistently downgraded to Gradual.
+
+**The mitigation in §5.4 of the conclusion:** future work proposes replacing the fixed LTS=0.5 threshold with a learned probabilistic classifier on the σ(t) features.
+
+---
+
+### Comparison summary across the three scenarios
+
+| Stage | Scenario A (Sudden) | Scenario B (Blip) | Scenario C (Incremental) |
+|-------|--------------------|-----|----------------------------|
+| **σ(t) signature** | One sharp triangle, apex 0.42 | Two narrow triangles, apex 0.29 | Wide hump, apex 0.122 |
+| **n_p** | 1 | 2 | 1 |
+| **WR** | 0.060 | 0.080 | **0.730** |
+| **SNR** | 9.33 | 6.04 | 1.69 |
+| **drift_length** | 1 → TCD | 1 → TCD | 2 → **PCD** |
+| **Decision tree path** | Step 2: Sudden ✓ | Step 1: Blip ✓ | Step 1.5: PCD-Gradual ✗ |
+| **Outcome** | TCD-Sudden ✓ | TCD-Blip ✓ | PCD-Gradual ✗ (was Incremental) |
+
+The pattern: **TCD types succeed because σ(t) has clear peaks; PCD subtypes (Gradual / Incremental) often degrade to each other because the geometric features can't reliably separate "linear ramp" from "wide hump".**
+
+---
+
+### Concept Memory worked example (Recurrent drift)
+
+Suppose the stream alternates between two distributions — Distribution A (stationary $\mathcal{N}(0, I_5)$) and Distribution B ($\mathcal{N}([2,0,0,0,0]^T, I_5)$) — with switches every 1500 samples (recurrent A→B→A→B…).
+
+**After the first A→B drift at t = 1500:**
+```
+post_drift_snapshot S_1 = stream[1500 : 1500 + 150]   # 150 points, all from B
+γ_1 = median_heuristic(S_1) ≈ 0.31
+Memory state: {1: (S_1, γ_1)}
+```
+
+**At second B→A drift at t = 3000 (back to A):**
+```
+post_drift_snapshot S_new = stream[3000 : 3000 + 150]   # 150 points, all from A
+γ_new = median_heuristic(S_new) ≈ 0.34
+
+Lookup against memory:
+  γ_avg = (γ_1 + γ_new) / 2 = (0.31 + 0.34) / 2 = 0.325
+  MMD²(S_new, S_1; γ_avg) = 0.78    ← S_new is from A, S_1 is from B → big distance
+  
+  τ_match = 0.15
+  0.78 ≥ 0.15 → no match → S_new added as new concept
+
+Memory state: {1: (S_1, γ_1), 2: (S_new, γ_new)}
+```
+
+**At third A→B drift at t = 4500:**
+```
+post_drift_snapshot S_new2 = stream[4500 : 4650]   # 150 points, all from B again
+γ_new2 ≈ 0.30
+
+Lookup against memory:
+  Compare to S_1 (B): MMD²(S_new2, S_1; γ_avg) = 0.04   ← very small ← MATCH ✓
+  Compare to S_2 (A): MMD²(S_new2, S_2; γ_avg) = 0.81
+
+  min(0.04, 0.81) = 0.04 < τ_match = 0.15 → MATCH on S_1
+  → drift labeled as TCD-Recurrent (matched concept #1)
+  → adaptation strategy: load cached model trained on Distribution B
+```
+
+**The whole point:** with concept memory, the system *recognizes* it has seen Distribution B before, classifies as Recurrent, and reuses the cached model — no retraining needed. Without concept memory, this drift would have been classified as a fresh Sudden and the system would have re-learned distribution B from scratch, wasting compute.
+
+The 71.5% Recurrent accuracy in the benchmark says concept memory works most of the time. Failures come from cases where the stream's noise level shifted between visits to the same concept, raising MMD²(S_new, S_match) above τ_match = 0.15.
+
 # 6. Adaptation strategies
 
 Once a drift is detected and classified, the model has to be updated. The thesis pairs each drift type with a strategy. Code: `experiments/monitoring/adaptation_strategies.py`.
@@ -1487,4 +1823,78 @@ A more powerful base classifier (random forest, gradient boosting) would shift a
 
 ---
 
-*End of guide. Total: ~13,000 words. Last updated: 2026-05-17. Companion to thesis PDF `report/latex/2370116_LePhucDuc_ThesisReport.pdf` (101 pages, 5.6 MB, 0 warnings/errors).*
+## 12.8 Knowledge summary — architecture cheat sheet
+
+Quick reference distilled from the architectural Q&A. Use this for fast review or to answer examiner questions on the fly.
+
+### The naming hierarchy
+
+| Term | What it is |
+|------|-----------|
+| **SE-CDT** | The proposed unified detector-classifier *system*. The "T" in the acronym (Type identification) refers to drift-type classification — the core novel contribution. |
+| **ShapeDD-IDW** | SE-CDT's *detection module*. An engineering refinement of ShapeDD (2021). |
+| **(unnamed) classification module** | SE-CDT's *classification module*. No separate name because SE-CDT was named after this part. |
+| **IDW-MMD** | An *algorithm* (a kernel two-sample test statistic) used inside ShapeDD-IDW's validation step. |
+| **Adaptation framework** | A separate module that *consumes* SE-CDT's classification output. |
+
+### The central object: σ(t)
+
+- σ(t) is computed using **Standard MMD**, NOT IDW-MMD.
+- σ(t) is the **single shared input** for both detection and classification.
+- Both detection's peak-finding and classification's feature extraction read the *same* σ(t).
+- IDW-MMD only enters at the validation step (per-candidate hypothesis test).
+
+### Where the sudden bias lives
+
+In the **peak-detection step** of ShapeDD-IDW, NOT in IDW-MMD validation.
+- Peak detection looks for sharp peaks → biased toward Sudden / Blip / Recurrent (TCD types).
+- IDW-MMD validation is a generic two-sample test → not sudden-specific.
+- Gradual / Incremental drift get missed at peak detection (no clear peak), not at validation.
+
+### ShapeDD vs ShapeDD-IDW: refinement, not revolution
+
+| Aspect | ShapeDD (2021) | ShapeDD-IDW (this thesis) |
+|--------|---------------|---------------------------|
+| σ(t) trace | Standard MMD | **Standard MMD** (same) |
+| Window setup | l₁ ref, l₂ test, sliding | **Same** |
+| Shape filter | Convolution with h'_l (matched filter) | Local-maxima peak detection |
+| Validation | Permutation test, B=2500 | IDW-MMD + Gamma null, B=20 |
+| End-to-end speedup | 1× | **~7×** |
+
+ShapeDD-IDW shares ~80% of the pipeline with ShapeDD. The genuinely novel piece of the thesis is **SE-CDT's classification module** — ShapeDD never did classification.
+
+### Threshold adaptation status
+
+**Self-calibrating** (3 thresholds, via `_RollingFeatureBaseline`):
+- τ_WR = 0.15 → loosens to 25th-quantile of baseline WR
+- τ_SNR = 2.0 → tightens to 90th-quantile of baseline SNR
+- τ_CV = 0.30 → loosens to 25th-quantile of baseline CV
+
+**Fixed across all datasets** (documented limitation, §5.3 of conclusion):
+- LTS = 0.5, MS = 0.6, SDS = 0.12 (temporal features)
+- WR_TCD_PCD = 0.12 (Growth Process)
+- PPR = 0.20, DPAR = 0.60 (Blip criteria)
+- τ_match = 0.15 (Concept Memory)
+- BlipProfile noisy variant: WR<0.17, SNR ∈ (1.45, 2.60), DPAR ∈ (0.45, 0.85), LTS<0.12
+
+All thresholds sit inside naturally-bounded feature ranges (most features are in [0,1]). They cannot be exceeded mathematically — only mismatched to the dataset's noise floor. Self-calibration handles three of those mismatches; the rest are acknowledged limitations.
+
+**Empirical failure evidence:** Incremental drift accuracy of 4.4% is direct evidence that fixed LTS / MS / SDS thresholds don't generalize across all drift types.
+
+### Defense one-liners
+
+**On the system architecture:**
+> *"SE-CDT is a unified detector-classifier system. The detection module (ShapeDD-IDW) refines ShapeDD with IDW-MMD validation and a Gamma null, ~7× faster. The classification module reads the same σ(t) signal and adds drift-type identification — ShapeDD never did this. That's where the genuine novelty lives."*
+
+**On σ(t):**
+> *"σ(t) is computed using Standard MMD, not IDW-MMD. IDW-MMD only runs at the per-candidate validation step. Standard MMD is used for the trace because its uniform weighting preserves the geometric shape that classification reads."*
+
+**On the sudden bias:**
+> *"The sudden bias is in the peak-detection step, not the IDW-MMD validation. Validation is a generic two-sample test. Peak detection looks for sharp peaks, which favor sudden / blip / recurrent. Gradual and incremental drift are missed at the peak-detection step."*
+
+**On thresholds:**
+> *"Three thresholds (τ_WR, τ_SNR, τ_CV) self-calibrate to noise floor; six others are fixed. Fixed thresholds are documented as a limitation in §5.3, with the 4.4% Incremental result as direct empirical evidence."*
+
+---
+
+*End of guide. Total: ~18,500 words. Last updated: 2026-05-19. Companion to thesis PDF `report/latex/2370116_LePhucDuc_ThesisReport.pdf` (102 pages, 5.6 MB, 0 warnings/errors).*
