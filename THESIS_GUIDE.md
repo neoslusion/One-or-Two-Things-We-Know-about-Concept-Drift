@@ -112,12 +112,17 @@ A three-stage pipeline:
     Gamma null)         concept memory)         Reuse-cached         etc.
 ```
 
-Each box is a contribution:
+The single contribution is **SE-CDT** (ShapeDD-Enhanced Concept Drift Type) — a **unified detector-classifier system** for unsupervised drift handling. SE-CDT contains two modules:
 
-1. **Detection** — a faster, more sensitive variant of ShapeDD using **IDW-MMD** (Inverse Density-Weighted MMD) and a **Gamma-distribution-based p-value** instead of expensive permutation tests. (Section 4 of this guide.)
-2. **Classification** — **SE-CDT** (ShapeDD-Enhanced Concept Drift Type), an unsupervised classifier that reads the *shape* of the MMD signal to decide which of {Sudden, Blip, Recurrent, Gradual, Incremental} drift just happened, plus a "concept memory" for catching recurrent patterns. (Section 5.)
-3. **Adaptation** — a small library of update strategies, dispatched by drift type. (Section 6.)
-4. **Kafka prototype** — to show the whole thing can be wired into a real streaming system end-to-end. (Section 7.)
+1. **Detection module — ShapeDD-IDW** (Section 4 of this guide). A faster, more sensitive variant of ShapeDD using **IDW-MMD** (Inverse Density-Weighted MMD) and a **Gamma-distribution-based p-value** instead of expensive permutation tests. The module produces the drift signal $\sigma(t)$ and emits drift alerts when it spikes.
+2. **Classification module** (Section 5). An unsupervised classifier that reads the *shape* of $\sigma(t)$ to decide which of {Sudden, Blip, Recurrent, Gradual, Incremental} drift just happened, plus a "concept memory" for catching recurrent patterns.
+
+Two more pieces are built around SE-CDT:
+
+3. **Adaptation framework** (Section 6) — a small library of update strategies, dispatched by SE-CDT's classification output (Reset for Sudden, Fine-tune for Gradual/Incremental, Reuse cached model for Recurrent, etc.).
+4. **Kafka prototype** (Section 7) — to show the whole thing can be wired into a real streaming system end-to-end.
+
+In the benchmark tables you will see two rows, `ShapeDD_IDW` and `SE_CDT`, with **identical detection F1**. This is by design: `ShapeDD_IDW` is just SE-CDT's detection module run alone (no classification); `SE_CDT` is the full system. They share the detection algorithm, so detection metrics are identical.
 
 The next section gives the math you need to follow the contributions.
 
@@ -336,9 +341,9 @@ All three predecessors are cited correctly with their actual venue, year, author
 
 ---
 
-# 4. Contribution 1 — IDW-MMD
+# 4. SE-CDT's detection module: ShapeDD-IDW
 
-This section explains the **detection** contribution end-to-end. The thesis chapter is `chapters/03_proposed_model.tex` §3.2.
+This section explains the **detection module** of SE-CDT, named **ShapeDD-IDW**, end-to-end. The thesis chapter is `chapters/03_proposed_model.tex` §3.2. (Note: in earlier drafts of the guide, this section was labeled "Contribution 1 — IDW-MMD". The corrected framing is that SE-CDT is the single contribution; ShapeDD-IDW is its detection module; IDW-MMD is the algorithm used inside ShapeDD-IDW's validation step.)
 
 ## 4.1 The two problems with Standard MMD that IDW-MMD fixes
 
@@ -497,11 +502,13 @@ This maps line-by-line to `compute_optimal_weights` and `compute_idw_mmd_squared
 
 ---
 
-# 5. Contribution 2 — SE-CDT
+# 5. SE-CDT's classification module
 
-This section explains the **classification** contribution. The thesis chapter is `chapters/03_proposed_model.tex` §3.3. Code is `core/detectors/se_cdt.py`.
+This section explains the **classification module** of the SE-CDT system. The thesis chapter is `chapters/03_proposed_model.tex` §3.3. Code is `core/detectors/se_cdt.py` (the `SE_CDT.classify()` method).
 
-**SE-CDT** stands for **ShapeDD-Enhanced Concept Drift Type**. It takes the MMD signal $\sigma(t)$ produced by the detection stage and decides which of {Sudden, Blip, Recurrent, Gradual, Incremental} drift just occurred — without ever using labels $y$.
+The classification module takes the MMD signal $\sigma(t)$ produced by SE-CDT's detection module (ShapeDD-IDW, Section 4 of this guide) and decides which of {Sudden, Blip, Recurrent, Gradual, Incremental} drift just occurred — without ever using labels $y$.
+
+**SE-CDT** stands for **ShapeDD-Enhanced Concept Drift Type identification**. The full system (detection + classification + concept memory) is what we mean when we say "SE-CDT" in tables and metric reports.
 
 ## 5.1 Why classification matters
 
@@ -1331,12 +1338,14 @@ This covers the major drift types and modalities. Larger benchmarks like SUNE (3
 
 ### Q21. The headline says F1 = 0.531, but DAWIDD gets 0.531 too. Where's the contribution?
 
-**A.** Three places:
-1. **Lower FP at the same F1**: 9.6 FP/run vs DAWIDD's 10.4 FP/run. Lower false-alarm rate matters operationally.
-2. **Much faster runtime**: ~7× speedup over ShapeDD original; **DAWIDD itself is the slowest method in the benchmark** (15.18s/stream vs 0.70s for ShapeDD-IDW). So the thesis matches DAWIDD's accuracy at ~22× DAWIDD's speed.
-3. **Drift-type classification** — DAWIDD only detects; SE-CDT additionally classifies. That's an entire downstream module DAWIDD doesn't have.
+**A.** Three places, and the framing matters:
 
-So the contribution is **not** "we beat DAWIDD on F1" — it's "we match DAWIDD's accuracy with 22× the throughput, lower FP, and additional classification capability".
+The contribution is **SE-CDT as a unified system**. Within that system, the detection module (ShapeDD-IDW) is benchmarked against DAWIDD on F1, and:
+1. **Lower FP at the same F1**: 9.6 FP/run vs DAWIDD's 10.4 FP/run. Lower false-alarm rate matters operationally.
+2. **Much faster runtime**: ~7× speedup over ShapeDD original; **DAWIDD itself is the slowest method in the benchmark** (15.18s/stream vs 0.70s for ShapeDD-IDW). So SE-CDT's detection module matches DAWIDD's accuracy at ~22× DAWIDD's speed.
+3. **Drift-type classification** — DAWIDD only detects; SE-CDT additionally classifies (its second module). That's an entire downstream capability DAWIDD doesn't have.
+
+So the contribution is **not** "we beat DAWIDD on F1" — it's "SE-CDT matches DAWIDD's detection accuracy with 22× the throughput, lower FP, and additional classification capability built in".
 
 ### Q22. Why is Standard MMD's F1 (0.525) so close to the proposed methods' (0.531)?
 

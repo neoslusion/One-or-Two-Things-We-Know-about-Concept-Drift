@@ -14,14 +14,14 @@ Luận văn giải quyết bài toán phát hiện, phân loại và thích ứn
 		\toprule
 		Trục & Kết quả chính & Đối chứng \\
 		\midrule
-		Phát hiện (Mục~\ref{sec:detection-eval}) & ShapeDD-IDW / SE-CDT đạt $F_1 = 0.531$, không khác biệt thống kê với DAWIDD; runtime nhanh hơn ShapeDD gốc khoảng $7\times$ & ShapeDD gốc dùng permutation; KS-Test có Recall cao nhưng FP nhiều \\
-		Phân loại (Mục~\ref{sec:classification-eval}) & SE-CDT đạt CAT $=80.1\%$, SUB micro $=50.5\%$, SUB macro $=50.0\%$; Blip và Recurrent cải thiện nhưng Incremental còn yếu & CDT-MSW (Guo et al.) dùng nhãn $y$ và không cùng thiết lập dữ liệu \\
+		Module phát hiện của SE-CDT (Mục~\ref{sec:detection-eval}) & ShapeDD-IDW đạt $F_1 = 0.531$, không khác biệt thống kê với DAWIDD; runtime nhanh hơn ShapeDD gốc khoảng $7\times$ & ShapeDD gốc dùng permutation; KS-Test có Recall cao nhưng FP nhiều \\
+		Module phân loại của SE-CDT (Mục~\ref{sec:classification-eval}) & Đạt CAT $=80.1\%$, SUB micro $=50.5\%$, SUB macro $=50.0\%$; Blip và Recurrent cải thiện nhưng Incremental còn yếu & CDT-MSW (Guo et al.) dùng nhãn $y$ và không cùng thiết lập dữ liệu \\
 		Thích ứng (Mục~\ref{sec:adaptation-eval}) & Type-Specific Adaptation cải thiện rõ trên Sudden/Stepping; trên Mixed gần Periodic Retrain về accuracy nhưng ít FP hơn & No Adaptation, Periodic Retrain, Simple Retrain \\
 		\bottomrule
 	\end{tabular}
 \end{table}
 
-ShapeDD-IDW thay permutation test đầy đủ bằng xấp xỉ Gamma cho IDW-MMD và áp dụng hiệu chỉnh Bonferroni khi một trace có nhiều đỉnh ứng viên. Kiểm tra trên dữ liệu tĩnh cho thấy IDW-MMD đơn lẻ gần mức danh nghĩa $\alpha = 0.05$, dù pipeline SE-CDT composite vẫn có thể cao hơn trên một số phân phối do bước chọn đỉnh và cửa sổ trượt. SE-CDT bổ sung một nhánh phân loại không cần nhãn dựa trên hình dạng tín hiệu MMD; kết quả đủ dùng cho một số quyết định thích ứng, nhưng chưa đạt mức ổn định của phương pháp có giám sát.
+Hệ thống SE-CDT gồm hai module nối tiếp: module phát hiện ShapeDD-IDW thay permutation test đầy đủ bằng xấp xỉ Gamma cho IDW-MMD và áp dụng hiệu chỉnh Bonferroni khi một trace có nhiều đỉnh ứng viên; module phân loại đọc hình dạng tín hiệu MMD do bước phát hiện sản xuất để xuất nhãn loại drift mà không cần nhãn $y$. Kiểm tra trên dữ liệu tĩnh cho thấy IDW-MMD đơn lẻ gần mức danh nghĩa $\alpha = 0.05$, dù pipeline SE-CDT composite vẫn có thể cao hơn trên một số phân phối do bước chọn đỉnh và cửa sổ trượt. Kết quả phân loại đủ dùng cho một số quyết định thích ứng, nhưng chưa đạt mức ổn định của phương pháp có giám sát.
 
 Benchmark được mở rộng với dữ liệu recurrent đối xứng A$\to$B$\to$A$\to$B, gradual drift có khoảng chuyển tiếp xác định, và dữ liệu stationary để đo báo động giả. Nhờ 30 lần chạy độc lập và kiểm định Friedman/Nemenyi, các kết luận về thứ hạng detection được đọc thận trọng hơn: một số chênh lệch số học không đủ để kết luận khác biệt thống kê. Ở phần hệ thống, nguyên mẫu Kafka/Redpanda cho thấy các module phát hiện, phân loại và thích ứng có thể tách rời và phối hợp được trong một pipeline streaming khép kín.
 
@@ -85,6 +85,6 @@ Về dài hạn, hệ thống có thể tiến tới meta-learning trực tuyế
 
 \section{Kết luận}
 
-Luận văn cho thấy có thể xây dựng một pipeline không giám sát gồm phát hiện, phân loại và thích ứng với concept drift từ tín hiệu MMD. Ở bước phát hiện, ShapeDD-IDW đạt F1 cạnh tranh với DAWIDD và tốt hơn ShapeDD gốc trong benchmark hiện tại, dù chênh lệch thứ hạng không đủ để kết luận khác biệt thống kê với DAWIDD. Ở bước phân loại, SE-CDT đạt kết quả chấp nhận được ở mức TCD/PCD nhưng còn yếu ở tiểu loại, đặc biệt với Incremental. Đây là giới hạn quan trọng nhất của luận văn và không nên che giấu.
+Luận văn đề xuất hệ thống SE-CDT --- một pipeline không giám sát tích hợp phát hiện và phân loại drift, kết hợp với khung thích ứng theo loại drift. Module phát hiện (ShapeDD-IDW) đạt F1 cạnh tranh với DAWIDD và tốt hơn ShapeDD gốc trong benchmark hiện tại, dù chênh lệch thứ hạng không đủ để kết luận khác biệt thống kê với DAWIDD. Module phân loại đạt kết quả chấp nhận được ở mức TCD/PCD nhưng còn yếu ở tiểu loại, đặc biệt với Incremental. Đây là giới hạn quan trọng nhất của luận văn và không nên che giấu.
 
 Kết quả thích ứng cho thấy thông tin loại drift có ích trên Stepping và Sudden, nơi Type-Specific vượt rõ No Adaptation và các baseline retrain đơn giản. Trên Mixed, lợi thế chính là giảm cảnh báo dư so với Periodic Retrain hơn là tăng accuracy. Vì vậy, đóng góp của luận văn nằm ở việc đặt nền cho một hệ thống drift-aware có thể vận hành không cần nhãn tức thời; để tiến tới triển khai sản xuất, phần phân loại cần được củng cố bằng mô hình xác suất, tự hiệu chỉnh tốt hơn và đánh giá trên dữ liệu thực tế có ground truth đáng tin cậy.
