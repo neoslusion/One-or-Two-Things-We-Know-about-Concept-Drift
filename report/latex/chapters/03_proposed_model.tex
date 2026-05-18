@@ -105,6 +105,10 @@ Trước khi đi vào chi tiết từng thành phần, Hình~\ref{fig:system-mod
 
 Toàn bộ ba module được triển khai trên Apache Kafka trong Mục~\ref{sec:system-architecture}, với mỗi module chạy như một tiến trình độc lập giao tiếp qua các topics riêng biệt.
 
+\paragraph{Quy ước tên gọi.}
+\label{par:naming-convention}
+Hệ thống đề xuất được gọi là \textbf{SE-CDT} (\textit{ShapeDD-Enhanced Concept Drift Type identification}). Tên này nhấn mạnh vào năng lực \textit{phân loại loại drift}, vốn là đóng góp gốc của luận văn so với các phương pháp phát hiện thuần tuý trước đây. Module phát hiện của SE-CDT được đặt tên riêng là \textbf{ShapeDD-IDW} vì nó là một cải tiến trực tiếp của ShapeDD~\cite{shapeDD2021} bằng IDW-MMD và xấp xỉ Gamma; cách đặt tên có gạch nối phản ánh quan hệ kế thừa với phương pháp gốc. Module phân loại không được gọi bằng tên riêng vì nó chính là phần lõi của SE-CDT --- nói cách khác, ``SE-CDT'' bao hàm toàn hệ thống nhưng đặc biệt nhấn mạnh phần phân loại của nó. Khi không cần phân biệt rõ, ``SE-CDT'' trong các phần sau ám chỉ toàn bộ hệ thống; khi cần phân biệt, luận văn sẽ ghi rõ ``module phát hiện của SE-CDT'' (tức ShapeDD-IDW) hoặc ``module phân loại của SE-CDT''.
+
 \section{Đề xuất cải tiến phương pháp phát hiện drift: IDW-MMD với xấp xỉ Gamma}
 
 \subsection{Inverse Density-Weighted MMD (IDW-MMD): Tối ưu hóa hiệu suất và độ chính xác}

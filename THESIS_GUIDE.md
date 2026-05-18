@@ -124,6 +124,8 @@ Two more pieces are built around SE-CDT:
 
 In the benchmark tables you will see two rows, `ShapeDD_IDW` and `SE_CDT`, with **identical detection F1**. This is by design: `ShapeDD_IDW` is just SE-CDT's detection module run alone (no classification); `SE_CDT` is the full system. They share the detection algorithm, so detection metrics are identical.
 
+**Naming convention (also explained in Chapter 3):** the detection module gets its own hyphenated name **ShapeDD-IDW** because it is a direct refinement of an existing method (ShapeDD). The classification module does *not* have its own separate name — it is the core of SE-CDT itself. The acronym SE-CDT (ShapeDD-Enhanced Concept Drift **Type** identification) literally encodes the classification: "Type identification" *is* the classifier. So the asymmetric naming reflects the fact that detection is a refinement of prior work, while classification is the genuinely novel contribution and owns the SE-CDT name. When the context does not require disambiguation, "SE-CDT" refers to the whole system; when it does, the guide says "the detection module of SE-CDT" or "the classification module of SE-CDT".
+
 The next section gives the math you need to follow the contributions.
 
 ---
