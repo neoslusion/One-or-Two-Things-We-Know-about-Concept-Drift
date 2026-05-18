@@ -122,6 +122,7 @@
 \usepackage{threeparttable}
 \usepackage{multirow}
 \usepackage{float}
+\usepackage{longtable}
 \usepackage{caption}
 \usepackage{subcaption}
 \usepackage{enumitem}
@@ -129,7 +130,7 @@
 \usepackage{times} % Times New Roman font
 \usepackage{anyfontsize} % For custom font sizes
 \usepackage{tikz} % For flowcharts and diagrams
-\usetikzlibrary{positioning, shapes.geometric, arrows.meta}
+\usetikzlibrary{positioning, shapes.geometric, arrows.meta, fit}
 
 % Page geometry following Vietnamese university standards
 \geometry{
@@ -361,7 +362,6 @@
 \addcontentsline{toc}{chapter}{DANH SÁCH BẢNG BIỂU}
 
 % List of Abbreviations
-\cleardoublepage
 \input{abbreviations}
 
 % Main matter with Arabic numbering (fancy style with header/footer)
