@@ -103,11 +103,8 @@ Trước khi đi vào chi tiết từng thành phần, Hình~\ref{fig:system-mod
 	      (\textit{Reset} cho sudden, \textit{Incremental} cho gradual/incremental, hoặc \textit{Reuse} cho recurrent).
 \end{itemize}
 
-Toàn bộ ba module được triển khai trên Apache Kafka trong Mục~\ref{sec:system-architecture}, với mỗi module chạy như một tiến trình độc lập giao tiếp qua các topics riêng biệt.
-
-\paragraph{Quy ước tên gọi.}
 \label{par:naming-convention}
-Hệ thống đề xuất được gọi là \textbf{SE-CDT} (\textit{ShapeDD-Enhanced Concept Drift Type identification}). Tên này nhấn mạnh vào năng lực \textit{phân loại loại drift}, vốn là đóng góp gốc của luận văn so với các phương pháp phát hiện thuần tuý trước đây. Module phát hiện của SE-CDT được đặt tên riêng là \textbf{ShapeDD-IDW} vì nó là một cải tiến trực tiếp của ShapeDD~\cite{shapeDD2021} bằng IDW-MMD và xấp xỉ Gamma; cách đặt tên có gạch nối phản ánh quan hệ kế thừa với phương pháp gốc. Module phân loại không được gọi bằng tên riêng vì nó chính là phần lõi của SE-CDT --- nói cách khác, ``SE-CDT'' bao hàm toàn hệ thống nhưng đặc biệt nhấn mạnh phần phân loại của nó. Khi không cần phân biệt rõ, ``SE-CDT'' trong các phần sau ám chỉ toàn bộ hệ thống; khi cần phân biệt, luận văn sẽ ghi rõ ``module phát hiện của SE-CDT'' (tức ShapeDD-IDW) hoặc ``module phân loại của SE-CDT''.
+Toàn bộ ba module được triển khai bằng mô phỏng, sau đó được triển khai trên Apache Kafka trong Mục~\ref{sec:system-architecture}, với mỗi module chạy như một tiến trình độc lập giao tiếp qua các topics riêng biệt. Hệ thống đề xuất được gọi là \textbf{SE-CDT} (\textit{ShapeDD-Enhanced Concept Drift Type identification}). Tên này nhấn mạnh vào năng lực phân loại loại drift, vốn là đóng góp gốc của luận văn so với các phương pháp phát hiện thuần tuý trước đây. Module phát hiện của SE-CDT được đặt tên riêng là \textbf{ShapeDD-IDW} vì nó là một cải tiến trực tiếp của ShapeDD~\cite{shapeDD2021} bằng IDW-MMD và xấp xỉ Gamma; cách đặt tên có gạch nối phản ánh quan hệ kế thừa với phương pháp gốc.
 
 \section{Đề xuất cải tiến phương pháp phát hiện drift: IDW-MMD với xấp xỉ Gamma}
 
@@ -123,10 +120,8 @@ trong đó các tổng chạy qua tất cả các cặp chỉ số, kể cả $i
 
 Với cửa sổ nhỏ ($n, m < 200$), MMD dễ dao động và khó tách drift thật khỏi nhiễu mẫu. Bước permutation test của ShapeDD gốc cũng tốn thời gian vì phải lặp lại phép tính MMD nhiều lần để ước lượng p-value. Một nguyên nhân khác là trọng số đều coi mọi điểm trong cửa sổ như nhau, trong khi các thay đổi đột ngột thường xuất hiện rõ hơn ở vùng biên phân phối.
 
-\subsubsection{Ý tưởng cải tiến: Dùng trọng số thay đổi theo vị trí}
-Thay vì giữ trọng số đều, luận văn gán trọng số theo mật độ cục bộ: điểm ở vùng thưa được nhấn mạnh hơn, còn điểm ở vùng trung tâm được giảm bớt ảnh hưởng.
-
-Để hình thức hóa, dạng tổng quát của MMD có trọng số là:
+\subsubsection{Ý tưởng cải tiến bằng cách dùng trọng số thay đổi theo vị trí}
+Thay vì giữ trọng số đều, luận văn gán trọng số theo mật độ cục bộ: điểm ở vùng thưa được nhấn mạnh hơn, còn điểm ở vùng trung tâm được giảm bớt ảnh hưởng. Để hình thức hóa, dạng tổng quát của MMD có trọng số là:
 \begin{equation}
 	\text{MMD}^2_{\text{weighted}}(X, Y) = \sum_{i,j} w_i w_j k(x_i, x_j) + \sum_{p,q} v_p v_q k(y_p, y_q) - 2\sum_{i,p} w_i v_p k(x_i, y_p)
 \end{equation}

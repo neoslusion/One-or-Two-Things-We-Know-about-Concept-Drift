@@ -128,15 +128,13 @@ trong đó hàm hình dạng $h_l(t)$ được định nghĩa bởi:
 
 Hàm $h_l(t)$ có dạng tam giác cân, đạt cực đại tại thời điểm xảy ra drift ($t=0$), và suy giảm tuyến tính về hai phía. Đặc tính này không phụ thuộc vào dạng phân phối hay độ đo khoảng cách sử dụng, mà chỉ tỷ lệ thuận với hệ số $\|P - Q\|$. Đây là cơ sở để ShapeDD có thể áp dụng cho nhiều miền dữ liệu khác nhau mà không cần thay đổi kernel hay metric.
 
-\begin{quote}
-	Triangle Shape Property (\ref{thm:triangle_shape}) chỉ đúng trực tiếp cho sudden drift. Các loại drift khác (gradual, incremental, recurrent) không tạo ra hình dạng tam giác đặc trưng, đây là thiết kế gốc của ShapeDD để tập trung vào phát hiện abrupt drift, tuy nhiên có thể mở rộng để nhận biết các loại drift khác bằng cách phân tích hình dạng tín hiệu trôi dạt:
-	\begin{itemize}
-		\item Gradual drift tạo peak rộng với slope thoải hơn.
-		\item Incremental drift có thể tạo chuỗi nhiều peak nhỏ liên tục.
-		\item Recurrent drift tạo chuỗi peak lặp lại theo chu kỳ.
-	\end{itemize}
-	Do đó, phương pháp SE-CDT (Chương~\ref{chap:proposed-model}) bổ sung các đặc trưng hình học và thống kê khác trên tín hiệu MMD để phân loại các loại drift này, thay vì chỉ dựa vào hình dạng tam giác.
-\end{quote}
+Tuy nhiên, Triangle Shape Property (\ref{thm:triangle_shape}) chỉ đúng trực tiếp cho sudden drift do tính chất tức thời của nó. Các loại drift khác (gradual, incremental, recurrent) không tạo ra hình dạng tam giác đặc trưng, đây là thiết kế gốc của ShapeDD để tập trung vào phát hiện abrupt drift, tuy nhiên có thể mở rộng để nhận biết các loại drift khác bằng cách phân tích hình dạng tín hiệu trôi dạt:
+\begin{itemize}
+	\item Gradual drift tạo peak rộng với slope thoải hơn.
+	\item Incremental drift có thể tạo chuỗi nhiều peak nhỏ liên tục.
+	\item Recurrent drift tạo chuỗi peak lặp lại theo chu kỳ.
+\end{itemize}
+Do đó, phương pháp SE-CDT (Chương~\ref{chap:proposed-model}) bổ sung các đặc trưng hình học và thống kê khác trên tín hiệu MMD để phân loại các loại drift này, thay vì chỉ dựa vào hình dạng tam giác.
 
 \subsubsection{Tổng quát hoá cho nhiều sự kiện drift}
 
