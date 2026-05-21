@@ -35,7 +35,7 @@ Trong các ứng dụng học máy trên dữ liệu luồng, hệ thống giám
 
 Luận văn hướng tới bốn mục tiêu chính. Trước hết, đề tài khảo sát các nhóm phương pháp phát hiện drift hiện có, từ kiểm định thống kê, theo dõi hiệu năng mô hình đến các phương pháp được tập trung như MMD và ShapeDD. Từ đó, luận văn đề xuất cải tiến ShapeDD bằng IDW-MMD nhằm giảm chi phí kiểm định và kiểm soát báo động giả tốt hơn trong môi trường cửa sổ trượt.
 
-Mục tiêu tiếp theo là xây dựng SE-CDT, một bộ phát hiện và phân loại loại drift không cần nhãn, lấy cảm hứng từ CDT-MSW~\cite{guo2022cdtmsw} nhưng thay vì dự trên tín hiệu accuracy ratio bằng đặc trưng hình học của tín hiệu MMD. Kết quả phân loại này từ đó được dùng cho phần tiếp theo, nơi chiến lược cập nhật mô hình được chọn theo loại drift đã nhận diện. Cuối cùng, luận văn đánh giá thuật toán trên các tập dữ liệu có ground truth và kiểm thử nguyên mẫu hệ thống trên Kafka. Việc triển khai trong môi trường sản xuất và đánh giá chịu tải quy mô lớn nằm ngoài phạm vi hiện tại.
+Mục tiêu tiếp theo là xây dựng SE-CDT, một bộ phát hiện và phân loại loại drift không cần nhãn, lấy cảm hứng từ CDT-MSW~\cite{guo2022cdtmsw} nhưng thay vì dựa trên tín hiệu tỉ lệ độ chính xác (accuracy ratio) bằng đặc trưng hình học của tín hiệu MMD. Kết quả phân loại này từ đó được dùng cho phần tiếp theo, nơi chiến lược cập nhật mô hình được chọn theo loại drift đã nhận diện. Cuối cùng, luận văn đánh giá thuật toán trên các tập dữ liệu có ground truth và kiểm thử nguyên mẫu hệ thống trên Kafka. Việc triển khai trong môi trường sản xuất và đánh giá chịu tải quy mô lớn nằm ngoài phạm vi hiện tại.
 
 \section{Phạm vi đề tài và đối tượng nghiên cứu}
 \subsection{Phạm vi đề tài}

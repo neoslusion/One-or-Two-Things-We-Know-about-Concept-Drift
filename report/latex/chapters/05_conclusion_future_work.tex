@@ -16,7 +16,7 @@ Luận văn giải quyết bài toán phát hiện, phân loại và thích ứn
 		\midrule
 		Module phát hiện của SE-CDT (Mục~\ref{sec:detection-eval}) & ShapeDD-IDW đạt $F_1 = 0.531$, không khác biệt thống kê với DAWIDD; runtime nhanh hơn ShapeDD gốc khoảng $7\times$ & ShapeDD gốc dùng permutation; KS-Test có Recall cao nhưng FP nhiều \\
 		Module phân loại của SE-CDT (Mục~\ref{sec:classification-eval}) & Đạt CAT $=80.1\%$, SUB micro $=50.5\%$, SUB macro $=50.0\%$; Blip và Recurrent cải thiện nhưng Incremental còn yếu & CDT-MSW (Guo et al.) dùng nhãn $y$ và không cùng thiết lập dữ liệu \\
-		Thích ứng (Mục~\ref{sec:adaptation-eval}) & Type-Specific Adaptation cải thiện rõ trên Sudden/Stepping; trên Mixed gần Periodic Retrain về accuracy nhưng ít FP hơn & No Adaptation, Periodic Retrain, Simple Retrain \\
+		Thích ứng (Mục~\ref{sec:adaptation-eval}) & Type-Specific Adaptation cải thiện rõ trên Sudden/Stepping; trên Mixed gần Periodic Retrain về độ chính xác nhưng ít FP hơn & No Adaptation, Periodic Retrain, Simple Retrain \\
 		\bottomrule
 	\end{tabular}
 \end{table}
@@ -39,16 +39,14 @@ Nguyên nhân gốc là CDT-MSW~\cite{guo2022cdtmsw} dùng Growth process dựa 
 
 \subsection{Ngưỡng phân loại vẫn còn yếu tố heuristic}
 \label{sec:limitation-heuristic}
-Các ngưỡng cứng trong luật phân loại SE-CDT (Algorithm~\ref{alg:se-cdt}) như WR $< 0.15$, SNR $> 2.0$, CV $< 0.3$, LTS $> 0.5$, v.v. vẫn được chọn dựa trên quan sát thực nghiệm chứ chưa suy ra từ phân tích thống kê lý thuyết. So với bước phát hiện (dùng p-value dựa trên xấp xỉ Gamma có cơ sở từ~\cite{gretton2009gamma}), bước phân loại chưa có công cụ lý thuyết tương đương ở mức từng đặc trưng đơn lẻ.
-
-\textbf{Các biện pháp đã áp dụng để giảm phụ thuộc heuristic.}
+Các ngưỡng cứng trong luật phân loại SE-CDT (Algorithm~\ref{alg:se-cdt}) như WR $< 0.15$, SNR $> 2.0$, CV $< 0.3$, LTS $> 0.5$, v.v. vẫn được chọn dựa trên quan sát thực nghiệm chứ chưa suy ra từ phân tích thống kê lý thuyết. So với bước phát hiện (dùng p-value dựa trên xấp xỉ Gamma có cơ sở từ~\cite{gretton2009gamma}), bước phân loại chưa có công cụ lý thuyết tương đương ở mức từng đặc trưng đơn lẻ. Các biện pháp đã áp dụng để giảm phụ thuộc heuristic.
 \begin{enumerate}
 	\item \textbf{Tự hiệu chỉnh ngưỡng SNR/WR/CV} (Mục~\ref{sec:se-cdt-self-calibration}): nới ngưỡng cứng theo phân vị quan sát trên cửa sổ không drift, giúp SE-CDT chịu được nền nhiễu cao hơn mà không cần tinh chỉnh thủ công cho từng dataset.
 	\item \textbf{Kiểm tra Type-I error} (Mục~\ref{sec:h0-calibration}): kiểm chứng IDW-MMD với xấp xỉ Gamma có Type-I error gần mức danh nghĩa trên ba phân phối tĩnh; đồng thời chỉ ra SE-CDT composite có thể cao hơn nhẹ do kiểm định nhiều đỉnh ứng viên.
 	\item \textbf{Loại bỏ các hằng số tuyệt đối trong Blip và Growth process} (Mục~\ref{sec:shaped-cdt}): điều kiện Blip chỉ dựa trên các đặc trưng tỉ lệ, không gắn với ngưỡng khoảng cách peak cố định; tham số trong Growth process được biểu diễn theo tỉ lệ với cửa sổ tham chiếu $l_1$ thay cho hằng số dạng phần ba độ rộng FWHM.
 \end{enumerate}
 
-\textbf{Phần còn tồn đọng.}
+Tuy nhiên, vẫn còn tồn đọng những vấn đề hạn chế như sau.
 \begin{enumerate}
 	\item Self-calibration chỉ có thể nới ngưỡng, chưa thay được luật phân loại bằng một mô hình xác suất, vì vậy vẫn không xuất confidence/p-value cho mỗi nhãn drift.
 	\item Ngưỡng cho LTS, MS, SDS vẫn cố định, chưa được tự hiệu chỉnh. Ba đặc trưng này có miền giá trị nhỏ và nhạy với kích thước cửa sổ, nên việc rút phân vị từ dữ liệu nền không drift dễ tạo ra giá trị kém ổn định.
@@ -85,6 +83,6 @@ Về dài hạn, hệ thống có thể tiến tới meta-learning trực tuyế
 
 \section{Kết luận}
 
-Luận văn đề xuất hệ thống SE-CDT --- một pipeline không giám sát tích hợp phát hiện và phân loại drift, kết hợp với khung thích ứng theo loại drift. Module phát hiện (ShapeDD-IDW) đạt F1 cạnh tranh với DAWIDD và tốt hơn ShapeDD gốc trong benchmark hiện tại, dù chênh lệch thứ hạng không đủ để kết luận khác biệt thống kê với DAWIDD. Module phân loại đạt kết quả chấp nhận được ở mức TCD/PCD nhưng còn yếu ở tiểu loại, đặc biệt với Incremental. Đây là giới hạn quan trọng nhất của luận văn và không nên che giấu.
+Luận văn đề xuất hệ thống SE-CDT --- một pipeline không giám sát tích hợp phát hiện và phân loại drift, kết hợp với khung thích ứng theo loại drift. Module phát hiện (ShapeDD-IDW) đạt F1 cạnh tranh với DAWIDD và tốt hơn ShapeDD gốc trong benchmark hiện tại, dù chênh lệch thứ hạng không đủ để kết luận khác biệt thống kê với DAWIDD. Module phân loại đạt kết quả chấp nhận được ở mức TCD/PCD nhưng còn yếu ở tiểu loại, đặc biệt với Incremental. Đây là giới hạn lớn nhất trong phạm vi nghiên cứu của luận văn, đòi hỏi sự nhìn nhận khách quan để làm tiền đề cho các hướng tiếp cận tiếp theo.
 
-Kết quả thích ứng cho thấy thông tin loại drift có ích trên Stepping và Sudden, nơi Type-Specific vượt rõ No Adaptation và các baseline retrain đơn giản. Trên Mixed, lợi thế chính là giảm cảnh báo dư so với Periodic Retrain hơn là tăng accuracy. Vì vậy, đóng góp của luận văn nằm ở việc đặt nền cho một hệ thống drift-aware có thể vận hành không cần nhãn tức thời; để tiến tới triển khai sản xuất, phần phân loại cần được củng cố bằng mô hình xác suất, tự hiệu chỉnh tốt hơn và đánh giá trên dữ liệu thực tế có ground truth đáng tin cậy.
+Kết quả thích ứng cho thấy thông tin loại drift có ích trên Stepping và Sudden, nơi Type-Specific vượt rõ No Adaptation và các baseline retrain đơn giản. Trên Mixed, lợi thế chính là giảm cảnh báo dư so với Periodic Retrain hơn là tăng độ chính xác. Vì vậy, đóng góp của luận văn nằm ở việc đặt nền cho một hệ thống drift-aware có thể vận hành không cần nhãn tức thời; để tiến tới áp dụng trong môi trường vận hành thực tế, phần phân loại cần được củng cố bằng mô hình xác suất, tự hiệu chỉnh tốt hơn và đánh giá trên dữ liệu thực tế có ground truth đáng tin cậy.

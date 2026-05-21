@@ -112,6 +112,39 @@ A three-stage pipeline:
     Gamma null)         concept memory)         Reuse-cached         etc.
 ```
 
+### Detailed Integration Flow
+
+To ensure statistical rigor while maintaining computational efficiency, SE-CDT distributes **Standard MMD** and **IDW-MMD** across different stages of the detection-classification pipeline:
+
+```mermaid
+graph TD
+    A[Raw Data Stream] --> B[STAGE 1 DETECTOR: Trace]
+    B --> C[Compute Standard MMD over sliding windows]
+    C --> D[Generate 1D Drift Signal σ(t)]
+    D --> E[Local Peak Detection / Candidate Selection]
+    E -->|Candidate Peak at t| F[STAGE 2 DETECTOR: Validation & Confirmation]
+    F --> G[Extract Windows X & Y around Candidate]
+    G --> H[Compute IDW-MMD² Statistic]
+    H --> I[Estimate Gamma Null via Bootstrap B=20]
+    I --> J[Compute p-value & Bonferroni Adjust α_adj]
+    J -->|p >= α_adj| K[Discard Candidate (False Alarm)]
+    J -->|p < α_adj| L[Drift Event CONFIRMED]
+    L --> M[SE-CDT CLASSIFICATION MODULE]
+    M --> N[Extract 9 Geometric Features from Standard MMD σ(t) trace]
+    N --> O[Run Decision Tree Classifier]
+    O --> P{TCD or PCD?}
+    P -->|TCD| Q{Sudden, Blip, or Recurrent?}
+    P -->|PCD| R{Gradual or Incremental?}
+    Q -->|Recurrent| S[Match/Store in Concept Memory via Standard MMD]
+    S --> T[Adaptation Manager: Select Strategy]
+    Q -->|Sudden/Blip| T
+    R --> T
+    T --> U[Update ML Model]
+```
+
+> [!NOTE]
+> **Important architectural check:** SE-CDT does **not** bypass IDW-MMD for confirming/verifying drift events. In fact, a candidate drift peak found on the Standard MMD trace is only **confirmed** and passed to classification if it passes the Stage 2 **IDW-MMD hypothesis test** ($p < \alpha_{\text{adj}}$). Standard MMD is used for the continuous trace because it is cheap and keeps a clean geometric shape for classification; IDW-MMD is used for confirmation because it is highly sensitive at the distribution boundaries.
+
 The single contribution is **SE-CDT** (ShapeDD-Enhanced Concept Drift Type) — a **unified detector-classifier system** for unsupervised drift handling. SE-CDT contains two modules:
 
 1. **Detection module — ShapeDD-IDW** (Section 4 of this guide). A faster, more sensitive variant of ShapeDD using **IDW-MMD** (Inverse Density-Weighted MMD) and a **Gamma-distribution-based p-value** instead of expensive permutation tests. The module produces the drift signal $\sigma(t)$ and emits drift alerts when it spikes.
