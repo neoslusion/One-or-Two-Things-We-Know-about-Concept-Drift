@@ -32,9 +32,9 @@
 \usepackage[normalem]{ulem}%
 
 % Algorithm
-\usepackage[linesnumbered, ruled, vlined]{algorithm2e}%
-% \usepackage{algorithm}%
-% \usepackage{algorithmicx}%
+% \usepackage[linesnumbered, ruled, vlined]{algorithm2e}%
+\usepackage{algorithm}%
+\usepackage{algorithmicx}%
 \usepackage{algpseudocode}%
 
 \usepackage{tcolorbox}
@@ -80,7 +80,7 @@
 \usepackage{tocloft}
 % \renewcommand{\contentsname}{\centering Contents}
 
-\usepackage{hyperref}
+\usepackage[hypertexnames=false]{hyperref}
 \usepackage{ragged2e}  % đặt ở preamble
 
 \usepackage[explicit]{titlesec}
@@ -114,7 +114,7 @@
 \setlength{\fboxrule}{2pt}
 
 % Others
-\usepackage{arydshln}%
+% \usepackage{arydshln}%
 \usepackage{booktabs}%
 \usepackage{manyfoot}%
 \usepackage{listings}%
@@ -126,3 +126,17 @@
 \usepackage{caption}
 \DeclareCaptionLabelSeparator{customspace}{\hspace{0.2cm}}
 \captionsetup{labelsep=customspace}
+
+% Packages from original thesis
+\usepackage{longtable}
+\usepackage{threeparttable}
+\usepackage{float}
+\usepackage{enumitem}
+\usepackage{indentfirst}
+\usepackage{anyfontsize}
+\usepackage{chngcntr}
+\usepackage{tikz}
+\usetikzlibrary{positioning, shapes.geometric, arrows.meta, fit}
+
+% Loaded at the very end to prevent conflict with other table packages
+\usepackage{arydshln}

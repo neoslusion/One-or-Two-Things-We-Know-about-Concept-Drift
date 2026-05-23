@@ -1,6 +1,503 @@
-\newpage
+\chapter{Thực nghiệm và đánh giá}
+\label{chap:experiments}
 
-\chapter{EXPERIMENTAL ENVIRONMENT}
-\label{chap:experiment}
+\section{Tổng quan thực nghiệm}
+\label{sec:overview}
+
+\subsection{Mục tiêu và cấu trúc chương}
+Chương này trình bày kết quả thực nghiệm để đánh giá hệ thống đề xuất. Đánh giá gồm ba phần, tương ứng với ba phần của hệ thống:
+\begin{enumerate}
+	\item \textbf{Đánh giá khả năng phát hiện drift:} So sánh ShapeDD và biến thể cải tiến ShapeDD-IDW và IDW-MMD cùng với các phương pháp nền tảng trên nhiều tập dữ liệu, tập trung vào việc đánh giá trên các tập dữ liệu sudden drift là kịch bản ShapeDD được thiết kế để xử lý.
+	\item \textbf{Đánh giá khả năng phân loại drift của SE-CDT:} kiểm tra độ chính xác khi nhận diện loại drift (sudden, gradual, incremental, recurrent, blip) dựa trên tín hiệu drift magnitude.
+	\item \textbf{Đánh giá khả năng thích ứng:} đo hiệu quả của các chiến lược cập nhật mô hình tự động qua chỉ số Prequential Accuracy.
+\end{enumerate}
+
+\subsection{Môi trường và cấu hình}
+\label{sec:dataset-config}
+Các tham số môi trường và thuật toán được mô tả gắn với từng kịch bản (Detection, Classification, Adaptation) thay vì trình bày chung, để dễ có thể đánh giá một cách tổng quát và có thể thực hiện lại.
+
+\subsection{Tập dữ liệu thực nghiệm}
+
+Hệ thống được đánh giá trên bộ \textbf{14 tập dữ liệu}, gồm các tập tổng hợp (synthetic), một tập gradual drift được thiết kế thủ công, một tập recurrent drift dạng đối xứng (Gaussian Recurrent Stream) và một tập bán thực tế (Electricity semi-synthetic). Các tập tổng hợp được sinh bằng bộ sinh chuẩn của thư viện River~\cite{river2021}, một framework mã nguồn mở phổ biến trong cộng đồng data stream mining. Lý do dùng dữ liệu tổng hợp thay vì dữ liệu thực tế thuần là vì với dữ liệu thực, thời điểm xảy ra concept drift (ground truth) hầu như không biết được, nên không thể đo F1-Score hay Detection Delay. Bộ sinh chuẩn cho phép kiểm soát vị trí, cường độ và loại drift, giúp kết quả có thể tái lập.
+
+\textit{Cấu hình đánh giá phát hiện.} Bộ đánh giá gồm 14 tập dữ liệu, mỗi tập chạy 30 seed độc lập. Hai tập được thêm để định nghĩa drift một cách chặt chẽ (dữ liệu recurrent dạng đối xứng A$\to$B$\to$A$\to$B\dots, đúng định nghĩa của Lu et al.~\cite{lu2018learning}) và dữ liệu chuyển tiếp tuyến tính trên một khoảng xác định trước. Một tập dữ liệu tĩnh đóng vai trò đo báo động giả. Số lần chạy là 30 lần đủ để chạy kiểm định Friedman/Nemenyi tại $\alpha = 0.05$ với độ ổn định cao hơn cho các chỉ số trung bình.
+
+Các tập dữ liệu được phân loại dựa trên bản chất của sự thay đổi phân phối:
+
+Nhóm 1: Sudden Drift (Thay đổi $P(X)$ đột ngột): Đây là trọng tâm chính của module phát hiện SE-CDT (ShapeDD-IDW). Các dataset này chứa sự thay đổi đột ngột trong phân phối đầu vào $P(X)$ (Covariate Shift), nơi các phương pháp unsupervised cần phải phát hiện chính xác. Dạng drift này phản ánh các tình huống thực tế như: hệ thống IoT gặp sự cố cảm biến đột ngột, hoặc một dây chuyền sản xuất thay đổi nguyên liệu đầu vào.
+\begin{itemize}
+	\item \textit{Gaussian Shift (Moderate):} Dữ liệu phân phối chuẩn đa chiều ($d=10$) với sự dịch chuyển trung bình (mean shift) đột ngột ($\Delta\mu = 1.5$). Đây là trường hợp lý tưởng để kiểm tra độ nhạy của kernel RBF, vì phân phối Gaussian là nền tảng của hầu hết các mô hình thống kê. Kịch bản này được thiết kế dựa trên phương pháp đánh giá tham số (parametric artificial datasets) trong bài khảo sát của Hinder et al.~\cite{hinder2024survey_partA}, nơi các tác giả sử dụng chúng để so sánh có hệ thống các phương pháp phát hiện drift unsupervised trên cùng một nền tảng thống nhất.
+
+	\item \textit{Gaussian Concept Stream (GCS):} Luồng dữ liệu 5 chiều với phân phối Gaussian, trong đó mỗi concept được định nghĩa bởi một vector trung bình khác nhau trên các chiều đặc trưng (concept 0: $\mu = +2.0$ trên $x_0$; concept 1: $\mu = -2.0$ trên $x_0$; concept 2: $\mu = +1.5$ trên $x_1$). Chuỗi 3 concept tạo ra covariate shift $P(X)$ đột ngột, rõ ràng, phù hợp để kiểm tra các phương pháp phát hiện không giám sát. Cấu trúc xoay vòng concept lấy cảm hứng từ STAGGER (Schlimmer \& Granger, 1986)~\cite{schlimmer1986incremental}, nhưng sử dụng đặc trưng Gaussian liên tục thay cho đặc trưng rời rạc, cho phép các kernel MMD quan sát $P(X)$ trực tiếp.
+
+	\item \textit{Random Uniform (Sensitivity Test):} Bộ 4 dataset (Random Mild, Random Moderate, Random Severe, Random Ultra Severe) được sinh ngẫu nhiên với cường độ thay đổi (intensity) tăng dần từ 0.125 đến 2.0, sử dụng bộ sinh dữ liệu được tham khảo từ survey của Hinder et al.~\cite{hinder2024survey_partA}. Bộ này đóng vai trò như một ``nhiệt kế'' dùng để đánh giá ngưỡng phát hiện (detection threshold) của các thuật toán: drift ở mức Random Mild ($\Delta\mu = 0.125$) gần như không thể phân biệt với nhiễu tự nhiên, trong khi Random Ultra Severe ($\Delta\mu = 2.0$) tạo ra sự thay đổi rõ ràng mà bất kỳ thuật toán nào cũng phải phát hiện được.
+
+	\item \textit{Stepping Drift (Cumulative):} Biến thể được bổ sung để kiểm tra khả năng thích ứng. Khác với Sudden Drift thông thường (thường luân phiên A$\to$B$\to$A), Stepping Drift dịch chuyển phân phối tích lũy theo một hướng (A$\to$B$\to$C$\to$D). Kịch bản này mô phỏng môi trường vận hành liên tục tiến hóa mà không quay lại trạng thái cũ (ví dụ trôi cảm biến công nghiệp), nên mô hình không thể ``học vẹt'' các trạng thái cũ mà buộc phải thích ứng với dữ liệu mới. \textit{Kịch bản này chỉ được dùng trong đánh giá thích ứng (Mục~\ref{sec:adaptation-eval}), không thuộc phần đánh giá phát hiện ở Mục~\ref{sec:detection-eval}.}
+\end{itemize}
+
+Nhóm 2: Blip Drift (Thay đổi ngắn hạn): Trong thực tế vận hành, không phải mọi sự thay đổi đều mang tính vĩnh viễn. Một đợt tấn công mạng ngắn hạn, một sự kiện khuyến mãi flash sale, hay một lỗi tạm thời của cảm biến đều tạo ra các ``xung nhiễu'' (blip) trong luồng dữ liệu rồi nhanh chóng quay lại trạng thái bình thường. Khả năng phân biệt blip với drift thực sự là thách thức lớn đối với các thuật toán phát hiện.
+\begin{itemize}
+	\item \textit{RBF Blips:} Dữ liệu được sinh từ bộ sinh Random RBF Generator~\cite{river2021} với 50 trọng tâm Gaussian. Mỗi đoạn luân phiên sử dụng một cấu hình centroid khác nhau (qua \texttt{seed\_model}) kết hợp với biến đổi tỉ lệ đặc trưng ($\times 1.5 + 0.3$) ở các đoạn lẻ, tạo ra sự thay đổi $P(X)$ đột ngột và xen kẽ trong không gian phi-Gaussian phức tạp nhiều centroid. Tập dữ liệu kiểm tra khả năng phát hiện distribution shift trên phân phối phức tạp hơn Gaussian đơn giản.
+\end{itemize}
+
+Nhóm 3: Real Drift / Thay đổi ranh giới quyết định (Control Group): Nhóm này đóng vai trò \textbf{nhóm đối chứng} (negative control), gồm các dataset chỉ có sự thay đổi ở biên quyết định $P(Y|X)$ còn phân phối đầu vào $P(X)$ giữ nguyên (hoặc thay đổi không đáng kể). Đây là dạng \textit{real drift} theo định nghĩa của Gama et al.~\cite{gama2014survey}, vốn nằm ngoài phạm vi quan sát của các phương pháp không giám sát chỉ dựa trên $P(X)$. Benchmark trên nhóm này giúp xác nhận thuật toán không bị ``ảo giác'' (hallucination) trước các thay đổi chỉ mang tính ngữ nghĩa nhãn.
+\begin{itemize}
+	\item \textit{Standard SEA:} Bộ dữ liệu benchmark do Street và Kim đề xuất tại hội nghị ACM SIGKDD 2001~\cite{street2001streaming}. SEA (Streaming Ensemble Algorithm) ban đầu được thiết kế để đánh giá các phương pháp ensemble learning cho luồng dữ liệu. Bộ dữ liệu gồm 3 đặc trưng ngẫu nhiên, trong đó chỉ 2 đặc trưng đầu là liên quan; drift được tạo bằng cách thay đổi ngưỡng phân lớp $x_1 + x_2 > \theta$ (thường dùng các ngưỡng 8, 9, 7, 9.5). Đây là một trong những benchmark được trích dẫn nhiều nhất trong lĩnh vực concept drift.
+
+	\item \textit{Rotating Hyperplane:} Bộ dữ liệu do Hulten, Spencer và Domingos giới thiệu tại KDD 2001~\cite{hulten2001mining} trong bối cảnh nghiên cứu khai phá luồng dữ liệu biến đổi theo thời gian (mining time-changing data streams). Mặt siêu phẳng $d$-chiều xoay dần trong không gian bằng cách thay đổi trọng số của các đặc trưng, mô phỏng gradual drift, dạng drift mà ranh giới quyết định dịch chuyển từ từ tương tự như sự thay đổi dần dần trong hành vi người dùng hay điều kiện thị trường.
+
+	\item \textit{LED Abrupt:} Bài toán phân lớp chữ số trên đèn LED 7 thanh, được sinh bằng bộ sinh chuẩn của River~\cite{river2021}. Bộ dữ liệu gồm 7 thuộc tính nhị phân (các thanh LED a--g), không thêm thuộc tính nhiễu. Drift được tạo bằng cách đảo ngược quy tắc phân lớp giữa các đoạn: đoạn chẵn phân loại chữ số chẵn là dương, đoạn lẻ đảo ngược lại, tạo ra sự thay đổi đột ngột trong $P(Y|X)$ mà không ảnh hưởng đến phân phối đặc trưng $P(X)$.
+\end{itemize}
+
+Nhóm 4: Dữ liệu bán thực tế (Semi-Synthetic) với điểm drift kiểm soát: Nhóm này bắc cầu giữa dữ liệu tổng hợp và dữ liệu thực tế thuần túy. Dataset lấy đặc trưng đầu vào từ dữ liệu thực (phức tạp, phi-Gaussian, có tương quan giữa các chiều) còn điểm drift thì được inject nhân tạo để có ground truth rõ ràng. Cách này cho phép kiểm tra hành vi của thuật toán trên phân phối phức tạp mà vẫn đo được các chỉ số đánh giá.
+\begin{itemize}
+	\item \textit{Electricity Semi-Synthetic:} Dựa trên bộ dữ liệu Electricity gốc của Harries~\cite{harries1999splice} từ thị trường điện năng bang New South Wales, Australia (giai đoạn 1996--1998, 45,312 quan sát). Bộ dữ liệu gốc ghi nhận giá điện dao động theo thời gian thực với các đặc trưng như: nhu cầu điện năng, lượng chuyển giao liên bang, và chu kỳ thời gian. Đây là một trong những benchmark thực tế được sử dụng phổ biến nhất trong nghiên cứu concept drift, do bản chất dữ liệu vốn đã chứa các yếu tố biến động tự nhiên (mùa vụ, sự kiện thị trường). Trong phiên bản semi-synthetic, 10 điểm drift được chèn tại các vị trí cố định bằng cách xáo trộn phân phối đặc trưng, cho phép kiểm tra hành vi của thuật toán trên dữ liệu phân phối phi-Gaussian phức tạp trong khi vẫn có ground truth xác định.
+\end{itemize}
+
+Nhóm 5: Recurrent, Gradual, và Stationary: Ba dataset trong nhóm này được thêm để định nghĩa Recurrent, Gradual và Stationary một cách chặt chẽ về mặt lý thuyết, đồng bộ với các định nghĩa drift trong khảo sát của Lu et al.~\cite{lu2018learning}.
+\begin{itemize}
+	\item \textit{Gaussian Recurrent Stream (GRS):} Luồng Gaussian 5 chiều với 4 concept có vector trung bình khác nhau, lặp theo chu kỳ $A\to B\to A\to B\dots$ đúng với định nghĩa Recurrent của Lu et al.~\cite{lu2018learning}. Mỗi concept được giữ ổn định một khoảng thời gian trước khi quay về concept đã từng xuất hiện, cho phép Concept Memory (Mục~\ref{sec:se-cdt-concept-memory}) phát huy đúng vai trò.
+	\item \textit{Gaussian Gradual Synthetic:} Dữ liệu Gaussian đa chiều với chuyển tiếp tuyến tính giữa hai mean trên một khoảng chuyển tiếp xác định trước (mặc định 400 mẫu). Khác với hyperplane (drift gradual chỉ ở $P(Y|X)$), dataset này cho drift gradual thực sự ở $P(X)$, do đó đo được khả năng phát hiện drift chậm của các phương pháp không giám sát. Đây cũng là điểm yếu cố hữu của IDW-MMD và là một trường hợp khó quan trọng để kiểm tra giới hạn của phương pháp.
+	\item \textit{Gaussian Stationary (No Drift):} Luồng Gaussian tĩnh (không có sự kiện drift). Tập này đóng vai trò đo báo động giả trên dữ liệu tĩnh, bổ sung cho kiểm tra Type-I error ở Mục~\ref{sec:h0-calibration}: nó cho biết liệu detector có sinh báo động giả khi luồng dữ liệu hoàn toàn không đổi hay không.
+\end{itemize}
 
 
+\subsection{Chiến lược đánh giá}
+\label{sec:eval-strategy}
+
+Hệ thống SE-CDT được đánh giá theo cấu trúc của hai thành phần bên trong cùng với khung thích ứng. \textbf{Thành phần phát hiện (ShapeDD-IDW)} chịu trách nhiệm cho việc phát hiện thời điểm drift dựa trên IDW-MMD và Gamma-approximation p-value, ưu tiên giảm FP và độ trễ. \textbf{Thành phần phân loại} của SE-CDT phân loại loại drift (sudden, gradual, incremental, recurrent, blip) bằng cách phân tích hình dạng của tín hiệu $\sigma(t)$ trên cửa sổ trượt kích thước $W$, hoàn toàn không giám sát. \textbf{Khung thích ứng} dùng nhãn loại drift do SE-CDT sản xuất để kích hoạt chiến lược cập nhật phù hợp (Full Reset cho sudden, Incremental Update cho gradual/incremental, Concept Memory cho recurrent). Chiến lược đánh giá ở các mục sau bám theo cấu trúc ba giai đoạn này.
+
+\label{par:tolerance-convention}
+Ba mục thực nghiệm dưới đây trả lời ba câu hỏi khác nhau (độ chính xác định vị, độ chính xác phân loại, khả năng phục hồi của mô hình), nên dùng ba cấu hình $\delta$, cooldown và nghĩa của FP khác nhau (Bảng~\ref{tab:eval-conventions}). Khi đối chiếu số liệu giữa các mục cần lưu ý rằng cùng một phương pháp có thể cho EDR/FP khác nhau không phải do thay đổi thuật toán mà do mục đo đang trả lời câu hỏi khác.
+
+\begin{table}[H]
+	\centering
+	\caption{Quy ước thiết lập ở ba mục đánh giá chính. Cùng detector nhưng đo dưới ba cấu hình khác nhau tùy mục tiêu.}
+	\label{tab:eval-conventions}
+	\resizebox{\textwidth}{!}{%
+	\begin{tabular}{lccp{5cm}l}
+		\toprule
+		Mục đánh giá & $\delta$ (mẫu) & Cooldown & Nghĩa của FP & Metric chính \\
+		\midrule
+		Detection (Mục~\ref{sec:detection-eval})        & 75  & 150 ($=2\delta$) & Báo trên dữ liệu tĩnh / lệch định vị & F1, EDR, FP \\
+		Classification (Mục~\ref{sec:classification-eval}) & 250 & --- & Báo sai vị trí ngoài khoảng chuyển tiếp & ACC$_\text{cat}$, ACC$_\text{sub}$, EDR \\
+		Adaptation (Mục~\ref{sec:adaptation-eval})     & 400 & --- & Báo dư trong khoảng phục hồi & Prequential Accuracy \\
+		\bottomrule
+	\end{tabular}%
+	}
+\end{table}
+
+\section{Đánh giá khả năng phát hiện của SE-CDT}
+\label{sec:detection-eval}
+
+Mục này đánh giá khả năng phát hiện của SE-CDT, tức ShapeDD-IDW, bằng cách đối chiếu với các phương pháp phát hiện drift tiêu biểu thuộc nhiều trường phái: KS-Test (thống kê cổ điển), MMD (kernel-based), DAWIDD (window-based), D3 (Discriminative Drift Detector~\cite{gozuacik2019d3}), và ShapeDD gốc~\cite{shapeDD2021}. Trọng tâm phân tích được đặt vào khả năng nhận diện. Sự thay đổi phân phối đầu vào $P(X)$ (Distribution Shift / Covariate Shift). Vì module phân loại của SE-CDT chỉ chạy sau khi module phát hiện báo drift, F1 phát hiện của SE-CDT trùng với ShapeDD-IDW; cả hai dòng được giữ lại trong bảng kết quả để bộc lộ rõ mối quan hệ này.
+
+\subsection{Thiết lập thực nghiệm phát hiện drift (Detection Setup)}
+Các tham số cho bài toán phát hiện drift được thiết lập như sau:
+\begin{itemize}
+	\item Dữ liệu bao gồm 14 tập dữ liệu (13 tổng hợp + 1 bán thực tế, chi tiết ở Mục~\ref{sec:dataset-config}). Tập stationary (không có drift) được tách riêng để đo false-positive. Kích thước của luồng dữ liệu $10{,}000$ mẫu mỗi dataset với 10 điểm drift được chèn tại các vị trí cố định (mỗi 1{,}000 mẫu) để tạo ground truth, trừ tập stationary (0 drift).
+	\item Quy trình đánh giá được thực hiện 30 lần chạy độc lập (30 runs) với các seed ngẫu nhiên khác nhau để đảm bảo tính ổn định của kết quả (xem Mục~\ref{sec:dataset-config}).
+	\item Độ trễ chấp nhận $\delta = 75$ và cooldown $= 150$ ($=2\delta$) như Bảng~\ref{tab:eval-conventions}. Cooldown đặt bằng độ rộng cửa sổ TP $[t_{\text{drift}}-\delta, t_{\text{drift}}+\delta]$ để mỗi drift thật chỉ tạo tối đa một báo, tránh việc báo trùng ở vùng lân cận.
+\end{itemize}
+
+\subsection{Kết quả so sánh hiệu suất phát hiện}
+
+Bảng~\ref{tab:comprehensive_performance} trình bày kết quả tổng hợp của các phương pháp ShapeDD-IDW và SE-CDT và các phương pháp được tham khảo (MMD, KS-Test, D3, DAWIDD, ShapeDD). Các phương pháp ShapeDD-IDW và SE-CDT dùng chung thuật toán phát hiện nên có F1 trùng nhau; SE-CDT bổ sung bước phân loại được đánh giá ở Mục~\ref{sec:classification-eval}. Các chỉ số F1 tính dựa trên khả năng phát hiện đúng các điểm drift đã biết (ground truth), tổng hợp từ 30 lần chạy độc lập trên 14 tập dữ liệu.
+
+% =============================================================================
+% Bảng tổng hợp hiệu suất
+% =============================================================================
+\begin{table}[H]
+	\centering
+	\caption[So sánh tổng hợp hiệu suất các phương pháp phát hiện drift]{So sánh tổng hợp hiệu suất các phương pháp phát hiện drift. \textit{Lưu ý:} \texttt{ShapeDD\_IDW} là module phát hiện của SE-CDT; SE-CDT là toàn bộ hệ thống (bao gồm cả module phân loại). Ở benchmark phát hiện này, hai dòng dùng cùng thuật toán nên F1, Precision, Recall, FP trùng nhau theo thiết kế.}
+	\label{tab:comprehensive_performance}
+	\input{../../results/tables/table_I_comprehensive_performance.tex}
+\end{table}
+
+DAWIDD có F1 cao nhất về mặt số học ($0.531$), trong khi ShapeDD-IDW (cùng cấu hình IDW-MMD đứng riêng làm ablation) cũng đạt $F_1 = 0.531$ với Precision $=0.432$, Recall/EDR $=0.737$ và $9.6$ báo động giả trung bình mỗi run. Theo kiểm định Nemenyi ở Mục~\ref{sec:statistical-analysis}, khác biệt này không có ý nghĩa thống kê.
+
+So với ShapeDD gốc, ShapeDD-IDW giữ F1 cao hơn ($0.531$ so với $0.492$) và giảm FP từ $13.1$ xuống $9.6$. Cải tiến này đến từ cơ chế trọng số nghịch biến mật độ (Thuật toán~\ref{alg:idw_mmd}) kết hợp xấp xỉ Gamma thay cho permutation test. Về thời gian chạy, benchmark cho thấy ShapeDD-IDW nhanh hơn khoảng $7\times$ so với ShapeDD gốc (Bảng~\ref{tab:runtime_stats}). D3 có Precision cao nhất và FP thấp nhất nhưng Recall thấp hơn, còn KS-Test có Recall cao nhưng tạo quá nhiều báo động giả để phù hợp với hệ thống giám sát tự động.
+
+Số FP $\sim 9.6$/run của module phát hiện SE-CDT (ShapeDD-IDW) và cấu hình IDW-MMD đứng riêng cần được đọc cùng số lượng cửa sổ và số ứng viên được kiểm định. Trên bộ đánh giá này, mỗi seed có nhiều cửa sổ kiểm định và nhiều điểm drift thật. Bước lọc hình dạng giúp giảm số ứng viên trước khi kiểm định bằng IDW-MMD, vì vậy FP thực tế thấp hơn trường hợp kiểm định mọi cửa sổ một cách độc lập. Tham số khoảng triệt báo $\text{cooldown}=150$ (xem mục thiết lập) cũng giúp triệt tiêu phần lớn báo trùng trong vùng lân cận của mỗi điểm drift thật. Nếu muốn giảm FP hơn nữa, cần siết mức $\alpha$ hoặc dùng hiệu chỉnh đa kiểm định.
+
+\subsection{Phân tích ý nghĩa thống kê}
+
+\label{sec:statistical-analysis}
+Để kiểm tra liệu khác biệt hiệu suất giữa các phương pháp có ý nghĩa thống kê hay không, Hình~\ref{fig:critical_difference} trình bày biểu đồ Critical Difference (CD) dùng kiểm định Friedman và Nemenyi post-hoc.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.9\textwidth]{../../results/plots/critical_difference_f1.png}
+	\caption[Biểu đồ Critical Difference (CD)]{Biểu đồ Critical Difference (CD) với mức ý nghĩa $\alpha = 0.05$. DAWIDD có thứ hạng trung bình tốt nhất; ShapeDD-IDW và cấu hình IDW-MMD đứng riêng xếp ngay sau (cách DAWIDD $0.142$, nhỏ hơn ngưỡng CD $= 2.806$) nên không khác biệt có ý nghĩa thống kê với DAWIDD. SE-CDT có cùng thứ hạng vì dùng chung thuật toán phát hiện.}
+	\label{fig:critical_difference}
+\end{figure}
+
+\begin{table}[H]
+	\centering
+	\caption[Thứ hạng trung bình theo F1-score trong kiểm định Friedman/Nemenyi]{Thứ hạng trung bình theo F1-score trong kiểm định Friedman/Nemenyi. ShapeDD-IDW và SE-CDT dùng chung thuật toán phát hiện nên có thứ hạng trung bình bằng nhau.}
+	\label{tab:statistical_tests}
+	\input{../../results/tables/table_statistical_tests.tex}
+\end{table}
+
+Kết quả kiểm định Friedman/Nemenyi trong Bảng~\ref{tab:statistical_tests} cho thấy DAWIDD có thứ hạng trung bình tốt nhất (3.679); ShapeDD-IDW và cấu hình IDW-MMD đứng riêng đạt thứ hạng trung bình 3.821, sát ngay sau DAWIDD (SE-CDT có cùng thứ hạng vì dùng chung thuật toán phát hiện). Với ngưỡng CD $= 2.806$ ($\alpha = 0.05$), khoảng cách giữa ShapeDD-IDW và DAWIDD chỉ $0.142 < $ CD, nên khác biệt thứ hạng F1 không đạt mức ý nghĩa thống kê. Tương tự, khoảng cách so với MMD ($0.786$) cũng nhỏ hơn CD nên không thể kết luận khác biệt thống kê. Trong nhóm dựa trên MMD, các biến thể đề xuất có thứ hạng trung bình tốt hơn MMD ($3.821$ so với $4.607$) nhưng cách biệt nằm dưới ngưỡng Nemenyi, nên  không khác biệt thống kê đáng kể.
+
+\subsection{Đánh giá chi tiết trên từng loại dữ liệu}
+
+Hiệu suất của các phương pháp thay đổi tùy thuộc vào đặc tính của tập dữ liệu (Bảng~\ref{tab:f1_by_dataset_part1}--\ref{tab:f1_by_dataset_part4}).
+
+% =============================================================================
+% Bảng F1 theo Dataset
+% =============================================================================
+\begin{table}[H]
+	\centering
+	\caption{F1-Score theo dataset (Phần 1: Dữ liệu cơ bản và Mild/Moderate Drift)}
+	\label{tab:f1_by_dataset_part1}
+	\input{../../results/tables/table_II_part1.tex}
+\end{table}
+
+\begin{table}[H]
+	\centering
+	\caption{F1-Score theo dataset (Phần 2: Drift mạnh và thay đổi mặt phẳng)}
+	\label{tab:f1_by_dataset_part2}
+	\input{../../results/tables/table_II_part2.tex}
+\end{table}
+
+\begin{table}[H]
+	\centering
+	\caption{F1-Score theo dataset (Phần 3: RBF Blips, GCS và GRS)}
+	\label{tab:f1_by_dataset_part3}
+	\input{../../results/tables/table_II_part3.tex}
+\end{table}
+
+\begin{table}[H]
+	\centering
+	\caption{F1-Score theo dataset (Phần 4: Standard SEA và trung bình)}
+	\label{tab:f1_by_dataset_part4}
+	\input{../../results/tables/table_II_part4.tex}
+\end{table}
+
+\begin{enumerate}
+	\item Trên các tập có thay đổi phân phối rõ như Random Moderate, Random Severe, Random Ultra Severe, GCS và GRS (Gaussian Recurrent Stream), ShapeDD-IDW đạt F1 khoảng $0.69$--$0.76$, ổn định hơn ShapeDD gốc ở phần lớn các trường hợp và giữ được tín hiệu Standard MMD cần cho bước phân loại. Hình~\ref{fig:sudden_drift_vis} minh họa dạng tín hiệu ShapeDD tại một kịch bản sudden drift.
+	\item Đối với các tập dữ liệu drift nhẹ và drift dần dần, trên các tập như Random Mild, ba phương pháp đề xuất đạt F1 $= 0.511$, thấp hơn MMD ($0.563$) nhưng không bị mất hoàn toàn tín hiệu. Với Gaussian Gradual Synthetic, cả ba phương pháp đề xuất đạt F1 $= 0.470$, cao hơn MMD ($0.459$) một chút (Hình~\ref{fig:gradual_drift_vis} minh họa tín hiệu trên kịch bản gradual). Bước kiểm định IDW-MMD với p-value Gamma vẫn đủ nhạy để phát hiện drift dần dần khi cửa sổ tham chiếu và cửa sổ kiểm tra đủ lớn ($l_1 = 50$, $l_2 = 150$).
+	\item Đối với các tập dữ liệu chỉ thay đổi về nhãn như Hyperplane, LED Abrupt, và Standard SEA, điểm F1 của module phát hiện SE-CDT tương đối thấp ($0.179$, $0.148$, và $0.118$). Đây là hành vi phù hợp với phạm vi của phương pháp không giám sát: hệ thống chủ yếu quan sát $P(X)$, nên các thay đổi nằm ở $P(Y|X)$ không tạo tín hiệu rõ. Tuy nhiên, các giá trị khác 0 cũng cho thấy vẫn còn một mức báo động dư thừa do nhiễu mẫu và do cách đánh giá theo cửa sổ.
+	\item Đối với blip drift, trên tập RBF Blips, ba phương pháp đề xuất đạt F1 $= 0.744$ ở bài toán phát hiện, gần với MMD ($0.742$), trong khi D3 đạt cao hơn ($1.000$) nhờ classifier phân biệt cửa sổ trước và sau blip. Các thay đổi ngắn hạn vẫn có thể được phát hiện hiệu quả; việc phân loại đúng Blip vẫn còn khó hơn và được phân tích riêng ở Mục~\ref{sec:classification-by-type}.
+	\item Báo động giả trong detection:
+	      Bảng~\ref{tab:comprehensive_performance} báo cáo FP trung bình theo mỗi run trên toàn bộ bộ đánh giá: KS-Test cao nhất (27.2 FP/run), trong khi ShapeDD-IDW (và cấu hình IDW-MMD đứng riêng) ở mức $\sim 9.6$ FP/run, thấp hơn ShapeDD gốc (13.1 FP/run) và gần MMD (10.5 FP/run). Riêng Hình~\ref{fig:stationary_fp} hiển thị tổng số báo động giả trên tập dữ liệu tĩnh; do đó con số trong hình là tổng cộng sau khi gộp nhiều lần chạy, không phải FP/run. Có hai lý do giúp bước lọc này phát huy tác dụng: (i) cơ chế phát hiện hình dạng yêu cầu tín hiệu MMD phải khớp dạng tam giác đặc trưng; (ii) băng thông kernel $\gamma$ được ước lượng một lần bằng median heuristic và dùng chung cho cả ba kernel $K_{XX}, K_{YY}, K_{XY}$.
+\end{enumerate}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.9\textwidth]{../../results/plots/vis_mixed_a_SE.png}
+	\caption[Minh họa tín hiệu phát hiện trên dữ liệu Sudden Drift]{Minh họa tín hiệu phát hiện trên dữ liệu Sudden Drift (kịch bản Mixed A). ShapeDD tạo ra hình dạng "tam giác cân" đặc trưng tại điểm drift, đúng như dự báo lý thuyết.}
+	\label{fig:sudden_drift_vis}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.9\textwidth]{../../results/plots/vis_repeated_gradual_SE.png}
+	\caption[Minh họa tín hiệu trên dữ liệu Gradual Drift]{Minh họa tín hiệu trên dữ liệu Gradual Drift. Tín hiệu (màu đỏ - Subplot 03) không tạo thành đỉnh nhọn rõ ràng mà bị san phẳng.}
+	\label{fig:gradual_drift_vis}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.9\textwidth]{../../results/plots/figure_4_stationary_fp.png}
+	\caption[Phân tích số lượng báo động giả trên tập dữ liệu tĩnh]{Tổng số báo động giả trên tập dữ liệu tĩnh (Stationary), gộp qua các lần chạy. Chỉ số này bổ sung cho FP/run ở Bảng~\ref{tab:comprehensive_performance}: KS tạo ra nhiều báo động sai nhất, trong khi các phương pháp MMD-based thấp hơn rõ rệt.}
+	\label{fig:stationary_fp}
+\end{figure}
+
+\subsection{Kiểm tra tỉ lệ báo động sai trên dữ liệu không có drift}
+\label{sec:h0-calibration}
+
+Số False Positive quan sát được trên bộ đánh giá phát hiện chỉ phản ánh một phần hành vi của kiểm định, vì các mốc drift thật tương đối thưa và bước lọc theo hình dạng đỉnh đã loại bớt ứng viên trước khi kiểm định. Để đánh giá trực tiếp liệu kiểm định có thực sự gần mức $\alpha = 0.05$ hay không, luận văn tiến hành thêm một thí nghiệm phụ trên dữ liệu \textbf{hoàn toàn không có drift} và đo trực tiếp \textbf{Type-I error} (xác suất báo động sai khi giả thuyết H0 đúng) của ba bộ phát hiện chính:
+\begin{itemize}
+	\item \textbf{MMD} với p-value tính bằng permutation test ($N_{\text{perm}} = 2{,}500$).
+	\item \textbf{IDW-MMD} với p-value tính theo xấp xỉ Gamma.
+	\item \textbf{SE-CDT} (kết hợp ShapeDD-IDW cho phát hiện và luật phân loại theo ngưỡng).
+\end{itemize}
+
+Mỗi phương pháp chạy trên ba phân phối tĩnh để bao quát các tình huống thường gặp: (i) Gauss-iid $d=5$, (ii) Gauss-iid $d=10$ (kiểm tra ảnh hưởng số chiều), và (iii) Gauss-AR(1) $d=5$ với $\rho = 0.6$ (kiểm tra dữ liệu có tương quan thời gian). Mỗi cấu hình chạy độc lập 200 lần với seed khác nhau, dùng cửa sổ tổng kích thước $W = 300$ mẫu. Standard MMD và IDW-MMD chia $W$ thành hai nửa bằng nhau ($150$ tham chiếu vs $150$ kiểm tra); SE-CDT (composite) áp dụng giao thức ShapeDD với $l_1 = 50$, $l_2 = 150$ trên cùng cửa sổ. Mức ý nghĩa danh nghĩa $\alpha = 0.05$.
+
+\begin{table}[H]
+	\centering
+	\caption[Tỉ lệ Type-I error trên dữ liệu tĩnh]{Tỉ lệ Type-I error trên dữ liệu tĩnh (200 lần chạy mỗi cell, $\alpha = 0.05$). Số sau dấu $\pm$ là nửa khoảng tin cậy 95\% theo Wilson.}
+	\label{tab:h0_calibration}
+	\input{../../results/tables/table_h0_calibration.tex}
+\end{table}
+
+Kết quả ở Bảng~\ref{tab:h0_calibration} cho thấy:
+\begin{itemize}
+	\item MMD (permutation test, $N_{\text{perm}} = 2{,}500$) có Type-I error nằm trong khoảng $0.025$--$0.055$, sát với mức danh nghĩa $\alpha = 0.05$. Đây là hành vi đúng với lý thuyết, cho thấy MMD dùng làm baseline trong luận văn không bị thiên lệch.
+	\item IDW-MMD với xấp xỉ Gamma đạt Type-I error trong khoảng $0.040$--$0.075$, gần với mức danh nghĩa $\alpha = 0.05$. Kiểm định do đó không quá bảo thủ như xấp xỉ Gaussian dưới giả thuyết không drift.
+	\item SE-CDT (kết hợp bước lọc hình dạng và IDW-MMD ở bước kiểm định) đạt Type-I error $0.045$--$0.100$, hơi cao hơn $\alpha$ trên hai phân phối ($d=5$ iid và AR(1)). Mô hình đã áp dụng hiệu chỉnh Bonferroni khi một trace có nhiều đỉnh ứng viên, nhưng Type-I error tổng hợp của toàn pipeline vẫn chịu ảnh hưởng từ bước chọn đỉnh và tính chất phụ thuộc giữa các cửa sổ trượt. Vì vậy kết quả H0 được diễn giải thận trọng như một kiểm tra calibration thực nghiệm, không phải bảo đảm lý thuyết đầy đủ cho toàn bộ pipeline.
+\end{itemize}
+
+Việc chọn xấp xỉ Gamma theo Gretton et al.~\cite{gretton2009gamma} thay cho xấp xỉ Gaussian xuất phát từ một nhận xét lý thuyết: dưới giả thuyết không drift, MMD$^2_u$ tiệm cận một $\chi^2$ có trọng chứ không phải Gaussian. Nếu áp dụng Gaussian dưới giả thuyết không drift, kiểm định có xu hướng quá bảo thủ. Xấp xỉ Gamma khắc phục điểm này tốt hơn và cho kết quả gần mức $\alpha = 0.05$ hơn trong thí nghiệm trên dữ liệu tĩnh.
+
+\subsection{Đánh giá hiệu suất tính toán}
+
+Bảng~\ref{tab:runtime_stats} so sánh thời gian và thông lượng.
+
+\begin{table}[H]
+	\centering
+	\caption{So sánh hiệu suất tính toán của các phương pháp}
+	\input{../../results/tables/table_III_runtime_stats.tex}
+\end{table}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.9\textwidth]{../../results/plots/figure_6_runtime.png}
+	\caption{Thời gian chạy trung bình của các phương pháp trên đánh giá phát hiện (10,000 mẫu, 30 lần chạy).}
+	\label{fig:runtime-comparison}
+\end{figure}
+
+ShapeDD-IDW nhanh hơn rõ rệt so với ShapeDD gốc trên luồng 10{,}000 mẫu (Bảng~\ref{tab:runtime_stats}, Hình~\ref{fig:runtime-comparison}), khoảng $7\times$, nhờ thay permutation test bằng xấp xỉ Gamma; MMD và DAWIDD chậm hơn do không có cơ chế kiểm định gần đúng. Điểm quan trọng hơn là bước kiểm định dựa trên xấp xỉ Gamma có diễn giải thống kê rõ hơn so với việc chỉ đặt ngưỡng thủ công trên trị MMD.
+
+\section{Đánh giá module phân loại của SE-CDT}
+\label{sec:classification-eval}
+
+Phần này đánh giá khả năng phân loại của SE-CDT: khả năng nhận diện loại drift (Sudden, Gradual, Incremental, Recurrent, Blip) dựa trên hình dạng tín hiệu drift magnitude $\sigma(t)$ do module phát hiện ShapeDD-IDW (Mục~\ref{sec:detection-eval}) sản xuất, hoàn toàn không giám sát.
+
+\subsection{Thiết lập thực nghiệm phân loại drift}
+\label{sec:classification-setup}
+Thực nghiệm phân loại dùng song song hai chế độ đo lường, ứng với hai câu hỏi khác nhau:
+\begin{itemize}
+	\item \textbf{Oracle mode} (đo CAT, SUB): SE-CDT được cho biết trước vị trí drift ground-truth và chỉ thực hiện bước phân loại. Chế độ này tách biệt năng lực phân biệt hình dạng tín hiệu khỏi năng lực tự phát hiện.
+	\item \textbf{Real detection mode} (đo EDR, MDR): SE-CDT tự tìm điểm drift từ tín hiệu MMD rồi phân loại, đánh giá pipeline đầu-cuối. EDR (Event Detection Rate) là tỉ lệ sự kiện drift được nhận diện; MDR (Miss Detection Rate $= 1 - \text{EDR}$) là tỉ lệ bỏ sót.
+\end{itemize}
+Vì CAT và SUB được đo ở oracle mode, hai cấu hình SE-CDT (Std) và SE-CDT (IDW) cho cùng kết quả CAT/SUB. Khác biệt giữa hai cấu hình chỉ xuất hiện ở EDR/MDR. Đánh giá được chạy với 6 kịch bản tổng hợp (30 seeds mỗi kịch bản = 180 luồng, mỗi luồng chứa 10 sự kiện drift = 1800 sự kiện phân loại):
+
+\begin{table}[H]
+	\centering
+	\caption{Sáu kịch bản benchmark module phân loại của SE-CDT}
+	\label{tab:classification-scenarios}
+	\begin{tabular}{|l|l|c|}
+		\hline
+		\textbf{Kịch bản} & \textbf{Thành phần drift (xoay vòng)} & \textbf{Độ dài luồng} \\
+		\hline
+		Mixed A        & Sudden $\to$ Gradual $\to$ Recurrent   & $\sim$11,800 mẫu \\
+		Mixed B        & Blip $\to$ Incremental $\to$ Sudden    & $\sim$13,800 mẫu \\
+		Repeated Sudden      & 10 $\times$ Sudden                     & $\sim$9,600 mẫu  \\
+		Repeated Gradual     & 10 $\times$ Gradual                    & $\sim$11,800 mẫu \\
+		Repeated Incremental & 10 $\times$ Incremental                & $\sim$13,800 mẫu \\
+		Repeated Recurrent   & 10 $\times$ Recurrent (A$\to$B$\to$A)  & $\sim$11,800 mẫu \\
+		\hline
+	\end{tabular}
+\end{table}
+
+Trong đó, mỗi sự kiện Sudden, Gradual và Incremental dịch chuyển một tập đặc trưng khác nhau theo cơ chế xoay vòng, để mỗi concept mới là độc lập với các concept đã thấy, đúng theo định nghĩa của Lu và cộng sự~\cite{lu2018learning}. Riêng Recurrent giữ logic luân phiên $A \leftrightarrow B$ vì đây mới là định nghĩa đặc trưng của loại drift này.
+
+\begin{itemize}
+	\item \textbf{Cửa sổ ShapeDD:} $W = 50$, stride $s = 10$.
+	\item \textbf{Tín hiệu phân loại:} Standard MMD. Các thử nghiệm so sánh cho thấy IDW-MMD không phù hợp làm tín hiệu phân loại vì dễ làm mờ các drift chậm như Gradual/Incremental. Vì vậy hệ thống dùng mô hình kết hợp: bước kiểm định ứng viên dùng IDW-MMD, còn bước phân loại dùng Standard MMD để giữ lại thông tin hình dạng toàn cục.
+	\item \textbf{Ngưỡng phát hiện:} hiệu chỉnh trên một tập validation riêng (xem Bảng A.1 và A.2 ở Phụ lục). Ngưỡng mặc định của thư viện gốc quá bảo thủ trong điều kiện streaming nên đã được nới xuống cho phù hợp.
+\end{itemize}
+
+Trước khi đọc kết quả số, Hình~\ref{fig:signal_sudden} và Hình~\ref{fig:signal_incremental} minh họa trực quan lý do Sudden drift dễ phân loại hơn Incremental: SE-CDT dựa vào sự khác biệt hình dạng của tín hiệu $\sigma(t)$ để phân biệt các loại drift.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.95\textwidth]{../../results/plots/vis_repeated_sudden_SE.png}
+	\caption[Hình dạng tín hiệu SE-CDT --- Sudden Drift]{Tín hiệu SE-CDT trên kịch bản Repeated Sudden: $\sigma(t)$ tạo đỉnh nhọn, đối xứng tại mỗi điểm drift --- đặc trưng dễ nhận diện bằng height threshold.}
+	\label{fig:signal_sudden}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.95\textwidth]{../../results/plots/vis_repeated_incremental_SE.png}
+	\caption[Hình dạng tín hiệu SE-CDT --- Incremental Drift]{Tín hiệu SE-CDT trên kịch bản Repeated Incremental: $\sigma(t)$ tăng dần theo dạng ramp, không có đỉnh nhọn --- khó phân biệt với Gradual drift, phản ánh độ chính xác subcategory thấp hơn nhiều so với Sudden (4.4\% so với 82.4\%).}
+	\label{fig:signal_incremental}
+\end{figure}
+
+\subsection{Kết quả phân loại tổng hợp của SE-CDT}
+\label{sec:classification-results}
+
+Bảng~\ref{tab:se-cdt-results} trình bày kết quả tổng hợp trên 1800 sự kiện phân loại ở trên. Hai cấu hình đều dùng Standard MMD cho tín hiệu phân loại nên CAT/SUB bằng nhau, khác biệt chỉ nằm ở tín hiệu detection. SE-CDT (Std) dùng Standard MMD, nhạy với cả 5 loại drift (EDR $\approx 92.6\%$) nhưng FP cao hơn. SE-CDT (IDW) dùng IDW-MMD, chặt hơn về FP nhưng bỏ sót Gradual/Incremental. Trong ngữ cảnh phân loại, ưu tiên là không bỏ sót sự kiện, vì vậy \textbf{SE-CDT (Std)} được chọn làm cấu hình chính.
+
+\begin{table}[H]
+	\centering
+	\caption{Kết quả phân loại drift type của SE-CDT (tổng hợp 1800 sự kiện, 6 kịch bản $\times$ 30 seeds)}
+	\label{tab:se-cdt-results}
+	\input{../../results/tables/table_se_cdt_aggregate.tex}
+\end{table}
+
+Kết quả ở Bảng~\ref{tab:se-cdt-results} cho thấy một sự chênh lệch lớn giữa độ chính xác phân nhóm mức lớn (CAT Acc $= 80.1\%$, phân biệt giữa drift nhanh TCD và drift chậm PCD) và độ chính xác phân loại chi tiết tiểu loại (SUB Acc $= 50.5\%$). Sự sụt giảm hiệu suất này xuất phát từ một số lý do kỹ thuật và giới hạn lý thuyết cốt lõi của phương pháp tiếp cận không giám sát:
+\begin{itemize}
+	\item \textbf{Độ khó đặc thù của Incremental Drift ($4.4\%$):} Đây là trường hợp yếu nhất của mô hình. Khác với Sudden drift tạo ra đỉnh nhọn đối xứng rõ ràng trên tín hiệu MMD (như Hình~\ref{fig:signal_sudden}), Incremental drift dịch chuyển phân phối một cách từ từ và liên tục. Tín hiệu MMD trong trường hợp này giống như một cao nguyên phẳng chứa nhiều nhiễu răng cưa hơn là một đỉnh đơn độc (như Hình~\ref{fig:signal_incremental}). Do đó, các đặc trưng thời gian được thiết kế thủ công như độ dốc (LTS), độ lệch chuẩn (SDS) và trung bình trượt (MS) hầu như không thể phân biệt được tín hiệu này với nhiễu nền tĩnh thông thường, dẫn đến tỉ lệ nhận diện sai gần như hoàn toàn.
+	\item \textbf{Sự chồng lấn giữa Gradual Drift ($30.8\%$) và các lớp khác:} Gradual drift có khoảng chuyển tiếp dài nên tín hiệu MMD thường phân rã thành nhiều đỉnh phụ nhỏ. Điều này làm cho thuật toán dễ bị nhầm lẫn với kịch bản Recurrent drift (quay lại trạng thái cũ) hoặc chuỗi Blip drift ngắn hạn.
+	\item \textbf{Sự đánh đổi nghiêm trọng về báo động giả (FP):} Cấu hình chính SE-CDT (Std) ghi nhận lượng báo động giả cực kỳ lớn ($4846$ FP trên toàn bộ các lần chạy thử nghiệm). Điều này là do Standard MMD rất nhạy với các biến động nhiễu tần số cao của luồng dữ liệu. Khi chuyển sang cấu hình SE-CDT (IDW) để siết chặt FP xuống còn $657$, bộ phát hiện lại bỏ sót hầu hết các sự kiện drift chậm (EDR giảm mạnh từ $92.6\%$ xuống còn $56.7\%$). Đây là một giới hạn lớn: hệ thống hoặc phải chấp nhận alert fatigue (quá nhiều báo động giả) để phân loại đầy đủ các lớp drift, hoặc phải hy sinh khả năng nhận diện các loại drift chậm để giữ hệ thống ổn định.
+	\item \textbf{Tính heuristic của các ngưỡng quyết định:} Việc phân loại hoàn toàn không giám sát dựa trên một cây quyết định tĩnh với các ngưỡng cứng ($WR < 0.15$, $SNR > 2.0$, v.v.). Các ngưỡng này chưa có cơ sở toán học chặt chẽ giống như bước phát hiện (vốn được chuẩn hóa bằng p-value thông qua xấp xỉ Gamma), dẫn đến mô hình kém linh hoạt khi xử lý các kịch bản dữ liệu luồng đa dạng.
+\end{itemize}
+
+SE-CDT (Std) đạt CAT $=80.1\%$ và SUB micro-average $=50.5\%$ ở oracle mode. Bảng~\ref{tab:se-cdt-performance-by-type} cũng báo cáo macro-average per-class $=50.0\%$ để tránh việc kết quả bị chi phối bởi lớp xuất hiện nhiều hơn trong benchmark. Hai giá trị micro và macro gần nhau cho thấy lỗi không chỉ đến từ lệch phân phối lớp, mà từ bản thân độ khó của một số loại drift.
+
+Concept Memory giúp Recurrent đạt $71.5\%$, thấp hơn kết quả recurrent mà CDT-MSW công bố trên benchmark UCI khác ($83.9\%$) nhưng vẫn cho thấy cơ chế so khớp khái niệm có tác dụng. Tuy nhiên điều này cũng làm lộ ra sự đánh đổi: một phần Gradual và Incremental bị hút vào nhánh Blip/Recurrent khi tín hiệu có nhiều đỉnh phụ.
+
+\subsection{Phân tích chi tiết theo loại drift}
+\label{sec:classification-by-type}
+
+Bảng~\ref{tab:se-cdt-performance-by-type} và Hình~\ref{fig:confusion-5class}, \ref{fig:confusion-category} phân tích nguồn gốc lỗi phân loại.
+
+\begin{table}[H]
+	\centering
+	\caption{Độ chính xác phân loại theo từng loại drift (oracle mode, SE-CDT Std)}
+	\label{tab:se-cdt-performance-by-type}
+	\input{../../results/tables/table_se_cdt_performance_by_type.tex}
+\end{table}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.95\textwidth]{../../results/plots/confusion_matrix_se_cdt.png}
+	\caption[Confusion Matrix --- 5 lớp drift]{Confusion Matrix cho 5 loại drift (oracle mode, cấu hình SE-CDT đầy đủ với Concept Memory và Online Self-Calibration). Chi tiết độ chính xác từng lớp xem Bảng~\ref{tab:se-cdt-performance-by-type}.}
+	\label{fig:confusion-5class}
+\end{figure}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.85\textwidth]{../../results/plots/confusion_matrix_category.png}
+	\caption[Confusion Matrix --- Category Level]{Confusion Matrix ở mức nhóm (TCD vs PCD, oracle mode). Độ chính xác nhóm đạt $80.1\%$; drift chậm (Gradual, Incremental) tiếp tục chồng lấn tín hiệu nhiều hơn drift nhanh (Sudden, Blip).}
+	\label{fig:confusion-category}
+\end{figure}
+
+Sudden đạt $82.4\%$, vẫn là nhóm ổn định nhất vì tín hiệu MMD tạo đỉnh nhọn và SNR cao. Blip đạt $60.8\%$ sau khi luật phân loại cho phép hai hoặc ba peak và kiểm tra profile nhiễu ngắn hạn; kết quả này tốt hơn phiên bản cứng trước đó nhưng chưa ngang mức supervised trong CDT-MSW. Recurrent đạt $71.5\%$ nhờ Concept Memory, song vẫn còn nhầm với Blip/Sudden khi mẫu sau drift giống một concept đã lưu.
+
+Hai nhóm PCD là phần yếu nhất. Gradual đạt $30.8\%$ vì tín hiệu chuyển tiếp dài thường tạo nhiều đỉnh phụ và dễ bị nhầm với Recurrent. Incremental chỉ đạt $4.4\%$; các đặc trưng LTS, SDS và MS hiện chưa tách được ramp tăng dần khỏi Gradual trong nhiều trường hợp. Đây là hạn chế chính của luật phân loại dạng cây và là lý do phần kết luận đề xuất chuyển sang mô hình xác suất hoặc học ngưỡng có giám sát nhẹ.
+
+\subsection{So sánh với CDT-MSW}
+\label{sec:classification-sota}
+
+Bảng~\ref{tab:cdt-comparison-by-type} so sánh với CDT-MSW~\cite{guo2022cdtmsw}, một phương pháp supervised sử dụng label và dữ liệu UCI thực tế.
+
+\begin{table}[H]
+	\centering
+	\caption[So sánh phân loại CDT-MSW vs SE-CDT]{So sánh độ chính xác phân loại theo từng loại drift giữa CDT-MSW (Guo et al.~2022) và SE-CDT. Đây là đối chiếu tham khảo, không phải so sánh đồng điều kiện: CDT-MSW chạy có giám sát trên 10 tập UCI thực tế với ACC$_\text{subcat}$ tính có điều kiện trên các drift được phát hiện và phân nhóm đúng; SE-CDT chạy không giám sát trên 6 kịch bản Gaussian 5-D (Mục~\ref{sec:classification-setup}) với SUB tính trên toàn bộ ground truth. Ngoài ra ``EDR'' trong~\cite{guo2022cdtmsw} viết tắt cho \textit{Error Detection Rate} (càng thấp càng tốt), khác với ``EDR'' của luận văn (\textit{Event Detection Rate}, tương đương Recall); giá trị $82.5\%$ ở cột trái suy từ MDR Bảng~5 của bài báo gốc.}
+	\label{tab:cdt-comparison-by-type}
+	\input{../../results/tables/table_cdt_msw_vs_se_cdt_by_drift_type.tex}
+\end{table}
+
+Vì hai cột vận hành trên hai phân phối dữ liệu và hai chế độ giám sát khác nhau, bảng chỉ có ý nghĩa tham khảo. SE-CDT chạy không cần nhãn và đạt recall cao hơn trong thiết lập này, nhưng độ chính xác phân loại tiểu loại vẫn thấp hơn CDT-MSW, đặc biệt ở Gradual và Incremental. Luận văn không khẳng định SE-CDT vượt CDT-MSW trên cùng thiết lập; so sánh trực tiếp cần triển khai SE-CDT trên các tập UCI gốc, được liệt kê là hướng phát triển ở Chương~\ref{chap:conclusion}.
+
+\section{Đánh giá khả năng thích ứng mô hình}
+\label{sec:adaptation-eval}
+
+Sau khi SE-CDT phát hiện và phân loại drift, khung thích ứng dùng nhãn loại drift để chọn chiến lược cập nhật mô hình tương ứng. Phần này đánh giá hiệu quả của chiến lược thích ứng theo loại drift (Type-Specific Adaptation) bằng chỉ số \textbf{Prequential Accuracy}.
+
+\subsection{Thiết lập thực nghiệm thích ứng mô hình}
+\begin{itemize}
+	\item \textbf{Môi trường:} Prequential Evaluation trên luồng dữ liệu mô phỏng.
+	\item \textbf{Dữ liệu:} $T = 5{,}000$ mẫu, mật độ drift cao (5 sự kiện/luồng).
+	\item \textbf{Kịch bản:} ba loại: Stepping (drift tích lũy), Sudden, và Mixed.
+	\item \textbf{Bốn chiến lược thích ứng:}
+	\begin{itemize}
+		\item \textit{No Adaptation:} giữ nguyên mô hình ban đầu (cận dưới).
+		\item \textit{Periodic Retrain:} huấn luyện lại định kỳ mỗi 500 mẫu, không dùng tín hiệu detector.
+		\item \textit{Simple Retrain:} huấn luyện lại trên cửa sổ gần nhất mỗi khi SE-CDT báo drift, bất kể loại nào.
+		\item \textit{Type-Specific (đề xuất):} chọn một trong năm nhánh thích ứng tuỳ theo nhãn drift do SE-CDT phân loại (Full Reset cho Sudden, Incremental Fine-tune cho Incremental, Recency-weighted cho Gradual, Model Caching cho Recurrent, và bỏ qua thích ứng cho Blip; xem Mục~\ref{sec:model-adaptation-framework}).
+	\end{itemize}
+	\item \textbf{Tham số:} mức ý nghĩa phát hiện $\alpha = 0.05$ (ngưỡng p-value của kiểm định IDW-MMD), cửa sổ ShapeDD $W = 50$, mô hình nền là Logistic Regression với số lần lặp tối đa 1000.
+	\item \textbf{Chỉ số:} Prequential Accuracy (độ chính xác cuốn chiếu) đo khả năng phục hồi sau drift; số False Positives (FP) đo chi phí cảnh báo dư thừa.
+\end{itemize}
+
+Luồng dữ liệu mô phỏng được tạo từ hỗn hợp dữ liệu Gaussian năm chiều với năm điểm drift đều nhau. Theo định nghĩa của Lu và cộng sự~\cite{lu2018learning}, mỗi sự kiện Sudden, Gradual hoặc Incremental phải dẫn đến một concept mới, còn Recurrent là sự lặp lại có chu kỳ giữa hai concept. Để đáp ứng điều này, bộ sinh dùng cơ chế xoay vòng đặc trưng: mỗi sự kiện non-recurrent dịch chuyển một tập đặc trưng khác nhau, tránh quay về phân phối đã thấy. Riêng Recurrent giữ pattern luân phiên $A \leftrightarrow B$ đúng theo định nghĩa. Kịch bản Stepping bổ sung thêm thành phần dịch chuyển tích lũy theo cùng hướng để mô phỏng môi trường tiến hoá đơn điệu (ví dụ trôi cảm biến công nghiệp).
+
+\subsection{Phạm vi phát hiện trong thích ứng}
+Theo giả định joint drift (Mục~\ref{sec:drift-pxpyx}), các kịch bản thích ứng dưới đây tập trung vào kịch bản có thay đổi rõ ràng ở $P(X)$, nơi tín hiệu của SE-CDT có thể được dùng để kích hoạt cập nhật mô hình.
+
+\subsection{Kết quả phục hồi (Recovery)}
+
+Các bộ tạo dữ liệu Sudden Drift truyền thống thường luân phiên giữa hai concept A $\to$ B $\to$ A, dẫn đến mô hình tĩnh có độ chính xác ảo $\approx 75\%$. Để khắc phục giới hạn này, luận văn bổ sung kịch bản \textbf{Stepping Drift}. Đây là dạng trôi dạt tích lũy (Cumulative Sudden Drift), nơi phân phối dữ liệu liên tục dịch chuyển ra xa trạng thái ban đầu ($P_0 \to P_1 \to P_2 \dots$), buộc mô hình phải học lại liên tục để duy trì hiệu suất.
+
+Ngoài ra, hệ thống tích hợp cơ chế \textbf{reset bộ đệm theo mẫu ADWIN} (Adaptive Windowing): sau mỗi lần thích ứng, bộ đệm được xóa và chỉ giữ lại 200 mẫu gần nhất làm tham chiếu mới. Cơ chế này giảm đáng kể hiện tượng phát hiện lại cùng một drift event: Type-Specific và Simple Retrain (cả hai đều dùng tín hiệu detector để kích hoạt) có FP trung bình $\sim 2$/run, trong khi Periodic Retrain và No Adaptation (không thay đổi bộ đệm theo detector) có FP trung bình $\sim 16$/run.
+
+Bảng~\ref{tab:prequential-results} tổng hợp kết quả Prequential Accuracy trên $N = 30$ lần chạy độc lập, so sánh 4 chiến lược: Type-Specific (đề xuất), Simple Retrain, Periodic Retrain và No Adaptation. Số $N = 30$ đủ để kiểm định Friedman có lực thống kê cao và đảm bảo khoảng tin cậy 95\% chặt với độ lệch chuẩn quan sát được trên các kịch bản.
+
+\begin{table}[H]
+	\centering
+	\caption{Kết quả Prequential Accuracy theo loại drift ($N=30$ runs, $T=5000$ mẫu). Cột FP: số lần báo động sai trung bình mỗi run, theo thứ tự chiến lược (Type-Specific / Simple Retrain / Periodic Retrain / No Adaptation).}
+	\label{tab:prequential-results}
+	\resizebox{\textwidth}{!}{%
+	\begin{tabular}{|l|c|c|c|c|c|}
+		\hline
+		\textbf{Loại Drift} & \textbf{Type-Specific} & \textbf{Simple Retrain} & \textbf{Periodic Retrain} & \textbf{No Adaptation} & \textbf{FP} \\
+		\hline
+		Stepping (Cumulative) & \textbf{74.27\%} $\pm 2.34$ & 62.41\% $\pm 2.73$ & 64.03\% $\pm 2.74$ & 54.80\% $\pm 3.60$ & $1.1 / 1.1 / 16.5 / 16.5$ \\
+		Sudden (Joint Drift)  & \textbf{73.71\%} $\pm 2.84$ & 61.94\% $\pm 2.50$ & 63.65\% $\pm 2.37$ & 53.68\% $\pm 3.46$ & $1.1 / 1.1 / 16.8 / 16.8$ \\
+		Mixed (Combined)      & 85.73\% $\pm 0.93$ & 83.61\% $\pm 1.00$ & \textbf{86.09\%} $\pm 0.69$ & 82.69\% $\pm 0.94$ & $1.1 / 1.1 / 8.3 / 8.3$ \\
+		\hline
+	\end{tabular}%
+	}
+\end{table}
+
+Áp dụng kiểm định không tham số Friedman (paired theo seed) trên 4 chiến lược $\times$ 30 runs cho mỗi kịch bản:
+\begin{itemize}
+	\item Stepping: $\chi^2 = 78.76$, $p = 5.66 \times 10^{-17}$
+	\item Sudden:   $\chi^2 = 85.84$, $p = 1.71 \times 10^{-18}$
+	\item Mixed:    $\chi^2 = 76.00$, $p = 2.21 \times 10^{-16}$
+\end{itemize}
+Trên cả ba kịch bản, $p \ll 0.05$ nên có đủ bằng chứng thống kê để bác bỏ giả thuyết H0 ``bốn chiến lược cho cùng phân phối độ chính xác''. Kết quả này xác nhận khác biệt tổng thể giữa các chiến lược; các chênh lệch theo từng cặp bên dưới được diễn giải theo độ lớn quan sát được, không thay cho một kiểm định hậu nghiệm riêng cho từng cặp.
+
+Trên Stepping, Type-Specific đạt $74.27\%$, hơn No Adaptation $+19.47$pp, Simple Retrain $+11.86$pp và Periodic Retrain $+10.24$pp. Trên Sudden, kết quả tương tự: Type-Specific đạt $73.71\%$, hơn No Adaptation $+20.03$pp. Hai kịch bản này cho thấy lợi ích của việc chọn chiến lược cập nhật theo loại drift thay vì chỉ huấn luyện lại theo một quy tắc cố định.
+
+Trên Mixed, Type-Specific đạt $85.73\%$, cao hơn Simple Retrain và No Adaptation nhưng thấp hơn Periodic Retrain $0.36$pp. Chênh lệch độ chính xác này nhỏ, trong khi FP của Periodic Retrain cao hơn rõ rệt ($8.3$ so với $1.1$/run). Do đó, lợi thế chính của Type-Specific trên Mixed không phải độ chính xác cao hơn, mà là đạt mức gần Periodic Retrain với ít cảnh báo dư hơn.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.95\textwidth]{../../results/plots/fig_prequential_stepping.png}
+	\caption[Prequential Accuracy --- Stepping Drift]{Prequential Accuracy trên Stepping Drift ($N = 30$). No Adaptation (đỏ) tụt đều về $\sim 55\%$ khi phân phối tiếp tục dịch chuyển. Type-Specific (xanh) giữ khoảng $74\%$ nhờ chọn chiến lược thích ứng theo loại drift.}
+	\label{fig:prequential_stepping}
+\end{figure}
+
+Trên Sudden Drift (Hình~\ref{fig:prequential_sudden}), No Adaptation giảm về $53.68\%$ do toàn bộ phân phối thay đổi sau mỗi sự kiện. Type-Specific đạt $73.71\%$, cách Simple Retrain $+11.77$pp và Periodic Retrain $+10.06$pp. Cả hai kịch bản Stepping (Hình~\ref{fig:prequential_stepping}) và Sudden đều cho thấy cải thiện lớn khi chiến lược cập nhật được chọn theo loại drift.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.95\textwidth]{../../results/plots/fig_prequential_sudden.png}
+	\caption[Prequential Accuracy --- Sudden Drift]{Prequential Accuracy trên Sudden Drift ($N = 30$). No Adaptation giảm về $\sim 54\%$; Type-Specific duy trì khoảng $74\%$ nhờ chọn Full Reset cho từng sự kiện Sudden mới.}
+	\label{fig:prequential_sudden}
+\end{figure}
+
+Trên Mixed (Hình~\ref{fig:prequential_mixed}), bốn chiến lược đều đạt kết quả cao hơn hai kịch bản trên do luồng dữ liệu chứa hỗn hợp các loại drift có mức khó khác nhau. Type-Specific đạt $85.73\%$, gần với Periodic Retrain ($86.09\%$) nhưng với FP thấp hơn ($1.1$ so với $8.3$/run). Đây là kết quả hòa về độ chính xác theo nghĩa thực nghiệm, nhưng Type-Specific ít kích hoạt thừa hơn.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.95\textwidth]{../../results/plots/fig_prequential_mixed.png}
+	\caption[Prequential Accuracy --- Mixed Drift]{Prequential Accuracy trên Mixed Drift ($N = 30$). Periodic Retrain nhỉnh hơn nhẹ về độ chính xác, nhưng Type-Specific đạt mức gần tương đương với số cảnh báo dư thấp hơn.}
+	\label{fig:prequential_mixed}
+\end{figure}
+
+\section{Kiểm thử nguyên mẫu trên kiến trúc tương thích Kafka}
+\label{sec:real-world-deployment}
+
+Phạm vi của nguyên mẫu Kafka đã mô tả ở Mục~\ref{sec:system-architecture} (lưu ý về phạm vi triển khai); phần này chỉ báo cáo kết quả kiểm thử khép kín giữa các thành phần Redpanda, SE-CDT Consumer và Adaptation Manager trên Docker.
+
+\subsection{Kịch bản triển khai}
+\begin{itemize}
+	\item \textbf{Dữ liệu:} Luồng dữ liệu mô phỏng từ SEA dataset với Sudden Drift tại mẫu thứ 1500.
+	\item \textbf{Cấu hình:} Cửa sổ phát hiện $W = 250$ mẫu, độ trễ thích ứng $\Delta = 50$ mẫu (để thu thập đủ dữ liệu sau điểm drift trước khi cập nhật).
+	\item \textbf{Mục tiêu:} Xác nhận quy trình khép kín: Phát hiện Drift $\rightarrow$ chờ thu thập dữ liệu mới $\rightarrow$ cập nhật mô hình $\rightarrow$ nạp lại mô hình $\rightarrow$ phục hồi độ chính xác.
+\end{itemize}
+
+\subsection{Kết quả thực tế}
+
+Hình~\ref{fig:kafka_real_results} trình bày dashboard giám sát từ lần chạy nguyên mẫu:
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\textwidth]{image/kafka_results_real.png}
+	\caption[Kết quả kiểm thử nguyên mẫu Kafka]{Dashboard giám sát nguyên mẫu tương thích Kafka. (1) Dữ liệu luồng với điểm drift tại mẫu 1500. (2) Độ chính xác giảm xuống 0.59 tại điểm drift, sau đó phục hồi lên 0.93 sau khi mô hình được cập nhật tự động. (3) Tín hiệu SE-CDT phát hiện Sudden Drift. (4) Tài nguyên hệ thống (CPU/RAM) duy trì ổn định trong lần chạy thử.}
+	\label{fig:kafka_real_results}
+\end{figure}
+
+\begin{itemize}
+	\item \textbf{Độ trễ phát hiện:} Drift được đặt tại mẫu 1500 trong dữ liệu. ShapeDD xác định điểm drift tại mẫu 1476. Đây là vị trí đỉnh tam giác ước lượng (triangle peak position) từ tín hiệu tích chập ShapeDD, không phải thời điểm xử lý thực. Do cơ chế cửa sổ trượt và lọc hình dạng, vị trí drift báo cáo có thể lệch so với nhãn danh nghĩa $\pm l_1$ (với $l_1 = 50$ là kích thước nửa cửa sổ reference), nằm trong giới hạn chấp nhận của ShapeDD.
+	\item \textbf{Quy trình khép kín:} Log hệ thống xác nhận Consumer đã nhận tín hiệu cập nhật từ bộ thích ứng và tải lại mô hình thành công tại mẫu 2277.
+	\item \textbf{Hiệu quả phục hồi:} Độ chính xác tăng từ mức 59\% (gần ngẫu nhiên) lên 93\% ngay sau khi mô hình mới được tải, khớp với hành vi mong đợi của quy trình thích ứng.
+\end{itemize}
+
+\section{Kết luận chương}
+
+Các kết quả thực nghiệm cho thấy ShapeDD-IDW đạt $F_1 = 0.531$ với khoảng $9.6$ FP/run trên benchmark phát hiện, cao hơn ShapeDD gốc ($F_1 = 0.492$) và không khác biệt thống kê so với DAWIDD dưới kiểm định Nemenyi. Về tốc độ, benchmark cho thấy ShapeDD-IDW nhanh hơn $\approx7\times$ so với ShapeDD gốc nhờ xấp xỉ Gamma thay thế permutation test tốn kém, trong khi kiểm định IDW-MMD giữ Type-I error đơn lẻ gần mức $\alpha = 0.05$; pipeline SE-CDT composite vẫn cần được đọc thận trọng vì Type-I error có thể lên đến $0.100$ trên dữ liệu AR(1).
+
+Ở bài toán phân loại, SE-CDT đạt CAT $=80.1\%$, SUB micro $=50.5\%$ và SUB macro $=50.0\%$ ở oracle mode. Kết quả tốt nhất nằm ở Sudden, Blip và Recurrent; Gradual và nhất là Incremental còn yếu. Trong đánh giá thích ứng, Type-Specific cải thiện rõ trên Stepping và Sudden, còn trên Mixed thì gần ngang Periodic Retrain về độ chính xác nhưng ít FP hơn. Nhìn chung, kiến trúc đề xuất khả thi, nhưng các kết quả cũng chỉ ra rõ những phần cần cải thiện trước khi xem đây là một bộ phân loại drift hoàn chỉnh.
+
+Benchmark detection tập trung chủ yếu vào sudden/abrupt drift và blip, đúng với trọng tâm thiết kế của ShapeDD gốc~\cite{shapeDD2021} là phát hiện thay đổi phân phối đột ngột. Các loại drift chậm hơn (gradual, incremental) và drift lặp lại (recurrent) được đưa vào benchmark phân loại như mở rộng năng lực, không phải trọng tâm tối ưu. Kết quả phân loại theo từng loại drift (Bảng~\ref{tab:se-cdt-performance-by-type}) phản ánh đúng độ khó vốn có và mở ra hướng cải tiến cho các công trình tiếp theo.

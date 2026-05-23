@@ -15,6 +15,10 @@
 \setlength{\bibsep}{1pt plus 1pt minus 1pt}
 
 % Latin abbreviations
+\makeatletter
+\DeclareRobustCommand\onedot{\futurelet\@let@token\@onedot}
+\def\@onedot{\ifx\@let@token.\else.\fi\xspace}
+
 \def\eg{\emph{e.g}\onedot} \def\Eg{\emph{E.g}\onedot}
 \def\ie{\emph{i.e}\onedot} \def\Ie{\emph{I.e}\onedot}
 \def\cf{\emph{cf}\onedot} \def\Cf{\emph{Cf}\onedot}

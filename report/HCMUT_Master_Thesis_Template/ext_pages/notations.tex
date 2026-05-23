@@ -13,26 +13,18 @@
 \centering
 \fontsize{13pt}{15pt}\selectfont
 \begin{tabular}{ll}
-$\tI_i$               & Training image sample $i$                      \\
-N                     & Batch size                                     \\
-$\mathcal{F}$         & Face recognition backbone (feature extractor)  \\
-$\vz$                 & Embedded feature vector                        \\
-$\vz_i$               & Embedded feature vector of facial image $i$    \\
-$\textit{F}$          & Positive sample-to-center function             \\
-$\textit{N}$          & Negative sample-to-center function             \\
-$\theta_{\vv_1, \vv_2}$ & Angle between vector $\vv_1$ and $\vv_2$       \\
-$\mathcal{L}_sm$      & Softmax loss                                   \\
-$\mathcal{L}_sm_i$    & Softmax loss value of image $i$                \\
-$\mathcal{L}_reg$     & Regularization loss                            \\
-$\mathcal{L}_reg_i$   & Regularization loss value of image $i$         \\
-$\vg_ac$              & Gradient affecting actual proxy                \\
-$\vg_mc$              & Gradient affecting misclassified proxy         \\
-$\vg_\theta$          & Gradient affecting feature direction           \\
-$\vg_\|\vz\|$         & Gradient affecting feature magnitude           \\
-$\vg_\|\vz\|^+$       & $\vg_\|\vz\|$ in increasing direction          \\
-$\vg_\|\vz\|^-$       & $\vg_\|\vz\|$ in decreasing direction          \\
-$\textbf{B}$          & Boundary in hypersphere planning               \\
-$\textbf{B}'$         & Modified boundary in hypersphere planning     
+$P(X, Y)$               & Joint probability distribution of features and labels \\
+$P(X)$                  & Marginal probability distribution of input features   \\
+$P(Y|X)$                & Conditional probability distribution of target labels \\
+$l_1$                   & Reference sliding window size                        \\
+$l_2$                   & Test sliding window size                             \\
+$s$                     & Sliding window stride step size                      \\
+$\alpha$                & Statistical significance level                        \\
+$\gamma$                & Kernel bandwidth parameter                           \\
+$\epsilon$              & Numerical stability constant                         \\
+$\tau_{\text{WR}}$      & Peak Width Ratio (WR) threshold                      \\
+$\tau_{\text{SNR}}$     & Signal-to-Noise Ratio (SNR) threshold                \\
+$\tau_{\text{CV}}$      & Coefficient of Variation (CV) threshold              \\
+$\tau_{\text{match}}$   & Concept memory match threshold                       \\
 \end{tabular}
 \end{table}
-

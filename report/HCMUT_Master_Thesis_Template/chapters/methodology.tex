@@ -1,6 +1,680 @@
-\newpage
+\chapter{Hệ thống SE-CDT: Phát hiện, Phân loại và Thích ứng Concept Drift}
+\label{chap:proposed-model}
 
-\chapter{METHODOLOGY}
-\label{chap:methodology}
+\textit{Tóm tắt: Trên cơ sở lý thuyết ShapeDD ở Chương~\ref{chap:theoretical-foundation} và khảo sát các phương pháp phát hiện -- phân loại drift ở Chương~\ref{chap:related-work}, chương này trình bày hệ thống SE-CDT (ShapeDD-Enhanced Concept Drift Type) --- một hệ thống phát hiện và phân loại drift tích hợp không giám sát. Bước phát hiện dùng ShapeDD-IDW (ShapeDD cải tiến bằng IDW-MMD với xấp xỉ Gamma); bước phân loại phân tích hình dạng tín hiệu MMD để xác định loại drift mà không cần nhãn. Luận văn cũng trình bày khung thích ứng mô hình theo loại drift và kiến trúc xử lý luồng dữ liệu.}
+
+\section{Động lực và tổng quan cách tiếp cận}
+
+ShapeDD gốc có nhiều ưu điểm về độ chính xác định vị vị trí xảy ra drift và khả năng khử nhiễu, nhưng khi triển khai trong các hệ thống thời gian thực quy mô lớn gặp ba hạn chế: chi phí permutation test cao, độ nhạy với kernel bandwidth và kích thước cửa sổ, và cần cơ chế thích ứng sau khi phát hiện drift~\cite{yuan2022advances} như một hệ thống hoàn chỉnh.
+
+Luận văn xây dựng hệ thống SE-CDT để xử lý ba hạn chế này. Về thuật toán, ShapeDD-IDW kết hợp tín hiệu Standard MMD với bước kiểm định IDW-MMD (Inverse Density-Weighted MMD) dựa trên xấp xỉ Gamma~\cite{gretton2009gamma}, vừa thay permutation test vừa giảm độ nhạy với bandwidth. Về chiến lược, luận văn xây dựng khung thích ứng theo loại drift, dùng kết quả phân loại từ SE-CDT để kích hoạt cách cập nhật phù hợp (Reset, Incremental, hoặc Reuse)~\cite{gama2014survey, lu2018learning}. Về kiến trúc, hệ thống được đề xuất triển khai trên nền tảng Apache Kafka cho phép xử lý luồng phân tán, độ trễ thấp và khả năng chịu lỗi.
+
+\subsection{Tổng quan kiến trúc ba module}
+\label{sec:system-overview}
+
+Trước khi đi vào chi tiết từng thành phần, Hình~\ref{fig:system-modules-overview} minh họa tổng quan luồng xử lý của hệ thống. Ba module được kết nối nối tiếp, đầu ra của module trước là đầu vào của module sau.
+
+\begin{figure}[H]
+	\centering
+	\resizebox{0.97\textwidth}{!}{%
+	\begin{tikzpicture}[
+		node distance=0.7cm and 1.6cm,
+		% ── I/O pill ──────────────────────────────────────────────────────────
+		io/.style={
+			ellipse, draw=gray!55, fill=gray!11, line width=1.3pt,
+			minimum width=1.7cm, minimum height=1.7cm,
+			text width=1.5cm, align=center, font=\small
+		},
+		% ── module box (text width pins each box to same width) ────────────
+		box/.style={
+			rectangle, rounded corners=7pt, line width=1.6pt,
+			minimum height=3.2cm, text width=2.9cm, align=center,
+			inner sep=6pt
+		},
+		% ── SE-CDT outer grouping box ──────────────────────────────────────
+		sysbox/.style={
+			rectangle, rounded corners=10pt, line width=1.8pt,
+			draw=purple!55!black, fill=none, dashed,
+			inner sep=12pt
+		},
+		% ── arrows ────────────────────────────────────────────────────────────
+		arr/.style={->, >=Stealth, thick, draw=gray!65!black},
+		% ── floating label on arrow ───────────────────────────────────────────
+		lbl/.style={
+			font=\scriptsize, fill=white, inner sep=3pt,
+			rounded corners=3pt, draw=gray!35, line width=0.5pt,
+			text width=1.1cm, align=center
+		}
+	]
+		%% ── I/O nodes ─────────────────────────────────────────────────────────
+		\node[io] (stream) {\bfseries$\{X_t\}$\\[2pt]{\tiny data stream}};
+
+		%% ── Module boxes ──────────────────────────────────────────────────────
+		\node[box, draw=blue!55!black, fill=blue!8, right=of stream] (detect) {
+			\textbf{\small Detection Module}\\[4pt]
+			\textit{\footnotesize ShapeDD-IDW}\\[5pt]
+			\scriptsize Monitors $P(X)$ via\\[-1pt]sliding-window MMD;\\[-1pt]emits signal $\sigma(t)$
+		};
+
+		\node[box, draw=green!50!black, fill=green!7, right=of detect] (classify) {
+			\textbf{\small Classification Module}\\[4pt]
+			\textit{\footnotesize unsupervised}\\[5pt]
+			\scriptsize Identifies drift type\\[-1pt]from shape of $\sigma(t)$\\[-1pt]--- no labels required
+		};
+
+		\node[box, draw=orange!65!black, fill=orange!7, right=of classify] (adapt) {
+			\textbf{\small Adaptation Module}\\[4pt]
+			\textit{\footnotesize Reset $\cdot$ Incr. $\cdot$ Reuse}\\[5pt]
+			\scriptsize Selects update strategy\\[-1pt]based on classified\\[-1pt]drift type
+		};
+
+		\node[io, right=of adapt] (model) {\bfseries ML Model\\[2pt]{\tiny updated}};
+
+		%% ── SE-CDT outer bounding box (encompasses Detection + Classification) ──
+		\node[sysbox, fit=(detect)(classify)] (secdt_box) {};
+		\node[font=\small\bfseries, text=purple!55!black,
+		      above=3pt of secdt_box] {\textbf{SE-CDT System}};
+
+		%% ── Arrows (drawn after fit box so they appear on top) ────────────────
+		\draw[arr] (stream)   -- (detect);
+		\draw[arr] (detect)   -- node[lbl, above]{$\sigma(t)$\\+ alert} (classify);
+		\draw[arr] (classify) -- node[lbl, above]{drift\\type}          (adapt);
+		\draw[arr] (adapt)    -- node[lbl, above]{strat-\\egy}          (model);
+
+		%% ── Alert note ────────────────────────────────────────────────────────
+		\node[font=\scriptsize\itshape, text=blue!55!black,
+		      below=0.85cm of detect] {alert fires when $\sigma(t)>\tau$};
+	\end{tikzpicture}}
+	\caption{Kiến trúc tổng quan: Hệ thống SE-CDT (gồm Detection Module chạy ShapeDD-IDW và Classification Module phân tích hình dạng $\sigma(t)$) nhận luồng $\{X_t\}$ và sản xuất nhãn loại drift; Adaptation Module dùng nhãn này để chọn chiến lược cập nhật mô hình phù hợp.}
+	\label{fig:system-modules-overview}
+\end{figure}
+
+\begin{itemize}
+	\item \textbf{Detection Module} (Mục~\ref{sec:idw-mmd}--\ref{sec:detection-hybrid}):
+	      ShapeDD-IDW liên tục theo dõi luồng $\{X_t\}$ qua cửa sổ trượt, tính tín hiệu MMD $\sigma(t)$, và phát cảnh báo khi $\sigma(t)$ vượt ngưỡng.
+	      Đây là thành phần duy nhất tiếp xúc trực tiếp với dữ liệu thô.
+
+	\item \textbf{Classification Module --- SE-CDT} (Mục~\ref{sec:shaped-cdt}):
+	      Nhận tín hiệu Standard MMD $\sigma(t)$ từ bước phát hiện và phân tích hình dạng để xác định loại drift
+	      (TCD: sudden, blip, recurrent; hoặc PCD: gradual, incremental) mà không cần nhãn.
+	      Ở cấp độ thuật toán, hai vai trò Detection và Classification đều được triển khai trong cùng một lớp SE-CDT; phân tách thành hai tiến trình độc lập chỉ áp dụng ở cấp độ triển khai Kafka (Mục~\ref{sec:system-architecture}).
+
+	\item \textbf{Adaptation Module} (Mục~\ref{sec:model-adaptation-framework}):
+	      Dựa trên loại drift từ SE-CDT, chọn chiến lược cập nhật mô hình phù hợp
+	      (\textit{Reset} cho sudden, \textit{Incremental} cho gradual/incremental, hoặc \textit{Reuse} cho recurrent).
+\end{itemize}
+
+\label{par:naming-convention}
+Toàn bộ ba module được triển khai bằng mô phỏng, sau đó được triển khai trên Apache Kafka trong Mục~\ref{sec:system-architecture}, với mỗi module chạy như một tiến trình độc lập giao tiếp qua các topics riêng biệt. Hệ thống đề xuất được gọi là \textbf{SE-CDT} (\textit{ShapeDD-Enhanced Concept Drift Type identification}). Tên này nhấn mạnh vào năng lực phân loại loại drift, vốn là đóng góp gốc của luận văn so với các phương pháp phát hiện thuần tuý trước đây. Module phát hiện của SE-CDT được đặt tên riêng là \textbf{ShapeDD-IDW} vì nó là một cải tiến trực tiếp của ShapeDD~\cite{shapeDD2021} bằng IDW-MMD và xấp xỉ Gamma; cách đặt tên có gạch nối phản ánh quan hệ kế thừa với phương pháp gốc.
+
+\section{Đề xuất cải tiến phương pháp phát hiện drift: IDW-MMD với xấp xỉ Gamma}
+
+\subsection{Inverse Density-Weighted MMD (IDW-MMD): Tối ưu hóa hiệu suất và độ chính xác}
+\label{sec:idw-mmd}
+
+\subsubsection{Vấn đề của ước lượng MMD truyền thống}
+Trong phương pháp gốc, thống kê MMD được tính toán dựa trên trọng số đều, coi vai trò của mọi điểm dữ liệu trong cửa sổ là như nhau. Nhắc lại từ Chương~\ref{chap:theoretical-foundation}, công thức MMD có dạng:
+\begin{equation}
+	\text{MMD}^2_{\text{uniform}}(X, Y) = \frac{1}{n^2}\sum_{i,j} k(x_i, x_j) + \frac{1}{m^2}\sum_{p,q} k(y_p, y_q) - \frac{2}{nm}\sum_{i,p} k(x_i, y_p)
+\end{equation}
+trong đó các tổng chạy qua tất cả các cặp chỉ số, kể cả $i=j$. Với kernel RBF, thành phần tự đối sánh $k(x_i, x_i) = 1$, nghĩa là mỗi điểm đều đóng góp một giá trị bằng 1 vào tổng, làm giá trị MMD cao hơn thực tế một chút. Hạn chế này sẽ được khắc phục trong IDW-MMD (Mục~\ref{sec:idw-mmd}) bằng cách loại các cặp điểm trùng nhau khỏi phép tính.
+
+Với cửa sổ nhỏ ($n, m < 200$), MMD dễ dao động và khó tách drift thật khỏi nhiễu mẫu. Bước permutation test của ShapeDD gốc cũng tốn thời gian vì phải lặp lại phép tính MMD nhiều lần để ước lượng p-value. Một nguyên nhân khác là trọng số đều coi mọi điểm trong cửa sổ như nhau, trong khi các thay đổi đột ngột thường xuất hiện rõ hơn ở vùng biên phân phối.
+
+\subsubsection{Ý tưởng cải tiến bằng cách dùng trọng số thay đổi theo vị trí}
+Thay vì giữ trọng số đều, luận văn gán trọng số theo mật độ cục bộ: điểm ở vùng thưa được nhấn mạnh hơn, còn điểm ở vùng trung tâm được giảm bớt ảnh hưởng. Để hình thức hóa, dạng tổng quát của MMD có trọng số là:
+\begin{equation}
+	\text{MMD}^2_{\text{weighted}}(X, Y) = \sum_{i,j} w_i w_j k(x_i, x_j) + \sum_{p,q} v_p v_q k(y_p, y_q) - 2\sum_{i,p} w_i v_p k(x_i, y_p)
+\end{equation}
+trong đó $w_i$ và $v_p$ là trọng số của từng điểm (thỏa mãn $\sum_i w_i = 1$, $\sum_p v_p = 1$). Câu hỏi đặt ra là: tính $w_i$ như thế nào để phát hiện drift hiệu quả?
+
+\subsubsection{Giải pháp đề xuất: Trọng số nghịch biến mật độ (Inverse Density Weighting)}
+Luận văn đề xuất phương pháp \textbf{IDW-MMD} (Inverse Density-Weighted MMD), một cách gán trọng số đơn giản lấy cảm hứng từ ý tưởng weighted MMD trong Optimally-Weighted MMD của Bharti et al.~\cite{bharti2023owmmd}.
+
+Phương pháp của Bharti et al. được thiết kế cho bài toán suy luận thống kê, đề xuất trọng số tối ưu phức tạp và không liên quan đến bài toán drift detection. Luận văn chỉ kế thừa ý tưởng ``gán trọng số cho từng điểm dữ liệu trong MMD'' và áp dụng một heuristic đơn giản hơn (trọng số nghịch biến với căn bậc hai của mật độ kernel) để phù hợp với bài toán drift detection.
+
+Trọng số $w_i$ được tính dựa trên mật độ cục bộ, chỉ dùng các cặp điểm khác nhau (off-diagonal) để tránh bias tự tương quan:
+\begin{equation}
+	w_i \propto \frac{1}{\sqrt{\sum_{j \neq i} k(x_i, x_j)} + \epsilon} \quad \text{(Inverse Density Weighting)}
+\end{equation}
+trong đó $\epsilon$ là một hằng số nhỏ (ví dụ $\epsilon = 0.5$) để đảm bảo tính ổn định số học (numerical stability).
+
+Khi một điểm nằm ở vùng trung tâm, tổng mật độ $d(x_i)$ lớn và trọng số của điểm đó giảm. Ngược lại, điểm ở vùng biên có ít lân cận hơn nên nhận trọng số cao hơn (Hình~\ref{fig:idw-weighting}). Luận văn dùng $1/\sqrt{d_i}$ thay cho $1/d_i$ để tránh khuếch đại quá mạnh các điểm biên đơn lẻ, vốn dễ bị nhiễu chi phối.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.95\textwidth]{../../results/plots/theory_idw_weighting.png}
+	\caption[Cơ chế Trọng số Nghịch mật độ IDW-MMD]{Cơ chế Trọng số Nghịch mật độ (IDW-MMD). Khác với MMD coi trọng mọi điểm như nhau (A), IDW-MMD (B) tự động nén trọng số của vùng lõi (core) và khuếch đại tín hiệu vùng biên (boundary) --- nơi drift thường xảy ra đầu tiên.}
+	\label{fig:idw-weighting}
+\end{figure}
+
+Dựa trên phân tích trên, công thức IDW-MMD được xây dựng như sau. Đặt $d(x_i) = \sum_{j \neq i} k(x_i, x_j)$ là mật độ cục bộ của $x_i$, và $\tilde{w}_i = 1/(\sqrt{d(x_i)}+\epsilon)$ là trọng số thô. Ma trận trọng số $W^{XX}_{ij}$ lấy tích $\tilde{w}_i \tilde{w}_j$ cho các cặp $i \neq j$ rồi chuẩn hóa để $\sum_{i \neq j} W^{XX}_{ij} = 1$ (đường chéo được loại trừ theo U-statistic style). Tương tự cho $W^{YY}_{pq}$ trên cửa sổ $Y$. Công thức hoàn chỉnh:
+\begin{equation}	
+	\text{MMD}^2_{\text{IDW}}(X, Y) = \underbrace{\sum_{i \neq j} W^{XX}_{ij}\, k(x_i, x_j)}_{\text{Weighted } XX} + \underbrace{\sum_{p \neq q} W^{YY}_{pq}\, k(y_p, y_q)}_{\text{Weighted } YY} - 2\underbrace{\sum_{i=1}^n \sum_{p=1}^m \frac{1}{nm} k(x_i, y_p)}_{\text{Uniform } XY}
+\end{equation}
+
+Thành phần so sánh chéo giữa hai cửa sổ giữ trọng số đồng nhất $1/(nm)$ vì đây là số hạng đo sự chồng chéo giữa hai phân phối. Nếu gán trọng số IDW cho cross-term, thống kê có thể tạo khoảng cách giả ngay cả khi hai cửa sổ có cùng phân phối, chỉ do cấu trúc mật độ cục bộ khác nhau. Cross-term vì vậy đóng vai trò trung lập, còn Weighted XX và YY làm rõ tín hiệu ở biên.
+
+Hệ quả của thiết kế này là $\text{MMD}^2_{\text{IDW}}$ có một độ lệch dương nhỏ ngay cả khi $P = Q$. Độ lệch này được xử lý ở bước tính p-value bằng xấp xỉ Gamma (Mục~\ref{sec:idw-mmd}), thay vì đặt ngưỡng thủ công trên giá trị MMD.
+
+\subsubsection{Ảnh hưởng đến tín hiệu phát hiện}
+Khi dùng MMD gốc, các cặp điểm ở vùng trung tâm thường chiếm phần lớn tổng thống kê, làm tín hiệu drift ở vùng biên dễ bị chìm. IDW-MMD giảm ảnh hưởng của vùng trung tâm và tăng trọng số cho các điểm vùng biên, nơi sudden drift thường biểu hiện sớm hơn.
+
+Tuy nhiên, chính cơ chế này làm IDW-MMD ít nhạy hơn với gradual drift --- loại drift thay đổi dần từ vùng trung tâm. Hạn chế này được thảo luận chi tiết ở cuối mục.
+
+Thuật toán chi tiết như sau, trong đó mật độ cục bộ được tính độc lập trong từng cửa sổ:
+
+\begin{algorithm}[H]
+	\caption[Inverse Density-Weighted MMD (IDW-MMD)]{Inverse Density-Weighted MMD (IDW-MMD).}
+	\label{alg:idw_mmd}
+	\begin{algorithmic}[1]
+		\Require Reference window $X = \{x_1, \ldots, x_n\}$, test window $Y = \{y_1, \ldots, y_m\}$, kernel $k(\cdot,\cdot)$, stability constant $\epsilon = 0.5$
+		\Ensure IDW-MMD statistic $\widehat{\text{MMD}}^2_{\text{IDW}}$
+		
+		\For{$i = 1$ \textbf{to} $n$} \Comment{inverse density weights for reference window $X$}
+			\State $d(x_i) \leftarrow \sum_{j \neq i} k(x_i, x_j)$ \Comment{off-diagonal density; excludes self-kernel $k(x_i,x_i)$}
+			\State $\tilde{w}_i \leftarrow 1 \,/\, (\sqrt{d(x_i)} + \epsilon)$
+		\EndFor
+		\State $\widetilde{W}^{XX}_{ij} \leftarrow \tilde{w}_i\, \tilde{w}_j$ for $i \neq j$, else $0$
+		\State $W^{XX}_{ij} \leftarrow \widetilde{W}^{XX}_{ij} \;/\; {\textstyle\sum_{i \neq j} \widetilde{W}^{XX}_{ij}}$ \Comment{normalize so $\sum_{i,j} W^{XX}_{ij} = 1$}
+		
+		\For{$p = 1$ \textbf{to} $m$} \Comment{inverse density weights for test window $Y$}
+			\State $d(y_p) \leftarrow \sum_{q \neq p} k(y_p, y_q)$
+			\State $\tilde{v}_p \leftarrow 1 \,/\, (\sqrt{d(y_p)} + \epsilon)$
+		\EndFor
+		\State $\widetilde{W}^{YY}_{pq} \leftarrow \tilde{v}_p\, \tilde{v}_q$ for $p \neq q$, else $0$
+		\State $W^{YY}_{pq} \leftarrow \widetilde{W}^{YY}_{pq} \;/\; {\textstyle\sum_{p \neq q} \widetilde{W}^{YY}_{pq}}$
+		
+		\State $\widehat{\text{MMD}}^2_{\text{IDW}} \leftarrow
+			{\displaystyle\sum_{i,j}} W^{XX}_{ij}\, k(x_i, x_j)
+			+ {\displaystyle\sum_{p,q}} W^{YY}_{pq}\, k(y_p, y_q)
+			- \frac{2}{nm} {\displaystyle\sum_{i=1}^{n}\sum_{p=1}^{m}} k(x_i, y_p)$
+		\Comment{cross-term uses uniform weights $1/(nm)$ as a geometric anchor; diagonal excluded from $XX$, $YY$ terms (U-statistic style)}
+		\Return $\widehat{\text{MMD}}^2_{\text{IDW}}$
+	\end{algorithmic}
+\end{algorithm}
+
+\subsubsection{Phân tích độ phức tạp tính toán}
+
+Độ phức tạp của IDW-MMD được phân tích trong Bảng~\ref{tab:complexity}:
+
+\begin{table}[H]
+	\centering
+	\caption{Độ phức tạp tính toán của IDW-MMD và các phương pháp liên quan}
+	\label{tab:complexity}
+	\begin{tabular}{|l|c|c|l|}
+		\hline
+		\textbf{Thành phần}     & \textbf{Thời gian}   & \textbf{Bộ nhớ} & \textbf{Ghi chú}    \\
+		\hline
+		Kernel Matrix           & $O(n^2)$             & $O(n^2)$        & $n$ = window size   \\
+		Density weights         & $O(n)$               & $O(n)$          & Sum over rows       \\
+		Weighted MMD            & $O(n^2)$             & $O(1)$          & Scalar output       \\
+		Xấp xỉ Gamma            & $O(B \cdot n^2)$     & $O(n^2)$        & Hoán vị chỉ số, tái sử dụng $K$ \\
+		\hline
+		\textbf{IDW-MMD + xấp xỉ Gamma} & $O(B \cdot n^2)$ & $O(n^2)$        & Bỏ vòng tính lại kernel \\
+		\hline
+		ShapeDD gốc (permutation) & $O(N_{\text{perm}} \cdot n^2)$ & $O(n^2)$  & Tính lại kernel mỗi vòng \\
+		\hline
+	\end{tabular}
+\end{table}
+
+IDW-MMD có độ phức tạp $O(n^2)$, tương đương MMD. Permutation test gốc phải tính lại MMD$^2$ rất nhiều lần (vài nghìn vòng) để ước lượng phân phối dưới giả thuyết không drift, tốn $O(N_{\text{perm}} \cdot n^2)$. Thay vào đó, kiểm định được thực hiện bằng xấp xỉ Gamma theo Gretton et al.~\cite{gretton2009gamma}. Kỹ thuật \textit{hoán vị chỉ số tái sử dụng kernel matrix} giúp giảm chi phí xuống $O(B \cdot n^2)$, với $B$ nhỏ hơn nhiều bậc so với $N_{\text{perm}}$.
+ 
+Theo Gretton et al.~\cite{gretton2012kernel}, phân phối giới hạn của thống kê MMD$^2_u$ phụ thuộc vào giả thuyết. Dưới giả thuyết có drift, MMD$^2_u$ tiệm cận một Gaussian xoay quanh giá trị MMD$^2$ thực. Nhưng dưới giả thuyết không có drift, MMD$^2_u$ \textit{không} tiệm cận Gaussian; nó tiệm cận một $\chi^2$\. Vì vậy, dùng Gaussian để xấp xỉ phân phối null có thể làm lệch mức ý nghĩa thực tế so với $\alpha$ đã đặt.
+
+Cách tiếp cận theo \cite{gretton2009gamma} là khớp một phân phối Gamma vào hai moment đầu (trung bình và phương sai) của phân phối dưới giả thuyết không drift. Hai moment được ước lượng bằng một số ít lần hoán vị chỉ số trên cùng một ma trận kernel đã tính sẵn, nên bước kiểm định không phải tính lại kernel ở mỗi vòng như permutation test đầy đủ. Cụ thể, sau khi tính kernel matrix $K$ một lần cho hai cửa sổ:
+\begin{enumerate}
+	\item Tính $\widehat{\text{MMD}}^2_{\text{IDW}}$ trên cấu hình ban đầu của hai cửa sổ.
+	\item Hoán vị ngẫu nhiên các chỉ số một số ít lần và tính lại $\widehat{\text{MMD}}^2_{\text{IDW}}$ cho mỗi lần. Mỗi lần là một mẫu của null distribution; vì $K$ đã sẵn, mỗi lần chỉ tốn $O(n^2)$ phép cộng-nhân.
+	\item Khớp Gamma vào trung bình và phương sai của các mẫu null vừa thu được, sau đó tính p-value (đuôi phải).
+	\item Nếu $p < \alpha$ (mặc định $\alpha = 0.05$), kết luận có drift.
+\end{enumerate}
+
+Trong thực nghiệm ở Chương~\ref{chap:experiments}, ShapeDD-IDW chạy nhanh hơn ShapeDD gốc trong phép đo đầu-cuối vì không phải chạy permutation test đầy đủ cho mỗi ứng viên. Khi một tín hiệu có nhiều đỉnh ứng viên, các p-value được đọc với hiệu chỉnh Bonferroni theo số đỉnh được kiểm định trong cùng trace. Lợi ích chính của xấp xỉ Gamma là làm cho bước xác nhận drift có cơ sở thống kê rõ hơn tại mức ý nghĩa $\alpha = 0.05$ (Mục~\ref{sec:h0-calibration}), chứ không chỉ là một tối ưu tốc độ.
+
+\subsubsection{Hạn chế và khi nào nên dùng}
+Mặc dù IDW-MMD giúp bước kiểm định ổn định hơn trên các thay đổi rõ ở biên phân phối, điều này đặc biệt hiệu quả đối với sudden drift, nơi mà các thay đổi xảy ra đột ngột và rõ ràng, phương pháp có hai giới hạn cần lưu ý:
+Vì giảm trọng số vùng trung tâm, IDW-MMD có thể kém nhạy với các thay đổi nhẹ xảy ra chủ yếu trong vùng này. Cơ chế weighting cũng không phù hợp để phân loại loại drift, vì nó có thể làm mờ các đặc trưng hình dạng cần thiết cho gradual hoặc incremental drift. Do đó, SE-CDT (Mục~\ref{sec:shaped-cdt}) phân tích hình dạng của tín hiệu Standard MMD thay vì dùng trực tiếp tín hiệu IDW-MMD.
+
+\subsubsection{Kiến trúc kết hợp của Detection Module}
+\label{sec:detection-hybrid}
+
+Trong triển khai cuối cùng, Detection Module ShapeDD-IDW không dùng IDW-MMD ở mọi bước mà sử dụng kiến trúc kết hợp hai vai trò, tận dụng điểm mạnh của cả Standard MMD và IDW-MMD:
+
+\begin{enumerate}
+	\item Tín hiệu trượt $\sigma(t)$ được tính bằng Standard MMD (unbiased U-statistic, không trọng số). Tín hiệu này giữ được hình dạng tổng thể của drift, đặc biệt với gradual/incremental vốn thay đổi chậm trong vùng trung tâm phân phối. Hình~\ref{fig:sliding-window} minh họa cách hai cửa sổ trượt trên luồng dữ liệu tạo ra một điểm trên tín hiệu MMD.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.95\textwidth]{../../results/plots/theory_sliding_window.png}
+	\caption[Cơ chế Cửa sổ trượt tạo tín hiệu MMD]{Cơ chế Cửa sổ trượt tạo tín hiệu MMD. Mỗi điểm $\sigma(t)$ trên đồ thị MMD (dưới) là kết quả đo khoảng cách phân phối giữa cửa sổ tham chiếu $W_{ref}$ và cửa sổ kiểm tra $W_{test}$ trên luồng dữ liệu thô (trên).}
+	\label{fig:sliding-window}
+\end{figure}
+
+	\item Sau khi tìm đỉnh từ tín hiệu Standard MMD, mỗi đỉnh ứng viên được kiểm định bằng IDW-MMD với p-value dựa trên xấp xỉ Gamma (xem Mục~\ref{sec:idw-mmd}). IDW-MMD nhạy với các thay đổi rõ ràng ở biên phân phối, còn xấp xỉ Gamma cung cấp phân phối null cho bước kiểm định.
+\end{enumerate}
+
+Băng thông $\gamma$ được ước lượng một lần bằng median heuristic trên đoạn đầu của luồng, sau đó dùng nhất quán cho cả ba ma trận kernel $K_{XX}, K_{YY}, K_{XY}$ trong toàn bộ tín hiệu trượt. Cách này tránh dao động khi mỗi cửa sổ tự ước lượng $\gamma$ riêng.
+
+Với thiết kế này, tín hiệu Standard MMD $\sigma(t)$ giữ được đầy đủ thông tin hình dạng cho bước phân loại, trong khi bước xác nhận thống kê bằng IDW-MMD được đóng gói hoàn toàn bên trong \texttt{shapedd\_idw\_mmd\_proper} --- SE-CDT không gọi IDW-MMD trực tiếp. Đầu ra mà SE-CDT nhận lại từ hàm đó gồm ba giá trị: cờ \texttt{is\_drift}, tín hiệu \texttt{mmd\_trace} (Standard MMD), và danh sách \texttt{p\_values}; logic phân loại của SE-CDT chỉ dùng \texttt{mmd\_trace}. Kết quả thực nghiệm của bước phát hiện và bước hiệu chỉnh $H_0$ được trình bày ở Mục~\ref{sec:detection-eval} và Mục~\ref{sec:h0-calibration}.
+
+Kiến trúc kết hợp trên cho phép hệ thống phát hiện drift với độ chính xác cao và chi phí tính toán thấp; tuy nhiên phát hiện chỉ là bước đầu, để chọn chiến lược thích ứng phù hợp hệ thống còn cần biết \textit{loại} drift đã xảy ra. Phương pháp SE-CDT, trình bày trong mục kế tiếp, đảm nhiệm bài toán phân loại drift không giám sát.
+
+\section{Phương pháp phân loại drift SE-CDT}
+\label{sec:shaped-cdt}
+
+Sau khi biết rằng drift đã xảy ra là chưa đủ --- hệ thống còn cần biết drift đó thuộc loại nào, vì mỗi loại drift đòi hỏi chiến lược cập nhật khác nhau. SE-CDT (ShapeDD-Enhanced Concept Drift Type) được thiết kế để giải quyết bài toán này.
+
+Phương pháp được tham khảo là CDT-MSW~\cite{guo2022cdtmsw} với khả năng phát hiện và phân loại drift rất tốt, nhưng CDT-MSW cần nhãn dữ liệu: nó phân loại drift bằng cách so sánh độ chính xác phân loại giữa hai cửa sổ (accuracy ratio $\tilde{P} = a_B / a_A$). Trong môi trường không giám sát, không có nhãn nào để tính chỉ số này.
+
+SE-CDT bỏ qua nhãn hoàn toàn và đọc trực tiếp \textit{hình dạng} của tín hiệu MMD $\sigma(t)$ --- tín hiệu vốn đã có sẵn từ bước phát hiện. Ý tưởng nền tảng là: mỗi loại drift để lại dấu ấn hình dạng khác nhau trên tín hiệu MMD. Sudden tạo đỉnh sắc nét và hẹp. Gradual tạo gò rộng và thoải. Incremental tạo xu hướng tăng dần. Recurrent tạo nhiều đỉnh lặp lại đều đặn. SE-CDT đọc những dấu ấn này để ra quyết định phân loại.
+
+\subsection{Cơ sở lý thuyết}
+Theo phân loại của CDT-MSW, drift chia thành hai loại chính:
+\begin{itemize}
+	\item \textbf{TCD (Transient Concept Drift):} Drift tạm thời với thời gian chuyển đổi ngắn, gồm sudden, blip và recurrent (do tính chất lặp lại của các trạng thái ổn định).
+	\item \textbf{PCD (Progressive Concept Drift):} Drift tiến triển với thời gian chuyển đổi dài, gồm gradual và incremental.
+\end{itemize}
+
+Tuy nhiên, SE-CDT chỉ nhìn thấy dữ liệu đầu vào $X$, không nhìn thấy nhãn $Y$, nên thứ nó phân loại là \textit{hình dạng thay đổi của $P(X)$} dưới giả định joint drift (Mục~\ref{sec:drift-pxpyx}). Các tập đối chứng chỉ thay đổi $P(Y|X)$ --- Hyperplane, LED Abrupt, Standard SEA --- nằm ngoài phạm vi quan sát và được dùng để kiểm tra hệ thống không báo nhầm (Mục~\ref{sec:detection-eval}).
+
+\subsection{Đặc trưng phân loại từ tín hiệu \texorpdfstring{$\sigma(t)$}{sigma(t)}}
+
+Thay vì dùng một thống kê duy nhất, SE-CDT trích xuất 9 đặc trưng từ hình dạng của tín hiệu MMD $\sigma(t)$. Sáu đặc trưng đầu mô tả hình dạng các đỉnh (Hình~\ref{fig:peak-anatomy}):
+\begin{enumerate}
+	\item \textbf{Peak Width Ratio:} $\text{WR} = \frac{\text{FWHM}}{2l_1}$, trong đó FWHM (Full Width at Half Maximum) là độ rộng của đỉnh MMD đo tại nửa chiều cao cực đại. Đỉnh hẹp ứng với drift đột ngột, đỉnh rộng ứng với drift kéo dài.
+	\item \textbf{Peak Count ($n_p$):} Số lượng peaks. Sudden ít peak; Recurrent nhiều peak đều đặn.
+	\item \textbf{Periodicity CV:} Hệ số biến thiên khoảng cách giữa peaks. Recurrent có CV nhỏ (peak xuất hiện đều đặn).
+	\item \textbf{Signal-to-Noise Ratio:} $\text{SNR} = \frac{\max(\sigma)}{\text{median}(\sigma)}$. TCD có SNR cao do peak sắc nét, PCD có SNR thấp.
+	\item \textbf{Peak Proximity Ratio (PPR):} Khoảng cách gần nhất giữa hai peak chia cho độ dài tín hiệu. Blip drift có PPR nhỏ (hai peak gần nhau).
+	\item \textbf{Dual-Peak Amplitude Ratio (DPAR):} Tỉ lệ chiều cao giữa hai peak được chọn cho kiểm tra Blip. Với tín hiệu có hai hoặc ba peak, hệ thống lấy hai peak cao nhất để giảm ảnh hưởng của peak nhiễu nhỏ.
+\end{enumerate}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.95\textwidth]{../../results/plots/theory_peak_anatomy.png}
+	\caption[Phân tích tín hiệu SE-CDT]{Phân tích tín hiệu MMD trong SE-CDT. Các đặc trưng hình học như FWHM (quyết định Width Ratio) và Prominence (quyết định SNR) được trích xuất trực tiếp từ hình dạng của đỉnh so với đường cơ sở (baseline).}
+	\label{fig:peak-anatomy}
+\end{figure}
+
+Ba đặc trưng còn lại mô tả xu hướng thời gian của tín hiệu:
+\begin{enumerate}
+	\item \textbf{Linear Trend Strength (LTS):} Hệ số $R^2$ của hồi quy tuyến tính trên tín hiệu; Incremental có LTS cao.
+	\item \textbf{Step Detection Score (SDS):} Tỉ lệ các bước nhảy đáng kể trong tín hiệu.
+	\item \textbf{Monotonicity Score (MS):} Tỉ lệ chiều hướng thống trị (tăng hoặc giảm) trong tín hiệu.
+\end{enumerate}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.95\textwidth]{../../results/plots/theory_drift_shapes.png}
+	\caption[Hình dạng tín hiệu MMD của các loại Drift]{Hình dạng tín hiệu MMD đặc trưng của các loại Drift. A) Sudden tạo đỉnh tam giác sắc nét; B) Gradual tạo gò rộng, dao động, xu hướng tuyến tính thấp; C) Incremental tạo sườn dốc tăng dần với độ đơn điệu cao; D) Blip tạo gai nhọn cực hẹp.}
+	\label{fig:drift-shapes}
+\end{figure}
+
+Hình~\ref{fig:drift-shapes} minh hoạ hình dạng tín hiệu MMD đặc trưng của từng loại drift, là nền tảng trực quan cho các đặc trưng nói trên. Bảng~\ref{tab:se-cdt-features} tổng hợp toàn bộ 9 đặc trưng, giúp tra cứu nhanh ý nghĩa và điều kiện phân loại của từng đặc trưng:
+
+\begin{table}[H]
+	\centering
+	\caption{Tổng hợp các đặc trưng phân loại của SE-CDT}
+	\label{tab:se-cdt-features}
+	\resizebox{\textwidth}{!}{%
+	\begin{tabular}{|l|c|p{4.5cm}|c|p{4.5cm}|}
+		\hline
+		\textbf{Đặc trưng} & \textbf{Ký hiệu} & \textbf{Công thức / Cách tính} & \textbf{Miền giá trị} & \textbf{Ý nghĩa phân loại} \\
+		\hline
+		\multicolumn{5}{|c|}{\textit{Nhóm 1: Đặc trưng hình học (Geometric Features)}} \\
+		\hline
+		Peak Width Ratio & WR & $\text{FWHM} / (2l_1)$ & $[0, 1]$ & Nhỏ $\Rightarrow$ Sudden; Lớn $\Rightarrow$ Gradual/Incremental \\
+		Peak Count & $n_p$ & Số đỉnh vượt ngưỡng $\bar{\sigma}_s + 0.3\sigma_{\text{std}}$ & $\mathbb{N}_0$ & $\leq 3$: Sudden; $\geq 4$: Recurrent \\
+		Periodicity CV & CV & $\text{std}(\Delta P) / \text{mean}(\Delta P)$ & $[0, \infty)$ & $< 0.3$: Peaks đều (Recurrent) \\
+		Signal-to-Noise & SNR & $\max(\sigma_s) / \text{median}(\sigma_s)$ & $[1, \infty)$ & $> 2.0$: Peaks sắc nét (TCD) \\
+		Peak Proximity & PPR & Khoảng cách giữa hai peak được chọn$/|\sigma|$ & $[0, 1]$ & Nhỏ: hai peaks gần (Blip) \\
+		Dual-Peak Amp. & DPAR & $\min(h_1, h_2) / \max(h_1, h_2)$ & $[0, 1]$ & Trung bình--cao: hai peaks cùng nổi bật (Blip) \\
+		\hline
+		\multicolumn{5}{|c|}{\textit{Nhóm 2: Đặc trưng thời gian (Temporal Features)}} \\
+		\hline
+		Linear Trend & LTS & $R^2$ của hồi quy tuyến tính trên $\sigma_s$ & $[0, 1]$ & $> 0.5$: Xu hướng tuyến tính (Incremental) \\
+		Step Detection & SDS & Tỉ lệ bước nhảy $> 1.5\sigma$ trong $\sigma_s$ & $[0, 1]$ & $> 0.12$: Nhiều bước nhảy (Incremental) \\
+		Monotonicity & MS & $|n^+ - n^-| / (n^+ + n^-)$ & $[0, 1]$ & $> 0.6$: Đơn điệu mạnh (Incremental) \\
+		\hline
+	\end{tabular}%
+	}
+\end{table}
+
+\subsection{Thuật toán phân loại}
+
+Bảng~\ref{tab:se-cdt-params} liệt kê toàn bộ siêu tham số của thuật toán cùng giá trị mặc định.
+
+\begin{table}[H]
+	\centering
+	\caption{Hyperparameters of SE-CDT with default values}
+	\label{tab:se-cdt-params}
+	\begin{tabular}{llll}
+		\hline
+		\textbf{Parameter} & \textbf{Default} & \textbf{Role} \\
+		\hline
+		$\sigma_g$ & 4 & Gaussian smoothing bandwidth \\
+		$\alpha$ & 0.3 & Peak detection threshold multiplier \\
+		$\tau_{\ell}$ & 1 & Duration threshold separating PCD from TCD \\
+		$\tau_{\mathrm{WR}}^{\mathrm{blip}}$ & 0.30 & WR upper bound for Blip \\
+		$\tau_{\mathrm{LTS}}$ & 0.5 & Strong linear trend threshold \\
+		$\tau_{\mathrm{LTS}}^{-}$ & 0.3 & Weak linear trend (combined condition) \\
+		$\tau_{\mathrm{MS}}$ & 0.6 & Monotonicity threshold \\
+		$\tau_{\mathrm{SDS}}$ & 0.12 & Step detection threshold \\
+		$\tau_{n}^{\mathrm{blip}}$ & 3 & Max peak count for Blip \\
+		$\tau_{n}^{\mathrm{sud}}$ & 3 & Max peak count for Sudden \\
+		$\tau_{n}^{\mathrm{rec}}$ & 4 & Min peak count for Recurrent \\
+		$\tau_{n}^{\mathrm{inc}}$ & 7 & Peak count fallback for Incremental \\
+		$\tau_{\mathrm{WR}}$, $\tau_{\mathrm{SNR}}$, $\tau_{\mathrm{CV}}$ & self-calibrated & See Section~\ref{sec:se-cdt-self-calibration} \\
+		\hline
+	\end{tabular}
+\end{table}
+
+Algorithm~\ref{alg:se-cdt} trình bày toàn bộ quy trình phân loại theo từng bước:
+
+\begin{algorithm}[H]
+	\caption{SE-CDT --- Unsupervised Drift Type Classification}
+	\label{alg:se-cdt}
+	\begin{algorithmic}[1]
+		\Require Drift magnitude signal $\sigma(t)$ (Standard MMD) from Detection Module
+		\Require Threshold parameter set $\Theta$ (see Table~\ref{tab:se-cdt-params}); $\tau_{\mathrm{WR}}$, $\tau_{\mathrm{SNR}}$, $\tau_{\mathrm{CV}}$ self-calibrated (Section~\ref{sec:se-cdt-self-calibration})
+		\Ensure Drift type: one of \{TCD-Blip, TCD-Sudden, TCD-Recurrent, PCD-Gradual, PCD-Incremental\}
+		\State $\sigma_s \leftarrow \text{GaussianFilter}(\sigma,\; \sigma_g)$ \Comment{smooth signal}
+		\State $P \leftarrow \text{FindPeaks}(\sigma_s,\; \bar{\sigma}_s + \alpha\,\sigma_{\mathrm{std}})$
+		\State Compute geometric features: $n_p \leftarrow |P|$, WR, CV, SNR, PPR, DPAR
+		\State Compute temporal features: LTS, SDS, MS
+		\State $\ell \leftarrow \text{EstimateDriftDuration}(\sigma_s)$ \Comment{via peak FWHM}
+		\If{$n_p \leq \tau_{n}^{\mathrm{blip}}$ \textbf{and} $\mathrm{WR} < \tau_{\mathrm{WR}}^{\mathrm{blip}}$ \textbf{and} $\text{BlipProfile}(\mathrm{PPR}, \mathrm{DPAR}, \mathrm{SNR}, \mathrm{LTS})$}
+			\Return \textbf{TCD-Blip}
+		\EndIf
+		\If{$\ell > \tau_{\ell}$} \Comment{wide peak $\Rightarrow$ PCD}
+			\If{\Call{IsIncremental}{$\mathrm{LTS}, \mathrm{MS}, \mathrm{SDS}, n_p$}}
+				\Return \textbf{PCD-Incremental}
+			\Else
+				\Return \textbf{PCD-Gradual}
+			\EndIf
+		\EndIf
+		\If{$n_p \leq \tau_{n}^{\mathrm{sud}}$ \textbf{and} $\mathrm{WR} < \tau_{\mathrm{WR}}$ \textbf{and} $\mathrm{SNR} > \tau_{\mathrm{SNR}}$}
+			\Return \textbf{TCD-Sudden}
+		\EndIf
+		\If{$n_p \geq \tau_{n}^{\mathrm{rec}}$ \textbf{and} $\mathrm{CV} < \tau_{\mathrm{CV}}$ \textbf{and} $\mathrm{LTS} < \tau_{\mathrm{LTS}}$}
+			\Return \textbf{TCD-Recurrent}
+		\EndIf
+		\If{\Call{IsIncremental}{$\mathrm{LTS}, \mathrm{MS}, \mathrm{SDS}, n_p$}} \Comment{PCD fallback}
+			\Return \textbf{PCD-Incremental}
+		\Else
+			\Return \textbf{PCD-Gradual} \Comment{default}
+		\EndIf
+		\Statex
+		\Function{IsIncremental}{$\mathrm{LTS}, \mathrm{MS}, \mathrm{SDS}, n_p$}
+			\If{$\mathrm{LTS} > \tau_{\mathrm{LTS}}$} \Return \textbf{true} \EndIf
+			\If{$\mathrm{MS} > \tau_{\mathrm{MS}}$ \textbf{and} $\mathrm{LTS} > \tau_{\mathrm{LTS}}^{-}$} \Return \textbf{true} \EndIf
+			\If{$\mathrm{SDS} > \tau_{\mathrm{SDS}}$ \textbf{and} $\mathrm{LTS} > \tau_{\mathrm{LTS}}^{-}$} \Return \textbf{true} \EndIf
+			\Return $n_p \geq \tau_{n}^{\mathrm{inc}}$
+		\EndFunction
+	\end{algorithmic}
+\end{algorithm}
+
+Trong thuật toán, $\text{BlipProfile}$ gồm hai trường hợp: cặp peak gần nhau với DPAR đủ cao, hoặc profile nhiễu ngắn hạn có WR nhỏ, SNR trung bình, DPAR ở mức vừa phải và LTS thấp. Điều kiện này được kiểm tra trước nhánh PCD vì nhiều blip có FWHM hơi rộng do nhiễu, nếu xét $\ell > 1$ trước sẽ dễ bị gán nhầm thành Gradual.
+
+Hình~\ref{fig:se-cdt-flowchart} minh họa trực quan luồng quyết định phân loại drift của SE-CDT (tương ứng với Algorithm~\ref{alg:se-cdt}):
+
+\begin{figure}[H]
+	\centering
+	\resizebox{0.92\textwidth}{!}{%
+	\begin{tikzpicture}[
+		node distance=0.85cm and 2.3cm,
+		startstop/.style={rectangle, rounded corners, minimum width=4.2cm, minimum height=0.75cm, text centered, draw=black, fill=blue!15, font=\small\bfseries},
+		process/.style={rectangle, minimum width=4.2cm, minimum height=0.75cm, text centered, draw=black, fill=orange!10, font=\small},
+		decision/.style={diamond, aspect=2.8, minimum width=1cm, text centered, draw=black, fill=yellow!15, font=\small, inner sep=2pt},
+		result/.style={rectangle, rounded corners, minimum width=3.2cm, minimum height=0.65cm, text centered, draw=black, fill=green!20, font=\small\bfseries},
+		arrow/.style={thick, ->, >=stealth},
+	]
+		\node (start) [startstop] {MMD signal $\sigma(t)$};
+		\node (extract) [process, below=0.7cm of start] {Smooth; extract $n_p$, WR, CV, SNR, PPR, DPAR, LTS, SDS, MS; estimate $\ell$};
+
+		\node (blip_dec) [decision, below=0.75cm of extract] {Blip?};
+		\node (r_blip) [result, right=2.5cm of blip_dec] {\textbf{TCD-Blip}};
+
+		\node (pcd_dec) [decision, below=1.0cm of blip_dec] {$\ell > \tau_{\ell}$?};
+		\node (inc_dec) [decision, right=2.5cm of pcd_dec] {IsIncremental?};
+		\node (r_inc1) [result, above=0.55cm of inc_dec] {\textbf{PCD-Incremental}};
+		\node (r_grad1) [result, below=0.55cm of inc_dec] {\textbf{PCD-Gradual}};
+
+		\node (sud_dec) [decision, below=2.2cm of pcd_dec] {Sudden?};
+		\node (r_sud) [result, right=2.5cm of sud_dec] {\textbf{TCD-Sudden}};
+
+		\node (rec_dec) [decision, below=0.95cm of sud_dec] {Recurrent?};
+		\node (r_rec) [result, right=2.5cm of rec_dec] {\textbf{TCD-Recurrent}};
+
+		\node (fb_dec) [decision, below=0.95cm of rec_dec] {IsIncremental?};
+		\node (r_inc2) [result, right=2.5cm of fb_dec] {\textbf{PCD-Incremental}};
+		\node (r_grad2) [result, below=0.65cm of fb_dec] {\textbf{PCD-Gradual}};
+
+		\draw [arrow] (start) -- (extract);
+		\draw [arrow] (extract) -- (blip_dec);
+		\draw [arrow] (blip_dec) -- node[above, font=\scriptsize] {Yes} (r_blip);
+		\draw [arrow] (blip_dec) -- node[left, font=\scriptsize] {No} (pcd_dec);
+		\draw [arrow] (pcd_dec) -- node[above, font=\scriptsize] {Yes} (inc_dec);
+		\draw [arrow] (pcd_dec) -- node[left, font=\scriptsize] {No} (sud_dec);
+		\draw [arrow] (inc_dec) -- node[left, font=\scriptsize] {Yes} (r_inc1);
+		\draw [arrow] (inc_dec) -- node[left, font=\scriptsize] {No} (r_grad1);
+		\draw [arrow] (sud_dec) -- node[above, font=\scriptsize] {Yes} (r_sud);
+		\draw [arrow] (sud_dec) -- node[left, font=\scriptsize] {No} (rec_dec);
+		\draw [arrow] (rec_dec) -- node[above, font=\scriptsize] {Yes} (r_rec);
+		\draw [arrow] (rec_dec) -- node[left, font=\scriptsize] {No} (fb_dec);
+		\draw [arrow] (fb_dec) -- node[above, font=\scriptsize] {Yes} (r_inc2);
+		\draw [arrow] (fb_dec) -- node[left, font=\scriptsize] {No} (r_grad2);
+	\end{tikzpicture}}
+	\caption[Lưu đồ phân loại drift của SE-CDT]{Lưu đồ quyết định phân loại drift của SE-CDT (Algorithm~\ref{alg:se-cdt}). Điều kiện Blip được kiểm tra trước để tránh peak nhiễu ngắn bị chuyển nhầm vào nhánh PCD. Tín hiệu có đỉnh rộng ($\ell > \tau_\ell$) được phân loại trực tiếp là PCD; các trường hợp còn lại được kiểm tra lần lượt Sudden, Recurrent, trước khi fallback về PCD theo đặc trưng thời gian (Bảng~\ref{tab:se-cdt-features}).}
+	\label{fig:se-cdt-flowchart}
+\end{figure}
+
+\subsection{Ưu điểm và độ phức tạp}
+
+SE-CDT có một số ưu điểm mang đến sự khác biệt so với CDT-MSW:
+\begin{itemize}
+	\item \textbf{Không giám sát:} Hoạt động theo kiểu không giám sát, không cần nhãn dữ liệu, phù hợp với dữ liệu luồng.
+	\item \textbf{Tích hợp:} Sử dụng tín hiệu Standard MMD $\sigma(t)$ đã tính trong quá trình phát hiện ứng viên drift, không cần thêm một nguồn tín hiệu riêng.
+	\item \textbf{Thời gian thực:} Phân loại ngay sau khi phát hiện drift với chi phí $O(m)$ tuyến tính --- rất nhỏ so với bước phát hiện.
+	\item \textbf{Phân tách phát hiện và phân loại:} Toàn bộ pipeline phát hiện --- tính tín hiệu Standard MMD, tìm đỉnh ứng viên, và kiểm định bằng IDW-MMD với xấp xỉ Gamma --- được đóng gói trong hàm \texttt{shapedd\_idw\_mmd\_proper}. SE-CDT nhận lại tín hiệu Standard MMD $\sigma(t)$ từ hàm đó và chỉ dùng $\sigma(t)$ này cho bước phân loại; logic phân loại của SE-CDT không gọi IDW-MMD trực tiếp.
+\end{itemize}
+
+Về độ phức tạp tính toán của toàn bộ quy trình:
+\begin{itemize}
+	\item \textbf{Detection (ShapeDD-IDW):} $O(n^2 \cdot T/\text{step})$ với $n$ = kích thước cửa sổ, $T$ = độ dài stream, step = bước trượt. Đây là bước chiếm chi phí chính.
+	\item \textbf{Classification (SE-CDT)}, chạy sau khi bước phát hiện trả về $\sigma(t)$ với $m$ điểm:
+	\begin{itemize}
+		\item Làm mượt tín hiệu: $O(m)$
+		\item Tìm cực đại cục bộ: $O(m)$
+		\item Trích đặc trưng từ các peak: $O(n_p)$ với $n_p$ là số peak
+		\item So sánh ngưỡng để phân loại: $O(1)$
+	\end{itemize}
+	\item Tổng chi phí phân loại là $O(m)$, tuyến tính theo độ dài tín hiệu.
+	\item Tổng chi phí quy trình vẫn chủ yếu nằm ở bước phát hiện: $O(n^2 \cdot T/\text{step})$.
+\end{itemize}
+
+Vì vậy, bước phân loại chỉ thêm một phần chi phí nhỏ so với phép tính MMD trong bước phát hiện.
+
+\subsection{Giải thích lựa chọn ngưỡng}
+Các ngưỡng trong Algorithm~\ref{alg:se-cdt} được xác định trên synthetic datasets với cửa sổ chuẩn $n, m \approx 200$, dựa trên các quan sát sau:
+Blip được nhận diện bằng hai hoặc ba peak ngắn hạn, trong đó hai peak nổi bật nhất có quan hệ đủ gần về vị trí hoặc có profile phù hợp với một xung ngắn bị nhiễu. Sudden thường có ít peak, đỉnh hẹp và SNR cao. Recurrent có nhiều peak tương đối đều, còn incremental và gradual được tách bằng các đặc trưng thời gian như LTS, SDS và MS. Gradual là trường hợp mặc định khi tín hiệu kéo dài nhưng không có xu hướng tuyến tính đủ rõ.
+
+Toàn bộ giá trị ngưỡng cụ thể nằm trong Algorithm~\ref{alg:se-cdt} và được tối ưu cho cửa sổ chuẩn $n, m \approx 200$. Nếu thay đổi kích thước cửa sổ, các ngưỡng về độ rộng đỉnh, SNR, hay khoảng cách peak cần được hiệu chỉnh lại; với dữ liệu thực tế, khuyến nghị tinh chỉnh trên một tập dữ liệu nhỏ đặc thù cho từng miền ứng dụng.
+
+Các ngưỡng trên là heuristic thực nghiệm, không phải kết quả suy diễn lý thuyết. Để giảm phụ thuộc vào các con số cứng, Mục~\ref{sec:se-cdt-self-calibration} bổ sung cơ chế tự điều chỉnh ngưỡng theo mức nhiễu nền quan sát được, vẫn không cần nhãn. Các hạn chế còn lại được thảo luận trong Chương~\ref{chap:conclusion}.
+
+\subsection{Tự hiệu chỉnh ngưỡng phân loại (Online Self-Calibration)}
+\label{sec:se-cdt-self-calibration}
+
+Ngưỡng cứng có một vấn đề thực tế: ngưỡng SNR ``đủ sắc nét'' trên luồng dữ liệu sạch có thể không thể đạt được trên luồng có nhiễu nền cao. Kết quả là cùng một đỉnh sudden thật có thể bị bỏ qua chỉ vì nền nhiễu của luồng dữ liệu mới cao hơn luồng huấn luyện.
+
+Để khắc phục mà vẫn không dùng nhãn, luận văn bổ sung mô-đun \textbf{Rolling Feature Baseline}. Ý tưởng đơn giản: khi không có drift, hệ thống quan sát các đặc trưng SNR, WR, CV trông như thế nào và lưu lại làm chuẩn. Khi có drift mới cần phân loại, ngưỡng phân loại được điều chỉnh theo chuẩn này thay vì dùng giá trị cứng.
+
+Cụ thể, mỗi khi một cửa sổ được kết luận là \textit{không có drift}, ba đặc trưng SNR, WR, CV được trích xuất và đưa vào một bộ đệm vòng. Hệ thống dùng phân vị thực nghiệm từ bộ đệm này để điều chỉnh ngưỡng: lấy giá trị lớn hơn giữa ngưỡng tĩnh và phân vị quan sát được.
+
+Cơ chế này tác động khác nhau lên từng đặc trưng:
+\begin{itemize}
+	\item \textbf{Với SNR:} Sudden cần $\text{SNR}$ lớn hơn ngưỡng. Kéo ngưỡng lên theo phân vị thứ 90 của baseline làm điều kiện khó đạt hơn, giúp tránh nhầm peak nhiễu thành Sudden khi nền nhiễu cao.
+	\item \textbf{Với WR và CV:} điều kiện phân loại là ``phải nhỏ hơn ngưỡng''. Kéo ngưỡng lên theo phân vị thứ 25 của baseline làm điều kiện dễ đạt hơn, giúp các peak Sudden trên stream nhiễu (vốn có WR/CV cao hơn bình thường) vẫn được bắt đúng.
+\end{itemize}
+Cơ chế này chỉ điều chỉnh theo một chiều để giữ nguyên hành vi trên các luồng dữ liệu sạch. Khi nhiễu nền ở mức bình thường, ngưỡng tĩnh tiếp tục được dùng; chỉ khi nền nhiễu cao bất thường, ngưỡng mới được điều chỉnh.
+
+Baseline chỉ cập nhật khi cửa sổ vừa rồi không phát hiện drift và tín hiệu MMD đủ dài để các đặc trưng có ý nghĩa thống kê. Bộ đệm có cửa sổ làm nóng (warm-up): trước khi tích luỹ đủ một số mẫu tối thiểu, hệ thống dùng ngưỡng tĩnh để tránh ngưỡng thích nghi chạy theo nhiễu ở giai đoạn đầu stream. Ba ưu điểm chính: (i) vẫn không cần nhãn khi vận hành --- baseline chỉ dùng tín hiệu MMD, không cần $y$; (ii) ổn định trên dữ liệu sạch --- trên các luồng ít nhiễu, ngưỡng gần như giữ nguyên so với cấu hình tĩnh; (iii) dễ áp dụng giữa các miền dữ liệu --- cùng một SE-CDT có thể thích nghi tốt hơn khi mức nhiễu nền thay đổi.
+
+\subsection{Bộ nhớ khái niệm cho Recurrent Drift (Concept Memory)}
+\label{sec:se-cdt-concept-memory}
+
+Recurrent drift có nghĩa là phân phối đã từng xuất hiện trước đây quay lại. Nếu không có cơ chế ghi nhớ, luật phân loại theo ngưỡng sẽ không biết điều này và phân loại nhầm mỗi lần lặp lại là một sự kiện sudden riêng lẻ. Luận văn bổ sung mô-đun \textbf{Concept Memory} --- một bộ đệm vòng lưu lại các phân phối đã gặp --- để giải quyết vấn đề này.
+
+Bộ nhớ chứa tối đa $M$ mẫu đại diện, mỗi mẫu $S_k$ có kích thước $n_s$ điểm và được lấy ngay sau khi một drift được phát hiện rồi ổn định trở lại. Cùng với mỗi $S_k$, hệ thống lưu cả giá trị $\gamma_k$ được ước lượng bằng median heuristic tại thời điểm đó, để dùng cho bước tính bandwidth trung bình khi so khớp sau này.
+
+Khi SE-CDT phát hiện một drift mới, quy trình tra cứu diễn ra như sau:
+\begin{enumerate}
+	\item Trích xuất mẫu sau drift $S^{\text{new}}$ từ cửa sổ trượt hiện tại.
+	\item Với mỗi $S_k \in \text{Memory}$, tính \textit{Standard MMD} giữa $S^{\text{new}}$ và $S_k$ bằng RBF kernel với $\gamma$ là trung bình $(\gamma_k + \gamma_{\text{new}})/2$.
+	\item Nếu tồn tại $k^\ast$ sao cho $\text{MMD}(S^{\text{new}}, S_{k^\ast})$ nhỏ hơn ngưỡng so khớp $\tau_{\text{match}}$, drift được gán là \textbf{TCD-Recurrent}.
+	\item Nếu không tìm được mẫu phù hợp, $S^{\text{new}}$ được thêm vào bộ nhớ và mẫu cũ nhất bị thay thế.
+\end{enumerate}
+
+Ngưỡng $\tau_{\text{match}}$ được chọn cao hơn rõ rệt so với độ nhiễu nền của MMD trên dữ liệu Gaussian đồng nhất, đủ để tránh báo nhầm hai concept khác nhau là giống nhau. Giá trị cụ thể của $M$, $n_s$, $\tau_{\text{match}}$ và độ nhiễu nền tham chiếu được liệt kê ở bảng tham số thực nghiệm (Chương~\ref{chap:experiments}).
+
+Concept Memory dùng Standard MMD thay vì IDW-MMD vì bài toán ở đây là so khớp hai mẫu đại diện để xem chúng có đến từ cùng một phân phối hay không. IDW-MMD không được gọi trực tiếp bởi logic phân loại của SE-CDT; nó được đóng gói bên trong hàm phát hiện \texttt{shapedd\_idw\_mmd\_proper}, và SE-CDT chỉ nhận lại Standard MMD $\sigma(t)$ cùng cờ \texttt{is\_drift} làm đầu ra.
+
+Concept Memory được gọi sau bước phân loại theo ngưỡng ban đầu và chỉ relabel thành Recurrent khi kết quả chưa phải Blip. Điều này tránh trường hợp một nhiễu ngắn hạn quay lại phân phối cũ bị đổi nhãn thành recurrent drift.
+
+Kết quả phân loại từ SE-CDT được dùng để kích hoạt chiến lược thích ứng phù hợp, trình bày trong phần tiếp theo.
+
+\section{Khung chiến lược thích ứng mô hình}
+\label{sec:model-adaptation-framework}
 
 
+Dựa trên kết quả phân loại từ SE-CDT, hệ thống kích hoạt chiến lược cập nhật mô hình khác nhau cho từng loại drift. Cách tiếp cận này tổng hợp từ Guo \textit{et al.}~\cite{guo2022cdtmsw}, Gama \textit{et al.}~\cite{gama2014survey}, Lu \textit{et al.}~\cite{lu2018learning}, và Yuan \textit{et al.}~\cite{yuan2022advances}.
+
+\subsection{Ma trận quyết định chiến lược}
+
+Thay vì áp dụng một chiến lược duy nhất (như huấn luyện lại toàn bộ) cho mọi trường hợp, hệ thống đề xuất sử dụng thông tin về loại drift để tối ưu hóa chi phí và hiệu suất. Bảng~\ref{tab:adaptation-strategies} mô tả ánh xạ giữa loại drift và chiến lược thích ứng:
+
+\begin{table}[H]
+	\centering
+	\caption{Chiến lược thích ứng theo loại Drift}
+	\label{tab:adaptation-strategies}
+	\begin{tabular}{|l|p{5.5cm}|p{5cm}|}
+		\hline
+		\textbf{Loại Drift}  & \textbf{Chiến lược Thích ứng}                                                                                               & \textbf{Cơ sở lý luận}                                                                  \\
+		\hline
+		\textbf{Sudden}      & \textbf{Huấn luyện lại nhanh:} Khởi tạo lại mô hình và huấn luyện trên cửa sổ dữ liệu mới nhất sau drift.                & Dữ liệu cũ không còn giá trị, cần loại bỏ hoàn toàn để tránh nhiễu (negative transfer). \\
+		\hline
+		\textbf{Incremental} & \textbf{Cập nhật liên tục:} Cập nhật mô hình hiện tại với dữ liệu mới.                        & Sự thay đổi mang tính tiệm tiến, kiến thức cũ vẫn còn giá trị một phần.                 \\
+		\hline
+		\textbf{Gradual}     & \textbf{Cửa sổ có trọng số:} Ưu tiên dữ liệu mới nhưng vẫn giữ lại một phần dữ liệu cũ. & Giai đoạn chuyển tiếp có sự pha trộn giữa hai phân phối, cần bộ nhớ đệm.                \\
+		\hline
+		\textbf{Recurrent}   & \textbf{Lưu và dùng lại mô hình:} Tìm kiếm trong kho lưu trữ mô hình cũ phù hợp và kích hoạt lại.                            & Tái sử dụng tri thức đã học, tiết kiệm chi phí huấn luyện lại.                          \\
+		\hline
+		\textbf{Blip}        & \textbf{Không cập nhật hoặc cập nhật rất nhẹ:} Bỏ qua hoặc cập nhật với trọng số rất thấp.                                            & Thay đổi chỉ là nhiễu tạm thời, tránh việc mô hình "quên" kiến thức ổn định.            \\
+		\hline
+	\end{tabular}
+\end{table}
+
+\subsection{Triển khai các chiến lược}
+
+\subsubsection{Chiến lược cho Sudden Drift (Trọng tâm nghiên cứu)}
+Trong phạm vi luận văn, chiến lược cho \textit{Sudden Drift} được cài đặt và đánh giá chi tiết nhất. Quy trình cụ thể như sau:
+\begin{enumerate}
+	\item \textbf{Kích hoạt:} Khi SE-CDT phân loại drift là ``Sudden''.
+	\item \textbf{Thu thập dữ liệu:} Hệ thống chờ và thu thập một lượng dữ liệu mới ($N_{new}$) ngay sau điểm drift.
+	\item \textbf{Huấn luyện lại:} Một instance mô hình mới (ví dụ: Logistic Regression) được khởi tạo với trọng số ngẫu nhiên và huấn luyện trên $N_{new}$.
+	\item \textbf{Thay thế:} Mô hình cũ bị loại bỏ hoàn toàn, mô hình mới được đưa vào sử dụng.
+\end{enumerate}
+
+\subsubsection{Model Caching theo Concept Memory}
+Khi phân loại trả về Recurrent, hệ thống tải lại mô hình đã được gắn với mẫu phân phối khớp trong Concept Memory (Mục~\ref{sec:se-cdt-concept-memory}) và tinh chỉnh nhẹ trên cửa sổ dữ liệu mới. Mỗi mẫu $S_k$ trong bộ nhớ được lưu kèm tham chiếu tới mô hình đã huấn luyện trên giai đoạn ổn định tương ứng, tránh phải huấn luyện lại từ đầu cho khái niệm đã gặp.
+
+\section{Kiến trúc đề xuất cho hệ thống phát hiện trôi dạt và cập nhật mô hình thích ứng}
+\label{sec:system-architecture}
+
+Để hiện thực hóa các phương pháp trên trong môi trường dữ liệu luồng, luận văn đề xuất một kiến trúc xử lý phân tán dựa trên Apache Kafka. Kiến trúc này được thiết kế theo hướng tách biệt thành phần, dễ mở rộng và dễ theo dõi. Tuy nhiên, phần này trình bày thiết kế kiến trúc và một nguyên mẫu kiểm thử trên nền tảng tương thích Kafka (Redpanda), không phải hệ thống vận hành hoàn chỉnh trong sản xuất. Các khía cạnh hạ tầng phân tán --- độ trễ dưới tải cao, thông lượng khi tăng số phân vùng, và thời gian phục hồi khi có lỗi --- nằm ngoài phạm vi đánh giá của luận văn và được xếp vào hướng phát triển tiếp theo (Chương~\ref{chap:conclusion}).
+Các đánh giá trong Chương~\ref{chap:experiments} tập trung vào hiệu năng thuật toán, không phải hiệu năng hạ tầng.
+
+\subsection{Tổng quan kiến trúc}
+
+Hệ thống được thiết kế theo mô hình \textbf{kiến trúc hướng sự kiện} (Hình~\ref{fig:system_architecture}), gồm các thành phần hoạt động độc lập và giao tiếp qua các Kafka topics:
+
+\begin{figure}[H]
+	\centering
+	% System Architecture Diagram
+	\includegraphics[width=0.95\textwidth]{image/system_architecture.png}
+	\caption{Sơ đồ kiến trúc hệ thống phát hiện và thích ứng Drift}
+	\label{fig:system_architecture}
+\end{figure}
+
+\begin{enumerate}
+	\item \textbf{Data Producer (Nguồn dữ liệu):} Mô phỏng hoặc thu thập dữ liệu từ cảm biến/nguồn phát, gửi vào topic \texttt{sensor.stream}.
+	\item \textbf{SE-CDT Analysis Consumer (Bộ xử lý phân tích):} Đọc dữ liệu từ luồng, thực hiện phát hiện drift bằng ShapeDD/MMD và phân loại loại drift nếu có thay đổi. Kết quả gồm vị trí và loại drift được gửi vào topic \texttt{drift.results}.
+	\item \textbf{Adaptation Manager (Bộ thích ứng):} Lắng nghe sự kiện từ \texttt{drift.results}, lựa chọn chiến lược cập nhật mô hình phù hợp dựa trên loại drift đã phân loại.
+	\item \textbf{Monitoring Dashboard:} Trực quan hóa dữ liệu luồng, trạng thái hệ thống, và lịch sử các lần thích ứng.
+\end{enumerate}
+
+\subsection{Thiết kế chi tiết các thành phần}
+
+\subsubsection{Producer và Data Ingestion}
+Producer được thiết kế để chịu lỗi và đảm bảo tính toàn vẹn dữ liệu:
+\begin{itemize}
+	\item Sử dụng cơ chế \textbf{retry with exponential backoff} để xử lý mất kết nối mạng.
+	\item Dữ liệu được đóng gói dưới dạng JSON gồm thời điểm, vector đặc trưng và thông tin mô tả.
+	\item Hỗ trợ điều chỉnh tốc độ phát tin để mô phỏng các mức tải khác nhau.
+\end{itemize}
+
+\subsubsection{Consumer và Cơ chế Windowing}
+Thành phần Consumer đóng vai trò quan trọng nhất, thực hiện phát hiện drift:
+\begin{itemize}
+	\item \textbf{Circular Buffer:} Duy trì một bộ đệm tuần hoàn (ví dụ: 1000 mẫu) trong bộ nhớ để phục vụ tính toán cửa sổ trượt mà không cần truy xuất lại Kafka quá nhiều.
+	\item \textbf{4-Phase Lifecycle:}
+	      \begin{enumerate}
+		      \item \textit{Pre-training:} Thu thập dữ liệu ban đầu để huấn luyện mô hình gốc.
+		      \item \textit{Warm-up:} Giai đoạn ổn định, thiết lập baseline hiệu suất.
+		      \item \textit{Monitoring:} Mô hình chạy ở chế độ dự đoán, liên tục kiểm tra drift bằng ShapeDD.
+		      \item \textit{Adaptation:} Tạm dừng monitoring để cập nhật mô hình khi có drift.
+	      \end{enumerate}
+\end{itemize}
+
+\subsubsection{Quản lý Topic và Giao tiếp}
+Hệ thống sử dụng các topic riêng biệt để phân tách luồng dữ liệu và luồng điều khiển:
+\begin{table}[H]
+	\centering
+	\caption{Danh sách Kafka Topics và Chức năng}
+	\label{tab:kafka-topics}
+	\begin{tabular}{|l|l|l|}
+		\hline
+		\textbf{Topic Name}     & \textbf{Nội dung}   & \textbf{Mục đích}                               \\
+		\hline
+		\texttt{sensor.stream}  & Raw data samples    & Luồng dữ liệu đầu vào cho hệ thống phân tích.   \\
+		\hline
+		\texttt{drift.results}  & Drift info \& Type  & Kết quả phân tích từ SE-CDT (Vị trí + Loại Drift). \\
+		\hline
+		\texttt{model.updated}  & Model metadata      & Thông báo mô hình mới đã sẵn sàng (hot-reload). \\
+		\hline
+		\texttt{model.accuracy} & Performance metrics & Dữ liệu giám sát độ chính xác real-time.        \\
+		\hline
+	\end{tabular}
+\end{table}
+
+\section{Cơ chế chịu lỗi và đảm bảo độ tin cậy}
+
+Trong môi trường phân tán, các sự cố là không thể tránh khỏi. Hệ thống đề xuất tích hợp các cơ chế chịu lỗi (Fault Tolerance) ở nhiều cấp độ:
+
+\subsection{Xử lý lỗi ở mức ứng dụng}
+\begin{itemize}
+	\item \textbf{Suy giảm có kiểm soát:} Nếu bộ thích ứng gặp lỗi (ví dụ: tràn bộ nhớ khi huấn luyện), hệ thống tiếp tục dùng mô hình cũ và ghi cảnh báo thay vì dừng toàn bộ luồng xử lý.
+	\item \textbf{Xử lý ngoại lệ:} Quá trình tính toán ShapeDD được bọc trong các khối an toàn để xử lý các ngoại lệ số học mà không làm dừng Consumer.
+\end{itemize}
+
+\subsection{Xử lý lỗi ở mức hạ tầng (Kafka)}
+\begin{itemize}
+	\item \textbf{Replication:} Các topic quan trọng được cấu hình \texttt{replication.factor=3} để đảm bảo không mất dữ liệu ngay cả khi 1-2 broker bị lỗi.
+	\item \textbf{Offset Management:} Consumer chỉ commit offset sau khi đã xử lý xong batch dữ liệu, đảm bảo ngữ nghĩa "at-least-once" (không bỏ sót dữ liệu).
+	\item \textbf{Consumer Rebalancing:} Nếu một Consumer bị lỗi, Kafka sẽ tự động phân phối lại các partition cho các Consumer còn lại trong nhóm.
+\end{itemize}
+
+\section{Kết luận chương}
+Chương này đã trình bày mô hình đề xuất \textbf{SE-CDT}, bao gồm cải tiến thuật toán phát hiện, phương pháp phân loại drift, khung thích ứng theo loại drift và kiến trúc hệ thống dựa trên Kafka. Cải tiến thuật toán được đánh giá thực nghiệm trong Chương~\ref{chap:experiments}, còn kiến trúc Kafka được xem như nguyên mẫu cho các bước triển khai thực tế sau này.

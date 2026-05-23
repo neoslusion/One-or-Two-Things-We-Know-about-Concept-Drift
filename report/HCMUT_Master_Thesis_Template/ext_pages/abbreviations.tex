@@ -8,24 +8,71 @@
     {\fontsize{24pt}{28pt}\selectfont \textbf{LIST OF ABBREVIATIONS}}
 \end{center}
 
-\begin{table}[h]
-\centering
-\fontsize{13pt}{15pt}\selectfont
-\begin{tabular}{ll}
-FR                & Face Recognition                               \\
-FRL               & Face Representation Learning                   \\
-FIQA              & Face Image Quality Assessment                  \\
-MVP               & Magniude Value-Driven Planning                 \\
-QCFace            & Quality Control Face (\textit{proposal})       \\
-SBW               & Segmental Batch Weight (\textit{proposal})     \\
-QCFaceSBW         & A version of QCFace employing SBW              \\
-QCFace(SBW)       & All QCFace's variants including QCFaceSBW~     \\
-QCFace-2P         & Two-phase-training QCFace                      \\
-QCFace-E2E        & End-to-End-training QCFace                     \\
-QCFace-MinWeight  & QCFaceSBW with the min aggregation function    \\
-QCFace-MeanWeight & QCFaceSBW with the mean aggregation function   \\
-QCFace-MaxWeight  & QCFaceSBW with the max aggregation function    \\
-qmf               & Quality-weighting for Magnitude-based methods  \\
-SGD               & Stochastic gradient descent                   
-\end{tabular}
-\end{table}
+\begin{longtable}[c]{|l|p{12cm}|}
+	\hline
+	\textbf{Viết tắt} & \textbf{Giải nghĩa} \\
+	\hline
+	\endfirsthead
+	\hline
+	\textbf{Viết tắt} & \textbf{Giải nghĩa} \\
+	\hline
+	\endhead
+	\hline
+	\endfoot
+	\multicolumn{2}{|c|}{\textit{Phương pháp và thuật toán}} \\
+	\hline
+	MMD & Maximum Mean Discrepancy --- Khoảng cách phân phối dựa trên hạt nhân \\
+	IDW-MMD & Inverse Density-Weighted MMD --- MMD có trọng số nghịch biến mật độ \\
+	ShapeDD & Shape-based Drift Detection --- Phát hiện drift dựa trên hình dạng tín hiệu \\
+	ShapeDD-IDW & ShapeDD kết hợp IDW-MMD với xấp xỉ Gamma \\
+	SE-CDT & ShapeDD-Enhanced Concept Drift Type --- Hệ thống tích hợp phát hiện và phân loại drift không giám sát \\
+	CDT-MSW & Concept Drift Type identification based on Multi-Sliding Windows \\
+	ADWIN & Adaptive Windowing --- Cơ chế cửa sổ thích nghi \\
+	CUSUM & Cumulative Sum --- Tổng tích lũy cho kiểm soát chất lượng \\
+	DDM & Drift Detection Method \\
+	EDDM & Early Drift Detection Method \\
+	HDDM & Hoeffding's Drift Detection Method \\
+	FHDDM & Fast HDDM --- Phiên bản nhanh của HDDM \\
+	RDDM & Reactive Drift Detection Method \\
+	MDDM & McDiarmid Drift Detection Method \\
+	KSWIN & Kolmogorov-Smirnov Windowing \\
+	SEA & Streaming Ensemble Algorithm --- Bộ tạo dữ liệu drift chuẩn \\
+	NSE & Non-Stationary Environment (Learn$++$.NSE) \\
+	DAWIDD & Distance-Aware Windowed Drift Detection \\
+	D3 & Discriminative Drift Detector \\
+	KS & Kolmogorov-Smirnov (test) \\
+	\hline
+	\multicolumn{2}{|c|}{\textit{Phân loại drift}} \\
+	\hline
+	TCD & Transient Concept Drift --- Drift tạm thời (sudden, blip, recurrent) \\
+	PCD & Progressive Concept Drift --- Drift tiến triển (gradual, incremental) \\
+	\hline
+	\multicolumn{2}{|c|}{\textit{Đặc trưng và chỉ số}} \\
+	\hline
+	FWHM & Full Width at Half Maximum --- Độ rộng đỉnh tại nửa chiều cao \\
+	WR & Width Ratio --- Tỉ số độ rộng đỉnh ($\text{FWHM} / 2l_1$) \\
+	SNR & Signal-to-Noise Ratio --- Tỉ số tín hiệu trên nhiễu \\
+	CV & Coefficient of Variation --- Hệ số biến thiên \\
+	PPR & Peak Proximity Ratio --- Tỉ số khoảng cách giữa hai đỉnh \\
+	DPAR & Dual-Peak Amplitude Ratio --- Tỉ số biên độ hai đỉnh \\
+	LTS & Linear Trend Strength --- Độ mạnh xu hướng tuyến tính ($R^2$) \\
+	SDS & Step Detection Score --- Điểm phát hiện bước nhảy \\
+	MS & Monotonicity Score --- Điểm đơn điệu \\
+	EDR & Event Detection Rate --- Tỉ lệ phát hiện sự kiện \\
+	MDR & Miss Detection Rate --- Tỉ lệ bỏ sót ($1 - \text{EDR}$) \\
+	FP & False Positive --- Báo động giả \\
+	CAT & Category Accuracy --- Độ chính xác phân nhóm (TCD/PCD) \\
+	SUB & Subcategory Accuracy --- Độ chính xác phân tiểu loại \\
+	\hline
+	\multicolumn{2}{|c|}{\textit{Toán học và thống kê}} \\
+	\hline
+	RKHS & Reproducing Kernel Hilbert Space --- Không gian Hilbert hạt nhân tái tạo \\
+	RBF & Radial Basis Function --- Hàm cơ sở hướng tâm (Gaussian kernel) \\
+	HSIC & Hilbert-Schmidt Independence Criterion --- Tiêu chí độc lập Hilbert-Schmidt \\
+	i.i.d. & Independent and identically distributed --- Độc lập cùng phân phối \\
+	\hline
+	\multicolumn{2}{|c|}{\textit{Hệ thống và hạ tầng}} \\
+	\hline
+	IoT & Internet of Things --- Mạng lưới vạn vật kết nối \\
+	\hline
+\end{longtable}

@@ -1,6 +1,75 @@
-\newpage
+\chapter{Giới thiệu đề tài}
 
-\chapter{INTRODUCTION}
-\label{chap:introduction}
+\section{Thực trạng chung}
+Hệ thống phát hiện gian lận của một ngân hàng có thể đạt độ chính xác cao
+trong năm đầu vận hành, nhưng sau một thời gian dài, tỷ lệ cảnh báo sai
+tăng gấp ba lần. Một mô hình dự báo bảo trì máy móc trong nhà máy thép
+hoạt động ổn định suốt mùa khô, đến mùa mưa thì hiệu suất giảm mạnh
+do điều kiện vận hành thay đổi. Đây không phải lỗi của thuật toán hay
+của kỹ sư xây dựng mô hình, mà là hiện tượng \textit{trôi dạt khái niệm}
+(concept drift): phân phối dữ liệu thực tế thay đổi theo thời gian trong
+khi mô hình vẫn ``đứng yên''~\cite{jourdan2023process}.
 
+Về mặt toán học, concept drift xảy ra khi $P_{train}(X, Y) \neq P_{online,t}(X, Y)$,
+trong đó $P_{train}$ và $P_{online,t}$ lần lượt là phân phối đồng thời của dữ liệu
+đầu vào và nhãn trong giai đoạn huấn luyện và vận hành tại thời điểm $t$~\cite{jourdan2023process}.
+Concept drift có thể xuất hiện dưới nhiều dạng: \textit{sudden drift},
+\textit{gradual drift}, \textit{incremental drift}, và \textit{recurrent drift}~\cite{yuan2022advances}.
 
+Các mô hình học máy được huấn luyện với giả định dữ liệu trong tương lai
+sẽ tuân theo cùng phân phối với dữ liệu huấn luyện (giả định IID). Tuy nhiên,
+môi trường sản xuất công nghiệp hiếm khi tĩnh: thiết bị lão hóa, quy trình thay đổi,
+cảm biến xuống cấp, hành vi người dùng biến đổi~\cite{jourdan2023process}. Kết quả là
+hiệu suất mô hình suy giảm dần theo thời gian, đôi khi đột ngột, làm giảm
+độ tin cậy hệ thống và tăng chi phí vận hành. Để xử lý, cần có cơ chế
+(1) phát hiện drift càng sớm càng tốt, và (2) thích ứng mô hình theo các điều kiện mới.
+
+\section{Tổng quan về bài toán}
+Concept drift có thể xuất hiện ở hai thành phần của phân phối liên hợp $P(X, y) = P(X) \times P(y|X)$. Luận văn tập trung vào hướng không giám sát, tức là theo dõi sự thay đổi của $P(X)$ khi nhãn chưa có sẵn. Phạm vi này phù hợp với nhiều hệ thống công nghiệp, nơi nhãn thường đến muộn hoặc tốn chi phí kiểm chứng.
+
+Trong các ứng dụng học máy trên dữ liệu luồng, hệ thống giám sát không chỉ cần phát hiện thời điểm drift. Nếu biết thêm dạng drift, hệ thống có thể chọn cách cập nhật mô hình phù hợp hơn: huấn luyện lại nhanh khi thay đổi đột ngột, cập nhật mềm khi thay đổi dần, dùng lại mô hình cũ khi khái niệm lặp lại, hoặc bỏ qua các nhiễu ngắn hạn.
+
+Đề tài xây dựng hệ thống SE-CDT (ShapeDD-Enhanced Concept Drift Type) --- một hệ thống tích hợp phát hiện, phân loại và thích ứng với concept drift trên nền tảng ShapeDD~\cite{shapeDD2021}. Module phát hiện của SE-CDT (ShapeDD-IDW) dùng IDW-MMD với xấp xỉ Gamma để kiểm định ứng viên drift, cải thiện tốc độ so với permutation test gốc; module phân loại đọc hình dạng tín hiệu MMD để xác định loại drift mà không cần nhãn.
+
+\section{Mục tiêu đề tài}
+
+Luận văn hướng tới bốn mục tiêu chính. Trước hết, đề tài khảo sát các nhóm phương pháp phát hiện drift hiện có, từ kiểm định thống kê, theo dõi hiệu năng mô hình đến các phương pháp được tập trung như MMD và ShapeDD. Từ đó, luận văn đề xuất cải tiến ShapeDD bằng IDW-MMD nhằm giảm chi phí kiểm định và kiểm soát báo động giả tốt hơn trong môi trường cửa sổ trượt.
+
+Mục tiêu tiếp theo là xây dựng SE-CDT, một bộ phát hiện và phân loại loại drift không cần nhãn, lấy cảm hứng từ CDT-MSW~\cite{guo2022cdtmsw} nhưng thay vì dựa trên tín hiệu tỉ lệ độ chính xác (accuracy ratio) bằng đặc trưng hình học của tín hiệu MMD. Kết quả phân loại này từ đó được dùng cho phần tiếp theo, nơi chiến lược cập nhật mô hình được chọn theo loại drift đã nhận diện. Cuối cùng, luận văn đánh giá thuật toán trên các tập dữ liệu có ground truth và kiểm thử nguyên mẫu hệ thống trên Kafka. Việc triển khai trong môi trường sản xuất và đánh giá chịu tải quy mô lớn nằm ngoài phạm vi hiện tại.
+
+\section{Phạm vi đề tài và đối tượng nghiên cứu}
+\subsection{Phạm vi đề tài}
+Trong môi trường sản xuất công nghiệp, nhãn thật ($y$) thường không có sẵn trong thời gian thực do chi phí và thời gian kiểm định chất lượng cao~\cite{jourdan2023process}. Vì vậy nghiên cứu tập trung vào phát hiện concept drift theo hướng \textbf{không giám sát} (unsupervised), cụ thể là phát hiện sự thay đổi trong phân phối dữ liệu đầu vào $P(X)$ (còn gọi là covariate shift hoặc data drift), dựa trên giả định joint drift. Phát hiện sớm sự thay đổi trong $P(X)$ đóng vai trò tín hiệu cảnh báo, để hệ thống kích hoạt các cơ chế kiểm tra hoặc cập nhật mô hình khi cần.
+Luận văn tập trung phát triển một hệ thống kết hợp các thành phần sau:
+\begin{itemize}
+	\item Nghiên cứu và cải thiện phương pháp ShapeDD để phát hiện concept drift không giám sát, so sánh với các phương pháp truyền thống.
+	\item Đánh giá hiệu năng trên các tập dữ liệu tổng hợp và các kịch bản drift khác nhau.
+	\item Xây dựng các chiến lược thích ứng mô hình tương ứng với từng loại drift được phát hiện.
+	\item Tùy chỉnh tham số của phương pháp để đảm bảo hiệu quả với các kiểu dữ liệu và hiện tượng trôi dạt khác nhau.
+	\item Thiết kế và triển khai kiến trúc xử lý dữ liệu luồng thời gian thực trên Apache Kafka theo mô hình event-driven, có khả năng mở rộng.
+\end{itemize}
+
+Hệ thống được thiết kế và đánh giá trên nhiều loại drift (sudden, gradual, incremental, recurrent, blip). Cách đánh giá hệ thống như sau:
+\begin{enumerate}
+	\item \textbf{Đánh giá đa kịch bản:} Thực nghiệm trên nhiều kịch bản drift khác nhau, mỗi kịch bản chạy độc lập nhiều lần để có độ tin cậy thống kê.
+	\item \textbf{Phân tích đa tầng:} Đánh giá cả khả năng \textit{phát hiện} lẫn khả năng \textit{phân loại}, bao gồm phân loại theo nhóm chính và theo từng loại cụ thể.
+	\item \textbf{Đối chiếu với phương pháp CDT-MSW:} Đặt cạnh số liệu công bố của CDT-MSW có giám sát để hình dung khoảng cách giữa hai cách tiếp cận. Đây không phải so sánh trực tiếp trên cùng một benchmark; sự khác biệt về dữ liệu và mức giám sát được thảo luận chi tiết ở Mục~\ref{sec:classification-sota}.
+\end{enumerate}
+
+\subsection{Đối tượng nghiên cứu}
+Đối tượng nghiên cứu của luận văn gồm:
+\begin{itemize}
+	\item \textbf{Phương pháp phát hiện drift:} Phương pháp ShapeDD và phiên bản cải tiến đề xuất ShapeDD-IDW, và các phương pháp so sánh gồm MMD, KS-Test, D3, DAWIDD.
+	\item \textbf{Hệ thống phát hiện và phân loại drift:} SE-CDT, hệ thống tích hợp trong đó module phát hiện (ShapeDD-IDW) xác định vị trí drift và module phân loại xác định loại drift từ hình dạng tín hiệu MMD, lấy ý tưởng từ CDT-MSW.
+	\item \textbf{Nền tảng xử lý streaming:} Apache Kafka cho việc triển khai hệ thống giám sát \textit{real-time}.
+\end{itemize}
+
+\section{Cấu trúc luận văn}
+Luận văn được tổ chức thành năm chương chính:
+\begin{itemize}
+	\item \textbf{Chương~\ref{chap:theoretical-foundation} --- Cơ sở lý thuyết:} Trình bày nền tảng toán học về concept drift, Maximum Mean Discrepancy (MMD), và phương pháp ShapeDD.
+	\item \textbf{Chương~\ref{chap:related-work} --- Tổng quan nghiên cứu liên quan:} Khảo sát các phương pháp phát hiện drift hiện có, từ thống kê cổ điển đến học sâu, cùng với phương pháp phân loại drift CDT-MSW.
+	\item \textbf{Chương~\ref{chap:proposed-model} --- Mô hình đề xuất:} Trình bày chi tiết hệ thống SE-CDT: module phát hiện ShapeDD-IDW (IDW-MMD + xấp xỉ Gamma), module phân loại drift không giám sát, khung thích ứng mô hình, và kiến trúc trên Apache Kafka.
+	\item \textbf{Chương~\ref{chap:experiments} --- Thực nghiệm và đánh giá:} Đánh giá có hệ thống ba module (phát hiện, phân loại, thích ứng) trên 14 tập dữ liệu với 30 lần chạy độc lập.
+	\item \textbf{Chương~\ref{chap:conclusion} --- Kết luận và hướng phát triển:} Tổng kết đóng góp, phân tích hạn chế, và đề xuất các hướng nghiên cứu tiếp theo.
+\end{itemize}
