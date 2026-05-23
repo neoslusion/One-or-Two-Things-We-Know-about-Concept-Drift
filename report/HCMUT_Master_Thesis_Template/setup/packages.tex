@@ -1,0 +1,128 @@
+% Font
+\usepackage{times}%
+\usepackage{pifont}%
+\usepackage[utf8]{inputenc}
+\usepackage[T5]{fontenc}  % T5 encoding for Vietnamese
+
+% Vietnamese language support
+\usepackage[vietnamese,english]{babel}
+\selectlanguage{english}  % Default to English, switch to Vietnamese when needed
+
+% Figure
+\usepackage{graphicx}%
+\usepackage[font=normalsize,labelfont=bf]{caption}
+\usepackage{subcaption}
+
+% Math
+\usepackage{amsmath,amssymb,amsfonts}%
+\usepackage{amsthm}%
+\usepackage{mathrsfs}%
+
+% Table
+\usepackage{multicol}%
+\usepackage{multirow}%
+\usepackage{adjustbox}%
+
+% Color
+\usepackage{xcolor}%
+\usepackage{colortbl}%
+
+% Text
+\usepackage{textcomp}%
+\usepackage[normalem]{ulem}%
+
+% Algorithm
+\usepackage[linesnumbered, ruled, vlined]{algorithm2e}%
+% \usepackage{algorithm}%
+% \usepackage{algorithmicx}%
+\usepackage{algpseudocode}%
+
+\usepackage{tcolorbox}
+\tcbuselibrary{theorems}
+
+\newcounter{lemma}
+\newcounter{property}
+\newcounter{theorem}
+
+\newtcbtheorem[use counter=lemma]{lemma}{Lemma}{
+  colback=white,
+  colframe=black,
+  fonttitle=\bfseries,
+  boxrule=0.8pt,
+  arc=0mm,
+}{lem}
+
+\newtcbtheorem[use counter=property]{property}{Property}{
+  colback=white,
+  colframe=black,
+  fonttitle=\bfseries,
+  boxrule=0.8pt,
+  arc=0mm,
+}{prob}
+
+\newtcbtheorem[use counter=theorem]{theorem}{Theorem}{
+  colback=white,
+  colframe=black,
+  fonttitle=\bfseries,
+  boxrule=0.8pt,
+  arc=0mm,
+}{theo}
+
+% Appendix
+\usepackage[title]{appendix}%
+\renewcommand{\appendixname}{Appendix}
+\renewcommand{\appendixtocname}{Appendix}
+
+% Format
+\usepackage[top=3cm, bottom=3cm, left=3.5cm, right=2cm]{geometry}
+\usepackage{setspace}
+
+\usepackage{tocloft}
+% \renewcommand{\contentsname}{\centering Contents}
+
+\usepackage{hyperref}
+\usepackage{ragged2e}  % đặt ở preamble
+
+\usepackage[explicit]{titlesec}
+\titleformat{\section}       % command to redefine
+  {\fontsize{16pt}{19pt}\selectfont\bfseries}          % format: size + bold
+  {\thesection}              % label
+  {1em}                      % spacing between label and title
+  {}                         % code before title (empty here)
+
+\titleformat{\subsection}
+  {\fontsize{13pt}{15pt}\selectfont\bfseries}          % slightly smaller than section
+  {\thesubsection}
+  {1em}
+  {}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+
+% Page number
+\fancyhf{} % clear header/footer
+\fancyhead[C]{\normalsize \thepage} % page number top center
+\renewcommand{\headrulewidth}{0pt}
+% Also fix the 'plain' style used on some pages (e.g., chapter pages)
+\fancypagestyle{plain}{
+    \fancyhf{}
+    \fancyhead[C]{\normalsize \thepage}
+    \renewcommand{\headrulewidth}{0pt}
+}
+
+% Bold \fbox
+\setlength{\fboxrule}{2pt}
+
+% Others
+\usepackage{arydshln}%
+\usepackage{booktabs}%
+\usepackage{manyfoot}%
+\usepackage{listings}%
+\usepackage[symbol]{footmisc}%
+\usepackage{bbm}%
+\usepackage{pdflscape}
+\usepackage{sectsty}
+\chapterfont{\centering\MakeUppercase}
+\usepackage{caption}
+\DeclareCaptionLabelSeparator{customspace}{\hspace{0.2cm}}
+\captionsetup{labelsep=customspace}

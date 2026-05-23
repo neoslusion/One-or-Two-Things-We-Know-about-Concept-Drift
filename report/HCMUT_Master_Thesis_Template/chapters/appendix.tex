@@ -1,0 +1,46 @@
+\newpage
+\pagestyle{fancy}
+
+% \addcontentsline{toc}{chapter}{\textbf{Appendix}}
+% \setcounter{tocdepth}{0}
+
+\setcounter{lemma}{0}
+\setcounter{property}{0}
+\setcounter{theorem}{0}
+
+% \begin{flushleft}
+%     {\fontsize{24pt}{28pt}\selectfont \textbf{Appendix}}
+% \end{flushleft}
+
+\appendix
+\renewcommand{\chaptername}{Appendix}
+\addtocontents{toc}{
+    \protect\renewcommand{\protect\cftchappresnum}{APPENDIX }
+    \protect\setlength{\cftchapnumwidth}{7em} % widen the number width to fit "Appendix A"
+}
+\renewcommand{\thesection}{\thechapter.\arabic{section}}
+% \label{appendix}
+
+% \renewcommand{\thesection}{\Alph{section}}
+% \renewcommand{\thesubsection}{\thesection.\arabic{subsection}}
+\numberwithin{figure}{chapter}
+\numberwithin{table}{chapter}
+\numberwithin{equation}{chapter}
+
+%-------------------------------------------------------------------------------------------------
+\chapter{Appendix A}
+\label{appendix:a}
+
+
+
+%-------------------------------------------------------------------------------------------------
+\chapter{Appendix B}
+\label{appendix:b}
+
+
+
+%-------------------------------------------------------------------------------------------------
+\chapter{Appendix C}
+\label{appendix:c}
+
+

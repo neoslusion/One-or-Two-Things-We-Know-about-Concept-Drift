@@ -1,0 +1,106 @@
+\documentclass[13pt,a4paper,oneside]{book} % twoside for draft
+
+% Packages
+\input{setup/packages}
+\input{setup/math_commands}
+\usepackage{setup/macros}
+% \usepackage[style=ieee]{biblatex}
+% \addbibresource{main.bib}
+
+% Hyperref settings
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    filecolor=black,      
+    urlcolor=black,
+    citecolor=black,
+    pdftitle={Master's Thesis},
+    pdfauthor={ĐOÀN NGÔ ĐỨC PHƯƠNG},
+}
+
+% Page layout - 1.5 line spacing, normal character spacing
+\onehalfspacing
+\setlength{\parindent}{1cm}
+
+% Personal information (customize these)
+\newcommand{\thesistitle}{RECOGNIZABILITY EMBEDDING FOR OPTIMIZING EFFECTIVENESS OF REPRESENTATION LEARNING IN\\FACE RECOGNITION}
+\newcommand{\studentname}{ĐOÀN NGÔ ĐỨC PHƯƠNG}
+\newcommand{\studentid}{2270516} % Add student ID here
+\newcommand{\major}{Computer Science}
+\newcommand{\majorcode}{8480101}
+\newcommand{\supervisorone}{Assoc.~Prof.~Dr.~\textbf{Thoại Nam}}
+\newcommand{\supervisortwo}{Dr.~\textbf{Lê Thành Sách}}
+% \newcommand{\examinerone}{Assoc. Prof. Dr. Doan Ngo Duc Phuong}
+% \newcommand{\examinertwo}{Assoc. Prof. Dr. Doan Ngo Duc Phuong}
+\newcommand{\defensedate}{January 08, 2026}
+\newcommand{\submissiondate}{December 2025}
+
+\begin{document}
+
+\input{ext_pages/cover}
+\input{ext_pages/committee}
+\input{ext_pages/task_sheet}
+% \input{ext_pages/task_sheet_VN}
+
+\justifying
+\clearpage
+\pagenumbering{roman}
+\input{ext_pages/ack}
+\input{ext_pages/abstract}
+\input{ext_pages/abstract_VN}
+\input{ext_pages/commitment}
+
+\newpage
+\setcounter{tocdepth}{3}
+\addcontentsline{toc}{chapter}{CONTENTS}
+\renewcommand{\contentsname}{\hfill CONTENTS \hfill}
+\tableofcontents
+
+\newpage
+\addcontentsline{toc}{chapter}{\textbf{LIST OF TABLES}}
+\setcounter{tocdepth}{0}
+\renewcommand{\listtablename}{\hfill LIST OF TABLES \hfill}
+\listoftables
+
+\newpage
+\addcontentsline{toc}{chapter}{\textbf{LIST OF FIGURES}}
+\setcounter{tocdepth}{0}
+\renewcommand{\listfigurename}{\hfill LIST OF FIGURES \hfill}
+\listoffigures
+
+\newpage
+\input{ext_pages/abbreviations}
+\input{ext_pages/notations}
+
+
+\mainmatter
+\pagenumbering{arabic}
+
+\input{chapters/introduction}
+\input{chapters/related_work}
+\input{chapters/preliminaries}
+\input{chapters/methodology}
+\input{chapters/experiments}
+\input{chapters/results}
+\input{chapters/discussion}
+\input{chapters/conclusion}
+
+\input{ext_pages/publication}
+
+%%%%%%%%% REFERENCES
+% A reference must comply with the policy. You must reconstruct each reference copied from Google Scholar to ensure it matches the requirements.
+{
+    \newpage
+    \addcontentsline{toc}{chapter}{BIBLIOGRAPHY}
+    \setcounter{tocdepth}{0}
+    \fontsize{13pt}{15pt}\selectfont
+    \bibliographystyle{IEEEtran}
+    
+    \bibliography{main}
+}
+
+\input{chapters/appendix}
+
+\input{ext_pages/vita}
+
+\end{document}

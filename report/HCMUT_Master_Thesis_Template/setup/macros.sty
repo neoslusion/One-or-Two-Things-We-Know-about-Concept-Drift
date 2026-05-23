@@ -1,0 +1,39 @@
+% =========================================
+% Useful macros
+% =========================================
+
+\RequirePackage{times}    % Integrate Times for here
+\RequirePackage{xspace}
+\RequirePackage[dvipsnames]{xcolor}
+\RequirePackage{graphicx}
+\RequirePackage{amsmath}
+\RequirePackage{amssymb}
+\RequirePackage{booktabs}
+\RequirePackage{silence}  % Suppress unwanted warnings
+\RequirePackage{etoolbox}
+\RequirePackage[numbers,sort&compress]{natbib}
+\setlength{\bibsep}{1pt plus 1pt minus 1pt}
+
+% Latin abbreviations
+\def\eg{\emph{e.g}\onedot} \def\Eg{\emph{E.g}\onedot}
+\def\ie{\emph{i.e}\onedot} \def\Ie{\emph{I.e}\onedot}
+\def\cf{\emph{cf}\onedot} \def\Cf{\emph{Cf}\onedot}
+\def\etc{\emph{etc}\onedot} \def\vs{\emph{vs}\onedot}
+\def\wrt{w.r.t\onedot} \def\dof{d.o.f\onedot}
+\def\iid{i.i.d\onedot} \def\wolog{w.l.o.g\onedot}
+\def\etal{\emph{et al}\onedot}
+\makeatother
+
+%% Support for easy cross-referencing (e.g. \cref{sec:intro}
+% configured with \AtEndPreamble as it needs to be called after hyperref
+\AtEndPreamble{
+    \usepackage[capitalize]{cleveref}
+    \crefname{section}{Sec.}{Secs.}
+    \Crefname{section}{Section}{Sections}
+    \Crefname{table}{Table}{Tables}
+    \crefname{table}{Tab.}{Tabs.}
+    \Crefname{chapter}{Chapter}{Chapters}
+    \crefname{chapter}{Chap.}{Chaps.}
+    \crefname{lemma}{Lemma}{Lemmas}
+    \Crefname{lemma}{Lemma}{Lemmas}
+}
