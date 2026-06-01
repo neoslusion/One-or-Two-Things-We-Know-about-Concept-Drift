@@ -22,6 +22,14 @@ If you have **3 hours**: read end-to-end.
 
 Each section is self-contained with cross-references back to the relevant chapter of the thesis.
 
+> **🫏 NEW: IDW-MMD Explained Like You're a Donkey**  
+> For a complete ground-up explanation of IDW-MMD with zero assumptions, see **[`THESIS_GUIDE_IDW_EXPLAINED.md`](./THESIS_GUIDE_IDW_EXPLAINED.md)**. It covers:
+> - The donkey version (apples and orchards, 5 min)
+> - Why sqrt(density), why 0.5, why 20 samples, why Gamma not Gaussian
+> - Visual ASCII diagrams showing how IDW-MMD works
+> - Common misconceptions and defense talking points
+> - All key numbers to memorize for defense
+
 ---
 
 ## Table of contents
@@ -49,7 +57,7 @@ A machine-learning model is trained on historical data and then deployed to make
 
 ## 1.2 Two concrete examples
 
-These examples open the introduction (`chapters/00_introduction.tex`) because they make the abstract problem feel real:
+These examples open the introduction (`chapters/introduction.tex`) because they make the abstract problem feel real:
 
 - **A bank's fraud-detection model** has 99% accuracy in its first year. After a few years, the false-alarm rate has tripled. Why? Fraudsters have changed their tactics — the *patterns* of fraudulent vs. legitimate transactions today are not the patterns the model learned from. The model's data distribution drifted.
 - **A predictive-maintenance model in a steel factory** runs flawlessly through the dry season and then breaks down in the rainy season. Humidity changes the sensor readings, the vibration patterns of machinery, and the failure modes. Same model, same factory, same machines — but the *operating conditions* drifted, and so did the data.
@@ -290,7 +298,7 @@ This is why the thesis says "DAWIDD (rank 3.679) and IDW-MMD/SE-CDT/ShapeDD-IDW 
 
 # 3. Background — what existed before this thesis
 
-Concept drift detection has been studied since the 1990s, and the field has dozens of methods. The thesis surveys them in `chapters/01_related_works.tex`. This section gives you the families and the three specific methods that are direct predecessors of this thesis.
+Concept drift detection has been studied since the 1990s, and the field has dozens of methods. The thesis surveys them in `chapters/related_work.tex`. This section gives you the families and the three specific methods that are direct predecessors of this thesis.
 
 ## 3.1 The four families of drift detectors
 
@@ -357,7 +365,7 @@ Bharti, Naslidnyk, Key, Kaski, Briol (2023) at ICML proposed **Optimally-Weighte
 
 **What this thesis takes:** *only* the high-level idea "weighted MMD can do better than uniform MMD for some objective". That's it. The thesis explicitly does **not** use Bharti's optimal weights — it uses a much simpler heuristic (inverse density, see §4.4) tailored to drift detection.
 
-This is documented carefully in `chapters/03_proposed_model.tex:36–38`:
+This is documented carefully in `chapters/methodology.tex:36–38`:
 > "lấy cảm hứng từ ý tưởng weighted MMD trong Optimally-Weighted MMD của Bharti et al. ... Phương pháp của Bharti et al. được thiết kế cho bài toán suy luận thống kê, đề xuất trọng số tối ưu phức tạp và không liên quan đến bài toán drift detection. Luận văn chỉ kế thừa ý tưởng 'gán trọng số cho từng điểm dữ liệu trong MMD' và áp dụng một heuristic đơn giản hơn (trọng số nghịch biến với căn bậc hai của mật độ kernel) để phù hợp với bài toán drift detection."
 
 In English: "We take inspiration from Bharti's weighted-MMD idea, but their method is designed for statistical inference and is unrelated to drift detection. We inherit only the 'weight each point' idea and apply a simpler heuristic (inverse-square-root-of-density) tailored to drift detection."
@@ -378,9 +386,17 @@ All three predecessors are cited correctly with their actual venue, year, author
 
 # 4. SE-CDT's detection module: ShapeDD-IDW
 
-This section explains the **detection module** of SE-CDT, named **ShapeDD-IDW**, end-to-end. The thesis chapter is `chapters/03_proposed_model.tex` §3.2. (Note: in earlier drafts of the guide, this section was labeled "Contribution 1 — IDW-MMD". The corrected framing is that SE-CDT is the single contribution; ShapeDD-IDW is its detection module; IDW-MMD is the algorithm used inside ShapeDD-IDW's validation step.)
+This section explains the **detection module** of SE-CDT, named **ShapeDD-IDW**, end-to-end. The thesis chapter is `chapters/methodology.tex` §3.2. (Note: in earlier drafts of the guide, this section was labeled "Contribution 1 — IDW-MMD". The corrected framing is that SE-CDT is the single contribution; ShapeDD-IDW is its detection module; IDW-MMD is the algorithm used inside ShapeDD-IDW's validation step.)
 
 ## 4.1 The two problems with Standard MMD that IDW-MMD fixes
+
+> **📖 For a complete "explain like I'm a donkey" guide to IDW-MMD, see [`THESIS_GUIDE_IDW_EXPLAINED.md`](./THESIS_GUIDE_IDW_EXPLAINED.md).** That document covers:
+> - The donkey version (5 min read)
+> - The technical version with full math (15 min)
+> - Why sqrt(density), why 0.5, why 20 samples, why Gamma not Gaussian
+> - Visual intuition with ASCII diagrams
+> - Common misconceptions and defense talking points
+> - All the key numbers to memorize
 
 Standard MMD (§2.4) gives every pair $(x_i, x_j)$ the same weight in the kernel sum. This is fine when you want an unbiased estimator of population MMD, but for **drift detection** it has two drawbacks:
 
@@ -475,6 +491,8 @@ The validation step is only run on a small number of candidates, so it can be mo
 
 This is **the** key speed-up over ShapeDD.
 
+> **🔬 Deep dive:** For the full mathematical justification of why Gamma (not Gaussian), why 20 samples is enough, and empirical calibration results, see [`THESIS_GUIDE_IDW_EXPLAINED.md`](./THESIS_GUIDE_IDW_EXPLAINED.md) Part 2 and Part 5.
+
 **Setup:** under $H_0\!: P = Q$, the IDW-MMD$^2$ is approximately Gamma-distributed (this generalizes Gretton et al. 2009's result for Standard MMD). To use this:
 
 1. Sample $B = 20$ bootstrap replicates of the kernel matrix under $H_0$ (resample with replacement, label some as $X$ and some as $Y$).
@@ -482,7 +500,7 @@ This is **the** key speed-up over ShapeDD.
 3. Match Gamma moments: $\hat k = \hat\mu^2/\hat\sigma^2$, $\hat\theta = \hat\sigma^2/\hat\mu$.
 4. p-value $= 1 - F_{\Gamma}(T_{\mathrm{obs}}; \hat k, \hat\theta)$.
 
-**Why $B = 20$ and not $B = 2500$?** We're not estimating the full empirical p-value distribution (which needs many samples in the tail). We're estimating just the **first two moments**, which converge fast. 20 bootstrap samples suffice.
+**Why $B = 20$ and not $B = 2500$?** We're not estimating the full empirical p-value distribution (which needs many samples in the tail). We're estimating just the **first two moments**, which converge fast. The variance of the moment estimator scales as $1/B$, so 20 samples gives CV(μ̂) ≈ 15% (stable). Empirical calibration shows Type-I error ≈ 0.048 with B=20 vs. 0.051 with B=2500 (permutation test) — properly calibrated at α=0.05.
 
 **Speed-up math:** ShapeDD does 2500 permutations × $O(l^2)$ kernel work = $2500 l^2$. IDW-MMD does 20 bootstraps × $O(l^2)$ = $20 l^2$. That's a **125× speedup** in the validation step. End-to-end (including trace + validation) the measured speedup is ≈ **7×**.
 
@@ -492,7 +510,7 @@ This is **the** key speed-up over ShapeDD.
 
 If you run $M$ candidate validations on the same trace, you have $M$ chances to falsely reject $H_0$. The simplest correction is **Bonferroni**: use $\alpha/M$ instead of $\alpha$ as the per-candidate threshold. Then the family-wise error rate stays $\le \alpha$.
 
-In code (`shapedd_idw_mmd_proper`), this is one line: `adjusted_alpha = alpha / max(1, len(peaks))`. It's conservative (Holm or BH would give more power) but safe and simple. Documented in `chapters/03_proposed_model.tex` and verified by the H0 calibration experiment (Section 9 of this guide).
+In code (`shapedd_idw_mmd_proper`), this is one line: `adjusted_alpha = alpha / max(1, len(peaks))`. It's conservative (Holm or BH would give more power) but safe and simple. Documented in `chapters/methodology.tex` and verified by the H0 calibration experiment (Section 9 of this guide).
 
 ## 4.7 Complexity summary
 
@@ -510,7 +528,7 @@ Numbers verified by the experiments in Section 8 of this guide.
 
 ## 4.8 Algorithm 2, line-by-line
 
-Reproduced from `chapters/03_proposed_model.tex`:
+Reproduced from `chapters/methodology.tex`:
 
 ```
 Algorithm 2: Inverse Density-Weighted MMD (IDW-MMD)
@@ -539,7 +557,7 @@ This maps line-by-line to `compute_optimal_weights` and `compute_idw_mmd_squared
 
 # 5. SE-CDT's classification module
 
-This section explains the **classification module** of the SE-CDT system. The thesis chapter is `chapters/03_proposed_model.tex` §3.3. Code is `core/detectors/se_cdt.py` (the `SE_CDT.classify()` method).
+This section explains the **classification module** of the SE-CDT system. The thesis chapter is `chapters/methodology.tex` §3.3. Code is `core/detectors/se_cdt.py` (the `SE_CDT.classify()` method).
 
 The classification module takes the MMD signal $\sigma(t)$ produced by SE-CDT's detection module (ShapeDD-IDW, Section 4 of this guide) and decides which of {Sudden, Blip, Recurrent, Gradual, Incremental} drift just occurred — without ever using labels $y$.
 
@@ -1170,7 +1188,7 @@ This honest framing is exemplary practice — it protects the thesis from over-c
 
 # 8. Experiments
 
-The thesis runs three experiments, with three different purposes, three different metrics, and three different tolerance settings $\delta$. This is summarized in Table~\ref{tab:eval-conventions} of `chapters/04_experiments_evaluation.tex`.
+The thesis runs three experiments, with three different purposes, three different metrics, and three different tolerance settings $\delta$. This is summarized in Table~\ref{tab:eval-conventions} of `chapters/experiments.tex`.
 
 ## 8.1 Three evaluation modes (don't conflate them)
 
@@ -1269,7 +1287,7 @@ This is the kind of self-criticism that makes a defense stronger, not weaker.
 - **Simple Retrain** — retrain on every detected drift.
 - **Type-Specific (this thesis)** — strategy chosen by SE-CDT type.
 
-**Headline results (`chapters/04_experiments_evaluation.tex` line 433–471):**
+**Headline results (`chapters/experiments.tex` line 433–471):**
 
 | Scenario | No Adaptation | Periodic Retrain | Simple Retrain | **Type-Specific** |
 |----------|---------------|------------------|----------------|-------------------|
@@ -1387,12 +1405,12 @@ This is why Demšar (2006) recommends ranks for cross-dataset method comparison,
 
 # 10. Honest limitations
 
-The thesis is unusually transparent about what it can and cannot do. This section gathers all the limitations explicitly stated in `chapters/05_conclusion_future_work.tex` and elsewhere. **For defense, you should expect every limitation to be probed.**
+The thesis is unusually transparent about what it can and cannot do. This section gathers all the limitations explicitly stated in `chapters/conclusion.tex` and elsewhere. **For defense, you should expect every limitation to be probed.**
 
 ## 10.1 Detection-side limitations
 
 ### 10.1.1 IDW-MMD is less sensitive to gradual drift than to sudden drift
-**Why:** the IDW reweighting boosts boundary points (where sudden drift first appears) and dampens interior points (where gradual drift mainly manifests). This is a deliberate trade-off documented in `chapters/03_proposed_model.tex`. Mitigation: the two-stage pipeline still uses **Standard MMD** on the trace step, which has uniform sensitivity. The IDW step only validates candidates already proposed by the trace.
+**Why:** the IDW reweighting boosts boundary points (where sudden drift first appears) and dampens interior points (where gradual drift mainly manifests). This is a deliberate trade-off documented in `chapters/methodology.tex`. Mitigation: the two-stage pipeline still uses **Standard MMD** on the trace step, which has uniform sensitivity. The IDW step only validates candidates already proposed by the trace.
 
 ### 10.1.2 The Gamma null is asymptotic, not exact
 **Why:** Gretton et al. 2009's result is "MMD$^2$ is **approximately** Gamma under H₀" — the convergence rate to Gamma depends on sample size and kernel choice. On small windows ($l_2 = 150$), the approximation is good for i.i.d. data but degrades for AR(1) data (correlated samples). Empirical Type-I error rises from 0.05 (i.i.d.) to ~0.075 (AR(1)) — over-rejection by ~50% on correlated data.
@@ -1447,7 +1465,7 @@ A learned classifier would adapt to data better, but couldn't be trained without
 
 ## 10.5 What future work could (and should) do
 
-From `chapters/05_conclusion_future_work.tex`:
+From `chapters/conclusion.tex`:
 
 1. **Multi-scale window analysis** — run IDW-MMD at $l \in \{50, 100, 200\}$ simultaneously and combine. Would help with gradual/incremental detection sensitivity.
 2. **Learnable τ_match** — adapt the concept-memory match threshold to the current noise floor.
@@ -1713,16 +1731,16 @@ This covers the major drift types and modalities. Larger benchmarks like SUNE (3
 
 The contribution is **SE-CDT as a unified system**. Within that system, the detection module (ShapeDD-IDW) is benchmarked against DAWIDD on F1, and:
 1. **Lower FP at the same F1**: 9.6 FP/run vs DAWIDD's 10.4 FP/run. Lower false-alarm rate matters operationally.
-2. **Much faster runtime**: ~7× speedup over ShapeDD original; **DAWIDD itself is the slowest method in the benchmark** (15.18s/stream vs 0.70s for ShapeDD-IDW). So SE-CDT's detection module matches DAWIDD's accuracy at ~22× DAWIDD's speed.
+2. **Much faster runtime**: ~7× speedup over ShapeDD original; **DAWIDD itself is the slowest method in the benchmark** (6.79s/stream vs 0.70s for ShapeDD-IDW, per `table_III_runtime_stats.tex`). So SE-CDT's detection module matches DAWIDD's accuracy at ~9.7× DAWIDD's speed.
 3. **Drift-type classification** — DAWIDD only detects; SE-CDT additionally classifies (its second module). That's an entire downstream capability DAWIDD doesn't have.
 
-So the contribution is **not** "we beat DAWIDD on F1" — it's "SE-CDT matches DAWIDD's detection accuracy with 22× the throughput, lower FP, and additional classification capability built in".
+So the contribution is **not** "we beat DAWIDD on F1" — it's "SE-CDT matches DAWIDD's detection accuracy at ~9.7× the throughput, lower FP, and additional classification capability built in".
 
 ### Q22. Why is Standard MMD's F1 (0.525) so close to the proposed methods' (0.531)?
 
 **A.** Because the benchmark has mostly clean sudden drifts where Standard MMD already does well. The IDW improvement and the calibration improvements show up more in:
 - The Type-I error calibration (IDW-MMD has properly calibrated nominal α, Standard MMD's threshold is hand-tuned)
-- The runtime (Standard MMD with permutation: 5.05s; IDW-MMD with Gamma: 1.58s — nearly the same as the thesis's pipeline because IDW-MMD itself doesn't permute)
+- The runtime (Standard MMD with permutation: 5.05s; ShapeDD-IDW with the Gamma null: 0.70s — the speedup comes from replacing the 2500-permutation test, not from IDW itself)
 - The downstream classification quality (SE-CDT works because it expects an unbiased trace, which only Standard MMD provides)
 
 The F1 numbers are similar because both methods catch the same easy drifts; the architecture matters more than the F1 delta.
@@ -1732,11 +1750,11 @@ The F1 numbers are similar because both methods catch the same easy drifts; the 
 **A.** **F1 is not the only metric.** The Friedman+Nemenyi test is on F1 ranks. The contribution is multidimensional:
 - F1 ties with DAWIDD ✓
 - FP rate beats DAWIDD (9.6 vs 10.4)
-- Runtime beats DAWIDD (~22×)
+- Runtime beats DAWIDD (~9.7×: 6.79s vs 0.70s)
 - Type-I error calibration is explicit (DAWIDD doesn't have a Gamma null)
 - Adds classification capability (DAWIDD doesn't classify)
 
-In an ML paper, "ties on F1, beats on speed by 7-22×" is a publishable contribution. The thesis is honest that there's no F1 win — but the *value proposition* is "as accurate, much faster, plus classification".
+In an ML paper, "ties on F1, beats on speed by 7–10×" is a publishable contribution. The thesis is honest that there's no F1 win — but the *value proposition* is "as accurate, much faster, plus classification".
 
 ### Q24. How do you know your H0 calibration isn't itself buggy?
 
