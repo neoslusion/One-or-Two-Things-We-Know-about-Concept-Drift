@@ -336,7 +336,7 @@ class SE_CDT:
         if is_drift and len(mmd_trace) > 0:
             t0 = time.time()
             drift_length = self._growth_process(window, mmd_trace=mmd_trace)
-            classification_res = self.classify(mmd_trace, drift_length=drift_length)
+            classification_res = self.classify(mmd_trace, drift_length=drift_length, data_window=window)
 
             # Concept-memory pass (recurrent relabelling).
             recurrent_idx = -1
@@ -424,9 +424,9 @@ class SE_CDT:
         drift_length = int(np.ceil(fwhm / float(self.l1)))
         return max(2, drift_length)
 
-    def extract_features(self, sigma_signal: np.ndarray) -> Dict[str, float]:
+    def extract_features(self, sigma_signal: np.ndarray, data_window: np.ndarray = None) -> Dict[str, float]:
         """
-        Extract geometric features from the MMD signal.
+        Extract geometric features from the MMD signal and variance from raw data.
         Expected input: A window of MMD values centered around the detected drift.
         """
         if len(sigma_signal) == 0:
@@ -457,6 +457,23 @@ class SE_CDT:
             'MS': 0.0     # Monotonicity Score
         }
         
+        # Variance Tracking (Phase 4 new feature)
+        # Compute the Variance Ratio (VR) if raw data_window is provided.
+        # VR = max_sliding_variance / baseline_variance
+        vr = 1.0
+        if data_window is not None and len(data_window) >= self.l1 + self.l2:
+            # Baseline variance: variance of the first L1 samples (before the drift fully hits)
+            baseline_var = np.sum(np.var(data_window[:self.l1], axis=0))
+            if baseline_var > 1e-10:
+                # Find the maximum variance in any L2-sized sliding window within data_window
+                max_var = baseline_var
+                for i in range(0, len(data_window) - self.l2 + 1, 5):
+                    w_var = np.sum(np.var(data_window[i:i+self.l2], axis=0))
+                    if w_var > max_var:
+                        max_var = w_var
+                vr = max_var / baseline_var
+        features['VR'] = vr
+
         # SNR
         median_val = np.median(sigma_s)
         max_val = np.max(sigma_s) if len(sigma_s) > 0 else 0
@@ -567,18 +584,18 @@ class SE_CDT:
             'MS': float(ms)
         }
 
-    def classify(self, sigma_signal: np.ndarray, drift_length: int = None) -> SECDTResult:
+    def classify(self, sigma_signal: np.ndarray, drift_length: int = None, data_window: np.ndarray = None) -> SECDTResult:
         """
-        Classify drift type based on Growth process + signal shape.
+        Classify drift type based on Growth process + signal shape + raw data variance.
 
         Enhanced algorithm (CDT-MSW inspired):
-        1. If drift_length > 1 (Growth process says PCD): use temporal features.
+        1. If drift_length > 1 (Growth process says PCD): use Variance Ratio (VR) to distinguish Gradual from Incremental.
         2. Otherwise: shape-based decision tree using *adaptive* SNR/WR/CV
            thresholds (Phase 3-mini (b) self-calibration).  When the
            rolling baseline has not yet collected ``min_history`` samples
            we silently fall back on the original hard-coded thresholds.
         """
-        features = self.extract_features(sigma_signal)
+        features = self.extract_features(sigma_signal, data_window)
         if not features:
             return SECDTResult()
 
@@ -593,6 +610,7 @@ class SE_CDT:
         lts = features.get('LTS', 0.0)
         sds = features.get('SDS', 0.0)
         ms = features.get('MS', 0.0)
+        vr = features.get('VR', 1.0)
 
         result = SECDTResult(features=features)
 
@@ -660,13 +678,32 @@ class SE_CDT:
         # =====================================================================
         if drift_length is not None and drift_length > 1:
             result.drift_type = "PCD"
-            is_incremental = (
-                (lts > 0.5) or
-                (ms > 0.6 and lts > 0.3) or
-                (sds > 0.12 and lts > 0.3) or
-                (n_p >= 7) or
-                (n_p == 0 and mean_val > 0.0001 and lts > 0.5)
-            )
+            # Use Variance Ratio (VR) to distinguish Gradual from Incremental
+            # VR > 1.25 means the variance during the drift spiked (probabilistic mixture) -> Gradual
+            # VR <= 1.25 means the variance stayed relatively flat -> Incremental
+            # If VR is unavailable (fallback), we use the old logic.
+            if 'VR' in features:
+                if vr > 1.3:
+                    is_incremental = False
+                elif vr < 1.1:
+                    is_incremental = True
+                else:
+                    # Ambiguous zone (e.g. categorical datasets), fallback to geometric
+                    is_incremental = (
+                        (lts > 0.5) or
+                        (ms > 0.6 and lts > 0.3) or
+                        (sds > 0.12 and lts > 0.3) or
+                        (n_p >= 7) or
+                        (n_p == 0 and mean_val > 0.0001 and lts > 0.5)
+                    )
+            else:
+                is_incremental = (
+                    (lts > 0.5) or
+                    (ms > 0.6 and lts > 0.3) or
+                    (sds > 0.12 and lts > 0.3) or
+                    (n_p >= 7) or
+                    (n_p == 0 and mean_val > 0.0001 and lts > 0.5)
+                )
             result.subcategory = "Incremental" if is_incremental else "Gradual"
             return result
 
@@ -688,13 +725,27 @@ class SE_CDT:
 
         # 3. Gradual vs Incremental (PCD) -- fallback.
         result.drift_type = "PCD"
-        is_incremental = (
-            (lts > 0.5) or
-            (ms > 0.6 and lts > 0.3) or
-            (sds > 0.12 and lts > 0.3) or
-            (n_p >= 7) or
-            (n_p == 0 and mean_val > 0.0001 and lts > 0.5)
-        )
+        if 'VR' in features:
+            if vr > 1.3:
+                is_incremental = False
+            elif vr < 1.1:
+                is_incremental = True
+            else:
+                is_incremental = (
+                    (lts > 0.5) or
+                    (ms > 0.6 and lts > 0.3) or
+                    (sds > 0.12 and lts > 0.3) or
+                    (n_p >= 7) or
+                    (n_p == 0 and mean_val > 0.0001 and lts > 0.5)
+                )
+        else:
+            is_incremental = (
+                (lts > 0.5) or
+                (ms > 0.6 and lts > 0.3) or
+                (sds > 0.12 and lts > 0.3) or
+                (n_p >= 7) or
+                (n_p == 0 and mean_val > 0.0001 and lts > 0.5)
+            )
         result.subcategory = "Incremental" if is_incremental else "Gradual"
         return result
 

@@ -488,13 +488,13 @@ def shapedd_idw_mmd_proper(X, l1=50, l2=150, alpha=0.05, weight_method="variance
     # -----------------------------------------------------------------------
     # 2. PEAK DETECTION on the standard-MMD trace
     # -----------------------------------------------------------------------
-    peaks = []
-    threshold = np.mean(mmd_trace) + np.std(mmd_trace)
+    from scipy.ndimage import gaussian_filter1d
+    from scipy.signal import find_peaks
 
-    for i in range(1, len(mmd_trace) - 1):
-        if mmd_trace[i] > mmd_trace[i - 1] and mmd_trace[i] > mmd_trace[i + 1]:
-            if mmd_trace[i] > threshold:
-                peaks.append(i)
+    smooth_trace = gaussian_filter1d(mmd_trace, sigma=4)
+    threshold = np.mean(smooth_trace) + np.std(smooth_trace)
+    peaks_idx, _ = find_peaks(smooth_trace, height=threshold)
+    peaks = peaks_idx.tolist()
 
     # Fallback for boundary/monotonic peaks
     if not peaks and len(mmd_trace) >= 3:
