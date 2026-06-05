@@ -97,7 +97,7 @@ Các tham số cho bài toán phát hiện drift được thiết lập như sau
 \begin{itemize}
 	\item Dữ liệu bao gồm 14 tập dữ liệu (13 tổng hợp + 1 bán thực tế, chi tiết ở Mục~\ref{sec:dataset-config}). Tập stationary (không có drift) được tách riêng để đo false-positive. Kích thước của luồng dữ liệu $10{,}000$ mẫu mỗi dataset với 10 điểm drift được chèn tại các vị trí cố định (mỗi 1{,}000 mẫu) để tạo ground truth, trừ tập stationary (0 drift).
 	\item Quy trình đánh giá được thực hiện 30 lần chạy độc lập (30 runs) với các seed ngẫu nhiên khác nhau để đảm bảo tính ổn định của kết quả (xem Mục~\ref{sec:dataset-config}).
-	\item Độ trễ chấp nhận $\delta = 75$ và cooldown $= 150$ ($=2\delta$) như Bảng~\ref{tab:eval-conventions}. Cooldown đặt bằng độ rộng cửa sổ TP $[t_{\text{drift}}-\delta, t_{\text{drift}}+\delta]$ để mỗi drift thật chỉ tạo tối đa một báo, tránh việc báo trùng ở vùng lân cận.
+	\item Độ trễ chấp nhận $\delta = 75$ và cooldown $= 150$ ($=2\delta$) như Bảng~\ref{tab:eval-conventions}.
 \end{itemize}
 
 \subsection{Kết quả so sánh hiệu suất phát hiện}
@@ -139,7 +139,7 @@ Số FP $\sim 9.6$/run của module phát hiện SE-CDT (ShapeDD-IDW) và cấu 
 	\input{../../results/tables/table_statistical_tests.tex}
 \end{table}
 
-Kết quả kiểm định Friedman/Nemenyi trong Bảng~\ref{tab:statistical_tests} cho thấy DAWIDD có thứ hạng trung bình tốt nhất (3.679); ShapeDD-IDW và cấu hình IDW-MMD đứng riêng đạt thứ hạng trung bình 3.821, sát ngay sau DAWIDD (SE-CDT có cùng thứ hạng vì dùng chung thuật toán phát hiện). Với ngưỡng CD $= 2.806$ ($\alpha = 0.05$), khoảng cách giữa ShapeDD-IDW và DAWIDD chỉ $0.142 < $ CD, nên khác biệt thứ hạng F1 không đạt mức ý nghĩa thống kê. Tương tự, khoảng cách so với MMD ($0.786$) cũng nhỏ hơn CD nên không thể kết luận khác biệt thống kê. Trong nhóm dựa trên MMD, các biến thể đề xuất có thứ hạng trung bình tốt hơn MMD ($3.821$ so với $4.607$) nhưng cách biệt nằm dưới ngưỡng Nemenyi, nên  không khác biệt thống kê đáng kể.
+Kết quả kiểm định Friedman/Nemenyi trong Bảng~\ref{tab:statistical_tests} cho thấy DAWIDD có thứ hạng trung bình tốt nhất (3.464); ShapeDD-IDW và cấu hình IDW-MMD đứng riêng đạt thứ hạng trung bình 3.893, sát ngay sau DAWIDD (SE-CDT có cùng thứ hạng vì dùng chung thuật toán phát hiện). Với ngưỡng CD $= 2.806$ ($\alpha = 0.05$), khoảng cách giữa ShapeDD-IDW và DAWIDD chỉ $0.429 < $ CD, nên khác biệt thứ hạng F1 không đạt mức ý nghĩa thống kê. Tương tự, khoảng cách so với MMD ($0.714$) cũng nhỏ hơn CD nên không thể kết luận khác biệt thống kê. Trong nhóm dựa trên MMD, các biến thể đề xuất có thứ hạng trung bình tốt hơn MMD ($3.893$ so với $4.607$) nhưng cách biệt nằm dưới ngưỡng Nemenyi, nên  không khác biệt thống kê đáng kể.
 
 \subsection{Đánh giá chi tiết trên từng loại dữ liệu}
 
@@ -498,7 +498,7 @@ Hình~\ref{fig:kafka_real_results} trình bày dashboard giám sát từ lần c
 
 \section{Kết luận chương}
 
-Các kết quả thực nghiệm cho thấy ShapeDD-IDW đạt $F_1 = 0.531$ với khoảng $9.6$ FP/run trên benchmark phát hiện, cao hơn ShapeDD gốc ($F_1 = 0.492$) và không khác biệt thống kê so với DAWIDD dưới kiểm định Nemenyi. Về tốc độ, benchmark cho thấy ShapeDD-IDW nhanh hơn $\approx7\times$ so với ShapeDD gốc nhờ xấp xỉ Gamma thay thế permutation test tốn kém, trong khi kiểm định IDW-MMD giữ Type-I error đơn lẻ gần mức $\alpha = 0.05$; pipeline SE-CDT composite vẫn cần được đọc thận trọng vì Type-I error có thể lên đến $0.140$ trên dữ liệu AR(1).
+Các kết quả thực nghiệm cho thấy ShapeDD-IDW đạt $F_1 = 0.531$ với khoảng $9.6$ FP/run trên benchmark phát hiện, cao hơn ShapeDD gốc ($F_1 = 0.491$) và không khác biệt thống kê so với DAWIDD dưới kiểm định Nemenyi. Về tốc độ, benchmark cho thấy ShapeDD-IDW nhanh hơn $\approx 7.2\times$ so với ShapeDD gốc nhờ xấp xỉ Gamma thay thế permutation test tốn kém, trong khi kiểm định IDW-MMD giữ Type-I error đơn lẻ gần mức $\alpha = 0.05$; pipeline SE-CDT composite vẫn cần được đọc thận trọng vì Type-I error có thể lên đến $0.140$ trên dữ liệu AR(1).
 
 Ở bài toán phân loại, SE-CDT đạt CAT $=80.1\%$, SUB micro $=59.6\%$ và SUB macro $=58.4\%$ ở oracle mode. Kết quả tốt nhất nằm ở Sudden, Blip và Incremental; đặc biệt thuật toán đã chứng minh được sự chặt chẽ toán học khi nhận diện đúng bản chất của các tập dữ liệu sinh bị lỗi. Trong đánh giá thích ứng, Type-Specific cải thiện rõ trên Stepping và Sudden, còn trên Mixed thì gần ngang Periodic Retrain về độ chính xác nhưng ít FP hơn. Nhìn chung, kiến trúc đề xuất khả thi, nhưng các kết quả cũng chỉ ra rõ những phần cần cải thiện trước khi xem đây là một bộ phân loại drift hoàn chỉnh.
 
