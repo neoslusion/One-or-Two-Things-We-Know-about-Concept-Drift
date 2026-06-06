@@ -313,8 +313,7 @@ Ba đặc trưng còn lại mô tả xu hướng thời gian của tín hiệu:
 
 Hình~\ref{fig:drift-shapes} minh hoạ hình dạng tín hiệu MMD đặc trưng của từng loại drift, là nền tảng trực quan cho các đặc trưng nói trên.
 
-\paragraph{Variance Ratio (VR) --- đặc trưng phương sai trên dữ liệu thô.}
-Chín đặc trưng hình học và thời gian ở trên đều được trích xuất từ \emph{hình dạng} của tín hiệu MMD $\sigma(t)$. Tuy nhiên, thực nghiệm cho thấy hai loại drift chậm (Gradual và Incremental) thường để lại hình dạng $\sigma(t)$ gần như giống hệt nhau (cùng là một gò rộng), khiến các đặc trưng LTS/MS/SDS không đủ sức phân tách. Để khắc phục, luận văn bổ sung một đặc trưng tính trực tiếp trên \emph{dữ liệu thô} trong cửa sổ, dựa trên \textbf{Định luật Tổng Phương Sai (Law of Total Variance)}.
+Các đặc trưng hình học và thời gian ở trên đều được trích xuất từ \emph{hình dạng} của tín hiệu MMD $\sigma(t)$. Tuy nhiên, thực nghiệm cho thấy hai loại drift chậm (Gradual và Incremental) thường để lại hình dạng $\sigma(t)$ gần như giống hệt nhau (cùng là một gò rộng), khiến các đặc trưng LTS/MS/SDS không đủ sức phân tách. Để khắc phục, luận văn bổ sung một đặc trưng tính trực tiếp trên \emph{dữ liệu thô}, gọi là \textbf{Variance Ratio (VR)}, dựa trên \textbf{Định luật Tổng Phương Sai (Law of Total Variance)}.
 
 Xét một cửa sổ quan sát bắc qua điểm drift. Gọi $C$ là biến chỉ thị khái niệm (concept) mà mỗi mẫu được sinh ra. Định luật Tổng Phương Sai phân rã phương sai trong cửa sổ thành hai thành phần:
 \begin{equation}
@@ -338,7 +337,7 @@ Từ nhận xét này, ta định nghĩa \textbf{Variance Ratio (VR)} là tỉ s
 \end{equation}
 trong đó $X^{(d)}$ là chiều thứ $d$ của dữ liệu ($D$ chiều), cửa sổ trượt được dịch với bước $5$ mẫu để giảm chi phí. Theo phân tích trên: $\mathrm{VR}$ \emph{lớn} ($> \tau_{\mathrm{VR}}^{+}$) báo hiệu phương sai phình to do hỗn hợp $\Rightarrow$ \textbf{Gradual}; $\mathrm{VR}$ \emph{gần $1$} ($< \tau_{\mathrm{VR}}^{-}$) báo hiệu phương sai ổn định do dịch chuyển đơn $\Rightarrow$ \textbf{Incremental}. Khi $\mathrm{VR}$ rơi vào vùng trung gian $[\tau_{\mathrm{VR}}^{-}, \tau_{\mathrm{VR}}^{+}]$ (thường gặp với dữ liệu rời rạc/phân loại), hệ thống lùi về bộ quy tắc hình học LTS/MS/SDS để tránh quyết định thiếu cơ sở.
 
-Hình~\ref{fig:variance-ratio} minh hoạ trực quan cơ chế này trên dữ liệu thô sinh bởi chính bộ sinh dùng trong benchmark. Hàng trên cho thấy: ở Gradual, do mẫu được rút từ hỗn hợp hai khái niệm nên dữ liệu trải rộng trên cả hai mức trong cửa sổ chuyển tiếp; còn ở Incremental, dữ liệu luôn là một dải hẹp bám theo trung bình đang trượt. Hàng dưới định lượng quan sát đó: phương sai cửa sổ trượt của Gradual \emph{nhô lên rõ rệt} so với baseline, trong khi của Incremental gần như đi ngang. Kết quả VR tương ứng ($\mathrm{VR}_{\text{Gradual}} = 1.48 > \tau_{\mathrm{VR}}^{+}$ và $\mathrm{VR}_{\text{Incremental}} = 1.20$) khẳng định khả năng phân tách của đặc trưng này.
+Hình~\ref{fig:variance-ratio} minh hoạ trực quan cơ chế này trên dữ liệu thô. Hàng trên cho thấy: ở Gradual, do mẫu được rút từ hỗn hợp hai khái niệm nên dữ liệu trải rộng trên cả hai mức trong cửa sổ chuyển tiếp; còn ở Incremental, dữ liệu luôn là một dải hẹp bám theo trung bình đang trượt. Hàng dưới định lượng quan sát đó: phương sai cửa sổ trượt của Gradual \emph{nhô lên rõ rệt} so với baseline, trong khi của Incremental gần như đi ngang. Kết quả VR tương ứng ($\mathrm{VR}_{\text{Gradual}} = 1.48 > \tau_{\mathrm{VR}}^{+}$ và $\mathrm{VR}_{\text{Incremental}} = 1.20$) khẳng định khả năng phân tách của đặc trưng này.
 
 \begin{figure}[H]
 	\centering
