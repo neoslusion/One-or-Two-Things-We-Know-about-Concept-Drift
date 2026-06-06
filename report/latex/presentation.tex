@@ -657,7 +657,7 @@
 				                   & \textbf{SE-CDT}                          & \textbf{CDT-MSW}    & \textbf{Note}        \\ \midrule
 				\textbf{Labels}    & \textcolor{darkgreen}{\textbf{None}}     & Required            & Unsupervised win     \\
 				\textbf{CAT}       & 80.1\%                                   & 87.0\%              & Close at $-6.9$pp    \\
-				\textbf{SUB}       & 50.5\% / 50.0\%                          & 86.7\%              & micro / macro        \\
+				\textbf{SUB}       & 59.6\% / 58.4\%                          & 86.7\%              & micro / macro        \\
 				\textbf{Recall}    & \textcolor{darkgreen}{\textbf{92.6\%}}   & 82.5\%              & $1-\overline{\text{MDR}}$ from paper Table 5 \\
 				\bottomrule
 			\end{tabular}}
@@ -670,10 +670,10 @@
 				\toprule
 				\textbf{Drift Type} & \textbf{Acc.} & \textbf{Notes}                         \\ \midrule
 				Sudden              & \textbf{82.4\%}   & Sharp, well-separated peaks   \\
+				Incremental         & \textbf{77.2\%}   & Variance Ratio (flat variance) \\
 				Recurrent           & \textbf{71.5\%}   & Enabled by Concept Memory     \\
-				Incremental         & 4.4\%             & Monotonic shift behaves like plateau \\
-				Gradual             & 30.8\%            & Slow transition creates multi-peaks \\
 				Blip                & \textbf{60.8\%}   & Improved by multi-peak tolerance rule \\
+				Gradual             & 0.0\%             & Generator artifact (see backup) \\
 				\bottomrule
 			\end{tabular}}
 		\end{column}
@@ -748,7 +748,7 @@
 				\footnotesize
 				\begin{enumerate}
 					\item \textbf{Detection:} ShapeDD-IDW with Gamma-null p-value $\to$ a calibrated test ($\alpha = 0.05$, H0-verified) with a modest end-to-end speedup over ShapeDD.
-					\item \textbf{Classification:} SE-CDT label-free, CAT = \textbf{80.1\%}, SUB = \textbf{50.5\%} (micro), EDR = \textbf{92.6\%}.
+					\item \textbf{Classification:} SE-CDT label-free, CAT = \textbf{80.1\%}, SUB = \textbf{59.6\%} (micro), EDR = \textbf{92.6\%}; Variance Ratio lifts Incremental to \textbf{77.2\%}.
 					\item \textbf{Concept Memory + Self-Calibration:} restore Recurrent classification and stabilise SNR/WR/CV thresholds online.
 					\item \textbf{Adaptation:} Type-Specific gains \textbf{+17.1 pp} on Sudden, \textbf{+16.6 pp} on Stepping vs No Adaptation ($N = 30$, Friedman $p < 10^{-15}$).
 					\item \textbf{System:} end-to-end Kafka closed-loop validated.
@@ -759,7 +759,7 @@
 			\begin{exampleblock}{\small Limitations}
 				\footnotesize
 				\begin{itemize}
-					\item Gradual/Incremental still hard to separate --- sliding-window MMD returns to baseline.
+					\item Variance Ratio separates Incremental well (77.2\%), but the benchmark Gradual generator rotates features $\to$ behaves as Recurrent (0.0\% on nominal label).
 					\item Concept Memory threshold $\mu = 0.15$ chosen empirically from H0 noise floor.
 					\item Adaptation: 3 scenarios, $N = 30$ runs (Friedman $p < 10^{-15}$).
 				\end{itemize}
@@ -932,7 +932,7 @@
 					              & \textbf{SE-CDT}                        & \textbf{CDT-MSW} \\ \midrule
 					Labels        & \textcolor{darkgreen}{\textbf{None}}   & Required           \\
 					CAT           & 80.1\%                                 & 87.0\%             \\
-					SUB           & 50.5\%                                 & 86.7\%             \\
+					SUB           & 59.6\%                                 & 86.7\%             \\
 					Recall        & \textcolor{darkgreen}{\textbf{92.6\%}} & 82.5\%             \\
 					Effective     & \textbf{74.2\%}                        & 71.8\%             \\
 					\bottomrule
@@ -1058,8 +1058,8 @@
 \end{frame}
 
 % --- Backup 8: Subcategory accuracy ---
-\begin{frame}[noframenumbering,shrink]{Backup: ``Subcategory accuracy 50.5\% --- is it close to random?''}
-	\textbf{Question:} ``With 5 classes, 50\% sounds close to random guessing.''
+\begin{frame}[noframenumbering,shrink]{Backup: ``Subcategory accuracy 59.6\% --- is it close to random?''}
+	\textbf{Question:} ``With 5 classes, is $\sim 60\%$ close to random guessing?''
 
 	\vspace{0.5em}
 	\begin{columns}[T]
@@ -1072,7 +1072,7 @@
 			\textbf{It is well above random:}
 			\begin{itemize}
 				\item Random baseline across 5 classes is 20\%.
-				\item Micro SUB $= 50.5\%$ is $\sim 2.5\times$ random and well above the 95\% CI of a random predictor ($\sim 23\%$).
+				\item Micro SUB $= 59.6\%$ is $\sim 3\times$ random and well above the 95\% CI of a random predictor ($\sim 23\%$).
 				\item Performance is \textbf{very uneven across classes}:
 			\end{itemize}
 
@@ -1081,15 +1081,15 @@
 				\toprule
 				\textbf{Drift Type} & \textbf{Accuracy} \\ \midrule
 				Sudden              & \textbf{82.4\%}   \\
+				Incremental         & \textbf{77.2\%}   \\
 				Recurrent           & \textbf{71.5\%}   \\
 				Blip                & \textbf{60.8\%}   \\
-				Gradual             & 30.8\%            \\
-				Incremental         & 4.4\%             \\
+				Gradual             & 0.0\%             \\
 				\bottomrule
 			\end{tabular}}
 
 			\vspace{0.3em}
-			\textbf{Why the gap?} Sudden has the cleanest peaks; Recurrent utilizes Concept Memory; Blip ($60.8\%$) is improved by relaxing the peak counts. Incremental ($4.4\%$) looks like a flat, noisy plateau rather than a peak at the window scale ($W=50, s=10$), making it extremely hard to distinguish from baseline noise without labels.
+			\textbf{Why the gap?} Sudden has the cleanest peaks; Incremental ($77.2\%$) is rescued by the Variance Ratio feature (flat raw-data variance); Recurrent utilizes Concept Memory; Blip ($60.8\%$) is improved by relaxing the peak counts. Gradual ($0.0\%$) is a benchmark-generator artifact: feature rotation makes the nominal ``Gradual'' stream statistically Recurrent/Incremental (see Limitations).
 		\end{column}
 	\end{columns}
 \end{frame}
