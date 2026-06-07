@@ -400,7 +400,7 @@ def run_mixed_experiment(params):
         
         if len(data_window) >= 500 and len(sig_slice) >= 10:
             drift_length = se._growth_process(data_window, mmd_trace=sig_slice)
-            res_se = se.classify(sig_slice, drift_length=drift_length)
+            res_se = se.classify(sig_slice, drift_length=drift_length, data_window=data_window)
 
             recurrent_idx = -1
             recurrent_dist = float("nan")
