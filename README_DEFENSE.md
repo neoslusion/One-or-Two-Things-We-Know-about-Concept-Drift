@@ -36,7 +36,7 @@
 | Speedup | 119× | Gamma vs permutation (per validation) |
 | Speedup | 7× | End-to-end pipeline |
 | F1 | 0.531 | Detection performance |
-| CAT | 50.5% | Classification accuracy |
+| CAT / SUB | 80.1% / 55.3% | Classification accuracy (category / subtype micro) |
 
 **The Three Core Formulas:**
 ```
@@ -53,7 +53,7 @@
 ### Q1: "What's the main contribution?"
 **A:** SE-CDT - unified detector-classifier with two innovations:
 1. Detection: IDW-MMD + Gamma null (7× faster, properly calibrated)
-2. Classification: Unsupervised drift-type identification (50.5% accuracy)
+2. Classification: Unsupervised drift-type identification (80.1% category / 55.3% subtype)
 
 ### Q2: "Why not use Standard MMD everywhere?"
 **A:** Standard MMD drowns out boundary points where drift appears first. IDW-MMD up-weights boundaries (+30% sensitivity). But IDW-MMD over-smooths gradual drifts, so we use Standard MMD for trace (classification needs shape) and IDW-MMD for validation (detection needs sensitivity).
@@ -64,10 +64,11 @@
 2. Empirical calibration: Type-I error = 0.048 (target: 0.05)
 3. Diminishing returns: B=20→40 only improves by √2 but costs 2×
 
-### Q4: "Why is Gradual/Incremental accuracy so low (30.8% / 4.4%)?"
-**A:** Fundamental limitation of unsupervised discrimination. CDT-MSW (96.9%/74.0%) uses supervised features (accuracy curves, labels). SE-CDT only sees MMD trace, which is ambiguous. However:
-- Both Gradual and Incremental use the same adaptation strategy (continuous update)
-- The critical distinction is TCD vs PCD (for adaptation), not Gradual vs Incremental
+### Q4: "Why is Gradual/Incremental accuracy so low (27.2% / 30.3%)?"
+**A:** Fundamental limitation of unsupervised discrimination. CDT-MSW (96.9%/74.0%) uses supervised features (accuracy curves, labels). SE-CDT only sees the MMD trace, which is ambiguous for slow drifts. Two specific causes:
+- Gradual and Incremental overlap on the Variance Ratio (both inflate windowed variance), so ~47% of Incremental events are read as Gradual and vice-versa.
+- In repeated slow-drift streams the distribution saturates, so the post-drift window matches a stored snapshot and Concept Memory labels it Recurrent (~57% of Gradual events).
+- This stays within PCD, so category accuracy is unaffected (80.1%); the same adaptation strategy (continuous update) applies to both, so the operational cost of the confusion is small.
 - SE-CDT achieves strong TCD detection: Sudden 82.4%, Recurrent 71.5%
 
 ### Q5: "Why is the cross-term uniform?"

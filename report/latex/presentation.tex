@@ -657,7 +657,7 @@
 				                   & \textbf{SE-CDT}                          & \textbf{CDT-MSW}    & \textbf{Note}        \\ \midrule
 				\textbf{Labels}    & \textcolor{darkgreen}{\textbf{None}}     & Required            & Unsupervised win     \\
 				\textbf{CAT}       & 80.1\%                                   & 87.0\%              & Close at $-6.9$pp    \\
-				\textbf{SUB}       & 59.6\% / 58.4\%                          & 86.7\%              & micro / macro        \\
+				\textbf{SUB}       & 55.3\% / 54.4\%                          & 86.7\%              & micro / macro        \\
 				\textbf{Recall}    & \textcolor{darkgreen}{\textbf{92.6\%}}   & 82.5\%              & $1-\overline{\text{MDR}}$ from paper Table 5 \\
 				\bottomrule
 			\end{tabular}}
@@ -670,10 +670,10 @@
 				\toprule
 				\textbf{Drift Type} & \textbf{Acc.} & \textbf{Notes}                         \\ \midrule
 				Sudden              & \textbf{82.4\%}   & Sharp, well-separated peaks   \\
-				Incremental         & \textbf{77.2\%}   & Variance Ratio (flat variance) \\
+				Incremental         & 30.3\%            & Overlaps Gradual on Variance Ratio \\
 				Recurrent           & \textbf{71.5\%}   & Enabled by Concept Memory     \\
 				Blip                & \textbf{60.8\%}   & Improved by multi-peak tolerance rule \\
-				Gradual             & 0.0\%             & Generator artifact (see backup) \\
+				Gradual             & 27.2\%            & 57\% absorbed into Recurrent (backup) \\
 				\bottomrule
 			\end{tabular}}
 		\end{column}
@@ -748,7 +748,7 @@
 				\footnotesize
 				\begin{enumerate}
 					\item \textbf{Detection:} ShapeDD-IDW with Gamma-null p-value $\to$ a calibrated test ($\alpha = 0.05$, H0-verified) with a modest end-to-end speedup over ShapeDD.
-					\item \textbf{Classification:} SE-CDT label-free, CAT = \textbf{80.1\%}, SUB = \textbf{59.6\%} (micro), EDR = \textbf{92.6\%}; Variance Ratio lifts Incremental to \textbf{77.2\%}.
+					\item \textbf{Classification:} SE-CDT label-free, CAT = \textbf{80.1\%}, SUB = \textbf{55.3\%} (micro), EDR = \textbf{92.6\%}; slow-transition subtypes remain the hardest.
 					\item \textbf{Concept Memory + Self-Calibration:} restore Recurrent classification and stabilise SNR/WR/CV thresholds online.
 					\item \textbf{Adaptation:} Type-Specific gains \textbf{+17.1 pp} on Sudden, \textbf{+16.6 pp} on Stepping vs No Adaptation ($N = 30$, Friedman $p < 10^{-15}$).
 					\item \textbf{System:} end-to-end Kafka closed-loop validated.
@@ -759,7 +759,7 @@
 			\begin{exampleblock}{\small Limitations}
 				\footnotesize
 				\begin{itemize}
-					\item Variance Ratio separates Incremental well (77.2\%), but the benchmark Gradual generator rotates features $\to$ behaves as Recurrent (0.0\% on nominal label).
+					\item Gradual and Incremental are the hardest subtypes (27.2\% / 30.3\%): their signals overlap on the Variance Ratio, and repeated slow drifts are absorbed into Recurrent by Concept Memory.
 					\item Concept Memory threshold $\mu = 0.15$ chosen empirically from H0 noise floor.
 					\item Adaptation: 3 scenarios, $N = 30$ runs (Friedman $p < 10^{-15}$).
 				\end{itemize}
@@ -910,7 +910,7 @@
 				Two failure modes remain on the harder Recurrent variants:
 				\begin{itemize}
 					\item Recurrent events that are \textit{too far apart} push the original snapshot out of the ring buffer.
-					\item Repeated Gradual streams produce flattened MMD signals that no snapshot matches well.
+					\item Repeated Gradual streams saturate after a few events, so the post-drift window matches a stored snapshot and is labelled Recurrent rather than Gradual.
 				\end{itemize}
 				$\to$ Future work: learned threshold and longer memory.
 			\end{alertblock}
@@ -932,7 +932,7 @@
 					              & \textbf{SE-CDT}                        & \textbf{CDT-MSW} \\ \midrule
 					Labels        & \textcolor{darkgreen}{\textbf{None}}   & Required           \\
 					CAT           & 80.1\%                                 & 87.0\%             \\
-					SUB           & 59.6\%                                 & 86.7\%             \\
+					SUB           & 55.3\%                                 & 86.7\%             \\
 					Recall        & \textcolor{darkgreen}{\textbf{92.6\%}} & 82.5\%             \\
 					Effective     & \textbf{74.2\%}                        & 71.8\%             \\
 					\bottomrule
@@ -1058,7 +1058,7 @@
 \end{frame}
 
 % --- Backup 8: Subcategory accuracy ---
-\begin{frame}[noframenumbering,shrink]{Backup: ``Subcategory accuracy 59.6\% --- is it close to random?''}
+\begin{frame}[noframenumbering,shrink]{Backup: ``Subcategory accuracy 55.3\% --- is it close to random?''}
 	\textbf{Question:} ``With 5 classes, is $\sim 60\%$ close to random guessing?''
 
 	\vspace{0.5em}
@@ -1072,7 +1072,7 @@
 			\textbf{It is well above random:}
 			\begin{itemize}
 				\item Random baseline across 5 classes is 20\%.
-				\item Micro SUB $= 59.6\%$ is $\sim 3\times$ random and well above the 95\% CI of a random predictor ($\sim 23\%$).
+				\item Micro SUB $= 55.3\%$ is $\sim 2.8\times$ random and well above the 95\% CI of a random predictor ($\sim 23\%$).
 				\item Performance is \textbf{very uneven across classes}:
 			\end{itemize}
 
@@ -1081,15 +1081,15 @@
 				\toprule
 				\textbf{Drift Type} & \textbf{Accuracy} \\ \midrule
 				Sudden              & \textbf{82.4\%}   \\
-				Incremental         & \textbf{77.2\%}   \\
+				Incremental         & 30.3\%            \\
 				Recurrent           & \textbf{71.5\%}   \\
 				Blip                & \textbf{60.8\%}   \\
-				Gradual             & 0.0\%             \\
+				Gradual             & 27.2\%            \\
 				\bottomrule
 			\end{tabular}}
 
 			\vspace{0.3em}
-			\textbf{Why the gap?} Sudden has the cleanest peaks; Incremental ($77.2\%$) is rescued by the Variance Ratio feature (flat raw-data variance); Recurrent utilizes Concept Memory; Blip ($60.8\%$) is improved by relaxing the peak counts. Gradual ($0.0\%$) is a benchmark-generator artifact: feature rotation makes the nominal ``Gradual'' stream statistically Recurrent/Incremental (see Limitations).
+			\textbf{Why the gap?} Sudden has the cleanest peaks; Recurrent utilizes Concept Memory; Blip ($60.8\%$) is improved by relaxing the peak counts. The two slow-transition types are the hardest: Gradual ($27.2\%$) and Incremental ($30.3\%$) overlap on the Variance Ratio, and most repeated Gradual events are absorbed into the Recurrent branch by Concept Memory (see Limitations).
 		\end{column}
 	\end{columns}
 \end{frame}
@@ -1189,6 +1189,77 @@
 			\begin{alertblock}{\small Statistical Significance}
 				\scriptsize
 				Friedman test confirms the ranking is highly significant on the Mixed scenario ($\chi^2 = 76.32$, $p = 1.9 \times 10^{-16}$).
+			\end{alertblock}
+		\end{column}
+	\end{columns}
+\end{frame}
+
+% --- Backup 12: Classification experimental setup ---
+\begin{frame}[noframenumbering,shrink]{Backup: What data is the classifier evaluated on?}
+	\textbf{Question:} ``Which streams produce the 1800 classification events?''
+
+	\vspace{0.5em}
+	\begin{columns}[T]
+		\begin{column}{0.52\textwidth}
+			\textbf{Six synthetic scenarios $\times$ 30 seeds:}
+
+			\vspace{0.3em}
+			{\small
+			\begin{tabular}{@{}ll@{}}
+				\toprule
+				\textbf{Scenario}      & \textbf{Composition}                  \\ \midrule
+				Mixed A                & Sudden $\to$ Gradual $\to$ Recurrent  \\
+				Mixed B                & Blip $\to$ Incremental $\to$ Sudden   \\
+				Repeated Sudden        & 10 $\times$ Sudden                     \\
+				Repeated Gradual       & 10 $\times$ Gradual                    \\
+				Repeated Incremental   & 10 $\times$ Incremental                \\
+				Repeated Recurrent     & 10 $\times$ Recurrent                  \\
+				\bottomrule
+			\end{tabular}}
+
+			\vspace{0.4em}
+			{\scriptsize 6 scenarios $\times$ 30 seeds $\times$ 10 events $=$ \textbf{1800 events}. Streams are 5-D Gaussian; each non-recurrent event shifts a different feature subset so new concepts are distinct (Lu et al.\ definition).}
+		\end{column}
+		\begin{column}{0.46\textwidth}
+			\begin{exampleblock}{\small Oracle mode}
+				\small
+				The classifier is given the ground-truth drift \emph{position} and only the \emph{typing} step is scored. This isolates classification skill from detection skill (standard practice).
+			\end{exampleblock}
+
+			\vspace{0.3em}
+			\begin{alertblock}{\small Honest caveat}
+				\scriptsize
+				In repeated slow-drift streams the distribution saturates after a few events, so later ``Gradual''/``Incremental'' events become statistically Recurrent. This is part of why the slow subtypes score low (27.2\% / 30.3\%).
+			\end{alertblock}
+		\end{column}
+	\end{columns}
+\end{frame}
+
+% --- Backup 13: Adaptation selection bias ---
+\begin{frame}[noframenumbering,shrink]{Backup: ``Is the adaptation gain Sudden-biased?''}
+	\textbf{Question:} ``Type-Specific wins +17pp --- but the classifier is only $\sim$55\% on subtypes. Does the gain depend on the easy scenarios?''
+
+	\vspace{0.5em}
+	\begin{columns}[T]
+		\begin{column}{0.5\textwidth}
+			\textbf{Honest answer --- yes, partly:}
+			\begin{itemize}
+				\small
+				\item The three adaptation scenarios (Stepping, Sudden, Mixed) are all \textbf{Sudden-dominated}, exactly where the classifier is strongest (Sudden 82.4\%).
+				\item So routing is correct \emph{most of the time in this region}, and any reset on a true sudden drift helps regardless.
+				\item We have \textbf{not} tested adaptation on Gradual/Incremental-heavy streams, where subtype accuracy drops to 27--30\%.
+			\end{itemize}
+		\end{column}
+		\begin{column}{0.48\textwidth}
+			\begin{exampleblock}{\small Why the gain still holds}
+				\small
+				The category decision (TCD vs PCD, 80.1\%) drives the adaptation policy, not the exact subtype. TCD$\to$reset and PCD$\to$fine-tune is the right call even when the subtype within PCD is wrong --- the operational cost of confusing Gradual with Incremental is small (same update family).
+			\end{exampleblock}
+
+			\vspace{0.3em}
+			\begin{alertblock}{\small Scope claim}
+				\scriptsize
+				We claim the adaptation benefit \emph{for the sudden/recurrent regime}, not universally. Gradual/Incremental-heavy adaptation is listed as future work (Ch.\ 6).
 			\end{alertblock}
 		\end{column}
 	\end{columns}

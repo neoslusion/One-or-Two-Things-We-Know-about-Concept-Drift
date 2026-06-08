@@ -921,7 +921,7 @@ STEP 1: Blip check
 
 ---
 
-### Scenario C — Incremental drift (the failure case — explains the 4.4%)
+### Scenario C — Incremental drift (the failure case — gradual/incremental overlap)
 
 **Stream setup:**
 - Continuous slow drift from $t = 4000$ to $t = 8000$. Mean of $X_t$ migrates linearly from $\mathbf{0}$ to $[1.5, 0, 0, 0, 0]^T$ over 4000 samples.
@@ -969,6 +969,9 @@ n_p            1          single broad "peak"
 WR             0.730      FWHM ≈ 73 samples / 2·50 → very wide
                           → triggers PCD branch ✓
 SNR            1.69       max(0.122) / median(0.072) — barely above 1
+VR             1.15       within-window noise on the ramp inflates the
+                          windowed variance into the AMBIGUOUS zone
+                          [1.1, 1.3] → no decisive VR verdict
 LTS            0.42       linear trend present but R² < 0.5
                           (the ramp is noisy; not a clean line)
 MS             0.55       mostly increasing but not enough
@@ -985,10 +988,13 @@ STEP 1: Blip check
 STEP 1.5: PCD gate
   drift_length > 1 ? YES (drift_length = 2) → enter PCD branch ✓
 
-  PCD subtype check:
-    is_incremental = (LTS > 0.5)           ?  0.42 > 0.5 → FALSE
-                  OR (MS > 0.6 AND LTS > 0.3)?  0.55 > 0.6 → FALSE
-                  OR (SDS > 0.12 AND LTS > 0.3)?  0.08 > 0.12 → FALSE
+  PCD subtype check (Variance Ratio first):
+    VR > 1.3 ?  1.15 > 1.3 → FALSE        (not decisively Gradual)
+    VR < 1.1 ?  1.15 < 1.1 → FALSE        (not decisively Incremental)
+    → AMBIGUOUS zone → fall back to geometric rules:
+        is_incremental = (LTS > 0.5)            ?  0.42 > 0.5 → FALSE
+                      OR (MS > 0.6 AND LTS > 0.3)?  0.55 > 0.6 → FALSE
+                      OR (SDS > 0.12 AND LTS > 0.3)? 0.08 > 0.12 → FALSE
     → is_incremental = FALSE
     → return PCD-Gradual
 
@@ -997,9 +1003,9 @@ STEP 1.5: PCD gate
 
 **Output:** PCD-Gradual ✗ (wrong — should have been PCD-Incremental)
 
-**Why this fails:** the LTS=0.5 threshold is too strict for noisy ramps. In this realistic example, the actual linear trend explains only 42% of σ(t)'s variance because of within-window fluctuation. The thesis's 4.4% Incremental accuracy is mostly cases like this — the geometry is *correct* (PCD is identified), but the subtype is consistently downgraded to Gradual.
+**Why this fails:** Variance Ratio is the intended separator (high VR ⇒ Gradual, low VR ⇒ Incremental), but on real ramps the within-window noise pushes VR into the ambiguous band, so the decision falls back to the geometric rules — and there LTS=0.42 < 0.5 downgrades the event to Gradual. This is the **gradual/incremental overlap** that keeps both slow classes low (Incremental 30.3%, Gradual 27.2%): roughly 47% of Incremental events are read as Gradual. The geometry is *correct* (PCD is identified, so CAT stays 80.1%), but the subtype is unreliable.
 
-**The mitigation in §5.4 of the conclusion:** future work proposes replacing the fixed LTS=0.5 threshold with a learned probabilistic classifier on the σ(t) features.
+**The mitigation in §5.4 of the conclusion:** future work proposes replacing the fixed VR thresholds + LTS=0.5 fallback with a learned probabilistic classifier on the σ(t) features, and separating the Concept-Memory match step from the shape classifier.
 
 ---
 
@@ -1253,23 +1259,23 @@ The Nemenyi statistical test (Section 9 below) confirms: DAWIDD and the three th
 | Metric | Value | Meaning |
 |--------|-------|---------|
 | **CAT (Category)** | **80.1%** | Correct partition into TCD vs PCD |
-| **SUB (Subcategory) — micro avg** | **50.5%** | Correct subtype across all events |
-| **SUB — macro avg** | **50.0%** | Average per-class subtype accuracy (gives equal weight to rare classes) |
+| **SUB (Subcategory) — micro avg** | **55.3%** | Correct subtype across all events |
+| **SUB — macro avg** | **54.4%** | Average per-class subtype accuracy (gives equal weight to rare classes) |
 
 **Per-subtype accuracy:**
 
 | Drift type | Accuracy | Comment |
 |------------|----------|---------|
 | Sudden | **82.4%** | The strength: triangle property is reliable. |
-| Blip | **60.8%** | Decent after the relaxed two/three-peak rule. |
 | Recurrent | **71.5%** | Concept Memory works well when the same distribution returns. |
-| Gradual | **30.8%** | Weak — easy to confuse with mild Incremental. |
-| Incremental | **4.4%** | Worst case. The MMD signal looks similar to a noisy plateau. |
+| Blip | **60.8%** | Decent after the relaxed two/three-peak rule. |
+| Incremental | **30.3%** | Overlaps Gradual on the Variance Ratio; ~47% are read as Gradual. |
+| Gradual | **27.2%** | Hardest: ~57% absorbed into Recurrent by Concept Memory (saturated repeated streams). |
 
 **Honest framing in Ch.5:**
-> "Ở bước phân loại, SE-CDT đạt kết quả chấp nhận được ở mức TCD/PCD nhưng còn yếu ở tiểu loại, đặc biệt với Incremental. Đây là giới hạn quan trọng nhất của luận văn và không nên che giấu."
+> "Ở bước phân loại, SE-CDT đạt kết quả chấp nhận được ở mức TCD/PCD nhưng còn yếu ở tiểu loại, đặc biệt với hai loại drift chậm Gradual và Incremental. Đây là giới hạn quan trọng nhất của luận văn và không nên che giấu."
 
-In English: "On classification, SE-CDT is acceptable at TCD/PCD level but weak on subtype, especially Incremental. This is the most important limitation of the thesis and should not be hidden."
+In English: "On classification, SE-CDT is acceptable at TCD/PCD level but weak on subtype, especially the two slow-transition types Gradual and Incremental. This is the most important limitation of the thesis and should not be hidden."
 
 This is the kind of self-criticism that makes a defense stronger, not weaker.
 
@@ -1423,12 +1429,12 @@ The thesis is unusually transparent about what it can and cannot do. This sectio
 
 ## 10.2 Classification-side limitations
 
-### 10.2.1 Subtype accuracy is low (50% micro, 50% macro)
-**Why:** see §8.3. Specifically:
-- **Incremental at 4.4%**: the MMD signal of incremental drift looks similar to a noisy plateau. The features (LTS, MS, SDS) try to distinguish, but the signal-to-noise ratio is just too low at the chosen window sizes.
-- **Gradual at 30.8%**: easy to confuse with "mild Incremental" — both produce wide flat peaks.
+### 10.2.1 Subtype accuracy is low (55% micro, 54% macro)
+**Why:** see §8.3. Specifically the two slow-transition (PCD) subtypes:
+- **Incremental at 30.3%**: the Variance Ratio is meant to separate it from Gradual (flat variance ⇒ Incremental), but on noisy ramps the windowed variance drifts into the ambiguous band, so ~47% of Incremental events are read as Gradual.
+- **Gradual at 27.2%**: easy to confuse with Incremental on the same Variance Ratio, and ~57% of Gradual events in repeated streams saturate and are absorbed into Recurrent by Concept Memory.
 
-The thesis acknowledges this is **the most important limitation** ("không nên che giấu" = "should not be hidden"). Future work directions in Ch.5: multi-scale window analysis, learnable embeddings instead of hand-coded features, snapshot-based subtype classification (like a ConvNet on the MMD trace).
+Both stay within PCD, so category accuracy is unaffected (CAT 80.1%). The thesis acknowledges the slow-subtype weakness as **the most important limitation** ("không nên che giấu" = "should not be hidden"). Future work directions in Ch.5: multi-scale window analysis, learnable embeddings instead of hand-coded features, snapshot-based subtype classification (like a ConvNet on the MMD trace), and separating the Concept-Memory match step from the shape classifier.
 
 ### 10.2.2 Decision-tree thresholds are heuristic, not derived
 **Why:** WR < 0.15, SNR > 2.0, CV < 0.30 — these come from looking at MMD traces and picking values that worked. The self-calibration mechanism (§5.6) adapts these to noise floor, but the **structure** of the tree (the order, the inequality directions) is fixed by hand.
@@ -1667,15 +1673,14 @@ Ratio: ~125× fewer kernel evaluations *in the validation step*. End-to-end (inc
 
 These are *empirical* values; the thesis is explicit about that ("heuristic thực nghiệm" = "empirical heuristic"). The **self-calibration** mechanism (§5.6) lets these thresholds adapt to the noise floor of the specific stream being analyzed. Section 5.4 of the thesis (`sec:limitation-heuristic`) is a transparent discussion of this.
 
-### Q15. Why is Incremental drift accuracy only 4.4%?
+### Q15. Why are the slow-drift subtypes (Gradual 27.2%, Incremental 30.3%) so low?
 
-**A.** Because the MMD signal of incremental drift looks geometrically very similar to a noisy plateau:
-- An incremental drift slowly walks the distribution from $P_0 \to P_1 \to P_2 \to \cdots$
-- Each step is small, so the MMD between consecutive windows is small.
-- Over a long span, MMD slowly rises but never spikes.
-- Without a clear peak, the peak-detection step fails — there's nothing for SE-CDT to classify.
+**A.** Because Gradual and Incremental produce geometrically very similar MMD signals — both are wide, flat humps with no sharp peak — and the Variance Ratio meant to separate them overlaps in practice:
+- Both slowly walk the distribution, so MMD rises gradually and never spikes.
+- The Variance Ratio (high ⇒ Gradual mixture, low ⇒ Incremental single shift) is the intended separator, but on noisy windows both types land in the ambiguous band, so ~47% of Incremental events are read as Gradual and vice-versa.
+- On top of that, repeated slow-drift streams saturate (the distribution stops changing after a few events), so ~57% of Gradual events are matched to a stored snapshot and labelled Recurrent by Concept Memory.
 
-Mitigations attempted in the thesis: temporal features LTS, MS, SDS try to capture the long-term trend. They help slightly (4.4% > 0%), but the fundamental signal is weak. Future work direction: multi-scale window analysis (look at MMD over $l = 100, 500, 2000$ simultaneously) or learnable embeddings.
+Both effects keep the events inside PCD, so category accuracy (CAT) stays at 80.1% — the difficulty is purely the within-PCD subtype split. Future work direction: multi-scale window analysis (MMD over $l = 100, 500, 2000$ simultaneously), learnable embeddings, or a learned classifier on the σ(t) features.
 
 This is explicitly called out as **the most important limitation** of the thesis.
 
@@ -1801,7 +1806,7 @@ The thesis explicitly disclaims this is a single-stream prototype; production sc
 
 ### Q29. What's the single biggest weakness of this thesis?
 
-**A.** SE-CDT subtype accuracy on **Incremental drift (4.4%)**. It's by far the lowest number in the results, and it's an honest "we couldn't solve this case" finding. The MMD signal of incremental drift is geometrically similar to noisy plateaus, and the hand-coded features fail to distinguish them reliably. Future directions: multi-scale window analysis or learnable embeddings.
+**A.** SE-CDT subtype accuracy on the **slow-drift types (Gradual 27.2%, Incremental 30.3%)**. These are by far the lowest numbers in the results, and it's an honest "we only partly solved this case" finding. Gradual and Incremental produce geometrically similar MMD signals; the Variance Ratio meant to separate them overlaps, and repeated slow drifts get absorbed into Recurrent by Concept Memory. The hand-coded features and fixed thresholds do not distinguish them reliably. Future directions: multi-scale window analysis or learnable embeddings.
 
 The conclusion section explicitly says "không nên che giấu" (should not be hidden). This is methodologically the right framing — surfacing the failure mode prevents future researchers from rediscovering it.
 
@@ -1862,7 +1867,7 @@ A more powerful base classifier (random forest, gradient boosting) would shift a
 
 1. **Lead with the thesis's central narrative**, not the F1 number. The narrative: "Concept drift in production is hard because labels are delayed and drift comes in many shapes. We built a system that detects drift unsupervised, classifies it into 5 types, and adapts the model accordingly — using a 7×-faster MMD test and a hand-engineered classifier. The system works end-to-end in a Kafka prototype."
 
-2. **Embrace the limitations**. The Incremental 4.4% number is a *strength* if you frame it right: it shows you measured carefully and reported what you found. Examiners respect this far more than vague hand-waving about "future work".
+2. **Embrace the limitations**. The low slow-drift numbers (Gradual 27.2%, Incremental 30.3%) are a *strength* if you frame them right: they show you measured carefully and reported what you found. Examiners respect this far more than vague hand-waving about "future work".
 
 3. **Distinguish what's new from what's inherited**. ShapeDD's triangle theorem is borrowed (and cited). CDT-MSW's TCD/PCD partition is borrowed (and cited). What's new: IDW reweighting + Gamma p-value (detection), unsupervised classifier reading the MMD signal (classification), type-specific adaptation dispatch (system).
 
@@ -1930,7 +1935,7 @@ ShapeDD-IDW shares ~80% of the pipeline with ShapeDD. The genuinely novel piece 
 
 All thresholds sit inside naturally-bounded feature ranges (most features are in [0,1]). They cannot be exceeded mathematically — only mismatched to the dataset's noise floor. Self-calibration handles three of those mismatches; the rest are acknowledged limitations.
 
-**Empirical failure evidence:** Incremental drift accuracy of 4.4% is direct evidence that fixed LTS / MS / SDS thresholds don't generalize across all drift types.
+**Empirical failure evidence:** the low slow-drift subtype accuracy (Gradual 27.2%, Incremental 30.3%) is direct evidence that the fixed VR / LTS / MS / SDS thresholds don't generalize across the slow-transition drift types.
 
 ### Defense one-liners
 
@@ -1944,7 +1949,7 @@ All thresholds sit inside naturally-bounded feature ranges (most features are in
 > *"The sudden bias is in the peak-detection step, not the IDW-MMD validation. Validation is a generic two-sample test. Peak detection looks for sharp peaks, which favor sudden / blip / recurrent. Gradual and incremental drift are missed at the peak-detection step."*
 
 **On thresholds:**
-> *"Three thresholds (τ_WR, τ_SNR, τ_CV) self-calibrate to noise floor; six others are fixed. Fixed thresholds are documented as a limitation in §5.3, with the 4.4% Incremental result as direct empirical evidence."*
+> *"Three thresholds (τ_WR, τ_SNR, τ_CV) self-calibrate to noise floor; the rest are fixed. Fixed thresholds are documented as a limitation in §5.3, with the low slow-drift subtype accuracy (Gradual 27.2%, Incremental 30.3%) as direct empirical evidence."*
 
 ---
 
