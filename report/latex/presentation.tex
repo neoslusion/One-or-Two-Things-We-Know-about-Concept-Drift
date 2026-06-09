@@ -607,7 +607,7 @@
 			\vspace{0.4em}
 			\begin{block}{Key Results}
 				\begin{itemize}
-					\item Empirical Type-I error on three stationary distributions: $0.025$--$0.075$ for Standard MMD / IDW-MMD, $0.045$--$0.100$ for the SE-CDT composite (close to $\alpha = 0.05$; the composite is slightly above on two distributions, discussed as multi-test inflation).
+					\item Empirical Type-I error on three stationary distributions: $0.025$--$0.075$ for Standard MMD / IDW-MMD (near $\alpha = 0.05$); the SE-CDT composite is anti-conservative at $0.080$--$0.140$ (up to $\approx 2.8\times\,\alpha$ on AR(1)), discussed as multi-test / dependence inflation.
 					\item ShapeDD-IDW is faster than ShapeDD in the end-to-end benchmark (2.60 vs.\ 5.50 s per 10k-sample stream).
 					\item On label-dominant drift datasets, $F_1$ remains low \textcolor{darkgreen}{(expected for an unsupervised $P(X)$ detector)}.
 				\end{itemize}
@@ -632,6 +632,45 @@
 	\end{columns}
 \end{frame}
 
+% --- Slide 15b: Classification experimental setup ---
+\begin{frame}[shrink]{Classification Setup (6 scenarios $\times$ 30 seeds, oracle mode)}
+	\begin{columns}[T]
+		\begin{column}{0.54\textwidth}
+			\textbf{Streams (5-D Gaussian, 1800 events total):}
+
+			\vspace{0.3em}
+			{\small
+			\begin{tabular}{@{}ll@{}}
+				\toprule
+				\textbf{Scenario}      & \textbf{Composition}                  \\ \midrule
+				Mixed A                & Sudden $\to$ Gradual $\to$ Recurrent  \\
+				Mixed B                & Blip $\to$ Incremental $\to$ Sudden   \\
+				Repeated Sudden        & 10 $\times$ Sudden                     \\
+				Repeated Gradual       & 10 $\times$ Gradual                    \\
+				Repeated Incremental   & 10 $\times$ Incremental                \\
+				Repeated Recurrent     & 10 $\times$ Recurrent                  \\
+				\bottomrule
+			\end{tabular}}
+
+			\vspace{0.4em}
+			{\scriptsize 6 scenarios $\times$ 30 seeds $\times$ 10 events $=$ \textbf{1800 events}. Each non-recurrent event shifts a different feature subset, so new concepts are genuinely distinct (Lu et al.\ definition).}
+		\end{column}
+		\begin{column}{0.44\textwidth}
+			\begin{block}{\small Oracle mode}
+				\small
+				The classifier receives the ground-truth drift \emph{position} and is scored only on the \emph{typing} step. This isolates classification skill from detection skill --- the same way the detection protocol ($\delta=75$, cooldown) isolates detection.
+			\end{block}
+
+			\vspace{0.3em}
+			\begin{exampleblock}{\small Two metrics}
+				\scriptsize
+				\textbf{CAT} --- TCD vs PCD (the decision that drives adaptation).\\
+				\textbf{SUB} --- exact 5-class subtype (micro / macro).
+			\end{exampleblock}
+		\end{column}
+	\end{columns}
+\end{frame}
+
 % --- Slide 16: Classification Results ---
 \begin{frame}[shrink]{Result 2: Unsupervised Classification (SE-CDT)}
 	\begin{columns}[T]
@@ -648,34 +687,31 @@
 			\end{exampleblock}
 		\end{column}
 		\begin{column}{0.50\textwidth}
-			\textbf{Compared with CDT-MSW (supervised baseline):}
+			\begin{block}{\footnotesize Headline --- label-free typing}
+				\footnotesize
+				\textbf{\textcolor{univblue}{CAT $=$ 80.1\%}} (TCD vs PCD --- the decision that drives adaptation), at \textbf{\textcolor{darkgreen}{92.6\% recall}}, with \textbf{no labels}. The category call is what the adaptation layer consumes.
+			\end{block}
 
-			\vspace{0.3em}
-			\resizebox{\linewidth}{!}{\footnotesize
-			\begin{tabular}{@{}lccc@{}}
-				\toprule
-				                   & \textbf{SE-CDT}                          & \textbf{CDT-MSW}    & \textbf{Note}        \\ \midrule
-				\textbf{Labels}    & \textcolor{darkgreen}{\textbf{None}}     & Required            & Unsupervised win     \\
-				\textbf{CAT}       & 80.1\%                                   & 87.0\%              & Close at $-6.9$pp    \\
-				\textbf{SUB}       & 55.3\% / 54.4\%                          & 86.7\%              & micro / macro        \\
-				\textbf{Recall}    & \textcolor{darkgreen}{\textbf{92.6\%}}   & 82.5\%              & $1-\overline{\text{MDR}}$ from paper Table 5 \\
-				\bottomrule
-			\end{tabular}}
-
-			\vspace{0.5em}
-			\textbf{Per-type accuracy (oracle mode, 1800 events):}
+			\vspace{0.2em}
+			\textbf{Per-type subtype accuracy (1800 events):}
 
 			\resizebox{\linewidth}{!}{\footnotesize
 			\begin{tabular}{@{}llp{3.0cm}@{}}
 				\toprule
 				\textbf{Drift Type} & \textbf{Acc.} & \textbf{Notes}                         \\ \midrule
 				Sudden              & \textbf{82.4\%}   & Sharp, well-separated peaks   \\
-				Incremental         & 30.3\%            & Overlaps Gradual on Variance Ratio \\
 				Recurrent           & \textbf{71.5\%}   & Enabled by Concept Memory     \\
-				Blip                & \textbf{60.8\%}   & Improved by multi-peak tolerance rule \\
-				Gradual             & 27.2\%            & 57\% absorbed into Recurrent (backup) \\
+				Blip                & \textbf{60.8\%}   & Multi-peak tolerance rule \\
+				Incremental         & 30.3\%            & Overlaps Gradual on Variance Ratio \\
+				Gradual             & 27.2\%            & 57\% absorbed into Recurrent \\
 				\bottomrule
 			\end{tabular}}
+
+			\vspace{0.3em}
+			\begin{alertblock}{\scriptsize Honest limitation}
+				\scriptsize
+				Subtype (SUB) is $55.3\%$ --- the two slow types (Gradual, Incremental) overlap on the Variance Ratio and are the weak point. Supervised CDT-MSW reaches higher SUB but needs labels (head-to-head in backup).
+			\end{alertblock}
 		\end{column}
 	\end{columns}
 \end{frame}
@@ -863,7 +899,7 @@
 		\begin{column}{0.48\textwidth}
 			\textbf{What SE-CDT actually adds:}
 			\begin{enumerate}
-				\item \textbf{Test calibrated near $\alpha = 0.05$} --- empirical Type-I error in the $0.025$--$0.100$ band across detectors and three stationary distributions.
+				\item \textbf{Single-test calibrated near $\alpha = 0.05$} --- Standard MMD / IDW-MMD Type-I error $0.025$--$0.075$; the SE-CDT composite is anti-conservative ($0.080$--$0.140$), reported honestly as a pipeline limitation.
 				\item \textbf{Classification module on top of detection} --- gives a drift type, not just a flag.
 				\item \textbf{Modest runtime speedup over ShapeDD} thanks to the Gamma-null p-value (no kernel re-build per shuffle).
 				\item Stays \textbf{fully unsupervised} at runtime.
@@ -1054,7 +1090,7 @@
 	\end{columns}
 
 	\vspace{0.5em}
-	\textbf{Verification:} The detection $F_1$ remains comparable to the permutation baseline; the H0-calibration on three stationary distributions reports an empirical Type-I error of $0.025$--$0.100$ across detectors (Standard MMD and IDW-MMD inside the 95\% CI of $\alpha = 0.05$, the SE-CDT composite slightly above on two distributions). End-to-end runtime is slightly faster than the ShapeDD baseline.
+	\textbf{Verification:} The detection $F_1$ remains comparable to the permutation baseline; the H0-calibration on three stationary distributions reports Standard MMD and IDW-MMD inside the 95\% CI of $\alpha = 0.05$ ($0.025$--$0.075$), while the SE-CDT composite is anti-conservative at $0.080$--$0.140$ (up to $\approx 2.8\times\,\alpha$), reflecting peak-selection and sliding-window dependence rather than the per-candidate test itself. End-to-end runtime is slightly faster than the ShapeDD baseline.
 \end{frame}
 
 % --- Backup 8: Subcategory accuracy ---
@@ -1089,7 +1125,7 @@
 			\end{tabular}}
 
 			\vspace{0.3em}
-			\textbf{Why the gap?} Sudden has the cleanest peaks; Recurrent utilizes Concept Memory; Blip ($60.8\%$) is improved by relaxing the peak counts. The two slow-transition types are the hardest: Gradual ($27.2\%$) and Incremental ($30.3\%$) overlap on the Variance Ratio, and most repeated Gradual events are absorbed into the Recurrent branch by Concept Memory (see Limitations).
+			\textbf{Why the gap?} Sudden has the cleanest peaks; Recurrent uses Concept Memory; Blip benefits from the relaxed peak rule. The two slow types (Gradual, Incremental) are the hardest --- mechanism detailed in the next backup slide.
 		\end{column}
 	\end{columns}
 \end{frame}
@@ -1194,42 +1230,30 @@
 	\end{columns}
 \end{frame}
 
-% --- Backup 12: Classification experimental setup ---
-\begin{frame}[noframenumbering,shrink]{Backup: What data is the classifier evaluated on?}
-	\textbf{Question:} ``Which streams produce the 1800 classification events?''
+% --- Backup 12: Why the slow subtypes are low ---
+\begin{frame}[noframenumbering,shrink]{Backup: Why are Gradual (27.2\%) and Incremental (30.3\%) low?}
+	\textbf{Question:} ``The two slow types are the weak point --- what exactly goes wrong?''
 
 	\vspace{0.5em}
 	\begin{columns}[T]
-		\begin{column}{0.52\textwidth}
-			\textbf{Six synthetic scenarios $\times$ 30 seeds:}
-
-			\vspace{0.3em}
-			{\small
-			\begin{tabular}{@{}ll@{}}
-				\toprule
-				\textbf{Scenario}      & \textbf{Composition}                  \\ \midrule
-				Mixed A                & Sudden $\to$ Gradual $\to$ Recurrent  \\
-				Mixed B                & Blip $\to$ Incremental $\to$ Sudden   \\
-				Repeated Sudden        & 10 $\times$ Sudden                     \\
-				Repeated Gradual       & 10 $\times$ Gradual                    \\
-				Repeated Incremental   & 10 $\times$ Incremental                \\
-				Repeated Recurrent     & 10 $\times$ Recurrent                  \\
-				\bottomrule
-			\end{tabular}}
-
-			\vspace{0.4em}
-			{\scriptsize 6 scenarios $\times$ 30 seeds $\times$ 10 events $=$ \textbf{1800 events}. Streams are 5-D Gaussian; each non-recurrent event shifts a different feature subset so new concepts are distinct (Lu et al.\ definition).}
-		\end{column}
-		\begin{column}{0.46\textwidth}
-			\begin{exampleblock}{\small Oracle mode}
+		\begin{column}{0.5\textwidth}
+			\textbf{Two systematic confusions (not random):}
+			\begin{enumerate}
 				\small
-				The classifier is given the ground-truth drift \emph{position} and only the \emph{typing} step is scored. This isolates classification skill from detection skill (standard practice).
+				\item \textbf{Gradual $\leftrightarrow$ Incremental overlap on Variance Ratio.} In theory high VR $\Rightarrow$ Gradual (mixture inflates variance), low VR $\Rightarrow$ Incremental (single shift). In practice both land in the ambiguous band, so $\sim$47\% of Incremental events are read as Gradual.
+				\item \textbf{Saturation $\to$ Recurrent.} In repeated slow-drift streams $P(X)$ stops changing after a few events; the post-drift window matches a stored snapshot, so Concept Memory labels it Recurrent --- $\sim$57\% of Gradual events.
+			\end{enumerate}
+		\end{column}
+		\begin{column}{0.48\textwidth}
+			\begin{exampleblock}{\small Why CAT is unaffected}
+				\small
+				Both confusions stay \emph{inside} PCD, so the TCD/PCD decision (CAT $=80.1\%$) is correct --- and CAT is what the adaptation layer consumes. The cost of confusing Gradual with Incremental is small (same update family).
 			\end{exampleblock}
 
 			\vspace{0.3em}
-			\begin{alertblock}{\small Honest caveat}
+			\begin{alertblock}{\small Fix (future work)}
 				\scriptsize
-				In repeated slow-drift streams the distribution saturates after a few events, so later ``Gradual''/``Incremental'' events become statistically Recurrent. This is part of why the slow subtypes score low (27.2\% / 30.3\%).
+				Replace the fixed VR thresholds + geometric fallback with a learned classifier on $\sigma(t)$, and separate the Concept-Memory match step from the shape classifier.
 			\end{alertblock}
 		\end{column}
 	\end{columns}
