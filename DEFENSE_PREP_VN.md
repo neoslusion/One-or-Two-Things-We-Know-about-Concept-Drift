@@ -23,7 +23,7 @@ Thang đánh giá: ✅ đúng & lập luận vững · ⚠️ đúng nhưng lậ
 | 5 | Đánh giá chủ yếu trên synthetic | `05:61-62` | ✅ | Đúng; chỉ Electricity là semi-real. Trung thực. |
 | 6 | Kafka là prototype, không phải production | `03:596`, `04:471` | ✅ | Đã loại khỏi phạm vi đúng cách. |
 | 7 | Phân loại đo ở **Oracle mode** (cho sẵn vị trí drift ground-truth) | `04:264-266` | ✅ | Trung thực và sạch về phương pháp — nhưng xem câu H6: nó làm con số 80.1/55.3 lạc quan hơn so với end-to-end thật. |
-| 8 | Gamma null là xấp xỉ; Type-I error tăng lên 0.075 (IDW) / 0.100 (composite) trên AR(1) | `04:228-235` | ✅ | Khớp `wmmd_gamma` (B=20 moment-matched Gamma) và audit note về `wmmd_asymptotic` sai trước đây. Rất thẳng thắn. |
+| 8 | Gamma null là xấp xỉ; Type-I error tăng lên 0.075 (IDW) / 0.140 (composite) trên AR(1) | `04:228-235` | ✅ | Khớp `wmmd_gamma` (B=20 moment-matched Gamma); composite anti-conservative (0.115/0.080/0.140) — báo thẳng ở bảng. |
 | 9 | Đánh đổi Recall↔FP (Std: EDR 92.6%, FP 4846 / IDW: EDR 56.7%, FP 657) | `04:315-328`, `05:32-33` | ✅ | Thật và có số. Đây là mâu thuẫn cốt lõi trung thực nhất của cả hệ thống (xem H1). |
 | 10 | "≈7× nhanh hơn ShapeDD" / "F1=0.531, hòa thống kê với DAWIDD" | bảng, `04:117-142,254` | ✅ | Bảng III: 0.70s vs 5.03s = 7.17×. Bảng I: F1 0.531 = DAWIDD. CD=2.806 ≫ chênh 0.142 → "hòa" được lập luận đúng. Khung "ngang DAWIDD nhưng FP thấp hơn + nhanh hơn + có classification" là trung thực (không bịa "thắng"). |
 

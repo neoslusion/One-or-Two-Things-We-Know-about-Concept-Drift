@@ -69,26 +69,19 @@
 
 \begin{document}
 
-% =============================================================================
-% SLIDE 1: TITLE PAGE
-% =============================================================================
 \begin{frame}[plain]
 	\titlepage
 \end{frame}
 
-% =============================================================================
-% SLIDE 2: TABLE OF CONTENTS
-% =============================================================================
 \begin{frame}{Presentation Outline}
 	\tableofcontents
 \end{frame}
 
-% #############################################################################
-% SECTION 1: INTRODUCTION (~2 phút)
+
 % #############################################################################
 \section{Introduction}
+% #############################################################################
 
-% --- Slide 3: Motivation ---
 \begin{frame}[shrink]{Motivation \& Background}
 	\begin{columns}[T]
 		\begin{column}{0.55\textwidth}
@@ -123,8 +116,7 @@
 	\end{columns}
 \end{frame}
 
-% --- Slide 4: Objectives ---
-\begin{frame}{Objectives \& Contributions}
+\begin{frame}{Objectives \& Approach}
 	\begin{columns}[T]
 		\begin{column}{0.5\textwidth}
 			\begin{block}{Research Objectives}
@@ -136,7 +128,7 @@
 			\end{block}
 		\end{column}
 		\begin{column}{0.48\textwidth}
-			\begin{block}{Three Main Contributions}
+			\begin{block}{Approach --- a three-stage pipeline}
 				\begin{enumerate}
 					\item \textbf{Detection (ShapeDD-IDW):} inverse density weighting + Gamma-null p-value $\to$ a calibrated test ($\alpha = 0.05$) with a modest end-to-end speedup over ShapeDD.
 					\item \textbf{Classification (SE-CDT):} an unsupervised geometric analyzer that labels 5 drift types directly from the MMD signal $\sigma(t)$.
@@ -147,12 +139,39 @@
 	\end{columns}
 \end{frame}
 
-% #############################################################################
-% SECTION 2: THEORETICAL FOUNDATION (~3 phút)
-% #############################################################################
-\section{Theoretical Background}
+\begin{frame}{SE-CDT System Architecture}
+	\centering
+	\includegraphics[width=0.88\linewidth,height=0.6\textheight,keepaspectratio]{image/system_architecture.png}
 
-% --- Slide 5: MMD ---
+	\vspace{0.5em}
+	\small
+	\begin{columns}[T]
+		\begin{column}{0.33\textwidth}
+			\centering
+			\textbf{\textcolor{univblue}{Layer 1 --- Detection}}\\
+			ShapeDD + IDW-MMD\\
+			{\scriptsize Decides \textit{when} a drift in $P(X)$ occurs.}
+		\end{column}
+		\begin{column}{0.33\textwidth}
+			\centering
+			\textbf{\textcolor{univblue}{Layer 2 --- Classification}}\\
+			SE-CDT (geometric features + Concept Memory)\\
+			{\scriptsize Decides \textit{what kind} of drift it is (5 types).}
+		\end{column}
+		\begin{column}{0.33\textwidth}
+			\centering
+			\textbf{\textcolor{univblue}{Layer 3 --- Adaptation}}\\
+			Type-aware strategy\\
+			{\scriptsize Decides \textit{how} the model is updated.}
+		\end{column}
+	\end{columns}
+\end{frame}
+
+
+% #############################################################################
+\section{Background: The MMD Drift Signal}
+% #############################################################################
+
 \begin{frame}{Maximum Mean Discrepancy (MMD)}
 	\begin{columns}[T]
 		\begin{column}{0.55\textwidth}
@@ -190,7 +209,6 @@
 	\end{columns}
 \end{frame}
 
-% --- Slide 5b: Sliding Window MMD Estimation ---
 \begin{frame}{Online MMD Estimation via Sliding Window}
 	\begin{columns}[T]
 		\begin{column}{0.5\textwidth}
@@ -217,7 +235,11 @@
 	\end{columns}
 \end{frame}
 
-% --- Slide 6: ShapeDD ---
+
+% #############################################################################
+\section{Layer 1: Detection}
+% #############################################################################
+
 \begin{frame}[shrink]{ShapeDD --- Shape-Based Drift Detection}
 	\begin{columns}[T]
 		\begin{column}{0.55\textwidth}
@@ -259,78 +281,7 @@
 	\end{columns}
 \end{frame}
 
-% --- Slide 7: CDT-MSW ---
-\begin{frame}{CDT-MSW --- Supervised Classification Baseline}
-	\begin{columns}[T]
-		\begin{column}{0.55\textwidth}
-			\textbf{CDT-MSW} (Guo et al., 2022) groups drift into:
-			\begin{itemize}
-				\item \textbf{TCD (Transient):} Sudden, Blip, Recurrent.
-				\item \textbf{PCD (Progressive):} Gradual, Incremental.
-			\end{itemize}
-
-			\vspace{0.5em}
-			\textbf{Growth Process:}
-			\begin{itemize}
-				\item Tracks the variance of accuracy degradation over a multi-sliding window.
-				\item Short degradation $\to$ TCD; sustained degradation $\to$ PCD.
-			\end{itemize}
-
-			\vspace{0.5em}
-			\begin{alertblock}{Limitation}
-				CDT-MSW needs \textbf{ground-truth labels} at every step to compute the accuracy curve --- impractical for IIoT streams where labels arrive late or never.
-			\end{alertblock}
-		\end{column}
-		\begin{column}{0.42\textwidth}
-			\centering
-			\includegraphics[width=\linewidth]{image/cdt_msw.png}
-			\captionof{figure}{\scriptsize CDT-MSW architecture (label-dependent).}
-
-			\vspace{0.5em}
-			\begin{exampleblock}{\small Motivation for SE-CDT}
-				\small
-				Replace the accuracy curve with the \emph{shape} of the MMD signal $\sigma(t)$. The same TCD/PCD distinction can then be made \textbf{without any labels at runtime}.
-			\end{exampleblock}
-		\end{column}
-	\end{columns}
-\end{frame}
-
-% #############################################################################
-% SECTION 3: PROPOSED MODEL (~5 phút)
-% #############################################################################
-\section{Proposed Architecture}
-
-% --- Slide 8: System Architecture ---
-\begin{frame}{SE-CDT System Architecture}
-	\centering
-	\includegraphics[width=0.88\linewidth,height=0.6\textheight,keepaspectratio]{image/system_architecture.png}
-
-	\vspace{0.5em}
-	\small
-	\begin{columns}[T]
-		\begin{column}{0.33\textwidth}
-			\centering
-			\textbf{\textcolor{univblue}{Layer 1 --- Detection}}\\
-			ShapeDD + IDW-MMD\\
-			{\scriptsize Decides \textit{when} a drift in $P(X)$ occurs.}
-		\end{column}
-		\begin{column}{0.33\textwidth}
-			\centering
-			\textbf{\textcolor{univblue}{Layer 2 --- Classification}}\\
-			SE-CDT (geometric features + Concept Memory)\\
-			{\scriptsize Decides \textit{what kind} of drift it is (5 types).}
-		\end{column}
-		\begin{column}{0.33\textwidth}
-			\centering
-			\textbf{\textcolor{univblue}{Layer 3 --- Adaptation}}\\
-			Type-aware strategy\\
-			{\scriptsize Decides \textit{how} the model is updated.}
-		\end{column}
-	\end{columns}
-\end{frame}
-
-% --- Slide 9: IDW-MMD Motivation ---
-\begin{frame}{Contribution 1: Inverse Density-Weighted MMD}
+\begin{frame}{Inverse Density-Weighted MMD (IDW-MMD)}
 	\begin{columns}[T]
 		\begin{column}{0.5\textwidth}
 			\textbf{Limitation of standard MMD (uniform weights):}
@@ -354,7 +305,6 @@
 	\end{columns}
 \end{frame}
 
-% --- Slide 9b: IDW-MMD Formulation & Calibration ---
 \begin{frame}{IDW-MMD Formulation \& Calibration}
 	\begin{columns}[T]
 		\begin{column}{0.5\textwidth}
@@ -387,7 +337,6 @@
 	\end{columns}
 \end{frame}
 
-% --- Slide 10: IDW-MMD Calculation Example ---
 \begin{frame}[shrink]{Worked Example: 3-Point Window}
 	A minimal observation window with 3 samples:
     \begin{itemize}
@@ -420,159 +369,6 @@
 	\end{alertblock}
 \end{frame}
 
-% --- Slide 11: SE-CDT Feature Extraction ---
-\begin{frame}{Contribution 2: Unsupervised Shape Analysis of $\sigma(t)$}
-	\begin{columns}[T]
-		\begin{column}{0.5\textwidth}
-			\textbf{How can we type drift without ground-truth labels?}
-
-			Read the \textit{shape} of the MMD signal $\sigma(t)$ around the detection point. SE-CDT extracts \textbf{9 statistical features}:
-
-			\vspace{0.5em}
-			\begin{itemize}
-				\item \textbf{Geometric (peak structure):}
-				    \begin{itemize}
-    				    \item $n_p$, WR, CV, SNR: count, width, periodicity, prominence.
-    				    \item PPR, DPAR: peak proximity and dual-peak amplitude ratio.
-    				\end{itemize}
-				\item \textbf{Temporal (behaviour over time):}
-				    \begin{itemize}
-				        \item LTS, SDS, MS: trend strength, step score, monotonicity.
-				    \end{itemize}
-			\end{itemize}
-		\end{column}
-		\begin{column}{0.48\textwidth}
-			\centering
-			\includegraphics[width=0.98\linewidth]{theory_peak_anatomy.png}
-			\captionof{figure}{\scriptsize MMD peak features (e.g., FWHM, Prominence) extracted from the shape of the signal $\sigma(t)$.}
-		\end{column}
-	\end{columns}
-\end{frame}
-
-% --- Slide 12: SE-CDT Threshold Classifier ---
-\begin{frame}{SE-CDT Threshold Classifier \& Drift Signatures}
-	\begin{columns}[T]
-		\begin{column}{0.48\textwidth}
-			\textbf{Rule-based threshold classifier:}
-
-			\vspace{0.5em}
-			{\small
-			\begin{tabular}{@{}p{3.3cm}l@{}}
-				\toprule
-				\textbf{Condition}                                 & \textbf{Label}            \\ \midrule
-				$n_p \leq 3,\ \text{WR} < 0.15,\ \text{SNR} > 2$   & \textbf{Sudden}           \\
-				$n_p = 2,\ \text{PPR} < 0.2,\ \text{DPAR} > 0.65$  & \textbf{Blip}             \\
-				MMD match in Concept Memory                        & \textbf{Recurrent}        \\
-				$\text{LTS} > 0.5\ \lor\ \text{MS} > 0.6$          & \textbf{Incremental}      \\
-				Otherwise                                          & \textbf{Gradual}          \\
-				\bottomrule
-			\end{tabular}}
-		\end{column}
-		\begin{column}{0.5\textwidth}
-			\centering
-			\includegraphics[width=0.92\linewidth]{theory_drift_shapes.png}
-			\captionof{figure}{\scriptsize Ideal MMD drift signatures: Sudden (A), Gradual (B), Incremental (C), and Blip (D).}
-		\end{column}
-	\end{columns}
-\end{frame}
-
-% --- Slide 12b: SE-CDT Worked Example ---
-\begin{frame}{SE-CDT Classifier: Worked Example}
-	\textbf{Trace of one online detection event:}
-	
-	\vspace{1em}
-	Layer 1 has just fired a drift alert at time $t^*$ on the streaming data.
-	
-	\vspace{1em}
-	\begin{enumerate}
-	    \item \textbf{Extract Signal Window:} Read the MMD trace $\sigma(t)$ over a window of $2 l_1$ samples around $t^*$.
-	    \item \textbf{Calculate Geometric Features:}
-	        \begin{itemize}
-	            \item Count local maxima $\to$ $n_p = 1$ ($\leq 3$).
-	            \item Width at half maximum $\to$ $\text{WR} = 0.12$ ($< 0.15$).
-	            \item Peak vs baseline noise $\to$ $\text{SNR} = 3.0$ ($> 2$).
-	        \end{itemize}
-	    \item \textbf{Evaluate Decision Logic:}
-	        \begin{itemize}
-	            \item The first rule matches: $n_p \leq 3 \ \land \ \text{WR} < 0.15 \ \land \ \text{SNR} > 2$.
-	        \end{itemize}
-	\end{enumerate}
-
-	\vspace{1em}
-	\begin{alertblock}{Decision}
-		$\Rightarrow$ Label = \textbf{Sudden Drift}, which is then dispatched to Layer 3 (Adaptation) to trigger a full model reset.
-	\end{alertblock}
-\end{frame}
-
-% --- Slide 12c: Type-Aware Adaptation ---
-\begin{frame}{Layer 3: Type-Aware Model Adaptation}
-	\begin{columns}[T]
-		\begin{column}{0.62\textwidth}
-			\textbf{Why classify? To optimize update cost \& accuracy!}
-			
-			\vspace{0.3em}
-			{\scriptsize
-			\begin{tabular}{@{}llp{4.0cm}@{}}
-				\toprule
-				\textbf{Drift Type}  & \textbf{Adaptation Policy}                     & \textbf{Theoretical Rationale} \\ \midrule
-				\textbf{Sudden}      & \textcolor{univblue}{\textbf{Full Reset}}       & Old data is zero value; discard completely to avoid interference. \\
-				\textbf{Incremental} & \textcolor{univblue}{\textbf{Continuous Update}}& Gradual slow change; old knowledge remains partially valid. \\
-				\textbf{Gradual}     & \textcolor{univblue}{\textbf{Weighted Window}}  & Transition mixes two concepts; use soft blending/warm-start. \\
-				\textbf{Recurrent}   & \textcolor{univblue}{\textbf{Model Reuse}}      & Load past matching model from Concept Memory; zero retrain cost. \\
-				\textbf{Blip}        & \textcolor{univblue}{\textbf{Ignore / Do Nothing}}& Temporary noise/spike; do not overwrite stable model. \\
-				\bottomrule
-			\end{tabular}}
-		\end{column}
-		\begin{column}{0.35\textwidth}
-			\begin{exampleblock}{\small Key Contribution}
-				\small
-				Rather than a costly \textbf{one-size-fits-all} retraining policy, type-aware adaptation minimizes catastrophic forgetting and compute overhead in online environments.
-			\end{exampleblock}
-			
-			\vspace{0.4em}
-			\begin{alertblock}{\small Kafka Integration}
-				\scriptsize
-				The chosen adaptation policy triggers downstream Kafka microservices to hot-swap or fine-tune models dynamically.
-			\end{alertblock}
-		\end{column}
-	\end{columns}
-\end{frame}
-
-% --- Slide 13: Hybrid Design ---
-\begin{frame}[shrink]{Hybrid Pipeline: IDW-MMD to Detect, Standard MMD to Classify}
-	\begin{columns}[T]
-		\begin{column}{0.5\textwidth}
-			\textbf{Why use two MMD variants instead of one?}
-
-			\vspace{0.5em}
-			\begin{itemize}
-				\item \textbf{IDW-MMD} is sharper and almost never fires on stationary windows --- great as a gatekeeper, but its weighting also \textit{flattens} the slow rise of a Gradual drift, removing the very shape SE-CDT needs.
-				\item \textbf{Standard MMD} runs slower but \textit{preserves the natural geometry} of $\sigma(t)$, including plateaus and trends --- ideal as input to the shape classifier.
-			\end{itemize}
-		\end{column}
-		\begin{column}{0.48\textwidth}
-			\begin{block}{Pipeline}
-				\begin{itemize}
-					\item \textbf{Layer 1 --- Detection:} \textcolor{univblue}{IDW-MMD} runs continuously as the gatekeeper.
-					\item \textbf{Layer 2 --- Classification:} \textcolor{univblue}{Standard MMD} is computed \textit{only at the detection time} $t^*$ to feed SE-CDT.
-				\end{itemize}
-				$\to$ Cheap to run continuously, accurate where it matters.
-			\end{block}
-
-			\vspace{0.1em}
-			\centering
-			\includegraphics[width=0.75\linewidth]{vis_repeated_gradual_SE.png}
-			\captionof{figure}{\scriptsize Same Gradual drift: IDW (bottom) flattens, Standard (top) preserves the slope.}
-		\end{column}
-	\end{columns}
-\end{frame}
-
-% #############################################################################
-% SECTION 4: EXPERIMENTS (~4 phút)
-% #############################################################################
-\section{Experiments \& Evaluation}
-
-% --- Slide 14: Detection Results ---
 \begin{frame}[shrink]{Result 1: Drift Detection ($\delta=75$, cooldown $=150$)}
 	\begin{columns}[T]
 		\begin{column}{0.48\textwidth}
@@ -616,7 +412,6 @@
 	\end{columns}
 \end{frame}
 
-% --- Slide 15: Signal visualization ---
 \begin{frame}{Drift Signals at the Detector Output}
 	\begin{columns}[T]
 		\begin{column}{0.48\textwidth}
@@ -627,12 +422,160 @@
 		\begin{column}{0.48\textwidth}
 			\centering
 			\includegraphics[width=\linewidth]{vis_repeated_gradual_SE.png}
-			\captionof{figure}{\scriptsize \textbf{Gradual drift:} IDW signal flattens (lower) while Standard MMD keeps the slope (upper) --- motivates the hybrid pipeline.}
+			\captionof{figure}{\scriptsize \textbf{Gradual drift:} IDW signal flattens (lower) while Standard MMD keeps the slope (upper) --- the shape the classifier needs.}
 		\end{column}
 	\end{columns}
 \end{frame}
 
-% --- Slide 15b: Classification experimental setup ---
+
+% #############################################################################
+\section{Layer 2: Classification}
+% #############################################################################
+
+\begin{frame}{CDT-MSW --- Supervised Classification Baseline}
+	\begin{columns}[T]
+		\begin{column}{0.55\textwidth}
+			\textbf{CDT-MSW} (Guo et al., 2022) groups drift into:
+			\begin{itemize}
+				\item \textbf{TCD (Transient):} Sudden, Blip, Recurrent.
+				\item \textbf{PCD (Progressive):} Gradual, Incremental.
+			\end{itemize}
+
+			\vspace{0.5em}
+			\textbf{Growth Process:}
+			\begin{itemize}
+				\item Tracks the variance of accuracy degradation over a multi-sliding window.
+				\item Short degradation $\to$ TCD; sustained degradation $\to$ PCD.
+			\end{itemize}
+
+			\vspace{0.5em}
+			\begin{alertblock}{Limitation}
+				CDT-MSW needs \textbf{ground-truth labels} at every step to compute the accuracy curve --- impractical for IIoT streams where labels arrive late or never.
+			\end{alertblock}
+		\end{column}
+		\begin{column}{0.42\textwidth}
+			\centering
+			\includegraphics[width=\linewidth]{image/cdt_msw.png}
+			\captionof{figure}{\scriptsize CDT-MSW architecture (label-dependent).}
+
+			\vspace{0.5em}
+			\begin{exampleblock}{\small Motivation for SE-CDT}
+				\small
+				Replace the accuracy curve with the \emph{shape} of the MMD signal $\sigma(t)$. The same TCD/PCD distinction can then be made \textbf{without any labels at runtime}.
+			\end{exampleblock}
+		\end{column}
+	\end{columns}
+\end{frame}
+
+\begin{frame}{Unsupervised Shape Analysis of $\sigma(t)$}
+	\begin{columns}[T]
+		\begin{column}{0.5\textwidth}
+			\textbf{How can we type drift without ground-truth labels?}
+
+			Read the \textit{shape} of the MMD signal $\sigma(t)$ around the detection point. SE-CDT extracts \textbf{9 statistical features}:
+
+			\vspace{0.5em}
+			\begin{itemize}
+				\item \textbf{Geometric (peak structure):}
+				    \begin{itemize}
+    				    \item $n_p$, WR, CV, SNR: count, width, periodicity, prominence.
+    				    \item PPR, DPAR: peak proximity and dual-peak amplitude ratio.
+    				\end{itemize}
+				\item \textbf{Temporal (behaviour over time):}
+				    \begin{itemize}
+				        \item LTS, SDS, MS: trend strength, step score, monotonicity.
+				    \end{itemize}
+			\end{itemize}
+		\end{column}
+		\begin{column}{0.48\textwidth}
+			\centering
+			\includegraphics[width=0.98\linewidth]{theory_peak_anatomy.png}
+			\captionof{figure}{\scriptsize MMD peak features (e.g., FWHM, Prominence) extracted from the shape of the signal $\sigma(t)$.}
+		\end{column}
+	\end{columns}
+\end{frame}
+
+\begin{frame}{SE-CDT Threshold Classifier \& Drift Signatures}
+	\begin{columns}[T]
+		\begin{column}{0.48\textwidth}
+			\textbf{Rule-based threshold classifier:}
+
+			\vspace{0.5em}
+			{\small
+			\begin{tabular}{@{}p{3.3cm}l@{}}
+				\toprule
+				\textbf{Condition}                                 & \textbf{Label}            \\ \midrule
+				$n_p \leq 3,\ \text{WR} < 0.15,\ \text{SNR} > 2$   & \textbf{Sudden}           \\
+				$n_p = 2,\ \text{PPR} < 0.2,\ \text{DPAR} > 0.65$  & \textbf{Blip}             \\
+				MMD match in Concept Memory                        & \textbf{Recurrent}        \\
+				$\text{LTS} > 0.5\ \lor\ \text{MS} > 0.6$          & \textbf{Incremental}      \\
+				Otherwise                                          & \textbf{Gradual}          \\
+				\bottomrule
+			\end{tabular}}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\centering
+			\includegraphics[width=0.92\linewidth]{theory_drift_shapes.png}
+			\captionof{figure}{\scriptsize Ideal MMD drift signatures: Sudden (A), Gradual (B), Incremental (C), and Blip (D).}
+		\end{column}
+	\end{columns}
+\end{frame}
+
+\begin{frame}{SE-CDT Classifier: Worked Example}
+	\textbf{Trace of one online detection event:}
+	
+	\vspace{1em}
+	Layer 1 has just fired a drift alert at time $t^*$ on the streaming data.
+	
+	\vspace{1em}
+	\begin{enumerate}
+	    \item \textbf{Extract Signal Window:} Read the MMD trace $\sigma(t)$ over a window of $2 l_1$ samples around $t^*$.
+	    \item \textbf{Calculate Geometric Features:}
+	        \begin{itemize}
+	            \item Count local maxima $\to$ $n_p = 1$ ($\leq 3$).
+	            \item Width at half maximum $\to$ $\text{WR} = 0.12$ ($< 0.15$).
+	            \item Peak vs baseline noise $\to$ $\text{SNR} = 3.0$ ($> 2$).
+	        \end{itemize}
+	    \item \textbf{Evaluate Decision Logic:}
+	        \begin{itemize}
+	            \item The first rule matches: $n_p \leq 3 \ \land \ \text{WR} < 0.15 \ \land \ \text{SNR} > 2$.
+	        \end{itemize}
+	\end{enumerate}
+
+	\vspace{1em}
+	\begin{alertblock}{Decision}
+		$\Rightarrow$ Label = \textbf{Sudden Drift}, which is then dispatched to Layer 3 (Adaptation) to trigger a full model reset.
+	\end{alertblock}
+\end{frame}
+
+\begin{frame}[shrink]{Hybrid Pipeline: IDW-MMD to Detect, Standard MMD to Classify}
+	\begin{columns}[T]
+		\begin{column}{0.5\textwidth}
+			\textbf{Why use two MMD variants instead of one?}
+
+			\vspace{0.5em}
+			\begin{itemize}
+				\item \textbf{IDW-MMD} is sharper and almost never fires on stationary windows --- great as a gatekeeper, but its weighting also \textit{flattens} the slow rise of a Gradual drift, removing the very shape SE-CDT needs.
+				\item \textbf{Standard MMD} runs slower but \textit{preserves the natural geometry} of $\sigma(t)$, including plateaus and trends --- ideal as input to the shape classifier.
+			\end{itemize}
+		\end{column}
+		\begin{column}{0.48\textwidth}
+			\begin{block}{Pipeline}
+				\begin{itemize}
+					\item \textbf{Layer 1 --- Detection:} \textcolor{univblue}{IDW-MMD} runs continuously as the gatekeeper.
+					\item \textbf{Layer 2 --- Classification:} \textcolor{univblue}{Standard MMD} is computed \textit{only at the detection time} $t^*$ to feed SE-CDT.
+				\end{itemize}
+				$\to$ Cheap to run continuously, accurate where it matters.
+			\end{block}
+
+			\vspace{0.1em}
+			\centering
+			\includegraphics[width=0.75\linewidth]{vis_repeated_gradual_SE.png}
+			\captionof{figure}{\scriptsize Same Gradual drift: IDW (bottom) flattens, Standard (top) preserves the slope.}
+		\end{column}
+	\end{columns}
+\end{frame}
+
 \begin{frame}[shrink]{Classification Setup (6 scenarios $\times$ 30 seeds, oracle mode)}
 	\begin{columns}[T]
 		\begin{column}{0.54\textwidth}
@@ -671,7 +614,6 @@
 	\end{columns}
 \end{frame}
 
-% --- Slide 16: Classification Results ---
 \begin{frame}[shrink]{Result 2: Unsupervised Classification (SE-CDT)}
 	\begin{columns}[T]
 		\begin{column}{0.46\textwidth}
@@ -716,7 +658,44 @@
 	\end{columns}
 \end{frame}
 
-% --- Slide 17: Adaptation Results ---
+
+% #############################################################################
+\section{Layer 3: Adaptation}
+% #############################################################################
+
+\begin{frame}{Layer 3: Type-Aware Model Adaptation}
+	\begin{columns}[T]
+		\begin{column}{0.62\textwidth}
+			\textbf{Why classify? To optimize update cost \& accuracy!}
+			
+			\vspace{0.3em}
+			{\scriptsize
+			\begin{tabular}{@{}llp{4.0cm}@{}}
+				\toprule
+				\textbf{Drift Type}  & \textbf{Adaptation Policy}                     & \textbf{Theoretical Rationale} \\ \midrule
+				\textbf{Sudden}      & \textcolor{univblue}{\textbf{Full Reset}}       & Old data is zero value; discard completely to avoid interference. \\
+				\textbf{Incremental} & \textcolor{univblue}{\textbf{Continuous Update}}& Gradual slow change; old knowledge remains partially valid. \\
+				\textbf{Gradual}     & \textcolor{univblue}{\textbf{Weighted Window}}  & Transition mixes two concepts; use soft blending/warm-start. \\
+				\textbf{Recurrent}   & \textcolor{univblue}{\textbf{Model Reuse}}      & Load past matching model from Concept Memory; zero retrain cost. \\
+				\textbf{Blip}        & \textcolor{univblue}{\textbf{Ignore / Do Nothing}}& Temporary noise/spike; do not overwrite stable model. \\
+				\bottomrule
+			\end{tabular}}
+		\end{column}
+		\begin{column}{0.35\textwidth}
+			\begin{exampleblock}{\small Key idea}
+				\small
+				Rather than a costly \textbf{one-size-fits-all} retraining policy, type-aware adaptation minimizes catastrophic forgetting and compute overhead in online environments.
+			\end{exampleblock}
+			
+			\vspace{0.4em}
+			\begin{alertblock}{\small Kafka Integration}
+				\scriptsize
+				The chosen adaptation policy triggers downstream Kafka microservices to hot-swap or fine-tune models dynamically.
+			\end{alertblock}
+		\end{column}
+	\end{columns}
+\end{frame}
+
 \begin{frame}[shrink]{Result 3: Model Adaptation (Prequential Accuracy, $N = 30$)}
 	\begin{columns}[T]
 		\begin{column}{0.55\textwidth}
@@ -746,7 +725,11 @@
 	\end{columns}
 \end{frame}
 
-% --- Slide 18: Kafka Deployment ---
+
+% #############################################################################
+\section{System Deployment}
+% #############################################################################
+
 \begin{frame}{End-to-End Deployment on Apache Kafka}
 	\centering
 	\includegraphics[width=0.65\linewidth,height=0.55\textheight,keepaspectratio]{image/kafka_results_real.png}
@@ -771,16 +754,15 @@
 	\end{columns}
 \end{frame}
 
-% #############################################################################
-% SECTION 5: CONCLUSION (~1 phút)
+
 % #############################################################################
 \section{Conclusion}
+% #############################################################################
 
-% --- Slide 19: Conclusion ---
 \begin{frame}{Conclusion \& Future Directions}
 	\begin{columns}[T]
 		\begin{column}{0.52\textwidth}
-			\begin{block}{\small Contribution Summary}
+			\begin{block}{\small Summary}
 				\footnotesize
 				\begin{enumerate}
 					\item \textbf{Detection:} ShapeDD-IDW with Gamma-null p-value $\to$ a calibrated test ($\alpha = 0.05$, H0-verified) with a modest end-to-end speedup over ShapeDD.
@@ -815,7 +797,6 @@
 	\end{columns}
 \end{frame}
 
-% --- Slide 20: Thank you ---
 \begin{frame}[plain]
 	\centering
 	\vspace{2cm}
@@ -830,8 +811,7 @@
 	\textit{Student: Le Phuc Duc --- Supervisor: Assoc.Prof.Dr. Thoai Nam}
 \end{frame}
 
-% #############################################################################
-% BACKUP SLIDES --- Q&A PREPARATION
+
 % #############################################################################
 \appendix
 \section*{Backup Slides}
