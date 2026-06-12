@@ -66,6 +66,8 @@
 \author[Le Phuc Duc]{Student: Le Phuc Duc\\ Supervisor: Assoc.Prof.Dr. Thoai Nam}
 \institute[HCMUT]{Ho Chi Minh City University of Technology\\Faculty of Computer Science and Engineering}
 \date{2026}
+\titlegraphic{\includegraphics[height=1.5cm]{image/hcmut.jpg}}
+\logo{\includegraphics[height=0.8cm]{image/hcmut.jpg}}
 
 \begin{document}
 
@@ -73,7 +75,7 @@
 	\titlepage
 \end{frame}
 
-\begin{frame}{Presentation Outline}
+\begin{frame}[shrink]{Presentation Outline}
 	\tableofcontents
 \end{frame}
 
@@ -106,17 +108,17 @@
 		\end{column}
 		\begin{column}{0.42\textwidth}
 			\centering
-			\includegraphics[width=0.7\linewidth]{image/pattern_based_concept_drift.png}
+			\includegraphics[width=\linewidth,height=0.35\textheight,keepaspectratio]{image/pattern_based_concept_drift.png}
 			\captionof{figure}{\scriptsize Temporal drift patterns.}
 
 			\vspace{0.2em}
-			\includegraphics[width=0.65\linewidth]{image/distribution_based_concept_drift.png}
+			\includegraphics[width=\linewidth,height=0.35\textheight,keepaspectratio]{image/distribution_based_concept_drift.png}
 			\captionof{figure}{\scriptsize Distributional shift in the joint distribution.}
 		\end{column}
 	\end{columns}
 \end{frame}
 
-\begin{frame}{Objectives \& Approach}
+\begin{frame}[shrink]{Objectives \& Approach}
 	\begin{columns}[T]
 		\begin{column}{0.5\textwidth}
 			\begin{block}{Research Objectives}
@@ -139,7 +141,7 @@
 	\end{columns}
 \end{frame}
 
-\begin{frame}{SE-CDT System Architecture}
+\begin{frame}[shrink]{SE-CDT System Architecture}
 	\centering
 	\includegraphics[width=0.88\linewidth,height=0.6\textheight,keepaspectratio]{image/system_architecture.png}
 
@@ -167,12 +169,67 @@
 	\end{columns}
 \end{frame}
 
+\begin{frame}[shrink]{Related Works}
+    \begin{columns}[T]
+        \begin{column}{0.48\textwidth}
+\small
+\begin{block}{Supervised Drift Detection (Error-based)}
+                \begin{itemize}
+                    \item \textbf{DDM / EDDM}: Track accuracy degradation. Fast, but requires 100\% immediate labels.
+                    \item \textbf{CDT-MSW}: Types drift via performance drop over time. High accuracy, but label-dependent.
+                \end{itemize}
+            \end{block}
+            \begin{block}{Unsupervised Drift Detection (Data-based)}
+                \begin{itemize}
+                    \item \textbf{KS-Test}: Marginal feature shifts. Fails to capture complex correlations.
+                    \item \textbf{ShapeDD}: MMD-based shape detection. Unsupervised and robust, but lacks drift typing.
+                \end{itemize}
+            \end{block}
+        \end{column}
+        \begin{column}{0.48\textwidth}
+\small
+\begin{alertblock}{The Gap in Current Literature}
+                Existing unsupervised methods can say \textbf{\textit{when}} a drift happens, but they cannot say \textbf{\textit{what type}} of drift it is (Sudden, Gradual, etc.) without falling back to true labels.\\
+                \vspace{0.5em}
+                \textit{This thesis bridges that gap by predicting drift types entirely from the geometric shape of the unsupervised MMD signal.}
+            \end{alertblock}
+        \end{column}
+    \end{columns}
+\end{frame}
+
 
 % #############################################################################
 \section{Background: The MMD Drift Signal}
 % #############################################################################
 
-\begin{frame}{Maximum Mean Discrepancy (MMD)}
+\begin{frame}[shrink]{Intuition: Detecting Drift Without Labels}
+	\begin{columns}[T]
+		\begin{column}{0.48\textwidth}
+\small
+\textbf{The Challenge:}
+			\begin{itemize}
+				\item Traditional monitors track model \textbf{accuracy} (error rate), which requires immediate labels.
+				\item In many real-world pipelines (e.g., IIoT sensors), labels arrive days late or never.
+			\end{itemize}
+
+			\vspace{0.5em}
+			\textbf{The Unsupervised Alternative:}
+			\begin{itemize}
+				\item Monitor the \textbf{raw data distribution} $P(X)$.
+				\item We map all data points into a high-dimensional function space (RKHS).
+				\item Then, we compare their ``centers of mass'' to calculate a \textbf{Drift Signal}.
+			\end{itemize}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+\small
+\centering
+			\includegraphics[width=\linewidth,height=0.65\textheight,keepaspectratio]{image/mmd_intuition.png}
+			\captionof{figure}{\scriptsize MMD Distance captures distributional shifts natively without needing labels.}
+		\end{column}
+	\end{columns}
+\end{frame}
+
+\begin{frame}[shrink]{Maximum Mean Discrepancy (MMD)}
 	\begin{columns}[T]
 		\begin{column}{0.55\textwidth}
 			\textbf{Idea:} compare two distributions $P, Q$ via their mean embeddings in an RKHS.
@@ -209,7 +266,7 @@
 	\end{columns}
 \end{frame}
 
-\begin{frame}{Online MMD Estimation via Sliding Window}
+\begin{frame}[shrink]{Online MMD Estimation via Sliding Window}
 	\begin{columns}[T]
 		\begin{column}{0.5\textwidth}
 			\textbf{Stream-to-Trace Mapping:}
@@ -229,7 +286,7 @@
 		\end{column}
 		\begin{column}{0.48\textwidth}
 			\centering
-			\includegraphics[width=0.98\linewidth]{theory_sliding_window.png}
+			\includegraphics[width=\linewidth,height=0.65\textheight,keepaspectratio]{theory_sliding_window.png}
 			\captionof{figure}{\scriptsize sliding-window MMD calculation: reference window $W_{\text{ref}}$ and test window $W_{\text{test}}$ are compared to produce one point $\sigma(t)$ on the trace.}
 		\end{column}
 	\end{columns}
@@ -239,6 +296,32 @@
 % #############################################################################
 \section{Layer 1: Detection}
 % #############################################################################
+
+\begin{frame}[shrink]{MMD vs ShapeDD: The Relationship}
+	\begin{columns}[T]
+		\begin{column}{0.48\textwidth}
+\small
+\textbf{MMD = The Distance Ruler}
+			\begin{itemize}
+				\item MMD is a mathematical metric. It calculates how different Window A is from Window B at a single moment in time.
+			\end{itemize}
+			
+			\vspace{0.5em}
+			\textbf{ShapeDD = The Detection System}
+			\begin{itemize}
+			    \item ShapeDD (Lu et al., 2022) is the framework that computes MMD continuously across a live data stream to generate a \textbf{trace} $\sigma(t)$.
+				\item \textbf{Core Innovation:} Instead of alerting when MMD simply exceeds a threshold, ShapeDD looks for a \textbf{specific geometric shape} (a triangle).
+				\item \textbf{Why a Triangle?} As the sliding window steps over the drift point, the new concept contaminates the window linearly, peaks when centered, and then drops linearly as the old concept is flushed out.
+			\end{itemize}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+\small
+\centering
+			\includegraphics[width=\linewidth,height=0.65\textheight,keepaspectratio]{image/shapedd_intuition.png}
+			\captionof{figure}{\scriptsize ShapeDD computing the MMD distance over time. A sudden drift always produces this characteristic Triangle Shape.}
+		\end{column}
+	\end{columns}
+\end{frame}
 
 \begin{frame}[shrink]{ShapeDD --- Shape-Based Drift Detection}
 	\begin{columns}[T]
@@ -269,19 +352,14 @@
 		\end{column}
 		\begin{column}{0.42\textwidth}
 			\centering
-			\includegraphics[width=0.85\linewidth]{vis_repeated_sudden_SE.png}
+			\includegraphics[width=\linewidth,height=0.65\textheight,keepaspectratio]{vis_repeated_sudden_SE.png}
 			\vspace{-0.3em}
 			\captionof{figure}{\scriptsize Sudden drift produces the predicted triangular MMD trace.}
-
-			\begin{exampleblock}{\footnotesize Why a triangle?}
-				\scriptsize
-				As the sliding window crosses the change point, the proportion of post-drift samples grows linearly $\to$ MMD rises linearly until the window is fully on the new distribution, then falls back symmetrically.
-			\end{exampleblock}
 		\end{column}
 	\end{columns}
 \end{frame}
 
-\begin{frame}{Inverse Density-Weighted MMD (IDW-MMD)}
+\begin{frame}[shrink]{Inverse Density-Weighted MMD (IDW-MMD)}
 	\begin{columns}[T]
 		\begin{column}{0.5\textwidth}
 			\textbf{Limitation of standard MMD (uniform weights):}
@@ -299,13 +377,13 @@
 		\end{column}
 		\begin{column}{0.48\textwidth}
 			\centering
-			\includegraphics[width=0.95\linewidth]{theory_idw_weighting.png}
+			\includegraphics[width=\linewidth,height=0.65\textheight,keepaspectratio]{theory_idw_weighting.png}
 			\captionof{figure}{\scriptsize MMD with uniform weights (A) vs.\ IDW-MMD (B) which automatically compresses the core and amplifies the boundary.}
 		\end{column}
 	\end{columns}
 \end{frame}
 
-\begin{frame}{IDW-MMD Formulation \& Calibration}
+\begin{frame}[shrink]{IDW-MMD Formulation \& Calibration}
 	\begin{columns}[T]
 		\begin{column}{0.5\textwidth}
 			\textbf{IDW-MMD Weighting Function:}
@@ -373,11 +451,11 @@
 	\begin{columns}[T]
 		\begin{column}{0.48\textwidth}
 			\centering
-			\includegraphics[width=\linewidth]{critical_difference_f1.png}
+			\includegraphics[width=\linewidth,height=0.28\textheight,keepaspectratio]{critical_difference_f1.png}
 			\captionof{figure}{\scriptsize Critical Difference Diagram (Nemenyi, $\alpha=0.05$)}
 
 			\vspace{0.5em}
-			\includegraphics[width=\linewidth]{figure_4_stationary_fp.png}
+			\includegraphics[width=\linewidth,height=0.28\textheight,keepaspectratio]{figure_4_stationary_fp.png}
 			\captionof{figure}{\scriptsize Stationary false positives, total counts; FP/run is reported in the table.}
 		\end{column}
 		\begin{column}{0.5\textwidth}
@@ -385,7 +463,7 @@
 
 			\vspace{0.3em}
 			{\small
-			\begin{tabular}{@{}lccc@{}}
+			\resizebox{\linewidth}{!}{\begin{tabular}{@{}lccc@{}}
 				\toprule
 				\textbf{Method}         & \textbf{F1}   & \textbf{Prec.} & \textbf{FP/run}  \\ \midrule
 				DAWIDD                  & \textbf{0.532} & 0.436          & 10.3         \\
@@ -395,13 +473,13 @@
 				D3                      & 0.489          & 0.558          & 0.6          \\
 				KS-Test                 & 0.335          & 0.224          & 27.2         \\
 				\bottomrule
-			\end{tabular}}
+			\end{tabular}}}
 
 			\vspace{0.3em}
 			{\scriptsize \emph{Protocol:} TP if alert is within $\pm 75$ samples of a true drift; cooldown $=150$ suppresses duplicate alerts. IDW-MMD and SE-CDT share the same detection gate here, so their detection F1/FP are identical.}
 
 			\vspace{0.4em}
-			\begin{block}{Key Results}
+			\begin{block}{Key Results}\n\t\t\t\t\scriptsize
 				\begin{itemize}
 					\item Empirical Type-I error on three stationary distributions: $0.025$--$0.075$ for Standard MMD / IDW-MMD (near $\alpha = 0.05$); the SE-CDT composite is anti-conservative at $0.080$--$0.140$ (up to $\approx 2.8\times\,\alpha$ on AR(1)), discussed as multi-test / dependence inflation.
 					\item ShapeDD-IDW is faster than ShapeDD in the end-to-end benchmark (2.60 vs.\ 5.50 s per 10k-sample stream).
@@ -412,16 +490,16 @@
 	\end{columns}
 \end{frame}
 
-\begin{frame}{Drift Signals at the Detector Output}
+\begin{frame}[shrink]{Drift Signals at the Detector Output}
 	\begin{columns}[T]
 		\begin{column}{0.48\textwidth}
 			\centering
-			\includegraphics[width=\linewidth]{vis_repeated_sudden_SE.png}
+			\includegraphics[width=\linewidth,height=0.65\textheight,keepaspectratio]{vis_repeated_sudden_SE.png}
 			\captionof{figure}{\scriptsize \textbf{Sudden drift:} sharp triangular peak --- matches the Triangle Shape Theorem.}
 		\end{column}
 		\begin{column}{0.48\textwidth}
 			\centering
-			\includegraphics[width=\linewidth]{vis_repeated_gradual_SE.png}
+			\includegraphics[width=\linewidth,height=0.65\textheight,keepaspectratio]{vis_repeated_gradual_SE.png}
 			\captionof{figure}{\scriptsize \textbf{Gradual drift:} IDW signal flattens (lower) while Standard MMD keeps the slope (upper) --- the shape the classifier needs.}
 		\end{column}
 	\end{columns}
@@ -432,7 +510,7 @@
 \section{Layer 2: Classification}
 % #############################################################################
 
-\begin{frame}{CDT-MSW --- Supervised Classification Baseline}
+\begin{frame}[shrink]{CDT-MSW --- Supervised Classification Baseline}
 	\begin{columns}[T]
 		\begin{column}{0.55\textwidth}
 			\textbf{CDT-MSW} (Guo et al., 2022) groups drift into:
@@ -455,7 +533,7 @@
 		\end{column}
 		\begin{column}{0.42\textwidth}
 			\centering
-			\includegraphics[width=\linewidth]{image/cdt_msw.png}
+			\includegraphics[width=\linewidth,height=0.65\textheight,keepaspectratio]{image/cdt_msw.png}
 			\captionof{figure}{\scriptsize CDT-MSW architecture (label-dependent).}
 
 			\vspace{0.5em}
@@ -467,7 +545,7 @@
 	\end{columns}
 \end{frame}
 
-\begin{frame}{Unsupervised Shape Analysis of $\sigma(t)$}
+\begin{frame}[shrink]{Unsupervised Shape Analysis of $\sigma(t)$}
 	\begin{columns}[T]
 		\begin{column}{0.5\textwidth}
 			\textbf{How can we type drift without ground-truth labels?}
@@ -489,20 +567,20 @@
 		\end{column}
 		\begin{column}{0.48\textwidth}
 			\centering
-			\includegraphics[width=0.98\linewidth]{theory_peak_anatomy.png}
+			\includegraphics[width=\linewidth,height=0.65\textheight,keepaspectratio]{theory_peak_anatomy.png}
 			\captionof{figure}{\scriptsize MMD peak features (e.g., FWHM, Prominence) extracted from the shape of the signal $\sigma(t)$.}
 		\end{column}
 	\end{columns}
 \end{frame}
 
-\begin{frame}{SE-CDT Threshold Classifier \& Drift Signatures}
+\begin{frame}[shrink]{SE-CDT Threshold Classifier \& Drift Signatures}
 	\begin{columns}[T]
 		\begin{column}{0.48\textwidth}
 			\textbf{Rule-based threshold classifier:}
 
 			\vspace{0.5em}
 			{\small
-			\begin{tabular}{@{}p{3.3cm}l@{}}
+			\resizebox{\linewidth}{!}{\begin{tabular}{@{}p{3.3cm}l@{}}
 				\toprule
 				\textbf{Condition}                                 & \textbf{Label}            \\ \midrule
 				$n_p \leq 3,\ \text{WR} < 0.15,\ \text{SNR} > 2$   & \textbf{Sudden}           \\
@@ -511,17 +589,17 @@
 				$\text{LTS} > 0.5\ \lor\ \text{MS} > 0.6$          & \textbf{Incremental}      \\
 				Otherwise                                          & \textbf{Gradual}          \\
 				\bottomrule
-			\end{tabular}}
+			\end{tabular}}}
 		\end{column}
 		\begin{column}{0.5\textwidth}
 			\centering
-			\includegraphics[width=0.92\linewidth]{theory_drift_shapes.png}
+			\includegraphics[width=\linewidth,height=0.65\textheight,keepaspectratio]{theory_drift_shapes.png}
 			\captionof{figure}{\scriptsize Ideal MMD drift signatures: Sudden (A), Gradual (B), Incremental (C), and Blip (D).}
 		\end{column}
 	\end{columns}
 \end{frame}
 
-\begin{frame}{SE-CDT Classifier: Worked Example}
+\begin{frame}[shrink]{SE-CDT Classifier: Worked Example}
 	\textbf{Trace of one online detection event:}
 	
 	\vspace{1em}
@@ -570,10 +648,42 @@
 
 			\vspace{0.1em}
 			\centering
-			\includegraphics[width=0.75\linewidth]{vis_repeated_gradual_SE.png}
+			\includegraphics[width=\linewidth,height=0.65\textheight,keepaspectratio]{vis_repeated_gradual_SE.png}
 			\captionof{figure}{\scriptsize Same Gradual drift: IDW (bottom) flattens, Standard (top) preserves the slope.}
 		\end{column}
 	\end{columns}
+\end{frame}
+
+\begin{frame}[shrink]{Datasets \& Experimental Setup}
+    \begin{columns}[T]
+        \begin{column}{0.5\textwidth}
+\small
+\textbf{Synthetic Datasets (5-D Gaussian Streams):}
+            \begin{itemize}
+                \item Used to inject known, mathematically precise drift shapes (Sudden, Gradual, Incremental, Blip, Recurrent).
+                \item Allows us to test the classifier against perfect ground truth.
+                \item Used in \textbf{Detection} and \textbf{Classification} benchmarks.
+            \end{itemize}
+
+            \vspace{0.5em}
+            \textbf{Real-World Datasets:}
+            \begin{itemize}
+                \item \textbf{Insects}: Imbalanced sensor data with gradual/incremental temperature drifts.
+                \item \textbf{Elec2}: Electricity pricing with cyclical recurrent drifts.
+                \item \textbf{Agrawal}: Categorical and continuous features with sudden shifts.
+            \end{itemize}
+        \end{column}
+        \begin{column}{0.48\textwidth}
+\small
+\begin{block}{Evaluation Strategy}
+                \begin{itemize}
+                    \item \textbf{Layer 1 (Detection)}: Evaluated on F1-score (TP if alert is within $\delta=75$ samples of true drift) and False Positives per run on stationary data.
+                    \item \textbf{Layer 2 (Classification)}: Evaluated in \textbf{Oracle Mode} (given the true drift location, what is the typing accuracy?) to isolate classification skill from detection skill.
+                    \item \textbf{Layer 3 (Adaptation)}: Evaluated on \textbf{Prequential Accuracy} (interleaved test-then-train) to simulate streaming performance.
+                \end{itemize}
+            \end{block}
+        \end{column}
+    \end{columns}
 \end{frame}
 
 \begin{frame}[shrink]{Classification Setup (6 scenarios $\times$ 30 seeds, oracle mode)}
@@ -583,7 +693,7 @@
 
 			\vspace{0.3em}
 			{\small
-			\begin{tabular}{@{}ll@{}}
+			\resizebox{\linewidth}{!}{\begin{tabular}{@{}ll@{}}
 				\toprule
 				\textbf{Scenario}      & \textbf{Composition}                  \\ \midrule
 				Mixed A                & Sudden $\to$ Gradual $\to$ Recurrent  \\
@@ -593,7 +703,7 @@
 				Repeated Incremental   & 10 $\times$ Incremental                \\
 				Repeated Recurrent     & 10 $\times$ Recurrent                  \\
 				\bottomrule
-			\end{tabular}}
+			\end{tabular}}}
 
 			\vspace{0.4em}
 			{\scriptsize 6 scenarios $\times$ 30 seeds $\times$ 10 events $=$ \textbf{1800 events}. Each non-recurrent event shifts a different feature subset, so new concepts are genuinely distinct (Lu et al.\ definition).}
@@ -618,7 +728,7 @@
 	\begin{columns}[T]
 		\begin{column}{0.46\textwidth}
 			\centering
-			\includegraphics[width=0.85\linewidth]{confusion_matrix_category.png}
+			\includegraphics[width=\linewidth,height=0.45\textheight,keepaspectratio]{confusion_matrix_category.png}
 			\captionof{figure}{\scriptsize Category Matrix (TCD vs PCD) --- CAT = \textbf{80.1\%}}
 
 			\vspace{0.3em}
@@ -635,10 +745,9 @@
 			\end{block}
 
 			\vspace{0.2em}
-			\textbf{Per-type subtype accuracy (1800 events):}
+			{\scriptsize \textbf{Per-type subtype accuracy (1800 events):}}
 
-			\resizebox{\linewidth}{!}{\footnotesize
-			\begin{tabular}{@{}llp{3.0cm}@{}}
+			\footnotesize \resizebox{\linewidth}{!}{\begin{tabular}{@{}llp{3.0cm}@{}}
 				\toprule
 				\textbf{Drift Type} & \textbf{Acc.} & \textbf{Notes}                         \\ \midrule
 				Sudden              & \textbf{82.4\%}   & Sharp, well-separated peaks   \\
@@ -663,14 +772,14 @@
 \section{Layer 3: Adaptation}
 % #############################################################################
 
-\begin{frame}{Layer 3: Type-Aware Model Adaptation}
+\begin{frame}[shrink]{Layer 3: Type-Aware Model Adaptation}
 	\begin{columns}[T]
 		\begin{column}{0.62\textwidth}
 			\textbf{Why classify? To optimize update cost \& accuracy!}
 			
 			\vspace{0.3em}
 			{\scriptsize
-			\begin{tabular}{@{}llp{4.0cm}@{}}
+			\resizebox{\linewidth}{!}{\begin{tabular}{@{}llp{4.0cm}@{}}
 				\toprule
 				\textbf{Drift Type}  & \textbf{Adaptation Policy}                     & \textbf{Theoretical Rationale} \\ \midrule
 				\textbf{Sudden}      & \textcolor{univblue}{\textbf{Full Reset}}       & Old data is zero value; discard completely to avoid interference. \\
@@ -679,7 +788,7 @@
 				\textbf{Recurrent}   & \textcolor{univblue}{\textbf{Model Reuse}}      & Load past matching model from Concept Memory; zero retrain cost. \\
 				\textbf{Blip}        & \textcolor{univblue}{\textbf{Ignore / Do Nothing}}& Temporary noise/spike; do not overwrite stable model. \\
 				\bottomrule
-			\end{tabular}}
+			\end{tabular}}}
 		\end{column}
 		\begin{column}{0.35\textwidth}
 			\begin{exampleblock}{\small Key idea}
@@ -700,12 +809,12 @@
 	\begin{columns}[T]
 		\begin{column}{0.55\textwidth}
 			\centering
-			\includegraphics[width=\linewidth]{fig_prequential_stepping.png}
+			\includegraphics[width=\linewidth,height=0.65\textheight,keepaspectratio]{fig_prequential_stepping.png}
 			\captionof{figure}{\scriptsize Stepping Drift: Type-Specific (blue) holds 71.4\%, No Adaptation (red) drops to 54.8\% as the distribution keeps moving away.}
 		\end{column}
 		\begin{column}{0.43\textwidth}
 			{\small
-			\begin{tabular}{@{}lcc@{}}
+			\resizebox{\linewidth}{!}{\begin{tabular}{@{}lcc@{}}
 				\toprule
 				\textbf{Strategy}                                & \textbf{Step.}  & \textbf{Sudd.} \\ \midrule
 				\textcolor{darkgreen}{\textbf{Type-Specific}}    & \textbf{71.4\%} & \textbf{70.8\%} \\
@@ -713,10 +822,10 @@
 				Simple Retrain                                   & 63.0\%          & 62.2\%          \\
 				No Adaptation                                    & 54.8\%          & 53.7\%          \\
 				\bottomrule
-			\end{tabular}}
+			\end{tabular}}}
 
 			\vspace{0.3em}
-			\begin{exampleblock}{\small Why Type-Specific helps}
+			\begin{exampleblock}{\footnotesize Why Type-Specific helps}
 				\small
 				A single ``always reset'' policy (Simple Retrain) discards still-useful history when the drift is gradual; a fixed schedule (Periodic) ignores the drift signal altogether.\\
 				Routing the update strategy by drift type --- \textit{Sudden $\to$ full reset}, \textit{Gradual $\to$ warm-start} --- adds \textbf{+16.6 pp} on Stepping and \textbf{+17.1 pp} on Sudden over No Adaptation, with Friedman $p < 10^{-15}$.
@@ -730,7 +839,7 @@
 \section{System Deployment}
 % #############################################################################
 
-\begin{frame}{End-to-End Deployment on Apache Kafka}
+\begin{frame}[shrink]{End-to-End Deployment on Apache Kafka}
 	\centering
 	\includegraphics[width=0.65\linewidth,height=0.55\textheight,keepaspectratio]{image/kafka_results_real.png}
 
@@ -759,7 +868,7 @@
 \section{Conclusion}
 % #############################################################################
 
-\begin{frame}{Conclusion \& Future Directions}
+\begin{frame}[shrink]{Conclusion \& Future Directions}
 	\begin{columns}[T]
 		\begin{column}{0.52\textwidth}
 			\begin{block}{\small Summary}
@@ -817,7 +926,7 @@
 \section*{Backup Slides}
 
 % --- Backup 1: IDW-MMD vs Bharti ---
-\begin{frame}[noframenumbering]{Backup: IDW-MMD vs Optimally-Weighted MMD (Bharti et al.)}
+\begin{frame}[noframenumbering,shrink]{Backup: IDW-MMD vs Optimally-Weighted MMD (Bharti et al.)}
 	\textbf{Question:} ``How is IDW-MMD different from the Optimally-Weighted MMD of Bharti et al. (2023)?''
 
 	\vspace{0.5em}
@@ -858,7 +967,7 @@
 			\textbf{F1 alone hides the trade-off:}
 
 			{\small
-			\begin{tabular}{@{}lccc@{}}
+			\resizebox{\linewidth}{!}{\begin{tabular}{@{}lccc@{}}
 				\toprule
 				             & \textbf{SE-CDT} & \textbf{MMD} & \textbf{KS}  \\ \midrule
 				F1           & 0.531           & 0.524        & 0.335        \\
@@ -866,10 +975,10 @@
 				Recall       & 0.737           & 0.732        & 0.775        \\
 				Precision    & 0.432           & 0.426        & 0.224        \\
 				\bottomrule
-			\end{tabular}}
+			\end{tabular}}}
 
 			\vspace{0.5em}
-			\textbf{In a production setting:}
+			{\footnotesize \textbf{In a production setting:}}
 			\begin{itemize}
 				\item Frequent FPs $\to$ \textbf{alert fatigue}, lost trust in the monitor.
 				\item Investigating one false alarm typically costs more than missing one event.
@@ -887,7 +996,7 @@
 
 			\vspace{0.5em}
 			\centering
-			\includegraphics[width=0.9\linewidth]{figure_4_stationary_fp.png}
+			\includegraphics[width=\linewidth,height=0.28\textheight,keepaspectratio]{figure_4_stationary_fp.png}
 			\captionof{figure}{\scriptsize Total false-positive count on the stationary dataset (sum over runs); the H0-calibration table reports the corresponding Type-I error rate.}
 		\end{column}
 	\end{columns}
@@ -943,7 +1052,7 @@
 		\begin{column}{0.48\textwidth}
 			\begin{block}{Side-by-side numbers}
 				{\small
-				\begin{tabular}{@{}lcc@{}}
+				\resizebox{\linewidth}{!}{\begin{tabular}{@{}lcc@{}}
 					\toprule
 					              & \textbf{SE-CDT}                        & \textbf{CDT-MSW} \\ \midrule
 					Labels        & \textcolor{darkgreen}{\textbf{None}}   & Required           \\
@@ -952,7 +1061,7 @@
 					Recall        & \textcolor{darkgreen}{\textbf{92.6\%}} & 82.5\%             \\
 					Effective     & \textbf{74.2\%}                        & 71.8\%             \\
 					\bottomrule
-				\end{tabular}}
+				\end{tabular}}}
 				\vspace{0.2em}
 				{\scriptsize Effective $=$ CAT $\times$ Recall (probability of seeing a drift \emph{and} typing it correctly). CDT-MSW Recall $= 1 - \overline{\text{MDR}}$ from paper Table~5.}
 			\end{block}
@@ -1029,7 +1138,7 @@
 		\end{column}
 		\begin{column}{0.48\textwidth}
 			\centering
-			\includegraphics[width=\linewidth]{vis_repeated_gradual_SE.png}
+			\includegraphics[width=\linewidth,height=0.65\textheight,keepaspectratio]{vis_repeated_gradual_SE.png}
 			\captionof{figure}{\scriptsize IDW signal (lower) vs Standard MMD (upper) on the same gradual stream.}
 
 			\vspace{0.3em}
@@ -1044,7 +1153,7 @@
 \end{frame}
 
 % --- Backup 7: Permutation vs Gamma null ---
-\begin{frame}[noframenumbering]{Backup: Permutation test vs Gamma-null p-value}
+\begin{frame}[noframenumbering,shrink]{Backup: Permutation test vs Gamma-null p-value}
 	\textbf{Question:} ``Removing the permutation test --- is the Gamma-null p-value still trustworthy?''
 
 	\vspace{0.5em}
@@ -1081,7 +1190,7 @@
 	\begin{columns}[T]
 		\begin{column}{0.48\textwidth}
 			\centering
-			\includegraphics[width=0.9\linewidth]{confusion_matrix_se_cdt.png}
+			\includegraphics[width=\linewidth,height=0.65\textheight,keepaspectratio]{confusion_matrix_se_cdt.png}
 			\captionof{figure}{\scriptsize 5-class confusion matrix (SE-CDT)}
 		\end{column}
 		\begin{column}{0.48\textwidth}
@@ -1093,7 +1202,7 @@
 			\end{itemize}
 
 			{\small
-			\begin{tabular}{@{}lc@{}}
+			\resizebox{\linewidth}{!}{\begin{tabular}{@{}lc@{}}
 				\toprule
 				\textbf{Drift Type} & \textbf{Accuracy} \\ \midrule
 				Sudden              & \textbf{82.4\%}   \\
@@ -1102,7 +1211,7 @@
 				Blip                & \textbf{60.8\%}   \\
 				Gradual             & 27.2\%            \\
 				\bottomrule
-			\end{tabular}}
+			\end{tabular}}}
 
 			\vspace{0.3em}
 			\textbf{Why the gap?} Sudden has the cleanest peaks; Recurrent uses Concept Memory; Blip benefits from the relaxed peak rule. The two slow types (Gradual, Incremental) are the hardest --- mechanism detailed in the next backup slide.
@@ -1118,7 +1227,7 @@
 	\begin{columns}[T]
 		\begin{column}{0.48\textwidth}
 			\centering
-			\includegraphics[width=\linewidth]{fig_prequential_sudden.png}
+			\includegraphics[width=\linewidth,height=0.65\textheight,keepaspectratio]{fig_prequential_sudden.png}
 			\captionof{figure}{\scriptsize Prequential accuracy on Sudden drift, $N = 30$ runs.}
 
 			\vspace{0.3em}
@@ -1161,7 +1270,7 @@
 	\begin{columns}[T]
 		\begin{column}{0.48\textwidth}
 			\centering
-			\includegraphics[width=\linewidth]{figure_6_runtime.png}
+			\includegraphics[width=\linewidth,height=0.65\textheight,keepaspectratio]{figure_6_runtime.png}
 			\captionof{figure}{\scriptsize Runtime comparison (seconds per 10k stream) across different detectors.}
 		\end{column}
 		\begin{column}{0.48\textwidth}
@@ -1189,7 +1298,7 @@
 	\begin{columns}[T]
 		\begin{column}{0.48\textwidth}
 			\centering
-			\includegraphics[width=\linewidth]{fig_prequential_mixed.png}
+			\includegraphics[width=\linewidth,height=0.65\textheight,keepaspectratio]{fig_prequential_mixed.png}
 			\captionof{figure}{\scriptsize Prequential accuracy comparison on Mixed Drift stream ($N = 30$ runs).}
 		\end{column}
 		\begin{column}{0.48\textwidth}
