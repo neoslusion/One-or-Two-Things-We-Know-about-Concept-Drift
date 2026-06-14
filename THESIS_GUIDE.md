@@ -699,10 +699,14 @@ This is the most defended-against design choice in the thesis. Three reasons:
 
 Recurrent drift is special because the *content* of the drift is informative — "we've seen this before". A thoughtful detector should remember.
 
+**The MMD Trace Buffer Size:**
+To analyze the shapes of peaks, the system computes the MMD trace slidingly over an input data buffer. Under the default Kafka stream setup (defined as `BUFFER_SIZE` in [config.py](file:///home/goldship/sandboxes/One-or-Two-Things-We-Know-about-Concept-Drift/experiments/monitoring/config.py#L13)), the input window is **750 samples**. With a reference window $l_1=50$, a validation test window $l_2=150$, and a step size of $l_1 // 2 = 25$ samples, the sliding calculation runs from index $0$ to $750 - 50 - 150 = 550$ in increments of $25$ samples. This results in an **MMD trace buffer size of exactly 23 points**.
+
 **Implementation (`se_cdt.py:154–`):**
-- A ring buffer of size $M = 8$ stores recent **snapshots** $S_k$, each containing $n_s = 150$ data points.
-- Each snapshot is taken right after a confirmed drift (the post-drift distribution).
-- For each snapshot, the kernel bandwidth $\gamma_k$ used at capture time is also stored.
+Rather than storing distance matrices or statistics, the **Concept Memory stores the actual data samples (snapshots)** of the stable post-drift distribution.
+- A ring buffer of size $M = 8$ stores recent **snapshots** $S_k$, each containing $n_s = 150$ raw data points (a matrix of shape $150 \times \text{features}$).
+- Each snapshot is taken right after a confirmed drift has settled (starting $l_1=50$ samples after the drift detection index to bypass the mixed transition phase).
+- Along with the raw snapshot, the median-heuristic kernel bandwidth $\gamma_k$ computed on it is also stored.
 
 **Lookup procedure when a new drift is detected:**
 1. Extract the post-drift snapshot $S^{\mathrm{new}}$ from the current window.
@@ -1684,10 +1688,10 @@ Both effects keep the events inside PCD, so category accuracy (CAT) stays at 80.
 
 This is explicitly called out as **the most important limitation** of the thesis.
 
-### Q16. Why is Concept Memory a ring buffer of size 8 specifically?
+### Q16. Why is Concept Memory a ring buffer of size 8 specifically, and what exactly does it store?
 
 **A.** Two practical considerations:
-1. **Memory** — each snapshot is 150 points × $d$ features × 8 bytes ≈ $\sim$ 1 KB per snapshot. 8 snapshots = $\sim$ 8 KB. Trivial.
+1. **Memory & Content** — it does not store distance values or statistics; it stores the actual raw data points (snapshots) of size $150 \times d$ (features) so that new drifts can be compared to them on-the-fly using Standard MMD. At 8 bytes per float, each snapshot is $150 \times d \times 8$ bytes $\approx 1.2 \times d$ KB. For 8 snapshots, this is trivial ($\sim 10$ KB).
 2. **Match efficacy** — with too small ($M = 2, 3$) memory, recurrent drifts that don't match the most recent few are missed. With too large ($M = 50$), false matches become more likely (more candidates → more chances to match by accident). $M = 8$ gives reasonable coverage of distinct concepts a stream might cycle through (think: 4 seasons, 7 days of week, 8 product categories) without bloating the false-match rate.
 
 The choice is a design heuristic; the thesis doesn't claim 8 is optimal, only that it's reasonable.
@@ -1708,6 +1712,18 @@ Without the noisy branch, ~30% of blips would be misclassified as Gradual or Inc
 3. If no snapshot matches, the new distribution is *added* (not forced to match). False matches don't accumulate — only successful matches affect the Recurrent classification.
 
 Empirically (Section 8.3), Recurrent accuracy is 71.5%. Failures are mostly missed matches (the snapshot decayed because the stream's noise level changed), not false matches.
+
+### Q18a. Why does the Gamma-based p-value calculation (wmmd_gamma) fall back to traditional bootstrap?
+
+**A.** This is a **defensive mathematical safety net** designed to handle degenerate cases. Under H0, if the bootstrap null samples produce a variance $\hat{\sigma}^2$ or mean $\hat{\mu}$ that is essentially zero (defined as $\le 10^{-12}$ in the code due to identical samples or pathological bounds), the analytical Gamma fit parameter estimation ($k = \mu^2 / \sigma^2$) fails (division by zero). Rather than crashing, the code catches this and falls back to a **direct right-tail empirical bootstrap p-value with $+1/+1$ smoothing**:
+$$p = \frac{\text{rejections} + 1}{n\_null\_samples + 1}$$
+This ensures numerical stability under all conditions.
+
+### Q18b. How does the Self-Calibration mechanism ensure clean baseline features and avoid false positives?
+
+**A.** It applies two strict architectural rules:
+1. **No-Drift Constraint:** Baseline features are strictly collected from windows where **no drift is detected** (`not is_drift`). This prevents genuine concept drift signals from polluting the background baseline, keeping the baseline a clean representation of the stream's stationary noise floor.
+2. **One-Sided Threshold Floor (Asymmetric Tuning):** The rolling baseline thresholds (SNR, WR, CV) can only **loosen** (increase tolerance) when the stream is noisy, never tighten below their static defaults. This preserves original sensitivity settings on clean streams while preventing high-noise streams from generating false alarms.
 
 ## Group D — Experiments and statistics
 

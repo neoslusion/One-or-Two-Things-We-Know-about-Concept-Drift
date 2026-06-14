@@ -596,10 +596,14 @@ Khi Hội đồng yêu cầu: *"Em hãy chỉ ra dòng code nào thực hiện c
 *Thứ hai là **hiệu quả tài nguyên tính toán (Computational Efficiency):** 9 đặc trưng này đều có công thức tính toán số học đơn giản, tốn rất ít CPU, giúp module phân loại chạy song song với luồng Kafka mà không gây trễ hệ thống.*  
 *Thứ ba là **lượng dữ liệu huấn luyện:** Các mô hình học sâu đòi hỏi hàng ngàn mẫu dữ liệu drift được gán nhãn để huấn luyện. Trong thực tế luồng dữ liệu không giám sát, số lần xảy ra drift rất ít, không đủ dữ liệu để huấn luyện một mô hình học sâu ổn định.”*
 
-### Câu 7: Cơ chế Concept Memory của em lưu trữ tối đa bao nhiêu mô hình? Nếu bộ nhớ đầy và gặp khái niệm trôi dạt mới, hệ thống sẽ xử lý thế nào?
+### Câu 7: Cơ chế Concept Memory của em lưu trữ những gì và tối đa bao nhiêu? Kích thước cửa sổ trượt của tín hiệu MMD trace là bao nhiêu?
 **Trả lời xuất sắc:**  
-*“Thưa Hội đồng, trong cài đặt thực tế (`core/detectors/se_cdt.py`), tham số mặc định cho kích thước Concept Memory là $M = 8$.*  
-*Khi bộ nhớ đầy và phát hiện một khái niệm mới hoàn toàn (không khớp với bất kỳ mô hình nào cũ), hệ thống sẽ áp dụng chính sách thay thế bộ nhớ tương tự như trong hệ điều hành, cụ thể là **LRU (Least Recently Used)**: mô hình ít được tái sử dụng nhất trong thời gian qua sẽ bị giải phóng để nhường chỗ cho mô hình của khái niệm mới này. Cơ chế này đảm bảo bộ nhớ lưu trữ của hệ thống luôn nằm trong giới hạn tài nguyên cho phép của phần cứng.”*
+*“Thưa Hội đồng, cơ chế **Concept Memory** của em không lưu trữ các khoảng cách hay chỉ số thống kê đơn giản, mà lưu trữ **chính các điểm dữ liệu thô (snapshot)** của phân phối ổn định sau khi xảy ra trôi dạt để phục vụ so khớp trực tiếp bằng Standard MMD:*  
+1. *Mỗi snapshot lưu trữ là một ma trận gồm **$150$ điểm dữ liệu thô** (với kích thước $150 \times d$ đặc trưng) được trích xuất ngay sau khi drift đã ổn định (bắt đầu từ vị trí cách điểm drift $l_1 = 50$ mẫu để tránh vùng chuyển tiếp hỗn hợp).*  
+2. *Bộ nhớ Concept Memory sử dụng một bộ đệm vòng (ring buffer) với kích thước mặc định là **$8$ snapshots**. Khi bộ nhớ đầy và gặp khái niệm mới, hệ thống áp dụng chính sách FIFO (First-In, First-Out), giải phóng snapshot cũ nhất để nhường chỗ cho khái niệm mới. Việc lưu trữ 8 snapshots này cực kỳ nhẹ (chỉ khoảng $\sim 10$ KB) nhưng đủ để bao quát các chu kỳ khái niệm chính.*  
+
+*Về kích thước của **MMD trace (tín hiệu trôi dạt)**:*  
+*Trong kiến trúc Kafka trực tuyến, dữ liệu đầu vào được gom trong một cửa sổ dữ liệu thô kích thước **$750$ mẫu** (BUFFER_SIZE). Với cửa sổ tham chiếu $l_1 = 50$, cửa sổ kiểm thử $l_2 = 150$, và bước dịch chuyển trượt là $25$ mẫu, vòng lặp trượt từ vị trí $0$ đến $750 - 50 - 150 = 550$ tạo ra đúng **$23$ điểm dữ liệu trong tín hiệu MMD trace** để chạy thuật toán phát hiện đỉnh.”*
 
 ### Câu 8: Tại sao em không dùng kiểm định Friedman thông thường mà lại kết hợp thêm kiểm định sau đó Nemenyi (Nemenyi Post-hoc Test)?
 **Trả lời xuất sắc:**  
@@ -655,3 +659,15 @@ Khi Hội đồng yêu cầu: *"Em hãy chỉ ra dòng code nào thực hiện c
 *VR đổi góc nhìn: thay vì nhìn hình dạng tín hiệu, em nhìn trực tiếp **độ phân tán của dữ liệu thô**, dựa trên **Định luật Tổng Phương Sai**. Gradual là một hỗn hợp xác suất của hai khái niệm cùng tồn tại trong cửa sổ, nên thành phần phương sai "giữa các khái niệm" tăng vọt — phương sai phình to. Còn Incremental chỉ là một phân phối đơn có trung bình trượt từ từ, nên phương sai giữ gần như nguyên. Em định nghĩa VR là tỉ số phương sai cực đại trên baseline: VR > 1.3 là Gradual, VR < 1.1 là Incremental, vùng giữa thì lùi về quy tắc hình học cũ.*
 
 *Kết quả trung thực: VR giúp nhánh Gradual trở nên kích hoạt được (lên 27.2%), và Incremental đạt 30.3%, với SUB micro 55.3% / macro 54.4%. Nhưng đây vẫn là hai lớp khó nhất: trên dữ liệu thực tế, phân bố VR của Gradual và Incremental chồng lấn nên khoảng 47% Incremental bị gán nhầm thành Gradual; và phần lớn sự kiện Gradual trong các chuỗi lặp lại bị Concept Memory hút sang Recurrent do phân phối bão hoà. Cả hai vẫn nằm đúng nhóm lớn PCD nên CAT giữ ở 80.1%. Hạn chế còn lại là hai ngưỡng 1.1 và 1.3 hiện đặt theo kinh nghiệm, cùng nhóm với các ngưỡng heuristic khác; hướng phát triển là thay cây quyết định ngưỡng cứng bằng một bộ phân loại học trên σ(t).”*
+
+### Câu 17: Tại sao trong thuật toán tính p-value của IDW-MMD (hàm wmmd_gamma) lại có bước kiểm tra điều kiện và lùi về kiểm định bootstrap truyền thống?
+**Trả lời xuất sắc:**
+*“Thưa Hội đồng, đây là một cơ chế thiết kế **phòng ngự lỗi số học (defensive safety fallback)** được cài đặt trực tiếp trong mã nguồn.*  
+*Khi phân phối dữ liệu gộp cực kỳ tập trung hoặc có cấu trúc bất thường (pathological inputs), phương sai nền $\sigma^2$ hoặc trung bình $\mu$ ước lượng từ 20 mẫu bootstrap có thể bị triệt tiêu hoàn toàn (tiến về sát $0$, cụ thể là $\le 10^{-12}$). Trong trường hợp này, các phép tính mô-men khớp phân phối Gamma ($k = \mu^2 / \sigma^2$) sẽ gặp lỗi chia cho $0$ hoặc tạo ra tham số suy biến vô hạn.*  
+*Để hệ thống chạy liên tục mà không bị dừng đột ngột (crash), mã nguồn kiểm tra điều kiện này và tự động lùi về tính **p-value bootstrap thực nghiệm trực tiếp** ở đuôi phải của phân phối với kỹ thuật làm mịn $+1/+1$ ($p = \frac{\text{rejections} + 1}{n\_null\_samples + 1}$). Kỹ thuật này giúp bộ dò luôn ổn định số học trong mọi điều kiện dữ liệu.”*
+
+### Câu 18: Hãy làm rõ tính chất một chiều (asymmetric/one-sided) và tính sạch của cơ chế tự hiệu chuẩn Baseline (Self-Calibration)?
+**Trả lời xuất sắc:**
+*“Thưa Hội đồng, cơ chế tự hiệu chuẩn nền của em có hai quy tắc nghiêm ngặt để đảm bảo độ tin cậy của mô hình:*  
+1. ***Tính sạch của dữ liệu baseline:** Hệ thống chỉ cập nhật đặc trưng nền (SNR, WR, CV) từ các cửa sổ dữ liệu được xác nhận **không xảy ra trôi dạt** (`not is_drift`). Điều này ngăn ngừa tín hiệu drift thực sự lọt vào và làm ô nhiễm (contaminate) baseline, đảm bảo baseline luôn phản ánh chính xác nhất 'nhiễu nền' của dòng dữ liệu tĩnh.*  
+2. ***Điều chỉnh một chiều (One-sided floor):** Các ngưỡng chỉ có thể điều chỉnh theo hướng **nới lỏng ra** (tăng độ bao dung với nhiễu) khi dòng dữ liệu thực tế ồn ào hơn dự kiến. Ngưỡng SNR, WR và CV không bao giờ bị thắt chặt hơn ngưỡng mặc định ban đầu. Điều này đảm bảo rằng trên các luồng dữ liệu sạch, hệ thống hoạt động chính xác với độ nhạy tối ưu như cấu hình lý thuyết mà không bị suy giảm.”*
