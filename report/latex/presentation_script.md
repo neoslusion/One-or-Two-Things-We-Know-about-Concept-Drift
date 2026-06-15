@@ -8,7 +8,7 @@
 
 | Phần | Slide | Xong ở mốc |
 |---|---|---|
-| Mở đầu + Giới thiệu | Title → Contributions | **~4:00** |
+| Mở đầu + Giới thiệu | Title → Contributions | **~4:30** |
 | Background (MMD) | MMD → Triangle | **~5:50** |
 | Tầng 1: Detection | IDW → Gamma → In-Action | **~8:20** |
 | Tầng 2: Classification | CDT-MSW → Hybrid | **~11:40** |
@@ -18,6 +18,8 @@
 | Kết luận + Cảm ơn | Conclusion → Thank you | **~20:00** |
 
 > **Nếu trễ giờ:** lướt nhanh 2 slide *Per-Dataset F1* và gộp *Runtime* — đó là chỗ "nén" được nhiều nhất.
+>
+> **Lưu ý:** phần mở đầu (Motivation + Distribution) đã được làm dày hơn ~45s vì đây là phần "ăn tiền". Để bù: ở *Contributions* chỉ điểm nhanh 3 ý (~20s), và *Per-Dataset F1 + Runtime* nói thật gọn. Các mốc từ Background trở đi vẫn giữ nguyên — phần bù sẽ kéo lại đúng 20 phút.
 
 ---
 
@@ -33,31 +35,41 @@ Bài trình bày của em gồm: giới thiệu bài toán; nền tảng về t�
 
 ---
 
-## 0:50 — Motivation & Background *(50 giây)*
+## 0:50 — Motivation & Background *(~70 giây — phần "ăn tiền": nói chậm, rõ, có nhịp nghỉ)*
 
-Bài toán cốt lõi của luận văn là **concept drift**. Trong các hệ thống học máy chạy trên luồng dữ liệu thực, phân phối dữ liệu không đứng yên — nó thay đổi theo thời gian. Về mặt toán học, drift xảy ra khi phân phối đồng thời *P(X,Y)* lúc huấn luyện khác với lúc vận hành.
+*(Mở bằng một câu hỏi để kéo sự chú ý — đừng vội vào công thức.)*
 
-Điều quan trọng là ta có thể **phân rã** nó: *P(X,Y) = P(X)·P(Y|X)*. Drift đến từ một trong hai thành phần — hoặc *P(X)*, tức phân phối đầu vào, thay đổi; hoặc *P(Y|X)*, tức quy luật ánh xạ từ đầu vào sang nhãn, thay đổi.
+Thưa hội đồng, trước khi đi vào kỹ thuật, em xin bắt đầu bằng một câu hỏi rất đơn giản: *điều gì xảy ra với một mô hình học máy **sau** khi nó đã được đưa vào vận hành?*
 
-Lấy ví dụ cho dễ hình dung: trong **phát hiện gian lận ngân hàng**, khi xuất hiện chiêu thức gian lận mới, mô hình cũ bắt đầu báo động giả nhiều hơn. Hay trong **bảo trì dự đoán**, độ chính xác tụt dần khi máy móc vận hành ở một chế độ mới. Đó chính là cái giá của drift nếu ta không phát hiện kịp.
+Em xin ví von thế này: huấn luyện một mô hình cũng giống như đào tạo một nhân viên mới — ta cho họ xem thật nhiều ví dụ trong **quá khứ**, rồi bảo *"cứ theo đó mà quyết định"*. Nhưng có một vấn đề: thế giới ngoài kia **không đứng yên** chờ mô hình của ta. Dữ liệu của hôm nay, từ từ, không còn giống dữ liệu lúc ta huấn luyện nữa. Hiện tượng đó gọi là **concept drift** — và nó chính là nguyên nhân *âm thầm* khiến mọi mô hình "già đi" và sai dần theo thời gian.
 
-## 1:40 — Concept Drift: Distribution vs Pattern *(30 giây)*
+*(Giờ mới đưa công thức — nhẹ nhàng.)* Phát biểu một cách hình thức: drift xảy ra khi phân phối đồng thời *P(X, Y)* — tức **cách mà dữ liệu *X* và nhãn *Y* cùng xuất hiện** — ở lúc vận hành đã **khác** so với lúc huấn luyện.
 
-Từ phân rã vừa rồi, ta có **hai loại drift**. *Virtual drift* là khi chỉ *P(X)* đổi — dữ liệu vào dịch chuyển, nhưng ranh giới quyết định vẫn giữ nguyên. *Real drift* là khi *P(Y|X)* đổi — chính ranh giới quyết định thay đổi. Phân biệt được hai loại này rất quan trọng, vì cách xử lý hoàn toàn khác nhau — và đây cũng là lý do luận văn không dừng ở "phát hiện", mà còn "phân loại" drift.
+*(Đây là ý quan trọng nhất của cả slide — nhấn mạnh, chỉ tay vào công thức.)* Và chìa khoá nằm ở đây: ta có thể **phân rã** phân phối đó thành hai phần — *P(X, Y) = P(X) × P(Y | X)*. Khi tách ra như vậy, ta thấy ngay drift chỉ có thể đến từ **một trong hai nguồn**: hoặc *P(X)* — phân phối **đầu vào** — dịch chuyển; hoặc *P(Y | X)* — chính **quy luật** ánh xạ từ đầu vào sang nhãn — thay đổi. Hai nguồn này nghe thì gần giống nhau, nhưng hệ quả lại **rất khác nhau** — và đó chính là nền tảng cho toàn bộ luận văn của em.
 
-## 2:10 — Objectives & System Architecture *(50 giây)*
+## 2:00 — Concept Drift: Distribution vs Pattern *(~55 giây — một ví dụ xuyên suốt, kể như kể chuyện)*
+
+Để thấy thật rõ hai nguồn drift đó, em xin lấy **một ví dụ quen thuộc và theo nó tới cùng: phát hiện gian lận thẻ tín dụng.** Ở đây, *X* là đặc trưng của một giao dịch — số tiền, thời điểm, địa điểm, loại cửa hàng; còn *Y* là nhãn: *gian lận* hay *hợp lệ*.
+
+*(Trường hợp 1 — nói tay chỉ vào "P(X)".)* **Thứ nhất là virtual drift — chỉ *P(X)* đổi.** Cứ tới mùa Tết, mọi người chi tiêu nhiều hơn hẳn, các giao dịch giá trị lớn tăng vọt. Phân phối **đầu vào** *X* đã dịch chuyển — *nhưng* định nghĩa thế nào là gian lận thì vẫn **y nguyên**. Ranh giới quyết định không đổi; chỉ là mô hình gặp nhiều dữ liệu ở vùng nó ít thấy lúc huấn luyện, nên bắt đầu **báo động giả nhiều hơn** — *đúng như mũi tên "False Alarms ↑" trên slide trước.*
+
+*(Trường hợp 2 — nhấn mạnh "đây mới là loại nguy hiểm".)* **Thứ hai là real drift — *P(Y | X)* đổi.** Kẻ gian nghĩ ra chiêu mới: thay vì một giao dịch lớn, chúng chia nhỏ thành nhiều giao dịch lắt nhắt. Bây giờ một giao dịch **trông y hệt** một giao dịch hợp lệ ngày xưa lại là gian lận — tức là **quy luật** từ *X* sang *Y* đã đổi, ranh giới quyết định dịch chuyển. Đây mới là loại **nguy hiểm**, vì nó trực tiếp khiến mô hình ra quyết định sai — *chính là "Accuracy ↓".*
+
+*(Câu chốt — đây là bản lề chuyển sang toàn bộ luận văn.)* Và phân biệt được hai loại này chính là **chìa khoá**: nó giải thích vì sao luận văn không dừng ở việc *phát hiện* có drift, mà còn phải **phân loại** drift — bởi mỗi loại đòi hỏi một cách xử lý hoàn toàn khác nhau.
+
+## 2:55 — Objectives & System Architecture *(45 giây)*
 
 Hệ thống của em là một **pipeline ba tầng**. *(chỉ vào hình)* Tầng 1 — **Detection** — trả lời câu hỏi *"khi nào"* có drift: nhanh, và không cần nhãn. Tầng 2 — **Classification** — trả lời *"drift loại gì"*. Tầng 3 — **Adaptation** — quyết định *"cập nhật mô hình ra sao"*.
 
 Tương ứng là ba mục tiêu: phát hiện nhanh và đáng tin với rất ít báo động giả; phân loại drift hoàn toàn không cần nhãn; và đánh giá end-to-end trên Apache Kafka.
 
-## 3:00 — Related Works: The Gap *(40 giây)*
+## 3:40 — Related Works: The Gap *(30 giây)*
 
 Em đặt các công trình hiện có lên hai trục: *có cần nhãn hay không*, và *có phân loại được drift hay không*. Nhóm như **DDM, EDDM** theo dõi suy giảm độ chính xác — nhanh, nhưng cần nhãn. **CDT-MSW** phân loại rất tốt nhưng phụ thuộc hoàn toàn vào nhãn. Các phương pháp dựa trên MMD như **ShapeDD** thì không cần nhãn, nhưng chỉ phát hiện chứ không phân loại.
 
 *(chỉ vào góc dưới phải)* Khoảng trống — góc chưa ai lấp — chính là **phân loại drift mà không cần nhãn**. Đó đúng là vị trí của **SE-CDT** trong luận văn này.
 
-## 3:30 — Contributions *(30 giây)*
+## 4:10 — Contributions *(20 giây — điểm nhanh 3 đóng góp, đừng kể dài)*
 
 Tóm lại ba đóng góp. **Một**, ở tầng phát hiện: một phiên bản ShapeDD cải tiến với **trọng số IDW** và **p-value xấp xỉ Gamma**, nhanh hơn khoảng 7 lần. **Hai**, ở tầng phân loại: **SE-CDT**, bộ phân loại drift hoàn toàn không nhãn, đọc *hình dạng* của tín hiệu MMD. **Ba**, ở tầng thích ứng: chính sách cập nhật theo loại drift, kiểm chứng end-to-end trên Kafka.
 
