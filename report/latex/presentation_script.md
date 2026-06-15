@@ -19,7 +19,7 @@
 
 > **Nếu trễ giờ:** lướt nhanh 2 slide *Per-Dataset F1* và gộp *Runtime* — đó là chỗ "nén" được nhiều nhất.
 >
-> **Lưu ý:** phần mở đầu (Motivation + Distribution) đã được làm dày hơn ~45s vì đây là phần "ăn tiền". Để bù: ở *Contributions* chỉ điểm nhanh 3 ý (~20s), và *Per-Dataset F1 + Runtime* nói thật gọn. Các mốc từ Background trở đi vẫn giữ nguyên — phần bù sẽ kéo lại đúng 20 phút.
+> **Lưu ý:** phần mở đầu (Motivation + Distribution) đã được làm dày hơn ~45s vì đây là phần "ăn tiền". Để bù: ở *Contributions* chỉ điểm nhanh 3 ý (~20s), và *Per-Dataset F1 + Runtime* nói thật gọn. Các mốc từ Background trở đi vẫn giữ nguyên — phần bù sẽ kéo lại đúng 20 phút. Ngoài ra có **4 "điểm nhấn"** (MMD, VR, pivot SE-CDT, kết luận) thêm tổng ~30s — nếu cần khít giờ, lướt mạnh hơn ở phần kết quả.
 
 ---
 
@@ -75,11 +75,11 @@ Tóm lại ba đóng góp. **Một**, ở tầng phát hiện: một phiên bả
 
 ---
 
-## 4:00 — MMD: The Unsupervised Drift Signal *(50 giây)*
+## 4:30 — MMD: The Unsupervised Drift Signal *(~60 giây)*
 
 *(Sang phần nền tảng.)* Tại sao lại không nhãn? Vì trong các luồng IIoT, nhãn đến **trễ** hoặc **rất đắt**. Nên thay vì chờ nhãn, ta giám sát trực tiếp phân phối đầu vào *P(X)*.
 
-Công cụ để làm việc đó là **Maximum Mean Discrepancy — MMD**. Ý tưởng: ánh xạ các điểm dữ liệu vào một không gian hàm RKHS, rồi so sánh *"tâm khối"* — mean embedding — của hai cửa sổ dữ liệu. MMD bình phương bằng độ tự tương đồng trong P, cộng tự tương đồng trong Q, **trừ** tương đồng chéo giữa hai bên. Nếu hai phân phối giống nhau, MMD xấp xỉ 0; nếu khác nhau, MMD lớn — đó là một ứng viên drift.
+Công cụ để làm việc đó là **Maximum Mean Discrepancy — MMD**. *(Phép ví cho dễ hình dung.)* Giả sử ta muốn biết **hai đám đông** có khác nhau không — cách khôn ngoan không phải điểm danh từng người, mà là nhìn vào **vị trí trung bình** của mỗi đám. MMD làm đúng như vậy với dữ liệu: nó đưa cả hai tập điểm vào một không gian đặc biệt — RKHS — rồi so sánh *"trọng tâm"* của chúng, cái ta gọi là **mean embedding**. Về công thức, MMD bình phương = tự tương đồng trong P, cộng tự tương đồng trong Q, **trừ** tương đồng chéo. Hai phân phối giống nhau thì MMD xấp xỉ 0; khác nhau thì MMD lớn — đó là một ứng viên drift.
 
 ## 4:50 — From MMD Trace to ShapeDD's Triangle *(60 giây)*
 
@@ -111,11 +111,11 @@ Tóm lại tầng 1: một phát hiện đã hiệu chỉnh, không cần nhãn,
 
 ---
 
-## 8:20 — CDT-MSW (baseline) *(40 giây)*
+## 8:20 — CDT-MSW (baseline) *(~45 giây)*
 
 *(Sang tầng phân loại.)* Phương pháp tham chiếu là **CDT-MSW** của Guo và cộng sự: chia drift thành nhóm *tạm thời — TCD* và nhóm *tiến triển — PCD*, dựa trên phương sai của đường suy giảm độ chính xác. Nhưng nó cần **nhãn ở mọi bước** để tính độ chính xác — bất khả thi với luồng IIoT, nơi nhãn đến trễ hoặc không bao giờ đến.
 
-Ý tưởng của em: **thay đường độ chính xác bằng *hình dạng* của tín hiệu MMD**. Cùng một phân biệt TCD/PCD, nhưng giờ làm được mà *không cần nhãn* lúc chạy.
+*(Đặt câu hỏi tu từ — đây là cú bước vào đóng góp chính, nói chậm lại.)* Mấu chốt là: muốn vẽ được đường độ chính xác thì **phải có nhãn**. Nên câu hỏi của em là — *liệu ta có đọc được **cùng thông tin đó** mà **không** cần nhãn không?* Câu trả lời là **có**: thay vì nhìn đường độ chính xác, ta đọc **hình dạng** của tín hiệu MMD. Vẫn phân biệt được TCD với PCD, nhưng giờ hoàn toàn *không cần nhãn* lúc chạy — và đó chính là **SE-CDT**.
 
 ## 9:00 — SE-CDT: 9 Attributes *(50 giây)*
 
@@ -123,9 +123,9 @@ SE-CDT đọc hình dạng của *σ(t)* quanh điểm phát hiện bằng **9 t
 
 *(chỉ hình)* Cộng thêm một tín hiệu thứ mười tính từ **dữ liệu thô** — Variance Ratio — chuyên để phân biệt các drift chậm. Hình bên minh hoạ rõ: đỉnh nhọn, nền nhiễu, độ rộng nửa đỉnh — tất cả đều đo được một cách định lượng.
 
-## 9:50 — SE-CDT: Variance Ratio (VR) *(40 giây)*
+## 9:50 — SE-CDT: Variance Ratio (VR) *(~50 giây)*
 
-Vì sao cần Variance Ratio? Vì **Gradual** và **Incremental** đều tạo bướu rộng, phẳng, *giống nhau* — hình dạng đơn thuần không tách được. Mẹo: đọc **phương sai của cửa sổ dữ liệu thô**. Gradual là một *pha trộn xác suất* giữa hai khái niệm, nên phương sai **vọt lên**; Incremental là một phân phối *dịch chuyển liên tục*, nên phương sai **phẳng**. VR là tỉ số phương sai lớn nhất trên phương sai nền: lớn hơn 1.3 là Gradual, nhỏ hơn 1.1 là Incremental.
+Vì sao cần Variance Ratio? Vì **Gradual** và **Incremental** đều tạo bướu rộng, phẳng, *giống hệt nhau* — hình dạng đơn thuần chịu thua. Mẹo của em: nhìn sang **phương sai của cửa sổ dữ liệu thô**. *(Phép ví pha màu — chỉ vào hình.)* Gradual giống như **pha trộn hai lọ sơn**: trong giai đoạn chuyển tiếp, cửa sổ chứa lẫn cả hai khái niệm, nên phương sai **vọt** lên. Còn Incremental giống **một vệt sơn trôi dần**: lúc nào cũng chỉ một phân phối, chỉ là tâm của nó dịch đi, nên phương sai vẫn **phẳng**. Định lượng lại bằng VR — tỉ số phương sai lớn nhất trên phương sai nền: lớn hơn 1.3 là Gradual, nhỏ hơn 1.1 là Incremental.
 
 ## 10:30 — SE-CDT: Decision Logic & Signatures *(40 giây)*
 
@@ -193,7 +193,9 @@ Cuối cùng là thích ứng. *(chỉ hình)* So bốn chiến lược trên lu
 
 ---
 
-## 18:30 — Conclusion *(60 giây)*
+## 18:30 — Conclusion *(~70 giây)*
+
+*(Đóng khung bài nói — quay lại ví dụ mở đầu, nói ấm và chậm.)* Ta hãy quay lại **ví dụ gian lận thẻ** ở đầu bài. Giờ đây, khi mùa Tết tới làm dữ liệu dịch chuyển, hay khi kẻ gian đổi chiêu, hệ thống của em không chỉ biết *"có gì đó đã thay đổi"*, mà còn biết *"thay đổi **kiểu gì**"* và *"nên cập nhật mô hình **ra sao**"* — tất cả mà **không cần một nhãn nào** lúc chạy.
 
 Tóm lại toàn luận văn: ở **phát hiện**, ShapeDD-IDW với p-value Gamma cho một kiểm định đã hiệu chỉnh, không nhãn, và nhanh hơn. Ở **phân loại**, SE-CDT hoạt động không nhãn, đạt CAT 80.1% và recall 92.6%. Ở **thích ứng**, định tuyến theo-loại mang lại mức tăng đáng kể. Và toàn hệ thống đã được kiểm chứng trên một nguyên mẫu Kafka.
 
