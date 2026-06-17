@@ -1007,46 +1007,27 @@
 	{\scriptsize The 6 geometric attributes answer \emph{what the peak looks like}; the 3 temporal ones answer \emph{how it evolves} --- together they separate the 5 drift types with no labels.}
 \end{frame}
 
-\begin{frame}[noframenumbering,shrink]{Backup: Two-Tier Sliding Window of SE-CDT}
-	\textbf{Tier 1 --- buffer $+$ ShapeDD windows $\Rightarrow$ MMD trace:}
-	\vspace{0.2em}
-	\resizebox{0.96\linewidth}{!}{%
-	\begin{tikzpicture}[font=\footnotesize, >=stealth, every node/.style={align=center},
-		buf/.style={draw=univblue, fill=univblue!6, minimum height=0.7cm},
-		ref/.style={draw=darkgreen, fill=darkgreen!20, minimum height=0.7cm, minimum width=0.9cm},
-		test/.style={draw=alertred, fill=alertred!15, minimum height=0.7cm, minimum width=2.1cm},
-		box/.style={draw=univblue, rounded corners, fill=univblue!8, align=center, inner sep=3pt},
-		arr/.style={->, thick, univblue}]
-		\node[buf, minimum width=12cm] (stream) {ring buffer $\approx 750$ samples\quad(advances every $\sim$150)};
-		\node[ref] (ref) at (-3,-1.6) {$W_{\text{ref}}$\\$l_1{=}50$};
-		\node[test, right=1pt of ref] (test) {$W_{\text{test}}\quad l_2{=}150$};
-		\draw[->, thick, gray] ([xshift=2pt]test.east) -- ++(1.1,0) node[right, font=\footnotesize]{slide by $l_1/2 = 25$};
-		\draw[arr] (stream.south) -- (ref.north);
-		\node[box, right=2.3cm of test] (trace) {Each step: $\sigma = \text{MMD}(W_{\text{ref}}, W_{\text{test}})$\\$\Rightarrow$ \textbf{MMD trace} $\sigma(t)$ (Standard MMD)};
-		\draw[arr] (test.east) -- (trace.west);
-	\end{tikzpicture}}
+\begin{frame}[noframenumbering]{Backup: How the Sliding Window Builds the MMD Trace}
+	\centering
+	\includegraphics[width=0.84\linewidth,height=0.64\textheight,keepaspectratio]{theory_window_to_trace.png}
 
-	\vspace{0.5em}
-	\textbf{Tier 2 --- on a confirmed drift, split into two views to classify:}
 	\vspace{0.2em}
-	\resizebox{0.96\linewidth}{!}{%
-	\begin{tikzpicture}[font=\footnotesize, >=stealth,
-		box/.style={draw=univblue, rounded corners, fill=univblue!8, align=center, inner sep=3pt, text width=3.1cm},
-		leaf/.style={draw, rounded corners, fill=univblue!20, font=\bfseries, align=center, inner sep=3pt, text width=3.1cm},
-		arr/.style={->, thick, univblue}]
-		\node[box] (det) at (0,0) {Drift confirmed at $t^*$\\(IDW-MMD $+$ Gamma-null)};
-		\node[box] (slice) at (4.6,1.15) {\textbf{trace} slice $\sim$150 values around $t^*$};
-		\node[box] (raw) at (4.6,-1.15) {$\pm750$ \textbf{raw} samples ($\approx$1500)};
-		\node[leaf] (feat) at (9.2,1.15) {9 shape attributes};
-		\node[leaf] (vr) at (9.2,-1.15) {Variance Ratio $+$ drift duration};
-		\node[leaf] (out) at (13.2,0) {SE-CDT\\$\to$ drift type};
-		\draw[arr] (det.east) -- (slice.west);
-		\draw[arr] (det.east) -- (raw.west);
-		\draw[arr] (feat.east) -- (out.west);
-		\draw[arr] (vr.east) -- (out.west);
-	\end{tikzpicture}}
-	\vspace{0.3em}
-	{\scriptsize Same $\pm750$ region around $t^*$, \textbf{two views}: the trace slice (shape, for the 9 attributes) and the raw data (variance, for VR). Streaming uses a ring buffer; benchmark classification slices $\pm750$ around the known drift point.}
+	\begin{columns}[T]
+		\begin{column}{0.5\textwidth}
+			{\footnotesize
+			\begin{itemize}
+				\item Window $=$ \textcolor{darkgreen}{$W_{ref}$ ($l_1{=}50$)} $+$ \textcolor{alertred}{$W_{test}$ ($l_2{=}150$)}, slides by $l_1/2 = 25$.
+				\item \textbf{(1)} before drift $\to$ low; \textbf{(2)} straddling $\to$ peak; \textbf{(3)} after $\to$ low again.
+			\end{itemize}}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			{\footnotesize
+			\begin{itemize}
+				\item Held in a \textbf{ring buffer} ($\approx$750), re-checked every $\sim$150 samples.
+				\item On a confirmed drift: read the \textbf{trace shape} (9 attributes) $+$ \textbf{$\pm$750 raw} (Variance Ratio).
+			\end{itemize}}
+		\end{column}
+	\end{columns}
 \end{frame}
 
 \begin{frame}[noframenumbering,shrink]{Backup: SE-CDT Decision Tree (full)}
