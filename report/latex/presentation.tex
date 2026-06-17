@@ -123,7 +123,7 @@
 		\end{column}
 		\begin{column}{0.6\textwidth}
 			\centering
-			\includegraphics[width=\linewidth,keepaspectratio]{image/pattern_based_concept_drift.png}
+			\includegraphics[width=\linewidth,keepaspectratio]{image/distribution_based_concept_drift.png}
 		\end{column}
 	\end{columns}
 \end{frame}
@@ -140,7 +140,7 @@
 		\end{column}
 		\begin{column}{0.65\textwidth}
 			\centering
-			\includegraphics[width=\linewidth,keepaspectratio]{image/distribution_based_concept_drift.png}
+			\includegraphics[width=\linewidth,keepaspectratio]{image/pattern_based_concept_drift.png}
 		\end{column}
 	\end{columns}
 \end{frame}
@@ -969,6 +969,42 @@
 			\RETURN \textbf{PCD-Gradual}
 		\ENDIF
 	\end{algorithmic}
+\end{frame}
+
+\begin{frame}[noframenumbering,shrink]{Backup: What the 9 Shape Attributes Mean}
+	\footnotesize All measured on the smoothed MMD signal $\sigma_s(t)$; a peak $=$ a point above $\bar\sigma_s + 0.3\,\sigma_{\mathrm{std}}$.
+	\vspace{0.3em}
+	\begin{columns}[T]
+		\begin{column}{0.53\textwidth}
+			\begin{block}{\small Geometric --- peak structure (``what it looks like'')}
+				\scriptsize
+				\begin{itemize}
+					\item \textbf{$n_p$} (peak count): 1 $\to$ Sudden; 2--3 $\to$ Blip; many $\to$ Recurrent.
+					\item \textbf{WR} $=\mathrm{FWHM}/(2l_1)$: small $\to$ sharp peak (Sudden); large $\to$ broad hump (PCD).
+					\item \textbf{CV} $=\mathrm{std}/\mathrm{mean}$ of inter-peak gaps: low $\to$ evenly spaced (Recurrent).
+					\item \textbf{SNR} $=\max/\mathrm{median}$: high $\to$ one clean peak above the noise (Sudden).
+					\item \textbf{PPR}: gap between 2 tallest peaks $/$ length; small $\to$ two close peaks (Blip).
+					\item \textbf{DPAR} $=\min/\max$ of the 2 peak heights; near 1 $\to$ twin peaks (Blip).
+				\end{itemize}
+			\end{block}
+		\end{column}
+		\begin{column}{0.45\textwidth}
+			\begin{block}{\small Temporal --- time behaviour (``how it evolves'')}
+				\scriptsize
+				\begin{itemize}
+					\item \textbf{LTS}: $R^2$ of a linear fit; high $\to$ straight ramp (Incremental).
+					\item \textbf{SDS}: fraction of jumps $>1.5\,\mathrm{std}$; high $\to$ step-like (Incremental).
+					\item \textbf{MS} $=|{\uparrow}-{\downarrow}|/({\uparrow}+{\downarrow})$: high $\to$ one-directional (Incremental); low $\to$ oscillating (Gradual).
+				\end{itemize}
+			\end{block}
+			\begin{exampleblock}{\small Quick guide}
+				\scriptsize
+				Sudden vs slow $\to$ \textbf{WR, SNR}; Blip $\to$ \textbf{PPR+DPAR}; Recurrent $\to$ \textbf{$n_p$+CV}; Incr.\ vs Grad.\ $\to$ \textbf{LTS/SDS/MS} (then \textbf{VR}).
+			\end{exampleblock}
+		\end{column}
+	\end{columns}
+	\vspace{0.2em}
+	{\scriptsize The 6 geometric attributes answer \emph{what the peak looks like}; the 3 temporal ones answer \emph{how it evolves} --- together they separate the 5 drift types with no labels.}
 \end{frame}
 
 \begin{frame}[noframenumbering,shrink]{Backup: SE-CDT Decision Tree (full)}
