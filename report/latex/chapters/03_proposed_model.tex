@@ -256,7 +256,7 @@ Trong triển khai cuối cùng, Detection Module ShapeDD-IDW không dùng IDW-M
 
 Băng thông $\gamma$ được ước lượng một lần bằng median heuristic trên đoạn đầu của luồng, sau đó dùng nhất quán cho cả ba ma trận kernel $K_{XX}, K_{YY}, K_{XY}$ trong toàn bộ tín hiệu trượt. Cách này tránh dao động khi mỗi cửa sổ tự ước lượng $\gamma$ riêng.
 
-Với thiết kế này, tín hiệu Standard MMD $\sigma(t)$ giữ được đầy đủ thông tin hình dạng cho bước phân loại, trong khi bước xác nhận thống kê bằng IDW-MMD được đóng gói hoàn toàn bên trong \texttt{shapedd\_idw\_mmd\_proper} --- SE-CDT không gọi IDW-MMD trực tiếp. Đầu ra mà SE-CDT nhận lại từ hàm đó gồm ba giá trị: cờ \texttt{is\_drift}, tín hiệu \texttt{mmd\_trace} (Standard MMD), và danh sách \texttt{p\_values}; logic phân loại của SE-CDT chỉ dùng \texttt{mmd\_trace}. Kết quả thực nghiệm của bước phát hiện và bước hiệu chỉnh $H_0$ được trình bày ở Mục~\ref{sec:detection-eval} và Mục~\ref{sec:h0-calibration}.
+Với thiết kế này, tín hiệu Standard MMD $\sigma(t)$ giữ được đầy đủ thông tin hình dạng cho bước phân loại, trong khi IDW-MMD chỉ được dùng ở bước xác nhận thống kê của module phát hiện ShapeDD-IDW. Ở giao diện giữa phát hiện và phân loại, SE-CDT chỉ cần ba đầu ra ở mức thuật toán: cờ phát hiện drift, chuỗi tín hiệu Standard MMD $\sigma(t)$, và danh sách p-value của các ứng viên. Logic phân loại chỉ dùng $\sigma(t)$; nó không gọi IDW-MMD trực tiếp. Kết quả thực nghiệm của bước phát hiện và bước hiệu chỉnh $H_0$ được trình bày ở Mục~\ref{sec:detection-eval} và Mục~\ref{sec:h0-calibration}.
 
 Kiến trúc kết hợp trên cho phép hệ thống phát hiện drift với độ chính xác cao và chi phí tính toán thấp; tuy nhiên phát hiện chỉ là bước đầu, để chọn chiến lược thích ứng phù hợp hệ thống còn cần biết \textit{loại} drift đã xảy ra. Phương pháp SE-CDT, trình bày trong mục kế tiếp, đảm nhiệm bài toán phân loại drift không giám sát.
 
@@ -523,7 +523,7 @@ SE-CDT có một số ưu điểm mang đến sự khác biệt so với CDT-MSW
 	\item \textbf{Không giám sát:} Hoạt động theo kiểu không giám sát, không cần nhãn dữ liệu, phù hợp với dữ liệu luồng.
 	\item \textbf{Tích hợp:} Sử dụng tín hiệu Standard MMD $\sigma(t)$ đã tính trong quá trình phát hiện ứng viên drift, không cần thêm một nguồn tín hiệu riêng.
 	\item \textbf{Thời gian thực:} Phân loại ngay sau khi phát hiện drift với chi phí $O(m)$ tuyến tính --- rất nhỏ so với bước phát hiện.
-	\item \textbf{Phân tách phát hiện và phân loại:} Toàn bộ pipeline phát hiện --- tính tín hiệu Standard MMD, tìm đỉnh ứng viên, và kiểm định bằng IDW-MMD với xấp xỉ Gamma --- được đóng gói trong hàm \texttt{shapedd\_idw\_mmd\_proper}. SE-CDT nhận lại tín hiệu Standard MMD $\sigma(t)$ từ hàm đó và chỉ dùng $\sigma(t)$ này cho bước phân loại; logic phân loại của SE-CDT không gọi IDW-MMD trực tiếp.
+	\item \textbf{Phân tách phát hiện và phân loại:} Toàn bộ pipeline phát hiện --- tính tín hiệu Standard MMD, tìm đỉnh ứng viên, và kiểm định bằng IDW-MMD với xấp xỉ Gamma --- thuộc module ShapeDD-IDW và được xem như một bước phát hiện độc lập. Module phân loại nhận lại tín hiệu Standard MMD $\sigma(t)$ từ module phát hiện và chỉ dùng $\sigma(t)$ này cho bước phân loại; logic phân loại của SE-CDT không gọi IDW-MMD trực tiếp.
 \end{itemize}
 
 Về độ phức tạp tính toán của toàn bộ quy trình:
@@ -585,7 +585,7 @@ Khi SE-CDT phát hiện một drift mới, quy trình tra cứu diễn ra như s
 
 Ngưỡng $\tau_{\text{match}}$ được chọn cao hơn rõ rệt so với độ nhiễu nền của MMD trên dữ liệu Gaussian đồng nhất, đủ để tránh báo nhầm hai concept khác nhau là giống nhau. Giá trị cụ thể của $M$, $n_s$, $\tau_{\text{match}}$ và độ nhiễu nền tham chiếu được liệt kê ở bảng tham số thực nghiệm (Chương~\ref{chap:experiments}).
 
-Concept Memory dùng Standard MMD thay vì IDW-MMD vì bài toán ở đây là so khớp hai mẫu đại diện để xem chúng có đến từ cùng một phân phối hay không. IDW-MMD không được gọi trực tiếp bởi logic phân loại của SE-CDT; nó được đóng gói bên trong hàm phát hiện \texttt{shapedd\_idw\_mmd\_proper}, và SE-CDT chỉ nhận lại Standard MMD $\sigma(t)$ cùng cờ \texttt{is\_drift} làm đầu ra.
+Concept Memory dùng Standard MMD thay vì IDW-MMD vì bài toán ở đây là so khớp hai mẫu đại diện để xem chúng có đến từ cùng một phân phối hay không. IDW-MMD chỉ phục vụ bước xác nhận thống kê trong module phát hiện ShapeDD-IDW; logic phân loại và Concept Memory không gọi IDW-MMD trực tiếp. Đầu vào liên quan của Concept Memory là mẫu đại diện sau drift và tín hiệu Standard MMD $\sigma(t)$.
 
 Concept Memory được gọi sau bước phân loại theo ngưỡng ban đầu và chỉ relabel thành Recurrent khi kết quả chưa phải Blip. Điều này tránh trường hợp một nhiễu ngắn hạn quay lại phân phối cũ bị đổi nhãn thành recurrent drift.
 

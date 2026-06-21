@@ -12,7 +12,7 @@ Bảng dưới đây tổng hợp các tham số chính được sử dụng tro
 		\hline
 		\textbf{Tham số} & \textbf{Giá trị} & \textbf{Mô tả} \\
 		\hline
-		$l_1$ (window\_size) & 50 & Kích thước cửa sổ tham chiếu (reference window) \\
+		$l_1$ & 50 & Kích thước cửa sổ tham chiếu (reference window) \\
 		$l_2$ & 150 & Kích thước cửa sổ kiểm tra (test window) \\
 		$\alpha$ & 0.05 & Mức ý nghĩa thống kê cho kiểm định drift \\
 		$N_{\text{perm}}$ & 2\,500 & Số vòng hoán vị cho ShapeDD gốc (permutation test) \\
@@ -20,7 +20,7 @@ Bảng dưới đây tổng hợp các tham số chính được sử dụng tro
 		Kernel & RBF & Hạt nhân Gaussian $k(x,y) = \exp(-\gamma \|x-y\|^2)$ \\
 		$\gamma$ & median heuristic & Ước lượng một lần trên đoạn đầu của luồng \\
 		$\epsilon$ & 0.5 & Hằng số ổn định số học trong IDW weighting \\
-		Weight method & inverse\_density & Phương pháp tính trọng số IDW-MMD (alias \texttt{variance\_reduction} trong mã nguồn) \\
+		Weighting scheme & Inverse density & Phương pháp tính trọng số IDW-MMD dựa trên mật độ cục bộ \\
 		Gaussian filter $\sigma_g$ & 4 & Độ lệch chuẩn bộ lọc Gauss làm mượt tín hiệu \\
 		Peak threshold & $\bar{\sigma}_s + 0.3\sigma_{\text{std}}$ & Ngưỡng phát hiện đỉnh ứng viên \\
 		\hline
@@ -56,8 +56,8 @@ Bảng dưới đây tổng hợp các tham số chính được sử dụng tro
 		\hline
 		\multicolumn{3}{|c|}{\textit{Concept Memory}} \\
 		\hline
-		$M$ (concept\_memory\_size) & 8 & Số lượng snapshot tối đa trong bộ nhớ vòng \\
-		$n_s$ (snapshot\_size) & 150 & Số điểm dữ liệu mỗi snapshot \\
+		$M$ & 8 & Số lượng snapshot tối đa trong bộ nhớ vòng \\
+		$n_s$ & 150 & Số điểm dữ liệu mỗi snapshot \\
 		$\tau_{\text{match}}$ & 0.15 & Ngưỡng Standard-MMD để so khớp concept ($\approx 2\times$ nhiễu nền) \\
 		\hline
 		\multicolumn{3}{|c|}{\textit{Self-Calibration}} \\
@@ -96,7 +96,7 @@ Bảng dưới đây tổng hợp các tham số chính được sử dụng tro
 		Drift events & 5 & Sự kiện/luồng \\
 		$N$ runs & 30 & Số lần chạy \\
 		$\delta$ (tolerance) & 400 & Đánh giá khả năng phục hồi \\
-		Mô hình nền & Logistic Regression & max\_iter = 1\,000 \\
+			Mô hình nền & Logistic Regression & Tối đa 1\,000 vòng lặp \\
 		Prequential window & 100 & Cửa sổ tính Prequential Accuracy \\
 		\hline
 	\end{tabular}

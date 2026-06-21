@@ -13,7 +13,7 @@ Nhóm phương pháp thống kê tập trung vào việc phát hiện thay đổ
 thông qua các phép kiểm định thống kê hoặc quan sát cửa sổ trượt trên dòng dữ liệu. Một trong những kỹ thuật
 kinh điển là sử dụng các biểu đồ kiểm soát thống kê liên tục như \textit{CUSUM}~\cite{page1954continuous} hay kiểm định \textit{Page-Hinkley (PH)}.
 
-Chẳng hạn, kiểm định PH~\cite{mouss2004pagehinkley} được áp dụng trong bối cảnh concept drift để giám sát trung bình của một chuỗi
+Chẳng hạn, kiểm định PH~\cite{page1954continuous,hinkley1971cumulative} được áp dụng trong bối cảnh concept drift để giám sát trung bình của một chuỗi
 số liệu và phát hiện khi nào trung bình thay đổi đáng kể. PH thực chất triển khai biểu đồ CUSUM để nhạy với những thay đổi
 nhỏ trong giá trị trung bình và có thể phát hiện cả xu hướng tăng lẫn giảm. Tương tự, các kiểm định thống kê hai
 mẫu (như Kolmogorov–Smirnov, Student t-test) cũng được tận dụng để so sánh phân phối của hai cửa sổ dữ liệu (mới và cũ)
@@ -278,14 +278,14 @@ Trong các hệ thống học trực tuyến (online learning systems), việc p
 Theo Guo \textit{et al.}~\cite{guo2022cdtmsw}, thông tin về loại trôi dạt (drift type) do CDT-MSW cung cấp giữ vai trò quan trọng trong việc lựa chọn cơ chế cập nhật phù hợp. Các nghiên cứu gần đây~\cite{jourdan2023process} đã mở rộng khung thích ứng này sang hệ thống học sâu, trong đó chiến lược cập nhật phụ thuộc đồng thời vào loại trôi dạt, cấu trúc mô hình, mức độ sẵn có của nhãn và chi phí tính toán.
 
 \subsection{Phân loại chiến lược cập nhật}
-Tổng hợp từ các tài liệu trên, có thể chia các chiến lược cập nhật mô hình thành bốn nhóm chính:
+Tổng hợp từ các tài liệu trên và các khảo sát về học dưới concept drift~\cite{gama2014survey, lu2018learning, celik2020adaptation}, có thể chia các chiến lược cập nhật mô hình thành bốn nhóm chính:
 
 \begin{enumerate}[label=(\alph*)]
 	\item Cập nhật cục bộ (Local Reset / Fine-tuning) phù hợp với \emph{sudden drift}, khi phân phối dữ liệu thay đổi mạnh trong thời gian ngắn. Mô hình được tái huấn luyện một phần hoặc toàn bộ trên cửa sổ dữ liệu mới. Phương pháp này phù hợp với các bộ phát hiện trôi dạt dựa trên cửa sổ như ADWIN hoặc CDT-MSW, khi $L_d < \lambda$ (độ dài trôi dạt ngắn).
 
 	      Ví dụ, trong hệ thống giám sát quá trình sản xuất (process monitoring), Jourdan \textit{et al.}~\cite{jourdan2023process} thực hiện \emph{partial reinitialization} của các tầng cuối trong mạng nơ-ron khi độ bất định (uncertainty) vượt ngưỡng.
 
-	\item Cập nhật dần (Gradual / Incremental Update) được dùng khi mô hình gặp \emph{gradual} hoặc \emph{incremental drift}. Vì sự thay đổi diễn ra từ từ, mô hình thường cần cập nhật mềm với hệ số học $\eta_t$ nhỏ hơn. Theo Xiang \textit{et al.}~\cite{xiang2023review}, có thể mô hình hoá bằng công thức:
+	\item Cập nhật dần (Gradual / Incremental Update) được dùng khi mô hình gặp \emph{gradual} hoặc \emph{incremental drift}. Vì sự thay đổi diễn ra từ từ, mô hình thường cần cập nhật mềm với hệ số học $\eta_t$ nhỏ hơn. Một cách mô tả tổng quát là cập nhật tham số theo gradient trên dữ liệu mới với hệ số học hoặc trọng số quên phụ thuộc vào tốc độ drift:
 	      \[
 		      \theta_{t+1} = \theta_t - \eta_t \nabla_\theta \mathcal{L}(x_t, y_t),
 		      \quad \text{với } \eta_t = f(L_d, r_t),
@@ -337,6 +337,6 @@ Từ khảo sát ở các phần trên, có thể rút ra nhận xét chung đ�
 
 Các phương pháp theo dõi hiệu năng mô hình như DDM và EDDM hoạt động tốt nhưng cần nhãn dữ liệu ($y$) để đo lỗi. Yêu cầu này không khả thi trong môi trường sản xuất công nghiệp mà luận văn nhắm đến. Các phương pháp thống kê không cần nhãn như ADWIN hoặc KS-Test phù hợp hơn về mặt giám sát luồng, nhưng chưa trực tiếp cung cấp \textit{vị trí chính xác} của điểm drift theo cách ShapeDD khai thác hình dạng tín hiệu. Các phương pháp kernel-based như MMD và DAWIDD gần hơn với yêu cầu, nhưng chi phí tính toán lớn và không có sẵn cơ chế phân loại loại drift.
 
-ShapeDD phù hợp với mục tiêu của luận văn vì hoạt động không giám sát, định vị được điểm drift nhờ đặc trưng hình học tam giác (Triangle Shape Property), và có nền tảng lý thuyết đủ rõ để cải tiến có chủ đích. ShapeDD gốc vẫn phụ thuộc vào permutation test tốn kém và chưa có cơ chế phân loại loại drift. Hai hạn chế này là điểm xuất phát cho các đóng góp được trình bày trong Chương~\ref{chap:proposed-model}.
+ShapeDD phù hợp với mục tiêu của luận văn vì hoạt động không giám sát, định vị được điểm drift nhờ đặc trưng hình học tam giác (Triangle Shape Property), và có nền tảng lý thuyết đủ rõ để cải tiến có chủ đích. Lựa chọn này không được hiểu là khẳng định ShapeDD là phương pháp tốt nhất tuyệt đối. Thay vào đó, ShapeDD được chọn vì nó cung cấp đúng tín hiệu mà luận văn cần: phát hiện không cần nhãn, có localization theo thời gian, có trace hình dạng để mở rộng sang phân loại drift, và có thể so sánh thực nghiệm với các detector đại diện như DAWIDD, MMD, D3 và KS-Test. ShapeDD gốc vẫn phụ thuộc vào permutation test tốn kém và chưa có cơ chế phân loại loại drift. Hai hạn chế này là điểm xuất phát cho các đóng góp được trình bày trong Chương~\ref{chap:proposed-model}.
 
 Luận văn vì vậy đề xuất cải tiến ShapeDD theo hai hướng bổ sung cho nhau: dùng IDW-MMD với xấp xỉ Gamma cho bước kiểm định ứng viên drift, và xây dựng hệ thống SE-CDT tích hợp phát hiện và phân loại loại drift --- trong đó module phân loại dựa trên hình dạng tín hiệu MMD mà không cần nhãn. Cải tiến cụ thể được trình bày ở Chương~\ref{chap:proposed-model}; lý thuyết nền của ShapeDD đã được giới thiệu ở Chương~\ref{chap:theoretical-foundation}.

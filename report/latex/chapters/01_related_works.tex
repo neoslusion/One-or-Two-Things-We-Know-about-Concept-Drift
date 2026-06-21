@@ -13,7 +13,7 @@ Nhóm phương pháp thống kê tập trung vào việc phát hiện thay đổ
 thông qua các phép kiểm định thống kê hoặc quan sát cửa sổ trượt trên dòng dữ liệu. Một trong những kỹ thuật
 kinh điển là sử dụng các biểu đồ kiểm soát thống kê liên tục như \textit{CUSUM}~\cite{page1954continuous} hay kiểm định \textit{Page-Hinkley (PH)}.
 
-Chẳng hạn, kiểm định PH~\cite{mouss2004pagehinkley} được áp dụng trong bối cảnh concept drift để giám sát trung bình của một chuỗi
+Chẳng hạn, kiểm định PH~\cite{page1954continuous,hinkley1971cumulative} được áp dụng trong bối cảnh concept drift để giám sát trung bình của một chuỗi
 số liệu và phát hiện khi nào trung bình thay đổi đáng kể. PH thực chất triển khai biểu đồ CUSUM để nhạy với những thay đổi
 nhỏ trong giá trị trung bình và có thể phát hiện cả xu hướng tăng lẫn giảm. Tương tự, các kiểm định thống kê hai
 mẫu (như Kolmogorov–Smirnov, Student t-test) cũng được tận dụng để so sánh phân phối của hai cửa sổ dữ liệu (mới và cũ)

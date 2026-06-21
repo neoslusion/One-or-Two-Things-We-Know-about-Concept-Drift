@@ -320,7 +320,7 @@ Drift candidate được xác định khi tín hiệu shape đổi dấu (từ d
 	\text{Candidate}(t) = \text{sign}(\text{shape}_t) \neq \text{sign}(\text{shape}_{t-1})
 \end{equation}
 
-Sau bước shape detection, mỗi drift candidate được xác thực bằng permutation test~\cite{good2005permutation} để loại bỏ false positive:
+Sau bước shape detection, mỗi drift candidate được xác thực bằng permutation test~\cite{good2000permutation} để loại bỏ false positive:
 
 \begin{enumerate}
 	\item Tính $\text{MMD}^2_{\text{obs}}$ từ dữ liệu gốc tại vị trí candidate

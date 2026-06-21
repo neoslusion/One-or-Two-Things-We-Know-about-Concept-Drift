@@ -38,6 +38,28 @@ Hai thành phần $P(X)$ và $P(y|X)$ trên lý thuyết có thể thay đổi �
     \item \textbf{Sự trôi dạt lặp lại (Recurrent Drift):} Xảy ra khi một khái niệm cũ đã từng biến mất nay xuất hiện trở lại sau một khoảng thời gian không xác định (ví dụ: thói quen mua sắm thay đổi theo mùa hoặc chu kỳ kinh tế)~\cite{hovakimyan2024evolving}.
 \end{itemize}
 
+Mỗi dạng thay đổi gợi ý một cách thích ứng khác nhau cho mô hình sản xuất. Bảng~\ref{tab:drift-adaptation-link} không phải là luật cứng, mà là ánh xạ vận hành thường dùng khi kết hợp phát hiện drift với cập nhật mô hình~\cite{gama2014survey, lu2018learning, celik2020adaptation}.
+
+\begin{table}[H]
+	\centering
+	\caption{Liên hệ giữa loại thay đổi dữ liệu và chiến lược thích ứng mô hình}
+	\label{tab:drift-adaptation-link}
+	\small
+	\begin{tabular}{p{0.20\textwidth}p{0.34\textwidth}p{0.34\textwidth}}
+		\toprule
+		\textbf{Loại thay đổi} & \textbf{Tín hiệu thường gặp} & \textbf{Chiến lược phù hợp} \\
+		\midrule
+		Sudden & Một bước nhảy rõ, phân phối mới thay thế nhanh phân phối cũ & Reset hoặc retrain nhanh trên cửa sổ mới \\
+		Gradual & Giai đoạn chuyển tiếp có dữ liệu cũ và mới cùng xuất hiện & Cập nhật theo trọng số thời gian, ưu tiên mẫu gần đây \\
+		Incremental & Trung bình/ranh giới dịch chuyển liên tục qua nhiều bước nhỏ & Warm-start hoặc online update để tránh học lại từ đầu \\
+		Recurrent & Phân phối từng gặp quay lại theo chu kỳ hoặc bối cảnh & Concept/model cache, chọn lại mô hình đã lưu \\
+		Blip & Xung ngắn hạn rồi quay về phân phối cũ & Bỏ qua hoặc cập nhật tối thiểu để tránh quên nhầm \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+Lựa chọn chiến lược còn phụ thuộc vào chi phí vận hành: nếu false alarm rất đắt (ví dụ retrain mô hình lớn hoặc dừng dây chuyền), ngưỡng phát hiện nên chặt hơn và cần cơ chế xác nhận. Nếu bỏ sót drift gây rủi ro chất lượng hoặc an toàn cao, hệ thống nên ưu tiên recall, chấp nhận nhiều cảnh báo hơn và có human approval trước khi thay thế mô hình trong miền rủi ro cao. Độ trễ nhãn cũng quan trọng: khi nhãn đến muộn, tầng giám sát $P(X)$ như SE-CDT chỉ nên được xem là tín hiệu sớm, còn quyết định cập nhật cuối cùng có thể kết hợp thêm nhãn khi nhãn xuất hiện.
+
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=0.85\textwidth]{image/distribution_based_concept_drift.png}
@@ -320,7 +342,7 @@ Drift candidate được xác định khi tín hiệu shape đổi dấu (từ d
 	\text{Candidate}(t) = \text{sign}(\text{shape}_t) \neq \text{sign}(\text{shape}_{t-1})
 \end{equation}
 
-Sau bước shape detection, mỗi drift candidate được xác thực bằng permutation test~\cite{good2005permutation} để loại bỏ false positive:
+Sau bước shape detection, mỗi drift candidate được xác thực bằng permutation test~\cite{good2000permutation} để loại bỏ false positive:
 
 \begin{enumerate}
 	\item Tính $\text{MMD}^2_{\text{obs}}$ từ dữ liệu gốc tại vị trí candidate

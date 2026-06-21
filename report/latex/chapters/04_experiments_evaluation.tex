@@ -37,7 +37,7 @@ Nhóm 1: Sudden Drift (Thay đổi $P(X)$ đột ngột): Đây là trọng tâm
 
 Nhóm 2: Blip Drift (Thay đổi ngắn hạn): Trong thực tế vận hành, không phải mọi sự thay đổi đều mang tính vĩnh viễn. Một đợt tấn công mạng ngắn hạn, một sự kiện khuyến mãi flash sale, hay một lỗi tạm thời của cảm biến đều tạo ra các ``xung nhiễu'' (blip) trong luồng dữ liệu rồi nhanh chóng quay lại trạng thái bình thường. Khả năng phân biệt blip với drift thực sự là thách thức lớn đối với các thuật toán phát hiện.
 \begin{itemize}
-	\item \textit{RBF Blips:} Dữ liệu được sinh từ bộ sinh Random RBF Generator~\cite{river2021} với 50 trọng tâm Gaussian. Mỗi đoạn luân phiên sử dụng một cấu hình centroid khác nhau (qua \texttt{seed\_model}) kết hợp với biến đổi tỉ lệ đặc trưng ($\times 1.5 + 0.3$) ở các đoạn lẻ, tạo ra sự thay đổi $P(X)$ đột ngột và xen kẽ trong không gian phi-Gaussian phức tạp nhiều centroid. Tập dữ liệu kiểm tra khả năng phát hiện distribution shift trên phân phối phức tạp hơn Gaussian đơn giản.
+	\item \textit{RBF Blips:} Dữ liệu được sinh từ bộ sinh Random RBF Generator~\cite{river2021} với 50 trọng tâm Gaussian. Mỗi đoạn luân phiên sử dụng một cấu hình centroid khác nhau kết hợp với biến đổi tỉ lệ đặc trưng ($\times 1.5 + 0.3$) ở các đoạn lẻ, tạo ra sự thay đổi $P(X)$ đột ngột và xen kẽ trong không gian phi-Gaussian phức tạp nhiều centroid. Tập dữ liệu kiểm tra khả năng phát hiện distribution shift trên phân phối phức tạp hơn Gaussian đơn giản.
 \end{itemize}
 
 Nhóm 3: Real Drift / Thay đổi ranh giới quyết định (Control Group): Nhóm này đóng vai trò \textbf{nhóm đối chứng} (negative control), gồm các dataset chỉ có sự thay đổi ở biên quyết định $P(Y|X)$ còn phân phối đầu vào $P(X)$ giữ nguyên (hoặc thay đổi không đáng kể). Đây là dạng \textit{real drift} theo định nghĩa của Gama et al.~\cite{gama2014survey}, vốn nằm ngoài phạm vi quan sát của các phương pháp không giám sát chỉ dựa trên $P(X)$. Benchmark trên nhóm này giúp xác nhận thuật toán không bị ``ảo giác'' (hallucination) trước các thay đổi chỉ mang tính ngữ nghĩa nhãn.
@@ -109,7 +109,7 @@ Bảng~\ref{tab:comprehensive_performance} trình bày kết quả tổng hợp 
 % =============================================================================
 \begin{table}[H]
 	\centering
-	\caption[So sánh tổng hợp hiệu suất các phương pháp phát hiện drift]{So sánh tổng hợp hiệu suất các phương pháp phát hiện drift. \textit{Lưu ý:} \texttt{ShapeDD\_IDW} là module phát hiện của SE-CDT; SE-CDT là toàn bộ hệ thống (bao gồm cả module phân loại). Ở benchmark phát hiện này, hai dòng dùng cùng thuật toán nên F1, Precision, Recall, FP trùng nhau theo thiết kế.}
+	\caption[So sánh tổng hợp hiệu suất các phương pháp phát hiện drift]{So sánh tổng hợp hiệu suất các phương pháp phát hiện drift. \textit{Lưu ý:} ShapeDD-IDW là module phát hiện của SE-CDT; SE-CDT là toàn bộ hệ thống (bao gồm cả module phân loại). Ở benchmark phát hiện này, hai dòng dùng cùng thuật toán nên F1, Precision, Recall, FP trùng nhau theo thiết kế.}
 	\label{tab:comprehensive_performance}
 	\input{../../results/tables/table_I_comprehensive_performance.tex}
 \end{table}

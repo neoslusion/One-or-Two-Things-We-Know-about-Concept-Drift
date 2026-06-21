@@ -37,7 +37,7 @@ Nhóm 1: Sudden Drift (Thay đổi $P(X)$ đột ngột): Đây là trọng tâm
 
 Nhóm 2: Blip Drift (Thay đổi ngắn hạn): Trong thực tế vận hành, không phải mọi sự thay đổi đều mang tính vĩnh viễn. Một đợt tấn công mạng ngắn hạn, một sự kiện khuyến mãi flash sale, hay một lỗi tạm thời của cảm biến đều tạo ra các ``xung nhiễu'' (blip) trong luồng dữ liệu rồi nhanh chóng quay lại trạng thái bình thường. Khả năng phân biệt blip với drift thực sự là thách thức lớn đối với các thuật toán phát hiện.
 \begin{itemize}
-	\item \textit{RBF Blips:} Dữ liệu được sinh từ bộ sinh Random RBF Generator~\cite{river2021} với 50 trọng tâm Gaussian. Mỗi đoạn luân phiên sử dụng một cấu hình centroid khác nhau (qua \texttt{seed\_model}) kết hợp với biến đổi tỉ lệ đặc trưng ($\times 1.5 + 0.3$) ở các đoạn lẻ, tạo ra sự thay đổi $P(X)$ đột ngột và xen kẽ trong không gian phi-Gaussian phức tạp nhiều centroid. Tập dữ liệu kiểm tra khả năng phát hiện distribution shift trên phân phối phức tạp hơn Gaussian đơn giản.
+	\item \textit{RBF Blips:} Dữ liệu được sinh từ bộ sinh Random RBF Generator~\cite{river2021} với 50 trọng tâm Gaussian. Mỗi đoạn luân phiên sử dụng một cấu hình centroid khác nhau kết hợp với biến đổi tỉ lệ đặc trưng ($\times 1.5 + 0.3$) ở các đoạn lẻ, tạo ra sự thay đổi $P(X)$ đột ngột và xen kẽ trong không gian phi-Gaussian phức tạp nhiều centroid. Tập dữ liệu kiểm tra khả năng phát hiện distribution shift trên phân phối phức tạp hơn Gaussian đơn giản.
 \end{itemize}
 
 Nhóm 3: Real Drift / Thay đổi ranh giới quyết định (Control Group): Nhóm này đóng vai trò \textbf{nhóm đối chứng} (negative control), gồm các dataset chỉ có sự thay đổi ở biên quyết định $P(Y|X)$ còn phân phối đầu vào $P(X)$ giữ nguyên (hoặc thay đổi không đáng kể). Đây là dạng \textit{real drift} theo định nghĩa của Gama et al.~\cite{gama2014survey}, vốn nằm ngoài phạm vi quan sát của các phương pháp không giám sát chỉ dựa trên $P(X)$. Benchmark trên nhóm này giúp xác nhận thuật toán không bị ``ảo giác'' (hallucination) trước các thay đổi chỉ mang tính ngữ nghĩa nhãn.
@@ -109,7 +109,7 @@ Bảng~\ref{tab:comprehensive_performance} trình bày kết quả tổng hợp 
 % =============================================================================
 \begin{table}[H]
 	\centering
-	\caption[So sánh tổng hợp hiệu suất các phương pháp phát hiện drift]{So sánh tổng hợp hiệu suất các phương pháp phát hiện drift. \textit{Lưu ý:} \texttt{ShapeDD\_IDW} là module phát hiện của SE-CDT; SE-CDT là toàn bộ hệ thống (bao gồm cả module phân loại). Ở benchmark phát hiện này, hai dòng dùng cùng thuật toán nên F1, Precision, Recall, FP trùng nhau theo thiết kế.}
+	\caption[So sánh tổng hợp hiệu suất các phương pháp phát hiện drift]{So sánh tổng hợp hiệu suất các phương pháp phát hiện drift. \textit{Lưu ý:} ShapeDD-IDW là module phát hiện của SE-CDT; SE-CDT là toàn bộ hệ thống (bao gồm cả module phân loại). Ở benchmark phát hiện này, hai dòng dùng cùng thuật toán nên F1, Precision, Recall, FP trùng nhau theo thiết kế.}
 	\label{tab:comprehensive_performance}
 	\input{../../results/tables/table_I_comprehensive_performance.tex}
 \end{table}
@@ -389,7 +389,7 @@ Sau khi SE-CDT phát hiện và phân loại drift, khung thích ứng dùng nh�
 \subsection{Thiết lập thực nghiệm thích ứng mô hình}
 \begin{itemize}
 	\item \textbf{Môi trường:} Prequential Evaluation trên luồng dữ liệu mô phỏng.
-	\item \textbf{Dữ liệu:} $T = 5{,}000$ mẫu, mật độ drift cao (5 sự kiện/luồng).
+	\item \textbf{Dữ liệu:} $T = 5{,}000$ mẫu, $N = 30$ lần chạy độc lập, mật độ drift cao (5 sự kiện/luồng).
 	\item \textbf{Kịch bản:} ba loại: Stepping (drift tích lũy), Sudden, và Mixed.
 	\item \textbf{Bốn chiến lược thích ứng:}
 	\begin{itemize}
@@ -398,7 +398,8 @@ Sau khi SE-CDT phát hiện và phân loại drift, khung thích ứng dùng nh�
 		\item \textit{Simple Retrain:} huấn luyện lại trên cửa sổ gần nhất mỗi khi SE-CDT báo drift, bất kể loại nào.
 		\item \textit{Type-Specific (đề xuất):} chọn một trong năm nhánh thích ứng tuỳ theo nhãn drift do SE-CDT phân loại (Full Reset cho Sudden, Incremental Fine-tune cho Incremental, Recency-weighted cho Gradual, Model Caching cho Recurrent, và bỏ qua thích ứng cho Blip; xem Mục~\ref{sec:model-adaptation-framework}).
 	\end{itemize}
-	\item \textbf{Tham số:} mức ý nghĩa phát hiện $\alpha = 0.05$ (ngưỡng p-value của kiểm định IDW-MMD), cửa sổ ShapeDD $W = 50$, mô hình nền là Logistic Regression với số lần lặp tối đa 1000.
+		\item \textbf{Mô hình dự đoán:} pipeline gồm chuẩn hoá đặc trưng bằng Standard Scaler và phân loại bằng Logistic Regression, với số vòng lặp tối đa đặt là 1\,000. Đây là mô hình phân loại được bảo vệ trong thí nghiệm thích ứng; SE-CDT chỉ là tầng giám sát drift, không phải mô hình dự đoán nhãn.
+	\item \textbf{Tham số:} initial training $=500$ mẫu, adaptation delay $=50$ mẫu, periodic interval $=500$ mẫu, mức ý nghĩa phát hiện $\alpha = 0.05$ (ngưỡng p-value của kiểm định IDW-MMD), ShapeDD $l_1 = 50$, $l_2 = 150$.
 	\item \textbf{Chỉ số:} Prequential Accuracy (độ chính xác cuốn chiếu) đo khả năng phục hồi sau drift; số False Positives (FP) đo chi phí cảnh báo dư thừa.
 \end{itemize}
 
@@ -411,7 +412,7 @@ Theo giả định joint drift (Mục~\ref{sec:drift-pxpyx}), các kịch bản 
 
 Các bộ tạo dữ liệu Sudden Drift truyền thống thường luân phiên giữa hai concept A $\to$ B $\to$ A, dẫn đến mô hình tĩnh có độ chính xác ảo $\approx 75\%$. Để khắc phục giới hạn này, luận văn bổ sung kịch bản \textbf{Stepping Drift}. Đây là dạng trôi dạt tích lũy (Cumulative Sudden Drift), nơi phân phối dữ liệu liên tục dịch chuyển ra xa trạng thái ban đầu ($P_0 \to P_1 \to P_2 \dots$), buộc mô hình phải học lại liên tục để duy trì hiệu suất.
 
-Ngoài ra, hệ thống tích hợp cơ chế \textbf{reset bộ đệm theo mẫu ADWIN} (Adaptive Windowing): sau mỗi lần thích ứng, bộ đệm được xóa và chỉ giữ lại 200 mẫu gần nhất làm tham chiếu mới. Cơ chế này giảm đáng kể hiện tượng phát hiện lại cùng một drift event: Type-Specific và Simple Retrain (cả hai đều dùng tín hiệu detector để kích hoạt) có FP trung bình $\sim 2$/run, trong khi Periodic Retrain và No Adaptation (không thay đổi bộ đệm theo detector) có FP trung bình $\sim 16$/run.
+Ngoài ra, hệ thống tích hợp cơ chế \textbf{reset bộ đệm theo mẫu ADWIN} (Adaptive Windowing): sau mỗi lần thích ứng, bộ đệm được xóa và chỉ giữ lại 200 mẫu gần nhất làm tham chiếu mới. Cơ chế này giảm đáng kể hiện tượng phát hiện lại cùng một drift event: Type-Specific và Simple Retrain (cả hai đều dùng tín hiệu detector để kích hoạt) có FP trung bình khoảng $1.5$--$2.2$/run, trong khi Periodic Retrain và No Adaptation (không thay đổi bộ đệm theo detector) có FP trung bình $13.0$--$17.0$/run.
 
 Bảng~\ref{tab:prequential-results} tổng hợp kết quả Prequential Accuracy trên $N = 30$ lần chạy độc lập, so sánh 4 chiến lược: Type-Specific (đề xuất), Simple Retrain, Periodic Retrain và No Adaptation. Số $N = 30$ đủ để kiểm định Friedman có lực thống kê cao và đảm bảo khoảng tin cậy 95\% chặt với độ lệch chuẩn quan sát được trên các kịch bản.
 
@@ -424,9 +425,9 @@ Bảng~\ref{tab:prequential-results} tổng hợp kết quả Prequential Accura
 		\hline
 		\textbf{Loại Drift} & \textbf{Type-Specific} & \textbf{Simple Retrain} & \textbf{Periodic Retrain} & \textbf{No Adaptation} & \textbf{FP} \\
 		\hline
-		Stepping (Cumulative) & \textbf{74.27\%} $\pm 2.34$ & 62.41\% $\pm 2.73$ & 64.03\% $\pm 2.74$ & 54.80\% $\pm 3.60$ & $1.1 / 1.1 / 16.5 / 16.5$ \\
-		Sudden (Joint Drift)  & \textbf{73.71\%} $\pm 2.84$ & 61.94\% $\pm 2.50$ & 63.65\% $\pm 2.37$ & 53.68\% $\pm 3.46$ & $1.1 / 1.1 / 16.8 / 16.8$ \\
-		Mixed (Combined)      & 85.73\% $\pm 0.93$ & 83.61\% $\pm 1.00$ & \textbf{86.09\%} $\pm 0.69$ & 82.69\% $\pm 0.94$ & $1.1 / 1.1 / 8.3 / 8.3$ \\
+		Stepping (Cumulative) & \textbf{73.96\%} $\pm 2.42$ & 62.72\% $\pm 2.60$ & 64.03\% $\pm 2.74$ & 54.80\% $\pm 3.60$ & $1.5 / 1.5 / 17.0 / 17.0$ \\
+		Sudden (Joint Drift)  & \textbf{73.34\%} $\pm 2.72$ & 61.87\% $\pm 2.25$ & 63.65\% $\pm 2.37$ & 53.68\% $\pm 3.46$ & $1.5 / 1.5 / 17.0 / 17.0$ \\
+		Mixed (Combined)      & \textbf{86.36\%} $\pm 1.25$ & 83.80\% $\pm 0.96$ & 86.09\% $\pm 0.69$ & 82.69\% $\pm 0.94$ & $2.2 / 2.2 / 13.0 / 13.0$ \\
 		\hline
 	\end{tabular}%
 	}
@@ -435,14 +436,14 @@ Bảng~\ref{tab:prequential-results} tổng hợp kết quả Prequential Accura
 Áp dụng kiểm định không tham số Friedman (paired theo seed) trên 4 chiến lược $\times$ 30 runs cho mỗi kịch bản:
 \begin{itemize}
 	\item Stepping: $\chi^2 = 78.76$, $p = 5.66 \times 10^{-17}$
-	\item Sudden:   $\chi^2 = 85.84$, $p = 1.71 \times 10^{-18}$
-	\item Mixed:    $\chi^2 = 76.00$, $p = 2.21 \times 10^{-16}$
+	\item Sudden:   $\chi^2 = 85.48$, $p = 2.05 \times 10^{-18}$
+	\item Mixed:    $\chi^2 = 75.16$, $p = 3.35 \times 10^{-16}$
 \end{itemize}
 Trên cả ba kịch bản, $p \ll 0.05$ nên có đủ bằng chứng thống kê để bác bỏ giả thuyết H0 ``bốn chiến lược cho cùng phân phối độ chính xác''. Kết quả này xác nhận khác biệt tổng thể giữa các chiến lược; các chênh lệch theo từng cặp bên dưới được diễn giải theo độ lớn quan sát được, không thay cho một kiểm định hậu nghiệm riêng cho từng cặp.
 
-Trên Stepping, Type-Specific đạt $74.27\%$, hơn No Adaptation $+19.47$pp, Simple Retrain $+11.86$pp và Periodic Retrain $+10.24$pp. Trên Sudden, kết quả tương tự: Type-Specific đạt $73.71\%$, hơn No Adaptation $+20.03$pp. Hai kịch bản này cho thấy lợi ích của việc chọn chiến lược cập nhật theo loại drift thay vì chỉ huấn luyện lại theo một quy tắc cố định.
+Trên Stepping, Type-Specific đạt $73.96\%$, hơn No Adaptation $+19.16$pp, Simple Retrain $+11.24$pp và Periodic Retrain $+9.93$pp. Trên Sudden, kết quả tương tự: Type-Specific đạt $73.34\%$, hơn No Adaptation $+19.66$pp, Simple Retrain $+11.47$pp và Periodic Retrain $+9.69$pp. Hai kịch bản này cho thấy lợi ích rõ của việc chọn chiến lược cập nhật theo loại drift thay vì chỉ huấn luyện lại theo một quy tắc cố định.
 
-Trên Mixed, Type-Specific đạt $85.73\%$, cao hơn Simple Retrain và No Adaptation nhưng thấp hơn Periodic Retrain $0.36$pp. Chênh lệch độ chính xác này nhỏ, trong khi FP của Periodic Retrain cao hơn rõ rệt ($8.3$ so với $1.1$/run). Do đó, lợi thế chính của Type-Specific trên Mixed không phải độ chính xác cao hơn, mà là đạt mức gần Periodic Retrain với ít cảnh báo dư hơn.
+Trên Mixed, Type-Specific đạt $86.36\%$, rất gần Periodic Retrain ($86.09\%$) và cao hơn Simple Retrain/No Adaptation. Chênh lệch $+0.27$pp so với Periodic Retrain nhỏ so với độ lệch chuẩn, nên không nên đọc như một chiến thắng chắc chắn theo từng cặp; điểm đáng chú ý hơn là FP của Periodic Retrain cao hơn rõ rệt ($13.0$ so với $2.2$/run). Do đó, lợi thế chính của Type-Specific trên Mixed là đạt mức độ chính xác gần Periodic Retrain với ít cảnh báo dư hơn.
 
 \begin{figure}[H]
 	\centering
@@ -451,7 +452,7 @@ Trên Mixed, Type-Specific đạt $85.73\%$, cao hơn Simple Retrain và No Adap
 	\label{fig:prequential_stepping}
 \end{figure}
 
-Trên Sudden Drift (Hình~\ref{fig:prequential_sudden}), No Adaptation giảm về $53.68\%$ do toàn bộ phân phối thay đổi sau mỗi sự kiện. Type-Specific đạt $73.71\%$, cách Simple Retrain $+11.77$pp và Periodic Retrain $+10.06$pp. Cả hai kịch bản Stepping (Hình~\ref{fig:prequential_stepping}) và Sudden đều cho thấy cải thiện lớn khi chiến lược cập nhật được chọn theo loại drift.
+Trên Sudden Drift (Hình~\ref{fig:prequential_sudden}), No Adaptation giảm về $53.68\%$ do toàn bộ phân phối thay đổi sau mỗi sự kiện. Type-Specific đạt $73.34\%$, cách Simple Retrain $+11.47$pp và Periodic Retrain $+9.69$pp. Cả hai kịch bản Stepping (Hình~\ref{fig:prequential_stepping}) và Sudden đều cho thấy cải thiện lớn khi chiến lược cập nhật được chọn theo loại drift.
 
 \begin{figure}[H]
 	\centering
@@ -460,12 +461,12 @@ Trên Sudden Drift (Hình~\ref{fig:prequential_sudden}), No Adaptation giảm v�
 	\label{fig:prequential_sudden}
 \end{figure}
 
-Trên Mixed (Hình~\ref{fig:prequential_mixed}), bốn chiến lược đều đạt kết quả cao hơn hai kịch bản trên do luồng dữ liệu chứa hỗn hợp các loại drift có mức khó khác nhau. Type-Specific đạt $85.73\%$, gần với Periodic Retrain ($86.09\%$) nhưng với FP thấp hơn ($1.1$ so với $8.3$/run). Đây là kết quả hòa về độ chính xác theo nghĩa thực nghiệm, nhưng Type-Specific ít kích hoạt thừa hơn.
+Trên Mixed (Hình~\ref{fig:prequential_mixed}), bốn chiến lược đều đạt kết quả cao hơn hai kịch bản trên do luồng dữ liệu chứa hỗn hợp các loại drift có mức khó khác nhau. Type-Specific đạt $86.36\%$, gần với Periodic Retrain ($86.09\%$) nhưng với FP thấp hơn ($2.2$ so với $13.0$/run). Đây là kết quả gần hòa về độ chính xác theo nghĩa thực nghiệm, nhưng Type-Specific ít kích hoạt thừa hơn.
 
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=0.95\textwidth]{../../results/plots/fig_prequential_mixed.png}
-	\caption[Prequential Accuracy --- Mixed Drift]{Prequential Accuracy trên Mixed Drift ($N = 30$). Periodic Retrain nhỉnh hơn nhẹ về độ chính xác, nhưng Type-Specific đạt mức gần tương đương với số cảnh báo dư thấp hơn.}
+	\caption[Prequential Accuracy --- Mixed Drift]{Prequential Accuracy trên Mixed Drift ($N = 30$). Type-Specific và Periodic Retrain gần tương đương về độ chính xác trong artifact hiện tại, nhưng Type-Specific có số cảnh báo dư thấp hơn.}
 	\label{fig:prequential_mixed}
 \end{figure}
 
