@@ -1,0 +1,1465 @@
+\documentclass[aspectratio=169,10pt]{beamer}
+
+% Vietnamese language support
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[vietnamese,english]{babel}
+\usepackage[utf8]{vntex}
+
+% Theme and color scheme
+\usetheme{Madrid}
+\usecolortheme{default}
+
+% Additional packages
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tikz}
+\usetikzlibrary{positioning}
+\usepackage{ragged2e}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{caption}
+\usepackage{appendixnumberbeamer}
+\usepackage{algorithmic}
+\usepackage{multicol}
+
+% Define paths for images
+\graphicspath{{image/}{../../results/plots/}}
+
+% Custom colors
+\definecolor{univblue}{RGB}{0,51,102}
+\definecolor{darkgreen}{RGB}{0,128,0}
+\definecolor{alertred}{RGB}{204,0,0}
+\definecolor{lightgray}{RGB}{240,240,240}
+\setbeamercolor{structure}{fg=univblue}
+\setbeamercolor{title}{fg=white,bg=univblue}
+\setbeamercolor{frametitle}{fg=white,bg=univblue}
+\setbeamercolor{block title}{bg=univblue!90,fg=white}
+\setbeamercolor{block body}{bg=univblue!5}
+\setbeamercolor{block title example}{bg=darkgreen!70,fg=white}
+\setbeamercolor{block body example}{bg=darkgreen!5}
+\setbeamercolor{block title alerted}{bg=alertred!80,fg=white}
+\setbeamercolor{block body alerted}{bg=alertred!5}
+
+\hypersetup{
+    colorlinks=true,
+    citecolor=univblue,
+    linkcolor=univblue,
+    urlcolor=univblue
+}
+
+% Remove navigation symbols
+\setbeamertemplate{navigation symbols}{}
+
+% Footer setup
+\setbeamertemplate{footline}{
+  \leavevmode%
+  \hbox{%
+  \begin{beamercolorbox}[wd=.333333\paperwidth,ht=2.25ex,dp=1ex,center]{author in head/foot}%
+    \usebeamerfont{author in head/foot}\insertshortauthor
+  \end{beamercolorbox}%
+  \begin{beamercolorbox}[wd=.333333\paperwidth,ht=2.25ex,dp=1ex,center]{title in head/foot}%
+    \usebeamerfont{title in head/foot}\insertshorttitle
+  \end{beamercolorbox}%
+  \begin{beamercolorbox}[wd=.333333\paperwidth,ht=2.25ex,dp=1ex,right]{date in head/foot}%
+    \usebeamerfont{date in head/foot}\insertshortdate{}\hspace*{2em}
+    \insertframenumber{} / \inserttotalframenumber\hspace*{2ex}
+  \end{beamercolorbox}}%
+  \vskip0pt%
+}
+
+% Title page info
+\title[Concept Drift Detection]{Research and Development of an Automated System for Concept Drift Detection and Adaptive Machine Learning Model Updating}
+\subtitle{Master's Thesis}
+\author[Le Phuc Duc]{Student: Le Phuc Duc\\ Supervisor 1: Assoc.Prof.Dr. Thoai Nam\\ Supervisor 2: Dr. Nguyen Quang Hung}
+\institute[HCMUT]{Ho Chi Minh City University of Technology\\Faculty of Computer Science and Engineering}
+\date{2026}
+\titlegraphic{\includegraphics[height=1.5cm]{image/hcmut.jpg}}
+\logo{\includegraphics[height=0.8cm]{image/hcmut.jpg}}
+
+% --- section transition / agenda dividers ---
+\AtBeginSection[]{%
+  \begin{frame}[noframenumbering]{Agenda}
+    \tableofcontents[currentsection]
+  \end{frame}%
+}
+
+\begin{document}
+
+\begin{frame}[plain]
+	\titlepage
+\end{frame}
+
+\begin{frame}{Presentation Outline}
+	\Large
+	\tableofcontents
+\end{frame}
+
+
+% #############################################################################
+\section{Introduction}
+% #############################################################################
+
+\begin{frame}{Motivation \& Background}
+	\begin{columns}[c]
+		\begin{column}{0.4\textwidth}
+			\Large \textbf{The Core Problem: Concept Drift}
+			
+			\vspace{1em}
+			\normalsize
+			\begin{block}{Mathematical Definition}
+				\begin{align*}
+					P_{\text{train}}(X, Y) \neq P_{\text{online},t}(X, Y)\\	
+					P(X,Y) = P(X)\,P(Y\!\mid\!X)
+				\end{align*}
+			\end{block}
+			
+			\vspace{1em}
+			\textbf{Real-world Impact:}
+			\begin{itemize}
+			    \item Banking Fraud (False Alarms $\uparrow$)
+			    \item Predictive Maintenance (Accuracy $\downarrow$)
+			\end{itemize}
+		\end{column}
+		\begin{column}{0.6\textwidth}
+			\centering
+			\includegraphics[width=\linewidth,keepaspectratio]{image/distribution_based_concept_drift.png}
+		\end{column}
+	\end{columns}
+\end{frame}
+
+\begin{frame}{Concept Drift: Distribution vs Pattern}
+	\begin{columns}[c]
+		\begin{column}{0.35\textwidth}
+			\textbf{Virtual Drift:}\\
+			Only $P(X)$ changes.
+			
+			\vspace{1em}
+			\textbf{Real Drift:}\\
+			Decision boundary $P(Y|X)$ changes.
+		\end{column}
+		\begin{column}{0.65\textwidth}
+			\centering
+			\includegraphics[width=\linewidth,keepaspectratio]{image/pattern_based_concept_drift.png}
+		\end{column}
+	\end{columns}
+\end{frame}
+
+\begin{frame}{Objectives \& System Architecture}
+  \begin{columns}[c]
+    \begin{column}{0.42\textwidth}
+      \textbf{A three-layer pipeline:}
+      \begin{itemize}
+        \small
+        \item \textbf{\textcolor{univblue}{L1 --- Detect}} \textit{(When?)}\\ {\footnotesize ShapeDD-IDW: fast, unsupervised, $\alpha=0.05$ calibrated.}
+        \item \textbf{\textcolor{univblue}{L2 --- Classify}} \textit{(What?)}\\ {\footnotesize SE-CDT: label-free shape analyzer, 5 drift types.}
+        \item \textbf{\textcolor{univblue}{L3 --- Adapt}} \textit{(How?)}\\ {\footnotesize Type-aware router: reset / warm-start / reuse.}
+      \end{itemize}
+      \vspace{0.4em}
+      \begin{block}{\small Goals}
+        \footnotesize
+        Fast, reliable detection; unsupervised drift typing (no labels); end-to-end validation.
+      \end{block}
+    \end{column}
+    \begin{column}{0.56\textwidth}
+      \centering
+      \includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{image/system_architecture.png}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+
+\begin{frame}{Related Works: The Gap in Current Literature}
+    \centering
+    \begin{tikzpicture}[scale=0.9, transform shape]
+        % Axes
+        \draw[<->, thick] (0,6) node[left] {\textbf{Label-Dependent}} -- (0,0) -- (10,0) node[below] {\textbf{Drift Typing}};
+        \draw[thick] (0,3) -- (10,3);
+        \draw[thick] (5,0) -- (5,6);
+        
+        % Labels
+        \node[anchor=east] at (-0.2, 1.5) {\textbf{Unsupervised}};
+        
+        \node[anchor=north] at (2.5, -0.2) {\textbf{Detection Only}};
+        \node[anchor=north, align=center] at (5, -1) {\footnotesize \textbf{Evaluated Datasets:} SEA, RTG, RBF, Sine \cite{harries1999splice, street2001streaming, hulten2001mining}};
+        
+        % Quadrant 1 (Top Left)
+        \node[text width=4cm, align=center] at (2.5, 4.5) {\textbf{DDM / EDDM \cite{gama2004learning, baena2006early}}\\ \footnotesize Track accuracy degradation. Fast, but needs labels.};
+        
+        % Quadrant 2 (Top Right)
+        \node[text width=4cm, align=center] at (7.5, 4.5) {\textbf{CDT-MSW \cite{guo2022cdtmsw}}\\ \footnotesize High accuracy typing, but relies completely on labels for model training.};
+        
+        % Quadrant 3 (Bottom Left)
+        \node[text width=4cm, align=center] at (2.5, 1.5) {\textbf{KS-Test \cite{wang2020kswin} / ShapeDD \cite{shapeDD2021}}\\ \footnotesize MMD-based detection. Unsupervised but lacks drift typing.};
+        
+        % Quadrant 4 (Bottom Right) - HIGHLIGHTED
+        \node[text width=4.5cm, align=center, fill=univblue!20, rounded corners, inner sep=10pt] at (7.5, 1.5) {\textbf{SE-CDT (This Thesis)}\\ \footnotesize Unsupervised Drift Typing from geometric MMD shapes.};
+    \end{tikzpicture}
+\end{frame}
+
+
+
+% #############################################################################
+\section{Background: The MMD Drift Signal}
+% #############################################################################
+
+\begin{frame}[shrink]{MMD: The Unsupervised Drift Signal}
+  \begin{columns}[c]
+    \begin{column}{0.52\textwidth}
+      \textbf{Why unsupervised?}
+      \begin{itemize}
+        \small
+        \item Supervised detection needs ground-truth labels right after each prediction.
+        \item In real application, labels are delayed or expensive $\to$ monitor the \textbf{raw distribution $P(X)$} instead.
+      \end{itemize}
+      \vspace{0.3em}
+      \textbf{Maximum Mean Discrepancy:} map points into an RKHS and compare their mean embeddings (``centers of mass'').
+      \begin{block}{\small MMD Statistic}
+        \small
+        $\widehat{\text{MMD}}^2 = \underbrace{\text{Within } P}_{\text{self-sim}} + \underbrace{\text{Within } Q}_{\text{self-sim}} - \underbrace{\text{Cross } P\leftrightarrow Q}_{\text{dis-sim}}$
+      \end{block}
+      {\small $\widehat{\text{MMD}}^2 \approx 0$: same distribution;\quad $\widehat{\text{MMD}}^2 \gg 0$: \textbf{drift candidate}.}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \centering
+      \includegraphics[width=\linewidth,height=0.72\textheight,keepaspectratio]{image/mmd_variance_change.png}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+
+\begin{frame}[shrink]{From MMD Trace to ShapeDD's Triangle}
+  \begin{columns}[c]
+    \begin{column}{0.5\textwidth}
+      \textbf{Stream $\to$ trace:}
+      \begin{itemize}
+        \small
+        \item A sliding window of size $2l_1$ splits into $W_{\text{ref}}$ and $W_{\text{test}}$; their MMD at each step forms a continuous trace $\sigma(t)$.
+        \item Stable data $\to$ small noise floor; crossing a drift $\to$ $\sigma(t)$ rises into a peak.
+      \end{itemize}
+      \vspace{0.2em}
+      \textbf{ShapeDD's insight --- the \emph{triangle}:}
+      \begin{itemize}
+        \small
+        \item A sudden drift yields a \textbf{triangular} $\sigma(t)$ (linear contamination as the window crosses the drift) --- detect that \emph{shape}, not a raw threshold.
+        \item Peak height $\sigma(t_c) =$ \textbf{drift magnitude} $\approx \text{MMD}^2(P,Q)$.
+      \end{itemize}
+      \begin{alertblock}{\small Bottleneck}
+        \small
+        Significance via a \textbf{permutation test} rebuilds the kernel thousands of times. We replace it with \textbf{IDW weighting} $+$ \textbf{Gamma-null} (next).
+      \end{alertblock}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \centering
+      \includegraphics[width=\linewidth,height=0.8\textheight,keepaspectratio]{image/shapedd_intuition.png}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+
+% #############################################################################
+\section{Layer 1: Detection}
+% #############################################################################
+
+
+\begin{frame}[shrink]{Inverse Density-Weighted MMD (IDW-MMD)}
+  \begin{columns}[c]
+    \begin{column}{0.5\textwidth}
+      \textbf{\small Uniform weights ($1/n^2$):}
+      \begin{itemize}
+        \small
+        \item Dense majority clusters dominate the statistic.
+        \item Early drifts at distribution \textbf{boundaries} get washed out.
+      \end{itemize}
+      \begin{exampleblock}{\small IDW weighting (the idea)}
+        \small
+        Weight each point by \textbf{inverse local density}:
+        \begin{center}
+          \vspace{-0.6em}
+          $w_i \propto \frac{1}{\sqrt{d_i}+\epsilon},\qquad d_i=\sum_{j} k(x_i,x_j)$
+          \vspace{-0.6em}
+        \end{center}
+        Dense core $\to$ small $w_i$;\; sparse \textbf{boundary} $\to$ large $w_i$.
+      \end{exampleblock}
+      \begin{block}{\small Full IDW-MMD Statistic}
+        \vspace{-0.5em}
+        \begin{center}
+        \resizebox{\linewidth}{!}{%
+        $\displaystyle\widehat{\text{MMD}}_{\text{IDW}}^2 = \underbrace{\sum_{i \neq j} W^{XX}_{ij}\, k(x_i, x_j)}_{\text{Within } P \text{ (Weighted)}} + \underbrace{\sum_{p \neq q} W^{YY}_{pq}\, k(y_p, y_q)}_{\text{Within } Q \text{ (Weighted)}} - 2\underbrace{\sum_{i,p} \frac{1}{nm} k(x_i, y_p)}_{\text{Cross } P\leftrightarrow Q \text{ (Uniform)}}$%
+        }
+        \end{center}
+        \vspace{-1em}
+        \begin{itemize}
+            \tiny
+            \item \textbf{Inverse Density} ($W^{XX}_{ij}, W^{YY}_{pq}$): amplifies boundary points.
+            \item \textbf{Uniform weight} ($XY$ term): anchors geometric overlap.
+        \end{itemize}
+      \end{block}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \centering
+      \includegraphics[width=\linewidth,height=0.75\textheight,keepaspectratio]{theory_idw_weighting.png}\\[0.2em]
+      {\scriptsize \textbf{Result:} sensitive to early boundary changes, no extra false alarms on the bulk.}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+
+\begin{frame}{Statistical Calibration (Gamma-Null Approximation)}
+	\begin{columns}[T]
+		\begin{column}{0.5\textwidth}
+			\textbf{The Permutation Bottleneck:}
+			\begin{itemize}
+				\small
+				\item Standard ShapeDD runs $B=2500$ permutations to estimate p-value.
+				\item Each permutation re-builds the kernel matrix $\to$ extremely slow.
+			\end{itemize}
+			
+			\vspace{0.8em}
+			\textbf{Gamma-Null Approximation Solution:}
+			\begin{itemize}
+				\small
+				\item Under $H_0$, the MMD statistic is approximately Gamma-distributed.
+				\item We estimate the first two moments (mean \& variance) from a small number of bootstrap shuffles ($B=20$), reusing the kernel matrix.
+				\item Matches accuracy while achieving a \textbf{7--10$\times$ end-to-end speedup}.
+			\end{itemize}
+		\end{column}
+		\begin{column}{0.48\textwidth}
+			\centering
+			\includegraphics[width=\linewidth,keepaspectratio]{../../results/plots/gamma_approximation.png}
+		\end{column}
+	\end{columns}
+\end{frame}
+
+\begin{frame}{ShapeDD-IDW in Action: MMD Trace $\rightarrow$ Single Drift Event}
+	\begin{columns}[c]
+		\begin{column}{0.63\textwidth}
+			\centering
+			\includegraphics[width=\linewidth,height=0.78\textheight,keepaspectratio]{theory_detection_flow.png}
+		\end{column}
+		\begin{column}{0.35\textwidth}
+			\textbf{The detector, end-to-end:}
+			\begin{enumerate}
+				\scriptsize
+				\item \textbf{(a)} Stream $\to$ compute the \textbf{IDW-MMD trace} $\sigma(t)$.
+				\item \textbf{(b)} \textbf{Isolate peaks:} smooth $\sigma(t)$, keep points above $\bar\sigma+\mathrm{std}$. \textbf{Ignore blips under threshold}.
+				\item \textbf{(c)} \textbf{Validate \& group:} the Gamma-null $p$-value (Bonferroni-adjusted) confirms the peak; the whole super-threshold \textbf{burst collapses to one event} within tolerance $\delta$.
+			\end{enumerate}
+			\begin{exampleblock}{\small Outcome}
+				\scriptsize
+				One calibrated detection per true drift --- no permutation test, few false alarms.
+			\end{exampleblock}
+		\end{column}
+	\end{columns}
+\end{frame}
+
+
+% #############################################################################
+\section{Layer 2: Classification}
+% #############################################################################
+
+\begin{frame}[shrink]{CDT-MSW --- Supervised Classification Baseline}
+	\begin{columns}[T]
+		\begin{column}{0.55\textwidth}
+			\textbf{CDT-MSW} (Guo et al., 2022) groups drift into:
+			\begin{itemize}
+				\item \textbf{TCD (Transient):} Sudden, Blip, Recurrent.
+				\item \textbf{PCD (Progressive):} Gradual, Incremental.
+			\end{itemize}
+
+			\vspace{0.5em}
+			\textbf{Growth Process:}
+			\begin{itemize}
+				\item Tracks the variance of accuracy degradation over a multi-sliding window.
+				\item Short degradation $\to$ TCD; sustained degradation $\to$ PCD.
+			\end{itemize}
+
+			\vspace{0.5em}
+			\begin{alertblock}{Limitation}
+				CDT-MSW needs \textbf{ground-truth labels} at every step to compute the accuracy curve --- impractical for data streams where labels arrive late or never.
+			\end{alertblock}
+		\end{column}
+		\begin{column}{0.42\textwidth}
+			\centering
+			\includegraphics[width=\linewidth,height=0.65\textheight,keepaspectratio]{image/cdt_msw.png}
+
+			\vspace{0.5em}
+			\begin{exampleblock}{\small Motivation for SE-CDT}
+				\small
+				Replace the accuracy curve with the \emph{shape} of the MMD signal $\sigma(t)$. The same TCD/PCD distinction can then be made \textbf{without any labels at runtime}.
+			\end{exampleblock}
+		\end{column}
+	\end{columns}
+\end{frame}
+
+\begin{frame}{SE-CDT: Reading the MMD Shape (9 Attributes)}
+  \textbf{Type drift without labels by reading the \emph{shape} of $\sigma(t)$ at the detection point:}
+  
+  \vspace{0.2em}
+  \begin{itemize}
+    \scriptsize
+    \item \textbf{Geometric:} $n_p$ (peak count), WR (width ratio), CV (coeff.\ of variation), SNR, PPR, DPAR.
+    \item \textbf{Temporal:} LTS (linear trend), SDS (step score), MS (monotonicity).
+    \item \textbf{$+$ VR:} one \emph{raw-data} signal (not from $\sigma(t)$); the slow-drift tie-breaker.
+  \end{itemize}
+
+  \vspace{0.2em}
+  \begin{center}
+    \includegraphics[width=\linewidth,height=0.65\textheight,keepaspectratio]{theory_peak_anatomy.png}
+  \end{center}
+\end{frame}
+
+
+\begin{frame}{SE-CDT: Variance Ratio (VR) for Slow Drifts}
+  \textbf{Challenge:} Gradual and Incremental share flat MMD humps. \\
+  \textbf{Solution:} Variance Ratio (VR). Gradual (mixture) $\Rightarrow$ variance \textbf{spike}. Incremental (single shift) $\Rightarrow$ \textbf{flat}.
+  \begin{center}
+    \includegraphics[width=\linewidth,height=0.72\textheight,keepaspectratio]{theory_variance_ratio.png}
+  \end{center}
+\end{frame}
+
+\begin{frame}{SE-CDT: Decision Logic \& Drift Signatures}
+  \begin{columns}[c]
+    \begin{column}{0.4\textwidth}
+      \textbf{Simplified decision tree:}
+      \vspace{0.4em}
+
+      \resizebox{0.9\linewidth}{!}{%
+      \begin{tikzpicture}[font=\footnotesize, >=latex,
+        d/.style={draw, rounded corners, fill=gray!12, align=center, inner sep=3pt},
+        l/.style={draw, rounded corners, fill=univblue!20, align=center, inner sep=3pt, font=\bfseries\footnotesize}]
+        \node[d] (root) at (0,0) {Peak shape of $\sigma(t)$};
+        \node[d] (split) at (0,-1.25) {Narrow spike?};
+        \node[l] (tcd) at (-2.7,-2.95) {Sudden / Blip /\\ Recurrent\\ \scriptsize(by $n_p$, memory)};
+        \node[d] (vr) at (2.3,-2.7) {\textbf{VR} test};
+        \node[l] (grad) at (0.9,-4.25) {Gradual\\ \scriptsize VR$>$1.3};
+        \node[l] (inc) at (3.8,-4.25) {Incremental\\ \scriptsize VR$<$1.1};
+        \draw[->] (root) -- (split);
+        \draw[->] (split) -- node[above left,font=\scriptsize,inner sep=1pt]{TCD} (tcd);
+        \draw[->] (split) -- node[above right,font=\scriptsize,inner sep=1pt]{PCD} (vr);
+        \draw[->] (vr) -- (grad);
+        \draw[->] (vr) -- (inc);
+      \end{tikzpicture}}
+      \vspace{0.2em}
+    \end{column}
+    \begin{column}{0.58\textwidth}
+      \centering
+      \includegraphics[width=\linewidth,height=0.7\textheight,keepaspectratio]{theory_drift_shapes.png}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+
+\begin{frame}{Hybrid Pipeline: Standard MMD to Trace, IDW-MMD to Validate}
+	\vfill
+	\begin{columns}[c]
+		\begin{column}{0.5\textwidth}
+			\textbf{Why use two MMD variants instead of one?}
+			\begin{itemize}
+				\scriptsize
+				\item \textbf{Standard MMD:} Fast, preserves the natural geometry of the trace (gradual rising trends, duration) needed for downstream shape classification.
+				\item \textbf{IDW-MMD:} Highly sensitive to shift, rigorously controls Type-I error ($\alpha=0.05$). Density computation is costly, so it's only used for validation.
+			\end{itemize}
+		\end{column}
+		\begin{column}{0.48\textwidth}
+			\begin{block}{Two-Stage Architecture}
+				\scriptsize
+				\begin{itemize}
+					\item \textbf{Stage 1 (Trace):} Run \textcolor{univblue}{Standard MMD} continuously to find candidate peaks.
+					\item \textbf{Stage 2 (Validate):} Compute \textcolor{univblue}{IDW-MMD} ($p$-val) only at peaks. If confirmed, pass the Standard MMD trace shape to the SE-CDT Classifier.
+				\end{itemize}
+			\end{block}
+		\end{column}
+	\end{columns}
+
+	\vfill
+	\centering
+	\begin{tikzpicture}[
+		node distance=0.3cm,
+		block/.style={draw=univblue, thick, fill=univblue!5, rounded corners, align=center, font=\scriptsize, minimum height=0.7cm, text width=2.2cm},
+		alert/.style={draw=alertred, thick, fill=alertred!5, rounded corners, align=center, font=\scriptsize\bfseries, minimum height=0.7cm, text width=1.8cm},
+		arrow/.style={->, >=stealth, thick, univblue}
+	]
+		\node[block] (stream) {Raw Data Stream\\$x_t$};
+		\node[block, right=of stream] (std) {Standard MMD\\(Continuous Trace)};
+		\node[block, right=of std] (idw) {IDW-MMD\\(Validate Peak)};
+		\node[alert, right=of idw] (alert) {Drift Alert\\($p$-val $< \alpha$)};
+		\node[block, right=of alert] (secdt) {SE-CDT Classifier\\(Read Shape)};
+		
+		\draw[arrow] (stream) -- (std);
+		\draw[arrow] (std) -- node[above, font=\tiny] {Peak} (idw);
+		\draw[arrow] (idw) -- (alert);
+		\draw[arrow] (alert) -- (secdt);
+	\end{tikzpicture}
+	\vfill
+\end{frame}
+
+% #############################################################################
+\section{Layer 3: Adaptation}
+% #############################################################################
+
+\begin{frame}{Layer 3: Type-Aware Model Adaptation}
+	\begin{columns}[c]
+		\begin{column}{0.55\textwidth}
+			\Large \textbf{Optimizing Update Cost}
+			
+			\vspace{1em}
+			\normalsize
+			\begin{table}[]
+			\resizebox{\linewidth}{!}{
+			\begin{tabular}{@{}ll@{}}
+				\toprule
+				\textbf{Detected Drift Type}  & \textbf{Adaptation Policy} \\ \midrule
+				\textbf{Sudden}      & \textcolor{univblue}{\textbf{Full Reset}} \\
+				\textbf{Incremental} & \textcolor{univblue}{\textbf{Continuous Update}} \\
+				\textbf{Gradual}     & \textcolor{univblue}{\textbf{Weighted Window}} \\
+				\textbf{Recurrent}   & \textcolor{univblue}{\textbf{Model Reuse (from Memory)}} \\
+				\textbf{Blip}        & \textcolor{univblue}{\textbf{Ignore (Do Nothing)}} \\
+				\bottomrule
+			\end{tabular}
+			}
+			\end{table}
+		\end{column}
+		\begin{column}{0.45\textwidth}
+			\begin{exampleblock}{Goal}
+				Minimize catastrophic forgetting and compute overhead by avoiding a "one-size-fits-all" retraining policy.
+			\end{exampleblock}
+			
+			\vspace{1em}
+			\begin{alertblock}{Kafka Integration}
+				Triggers downstream microservices to hot-swap or fine-tune models dynamically.
+			\end{alertblock}
+		\end{column}
+	\end{columns}
+\end{frame}
+
+% #############################################################################
+\section{Evaluation \& Results}
+% #############################################################################
+
+\begin{frame}{Datasets \& Experimental Setup}
+	\vfill
+	\begin{columns}[c]
+		\begin{column}{0.53\textwidth}
+			\textbf{14 Evaluation Datasets (Grouped):}
+			\begin{itemize}
+				\scriptsize
+				\item \textbf{Sudden $P(X)$:} Gaussian Shift (Moderate), GCS (3 concepts), 4 $\times$ Random Uniform (Sensitivity tests: Mild to Ultra Severe).
+				\item \textbf{Blip $P(X)$:} RBF Blips (short-term recurring centroid shifts).
+				\item \textbf{Real Drift $P(Y|X)$ (Control Group):} Standard SEA, Rotating Hyperplane, LED Abrupt (no feature drift; to verify negative controls).
+				\item \textbf{Semi-Synthetic:} Electricity Semi-Synthetic (real features, 10 injected drift points).
+				\item \textbf{Slow \& Cycle:} Gaussian Gradual (linear transition), GRS (Recurrent $A \leftrightarrow B$), Gaussian Stationary (H0 calibration).
+			\end{itemize}
+		\end{column}
+		\begin{column}{0.45\textwidth}
+			\begin{block}{\small Experimental Protocol}
+				\scriptsize
+				\begin{itemize}
+					\item \textbf{Runs:} 30 independent seeds per stream to ensure statistical stability.
+					\item \textbf{Layer 1 (Detection):} Tolerance $\delta = 75$, cooldown $= 150$. Measured via F1-score, EDR, and False Positives.
+					\item \textbf{Layer 2 (Classification):} Oracle Mode (1800 events total: 6 scenarios $\times$ 30 seeds $\times$ 10 events) to measure CAT and SUB accuracy.
+					\item \textbf{Layer 3 (Adaptation):} Prequential accuracy (test-then-train) on Stepping and Sudden streams.
+				\end{itemize}
+			\end{block}
+		\end{column}
+	\end{columns}
+	\vfill
+\end{frame}
+
+\begin{frame}{Classification Setup in Oracle Mode}
+	\vfill
+	\begin{columns}[c]
+		\begin{column}{0.54\textwidth}
+			\textbf{Streams (5-D Gaussian, 1800 events total):}
+
+			\vspace{0.3em}
+			{\small
+			\resizebox{\linewidth}{!}{\begin{tabular}{@{}ll@{}}
+				\toprule
+				\textbf{Scenario}      & \textbf{Composition}                  \\ \midrule
+				Mixed A                & Sudden $\to$ Gradual $\to$ Recurrent  \\
+				Mixed B                & Blip $\to$ Incremental $\to$ Sudden   \\
+				Repeated Sudden        & 10 $\times$ Sudden                     \\
+				Repeated Gradual       & 10 $\times$ Gradual                    \\
+				Repeated Incremental   & 10 $\times$ Incremental                \\
+				Repeated Recurrent     & 10 $\times$ Recurrent                  \\
+				\bottomrule
+			\end{tabular}}}
+
+			\vspace{0.4em}
+			{\scriptsize 6 scenarios $\times$ 30 seeds $\times$ 10 events $=$ \textbf{1800 events}. Each non-recurrent event shifts a different feature subset, so new concepts are genuinely distinct.}
+		\end{column}
+		\begin{column}{0.44\textwidth}
+			\begin{block}{\small Oracle mode}
+				\small
+				The classifier receives the ground-truth drift \emph{position} and is scored only on the \emph{typing} step. This isolates classification skill from detection skill --- the same way the detection protocol ($\delta=75$, cooldown) isolates detection.
+			\end{block}
+
+			\vspace{0.3em}
+			\begin{exampleblock}{\small Two metrics}
+				\scriptsize
+				\textbf{CAT} --- TCD vs PCD (the decision that drives adaptation).\\
+				\textbf{SUB} --- exact 5-class subtype (micro / macro).
+			\end{exampleblock}
+		\end{column}
+	\end{columns}
+	\vfill
+\end{frame}
+
+\begin{frame}{Result 1a: Drift Detection Performance}
+	\vfill
+	\begin{columns}[c]
+		\begin{column}{0.62\textwidth}
+			\centering
+			\includegraphics[width=\linewidth,height=0.75\textheight,keepaspectratio]{critical_difference_f1.png}
+		\end{column}
+		\begin{column}{0.38\textwidth}
+			\textbf{Statistical Significance (Nemenyi Test):}
+			\begin{itemize}
+				\scriptsize
+				\item \textbf{Meaning:} Post-hoc pairwise comparison of detectors across all 14 datasets.
+				\item \textbf{Critical Difference (CD):} Threshold of $2.81$ ($\alpha=0.05$).
+				\item \textbf{Interpretation:} Groups connected by a thick line (like DAWIDD, MMD, and SE-CDT) have \textbf{no statistically significant difference} in performance.
+				\item \textbf{Result:} SE-CDT (rank $3.89$) is statistically tied with DAWIDD (rank $3.46$).
+			\end{itemize}
+		\end{column}
+	\end{columns}
+	\vfill
+\end{frame}
+
+
+\begin{frame}{Result 1b: Type-I Error on Stationary Data}
+	\vfill
+	\begin{columns}[c]
+		\begin{column}{0.48\textwidth}
+			\centering
+			\begin{table}[]
+				\caption*{Type-I Error at nominal $\alpha = 0.05$}
+				\centering
+				\resizebox{\linewidth}{!}{\input{../../results/tables/table_h0_calibration.tex}}
+			\end{table}
+		\end{column}
+		\begin{column}{0.48\textwidth}
+			\textbf{Evaluation on Stationary Streams:}
+			\begin{itemize}
+				\small
+				\item Evaluated across 3 stationary datasets (no drift) over 30 runs to measure false alarms.
+				\item \textbf{IDW-MMD Calibration:} Holds extremely close to the nominal rate ($\alpha = 0.05$), ranging between \textbf{$0.025$--$0.075$}.
+				\item \textbf{Composite Trace (SE-CDT):} Becomes anti-conservative ($0.080$--$0.140$) due to peak selection and sliding-window dependency.
+			\end{itemize}
+		\end{column}
+	\end{columns}
+	\vfill
+\end{frame}
+
+
+\begin{frame}{Result 1c: Comprehensive Detection Performance}
+	\vfill
+	\textbf{Overall Metrics across all evaluation streams:}
+	\vspace{0.5em}
+	
+	\begin{table}[]
+		\centering
+		\resizebox{0.9\linewidth}{!}{\input{../../results/tables/table_I_comprehensive_performance.tex}}
+	\end{table}
+	
+	\vfill
+	\begin{itemize}
+		\scriptsize
+		\setlength\itemsep{0.2em}
+		\item \textbf{Synthetic $P(X)$ drifts} (Gaussian, Random Uniform): strong F1 on moderate-to-severe shifts (0.69--0.74), degrading gracefully on mildest case (0.51), with FP $\leq 10$.
+		\item \textbf{Recurrent/Blip} (Rbfblips, Stagger Recurrent): reliably detected (F1 $\approx 0.74$--$0.76$) with minimal FP.
+		\item \textbf{Real-drift controls} (SEA, Hyperplane, LED): low F1 \emph{by design} --- no $P(X)$ shift is present, confirming no false alarms on pure $P(Y|X)$ drift.
+	\end{itemize}
+	\vfill
+\end{frame}
+
+\begin{frame}[shrink]{Result 1c: Per-Dataset Detection F1 (1/2)}
+	\vfill
+	\begin{center}
+		\textbf{Part 1: Basic \& Gradual/Mild Drift}
+		\vspace{0.3em}
+		
+		\resizebox{0.95\linewidth}{!}{\input{../../results/tables/table_II_part1.tex}}
+		
+		\vspace{0.8em}
+		
+		\textbf{Part 2: Random Uniform \& Hyperplane}
+		\vspace{0.3em}
+		
+		\resizebox{0.95\linewidth}{!}{\input{../../results/tables/table_II_part2.tex}}
+	\end{center}
+	\vfill
+\end{frame}
+
+\begin{frame}[shrink]{Result 1c: Per-Dataset Detection F1 (2/2)}
+	\vfill
+	\begin{center}
+		\textbf{Part 3: Led, Rbfblips \& Stagger}
+		\vspace{0.3em}
+		
+		\resizebox{0.95\linewidth}{!}{\input{../../results/tables/table_II_part3.tex}}
+		
+		\vspace{0.8em}
+		
+		\textbf{Part 4: Sea \& Overall Mean F1}
+		\vspace{0.3em}
+		
+		\resizebox{0.62\linewidth}{!}{\input{../../results/tables/table_II_part4.tex}}
+	\end{center}
+	\vfill
+\end{frame}
+
+\begin{frame}{Result 1d: Runtime Efficiency (1/2)}
+	\vfill
+	\centering
+	\textbf{Execution Time per Stream}
+	\vspace{0.5em}
+
+	\includegraphics[width=0.8\linewidth,height=0.7\textheight,keepaspectratio]{figure_6_runtime.png}
+	\vfill
+\end{frame}
+
+\begin{frame}{Result 1d: Runtime Efficiency (2/2)}
+	\vfill
+	\textbf{Execution Time per Stream}
+	\vspace{0.5em}
+	
+	\begin{table}[]
+		\centering
+		\resizebox{0.55\linewidth}{!}{
+		\begin{tabular}{|l|c|c|c|}
+		\hline
+		\textbf{Method} & \textbf{Runtime (s/stream)} & \textbf{Throughput (samples/s)} & \textbf{Speedup vs ShapeDD} \\
+		\hline
+		KS & 0.29 & 33{,}990 & 14.47$\times$ \\
+		D3 & 0.31 & 32{,}300 & 13.75$\times$ \\
+		ShapeDD-IDW & 0.59 & 16{,}858 & 7.18$\times$ \\
+		IDW-MMD (standalone) & 0.59 & 16{,}849 & 7.17$\times$ \\
+		SE-CDT & 0.60 & 16{,}764 & 7.14$\times$ \\
+		ShapeDD (original) & 4.26 & 2{,}349 & 1.00$\times$ \\
+		MMD & 4.31 & 2{,}322 & 0.99$\times$ \\
+		DAWIDD & 5.66 & 1{,}767 & 0.75$\times$ \\
+		\hline
+		\end{tabular}
+		}
+	\end{table}
+	
+	\begin{block}{Computational Speedup}
+		\scriptsize Gamma-null approximation makes SE-CDT roughly \textbf{7$\times$ faster} than permutation-based ShapeDD ({\normalsize \textbf{0.60\,s}} vs.\ {\normalsize \textbf{4.26\,s}} per 10k samples) and standard MMD (4.31\,s), bringing kernel-based detection into the latency class of lightweight tests like KS and D3.
+	\end{block}
+\end{frame}
+
+\begin{frame}[shrink]{Result 2a: Unsupervised Classification (SE-CDT in Oracle Mode)}
+	\vfill
+	\begin{columns}[c]
+		\begin{column}{0.48\textwidth}
+			\centering
+			\includegraphics[width=0.85\linewidth,height=0.4\textheight,keepaspectratio]{confusion_matrix_category.png}
+
+			\vspace{0.1em}
+			\begin{exampleblock}{\footnotesize Two enhancements added}
+				\scriptsize
+				\textbf{Concept Memory:} ring buffer of post-drift snapshots (Standard-MMD match) $\to$ recovers Recurrent typing.\\
+				\textbf{Online Self-Calibration:} rolling-quantile baseline adapts SNR/WR/CV thresholds $\to$ robustness on noisy streams.
+			\end{exampleblock}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			\begin{block}{\footnotesize Headline --- label-free typing}
+				\scriptsize
+				\textbf{\textcolor{univblue}{CAT $=$ 80.1\%}} (TCD vs PCD --- the decision that drives adaptation), at \textbf{\textcolor{darkgreen}{92.6\% recall}}, with \textbf{no labels}.
+			\end{block}
+
+			\vspace{0.1em}
+			{\scriptsize \textbf{Per-type subtype accuracy (1800 events):}}
+
+			\vspace{0.1em}
+			\begin{table}[]
+			\scriptsize
+			\begin{tabular}{@{}llp{3.5cm}@{}}
+				\toprule
+				\textbf{Drift Type} & \textbf{Acc.} & \textbf{Notes}                         \\ \midrule
+				Sudden              & \textbf{82.4\%}   & Sharp, well-separated peaks   \\
+				Recurrent           & \textbf{71.5\%}   & Enabled by Concept Memory     \\
+				Blip                & \textbf{60.8\%}   & Multi-peak tolerance rule \\
+				Incremental         & 30.3\%            & Overlaps Gradual on VR \\
+				Gradual             & 27.2\%            & 57\% absorbed into Recurrent \\
+				\bottomrule
+			\end{tabular}
+			\end{table}
+
+			\vspace{0.1em}
+			\begin{alertblock}{\footnotesize Honest limitation}
+				\scriptsize
+				SUB $=55.3\%$: slow types overlap on Variance Ratio --- the weak point. Supervised CDT-MSW scores higher SUB but needs labels.
+			\end{alertblock}
+		\end{column}
+	\end{columns}
+	\vfill
+\end{frame}
+
+\begin{frame}{Result 2b: Confusion Matrix}
+	\begin{center}
+		\includegraphics[width=\linewidth,height=0.68\textheight,keepaspectratio]{confusion_matrix_se_cdt.png}
+	\end{center}
+\end{frame}
+
+\begin{frame}{Result 3: Model Adaptation (Normal / Streaming Mode)}
+	\vfill
+	\begin{columns}[c]
+		\begin{column}{0.55\textwidth}
+			\centering
+			\includegraphics[width=\linewidth,height=0.65\textheight,keepaspectratio]{fig_prequential_stepping.png}
+		\end{column}
+		\begin{column}{0.43\textwidth}
+			{\small
+			\resizebox{\linewidth}{!}{\begin{tabular}{@{}lcc@{}}
+				\toprule
+				\textbf{Strategy}                                & \textbf{Step.}  & \textbf{Sudd.} \\ \midrule
+				\textcolor{darkgreen}{\textbf{Type-Specific (Green)}} & \textbf{71.4\%} & \textbf{70.8\%} \\
+				\textcolor{blue}{Simple Retrain (Blue)}          & 63.0\%          & 62.2\%          \\
+				\textcolor{orange}{Periodic Retrain (Orange)}    & \underline{64.0\%} & \underline{63.7\%} \\
+				\textcolor{red}{No Adaptation (Red)}             & 54.8\%          & 53.7\%          \\
+				\bottomrule
+			\end{tabular}}}
+
+			\vspace{0.3em}
+			\begin{exampleblock}{\footnotesize Why Type-Specific helps}
+				\scriptsize
+				\begin{itemize}
+					\item \textbf{Avoids Waste:} Resetting on gradual drift discards history; periodic retrains ignore signals.
+					\item \textbf{Optimal Update:} Sudden $\to$ full reset; Incremental $\to$ warm-start; Gradual $\to$ recency-weighted retrain.
+					\item \textbf{Gains:} \textbf{+16.6 pp} (Stepping) and \textbf{+17.1 pp} (Sudden) vs No Adaptation ($p < 10^{-15}$).
+				\end{itemize}
+			\end{exampleblock}
+		\end{column}
+	\end{columns}
+	\vfill
+\end{frame}
+
+% --- Result 3b: Sudden Drift Adaptation ---
+\begin{frame}{Result 3b: Adaptation on Sudden Drift}
+	\vspace{0.5em}
+	\begin{center}
+		\includegraphics[width=0.95\linewidth,height=0.75\textheight,keepaspectratio]{fig_prequential_sudden.png}
+	\end{center}
+\end{frame}
+
+% --- Result 3c: Mixed Drift Adaptation ---
+\begin{frame}{Result 3c: Adaptation on Mixed Drift Scenario}
+	\vspace{0.5em}
+	\begin{center}
+		\includegraphics[width=0.95\linewidth,height=0.75\textheight,keepaspectratio]{fig_prequential_mixed.png}
+	\end{center}
+\end{frame}
+
+
+% #############################################################################
+\section{System Deployment}
+% #############################################################################
+
+\begin{frame}[shrink]{End-to-End Deployment Prototype on Apache Kafka}
+  \centering
+  \includegraphics[width=0.95\linewidth]{kafka_p1.png}\\[-0.2em]
+  \includegraphics[width=0.95\linewidth]{kafka_p2.png}\\[-0.2em]
+  \includegraphics[width=0.95\linewidth]{kafka_p3.png}\\[0.15em]
+  {\footnotesize Drift at sample 1500 $\to$ accuracy dips $\to$ SE-CDT fires ($p\approx10^{-6}$); CPU/memory stay flat (backup).}
+\end{frame}
+
+
+% #############################################################################
+\section{Conclusion}
+% #############################################################################
+
+\begin{frame}{Contributions of This Thesis}
+	\vfill
+	\begin{enumerate}
+		\item \textbf{Detection (Layer 1):} A calibrated, label-free detector --- ShapeDD with IDW optimal weighting and a \textbf{Gamma-null} p-value that replaces the permutation test for speedup.
+		\vspace{0.5em}
+		\item \textbf{Classification (Layer 2):} \textbf{SE-CDT} --- a fully \emph{unsupervised} drift-type classifier that reads 9 geometric/temporal shape attributes (plus a Variance Ratio) of the MMD trace.
+		\vspace{0.5em}
+		\item \textbf{Adaptation (Layer 3):} A \textbf{type-aware} routing policy mapping each drift type to its optimal update, validated end-to-end on an Apache Kafka prototype.
+	\end{enumerate}
+	\vfill
+\end{frame}
+
+\begin{frame}{Conclusion}
+	\begin{columns}[T]
+		\begin{column}{0.52\textwidth}
+			\begin{block}{\small Summary}
+				\footnotesize
+				\begin{enumerate}
+					\item \textbf{Detection:} ShapeDD-IDW with Gamma-null p-value provides a calibrated, label-free test with an end-to-end speedup.
+					\item \textbf{Classification:} SE-CDT operates label-free, achieving high Category Accuracy (80.1\%) and event recall (92.6\%).
+					\item \textbf{Adaptation:} Type-Specific routing yields substantial gains (+17.1 pp on Sudden) over no adaptation.
+					\item \textbf{System:} Validated through an end-to-end Kafka prototype deployment.
+				\end{enumerate}
+			\end{block}
+		\end{column}
+		\begin{column}{0.45\textwidth}
+			\begin{alertblock}{\small Key Limitations}
+				\footnotesize
+				\begin{itemize}
+					\item \textbf{Subtype Confusion:} Gradual and Incremental shifts remain challenging (27.2\% / 30.3\% accuracy) due to overlap on the Variance Ratio.
+					\item \textbf{Empirical Thresholds:} The Concept Memory threshold ($\mu = 0.15$) was chosen empirically based on the H0 noise floor.
+					\item \textbf{Adaptation Evaluation Scope:} Tested heavily on sudden-dominated streams; robustness on purely gradual/incremental scenarios requires further study.
+				\end{itemize}
+			\end{alertblock}
+		\end{column}
+	\end{columns}
+\end{frame}
+
+\begin{frame}[allowframebreaks]{References}
+	\footnotesize
+	\bibliographystyle{IEEEtran}
+	\bibliography{references}
+\end{frame}
+
+\begin{frame}[plain]
+	\centering
+	\vspace{2cm}
+	\Huge \textcolor{univblue}{\textbf{THANK YOU\\FOR LISTENING!}}
+
+	\vspace{1.5cm}
+	\Large
+	\textbf{Q \& A}
+
+	\vspace{1cm}
+	\normalsize
+	\textit{Student: Le Phuc Duc \\ Supervisor 1: Assoc.Prof.Dr. Thoai Nam \\ Supervisor 2: Dr. Nguyen Quang Hung}
+\end{frame}
+
+
+% #############################################################################
+\appendix
+\section*{Backup Slides}
+
+\begin{frame}[noframenumbering,shrink]{Backup: SE-CDT Classification Algorithm}
+	\textbf{Algorithm: SE-CDT --- Unsupervised Drift Type Classification}
+	\vspace{0.5em}
+	\begin{algorithmic}[1]
+	    \scriptsize
+		\REQUIRE Drift magnitude signal $\sigma(t)$ from Detection Module
+		\REQUIRE Raw data window $W$ for Variance Ratio
+		\ENSURE Drift type: \{TCD-Blip, TCD-Sudden, TCD-Recurrent, PCD-Gradual, PCD-Incremental\}
+		\STATE $\sigma_s \leftarrow \text{GaussianFilter}(\sigma,\; \sigma_g)$
+		\STATE $P \leftarrow \text{FindPeaks}(\sigma_s,\; \bar{\sigma}_s + \alpha\,\sigma_{\mathrm{std}})$
+		\STATE Compute features: $n_p \leftarrow |P|$, WR, CV, SNR, PPR, DPAR, LTS, SDS, MS
+		\STATE $\mathrm{VR} \leftarrow \text{VarianceRatio}(W)$
+		\STATE $\ell \leftarrow \text{EstimateDriftDuration}(\sigma_s)$
+		\IF{$n_p \leq \tau_{n}^{\mathrm{blip}}$ \textbf{and} $\mathrm{WR} < \tau_{\mathrm{WR}}^{\mathrm{blip}}$ \textbf{and} $\text{BlipProfile}(\dots)$}
+			\RETURN \textbf{TCD-Blip}
+		\ENDIF
+		\IF{$\ell > \tau_{\ell}$} 
+			\IF{$\text{IsIncremental}(\mathrm{VR}, \mathrm{LTS}, \dots)$}
+				\RETURN \textbf{PCD-Incremental}
+			\ELSE
+				\RETURN \textbf{PCD-Gradual}
+			\ENDIF
+		\ENDIF
+		\IF{$n_p \leq \tau_{n}^{\mathrm{sud}}$ \textbf{and} $\mathrm{WR} < \tau_{\mathrm{WR}}$ \textbf{and} $\mathrm{SNR} > \tau_{\mathrm{SNR}}$}
+			\RETURN \textbf{TCD-Sudden}
+		\ENDIF
+		\IF{$n_p \geq \tau_{n}^{\mathrm{rec}}$ \textbf{and} $\mathrm{CV} < \tau_{\mathrm{CV}}$ \textbf{and} $\mathrm{LTS} < \tau_{\mathrm{LTS}}$}
+			\RETURN \textbf{TCD-Recurrent}
+		\ENDIF
+		\IF{$\text{IsIncremental}(\mathrm{VR}, \mathrm{LTS}, \dots)$}
+			\RETURN \textbf{PCD-Incremental}
+		\ELSE
+			\RETURN \textbf{PCD-Gradual}
+		\ENDIF
+	\end{algorithmic}
+\end{frame}
+
+\begin{frame}[noframenumbering,shrink]{Backup: What the 9 Shape Attributes Mean}
+	\footnotesize All measured on the smoothed MMD signal $\sigma_s(t)$; a peak $=$ a point above $\bar\sigma_s + 0.3\,\sigma_{\mathrm{std}}$.
+	\vspace{0.3em}
+	\begin{columns}[T]
+		\begin{column}{0.53\textwidth}
+			\begin{block}{\small Geometric --- peak structure (``what it looks like'')}
+				\scriptsize
+				\begin{itemize}
+					\item \textbf{$n_p$} (peak count): 1 $\to$ Sudden; 2--3 $\to$ Blip; many $\to$ Recurrent.
+					\item \textbf{WR} $=\mathrm{FWHM}/(2l_1)$: small $\to$ sharp peak (Sudden); large $\to$ broad hump (PCD).
+					\item \textbf{CV} $=\mathrm{std}/\mathrm{mean}$ of inter-peak gaps: low $\to$ evenly spaced (Recurrent).
+					\item \textbf{SNR} $=\max/\mathrm{median}$: high $\to$ one clean peak above the noise (Sudden).
+					\item \textbf{PPR}: gap between 2 tallest peaks $/$ length; small $\to$ two close peaks (Blip).
+					\item \textbf{DPAR} $=\min/\max$ of the 2 peak heights; near 1 $\to$ twin peaks (Blip).
+				\end{itemize}
+			\end{block}
+		\end{column}
+		\begin{column}{0.45\textwidth}
+			\begin{block}{\small Temporal --- time behaviour (``how it evolves'')}
+				\scriptsize
+				\begin{itemize}
+					\item \textbf{LTS}: $R^2$ of a linear fit; high $\to$ straight ramp (Incremental).
+					\item \textbf{SDS}: fraction of jumps $>1.5\,\mathrm{std}$; high $\to$ step-like (Incremental).
+					\item \textbf{MS} $=|{\uparrow}-{\downarrow}|/({\uparrow}+{\downarrow})$: high $\to$ one-directional (Incremental); low $\to$ oscillating (Gradual).
+				\end{itemize}
+			\end{block}
+			\begin{exampleblock}{\small Quick guide}
+				\scriptsize
+				Sudden vs slow $\to$ \textbf{WR, SNR}; Blip $\to$ \textbf{PPR+DPAR}; Recurrent $\to$ \textbf{$n_p$+CV}; Incr.\ vs Grad.\ $\to$ \textbf{LTS/SDS/MS} (then \textbf{VR}).
+			\end{exampleblock}
+		\end{column}
+	\end{columns}
+	\vspace{0.2em}
+	{\scriptsize The 6 geometric attributes answer \emph{what the peak looks like}; the 3 temporal ones answer \emph{how it evolves} --- together they separate the 5 drift types with no labels.}
+\end{frame}
+
+\begin{frame}[noframenumbering]{Backup: How the Sliding Window Builds the MMD Trace}
+	\centering
+	\includegraphics[width=0.84\linewidth,height=0.64\textheight,keepaspectratio]{theory_window_to_trace.png}
+
+	\vspace{0.2em}
+	\begin{columns}[T]
+		\begin{column}{0.5\textwidth}
+			{\footnotesize
+			\begin{itemize}
+				\item Window $=$ \textcolor{darkgreen}{$W_{ref}$ ($l_1{=}50$)} $+$ \textcolor{alertred}{$W_{test}$ ($l_2{=}150$)}, slides by $l_1/2 = 25$.
+				\item \textbf{(1)} before drift $\to$ low; \textbf{(2)} straddling $\to$ peak; \textbf{(3)} after $\to$ low again.
+			\end{itemize}}
+		\end{column}
+		\begin{column}{0.5\textwidth}
+			{\footnotesize
+			\begin{itemize}
+				\item Held in a \textbf{ring buffer} ($\approx$750), re-checked every $\sim$150 samples.
+				\item On a confirmed drift: read the \textbf{trace shape} (9 attributes) $+$ \textbf{$\pm$750 raw} (Variance Ratio).
+			\end{itemize}}
+		\end{column}
+	\end{columns}
+\end{frame}
+
+\begin{frame}[noframenumbering,shrink]{Backup: SE-CDT Decision Tree (full)}
+    \centering
+    \Large \textbf{Rule-based Logic to Identify Drift Types}
+    
+    \vspace{0.3em}
+    \begin{center}
+    \resizebox{!}{0.72\textheight}{
+    \begin{tikzpicture}[
+      node distance=0.55cm and 1.9cm,
+      every node/.style={align=center, font=\scriptsize},
+      decision/.style={draw, rectangle, rounded corners, fill=gray!10, text width=3.0cm},
+      leaf/.style={draw, rectangle, fill=univblue!20, text width=2.3cm, font=\bfseries}
+    ]
+      \node[decision] (root) {9 Features $+$ VR $+$ duration $\ell$};
+      \node[decision, below=of root] (blip_cond) {$n_p \in \{2,3\}$, PPR $< 0.2$, DPAR $> 0.6$?};
+      \node[leaf, right=of blip_cond] (blip) {Blip};
+
+      \node[decision, below=of blip_cond] (dur_cond) {Long duration?\\($\ell > 1 \Rightarrow$ PCD)};
+
+      \node[decision, below=of dur_cond] (sudden_cond) {$n_p \le 3$, WR $< 0.15$, SNR $> 2.0$?};
+      \node[leaf, right=of sudden_cond] (sudden) {Sudden};
+
+      \node[decision, below=of sudden_cond] (rec_cond) {$n_p \ge 4$, low CV, \textbf{or} Memory Match?};
+      \node[leaf, right=of rec_cond] (recurrent) {Recurrent};
+
+      \node[decision, below=of rec_cond, fill=univblue!8] (vr_split) {\textbf{Variance Ratio}\\$\mathrm{VR} > 1.3 \Rightarrow$ Gradual\\$\mathrm{VR} < 1.1 \Rightarrow$ Incremental};
+      \node[leaf, below left=0.6cm and 0.05cm of vr_split] (gradual) {Gradual};
+      \node[leaf, below right=0.6cm and 0.05cm of vr_split] (incremental) {Incremental};
+
+      \draw[-latex] (root) -- (blip_cond);
+      \draw[-latex] (blip_cond) -- node[above] {Yes} (blip);
+      \draw[-latex] (blip_cond) -- node[right] {No} (dur_cond);
+      \draw[-latex] (dur_cond) -- node[right] {No} (sudden_cond);
+      \draw[-latex] (sudden_cond) -- node[above] {Yes} (sudden);
+      \draw[-latex] (sudden_cond) -- node[right] {No} (rec_cond);
+      \draw[-latex] (rec_cond) -- node[above] {Yes} (recurrent);
+      \draw[-latex] (rec_cond) -- node[right] {No} (vr_split);
+      \draw[-latex] (vr_split.south) to[out=-135,in=90] (gradual.north);
+      \draw[-latex] (vr_split.south) to[out=-45,in=90] (incremental.north);
+      % Long-duration (PCD) branch routes down the left side into the VR split
+      \draw[-latex] (dur_cond.west) -- node[above,font=\tiny] {Yes} ++(-1.5,0) |- (vr_split.west);
+    \end{tikzpicture}
+    }
+    \end{center}
+\end{frame}
+
+% --- Backup 1: IDW-MMD vs Bharti ---
+\begin{frame}[noframenumbering,shrink]{Backup: IDW-MMD vs Optimally-Weighted MMD (Bharti et al.)}
+	\textbf{Question:} ``How is IDW-MMD different from the Optimally-Weighted MMD of Bharti et al. (2023)?''
+
+	\vspace{0.5em}
+	\begin{columns}[T]
+		\begin{column}{0.48\textwidth}
+			\begin{block}{Bharti et al. (OW-MMD)}
+				\begin{itemize}
+					\item Domain: \textbf{likelihood-free inference} (ABC).
+					\item Weights chosen by optimising against a target posterior.
+					\item Requires solving a constrained convex optimisation per call.
+					\item Not designed for streaming drift detection.
+				\end{itemize}
+			\end{block}
+		\end{column}
+		\begin{column}{0.48\textwidth}
+			\begin{exampleblock}{IDW-MMD (this work)}
+				\begin{itemize}
+					\item Domain: \textbf{drift detection} in fast data streams.
+					\item Weights from a closed-form heuristic: $w_i \propto 1/(\sqrt{d_i} + \epsilon)$.
+					\item Cost: $O(n^2)$ for the kernel matrix, $O(n)$ extra for the weights --- no optimisation step.
+					\item Same \textit{weighted MMD} family, different objective and very different runtime.
+				\end{itemize}
+			\end{exampleblock}
+		\end{column}
+	\end{columns}
+
+	\vspace{0.5em}
+	\textbf{Summary:} both are weighted MMD variants, but they target different problems (ABC vs streaming drift), use different weight functions, and have very different runtime profiles.
+\end{frame}
+
+% --- Backup 2: F1 low ---
+\begin{frame}[noframenumbering,shrink]{Backup: ``F1 close to MMD baseline --- where is the contribution?''}
+	\textbf{Question:} ``SE-CDT's F1 (0.531) is only marginally above MMD (0.524). Where is the gain?''
+
+	\vspace{0.5em}
+	\begin{columns}[T]
+		\begin{column}{0.5\textwidth}
+			\textbf{F1 alone hides the trade-off:}
+
+			{\small
+			\resizebox{\linewidth}{!}{\begin{tabular}{@{}lccc@{}}
+				\toprule
+				             & \textbf{SE-CDT} & \textbf{MMD} & \textbf{KS}  \\ \midrule
+				F1           & 0.531           & 0.524        & 0.335        \\
+				\textbf{FP}  & \textcolor{darkgreen}{\textbf{9.6}} & 10.6  & 27.2         \\
+				Recall       & 0.737           & 0.732        & 0.775        \\
+				Precision    & 0.432           & 0.426        & 0.224        \\
+				\bottomrule
+			\end{tabular}}}
+
+			\vspace{0.5em}
+			{\footnotesize \textbf{In a production setting:}}
+			\begin{itemize}
+				\item Frequent FPs $\to$ \textbf{alert fatigue}, lost trust in the monitor.
+				\item Investigating one false alarm typically costs more than missing one event.
+				\item A miscalibrated permutation-style test inflates either FPs or misses.
+			\end{itemize}
+		\end{column}
+		\begin{column}{0.48\textwidth}
+			\textbf{What SE-CDT actually adds:}
+			\begin{enumerate}
+				\item \textbf{Single-test calibrated near $\alpha = 0.05$} --- Standard MMD / IDW-MMD Type-I error $0.025$--$0.075$; the SE-CDT composite is anti-conservative ($0.080$--$0.140$), reported honestly as a pipeline limitation.
+				\item \textbf{Classification module on top of detection} --- gives a drift type, not just a flag.
+				\item \textbf{Modest runtime speedup over ShapeDD} thanks to the Gamma-null p-value (no kernel re-build per shuffle).
+				\item Stays \textbf{fully unsupervised} at runtime.
+			\end{enumerate}
+
+			\vspace{0.5em}
+			\centering
+			\includegraphics[width=\linewidth,height=0.28\textheight,keepaspectratio]{figure_4_stationary_fp.png}
+		\end{column}
+	\end{columns}
+\end{frame}
+
+% --- Backup 3: Concept Memory mechanism ---
+\begin{frame}[noframenumbering,shrink]{Backup: Why does Concept Memory matter for Recurrent drift?}
+	\textbf{Question:} ``Recurrent drift requires concept matching --- how does Concept Memory provide it?''
+
+	\vspace{0.5em}
+	\begin{columns}[T]
+		\begin{column}{0.52\textwidth}
+			\textbf{The detection challenge:}
+			\begin{itemize}
+				\item A Recurrent stream is a sequence of \textit{repeated} concept switches; each switch produces an MMD peak that, in isolation, looks like a Sudden drift.
+				\item Without memory of past concepts, repeated visits are scored independently $\to$ Recurrent collapses into the Sudden branch.
+			\end{itemize}
+
+			\vspace{0.5em}
+			\textbf{How Concept Memory resolves it:}
+			\begin{enumerate}
+				\item During every \textit{stable period}, take a snapshot of the current data window and store it in a ring buffer of size $K = 8$.
+				\item When a new drift fires, compute Standard MMD between the new post-drift window and every snapshot.
+				\item If the smallest MMD $< \mu = 0.15$ $\to$ override the rule output to \textbf{Recurrent}.
+			\end{enumerate}
+		\end{column}
+		\begin{column}{0.45\textwidth}
+			\begin{exampleblock}{Why $\mu = 0.15$?}
+				\small
+				$\mu = 0.05$ falls inside the MMD noise floor (false matches between independent stationary windows). An empirical sweep on H0 calibration data shows $\mu = 0.15$ separates ``revisited concept'' from ``new concept'' reliably.
+			\end{exampleblock}
+
+			\vspace{0.3em}
+			\begin{alertblock}{Remaining limitations}
+				\small
+				Two failure modes remain on the harder Recurrent variants:
+				\begin{itemize}
+					\item Recurrent events that are \textit{too far apart} push the original snapshot out of the ring buffer.
+					\item Repeated Gradual streams saturate after a few events, so the post-drift window matches a stored snapshot and is labelled Recurrent rather than Gradual.
+				\end{itemize}
+				$\to$ Future work: learned threshold and longer memory.
+			\end{alertblock}
+		\end{column}
+	\end{columns}
+\end{frame}
+
+% --- Backup 4: Category vs CDT-MSW ---
+\begin{frame}[noframenumbering,shrink]{Backup: ``CDT-MSW has higher CAT and SUB --- is SE-CDT worse?''}
+	\textbf{Question:} ``CDT-MSW reports CAT 87.0\% and SUB 86.7\%, both higher than SE-CDT. Why frame SE-CDT as competitive?''
+
+	\vspace{0.5em}
+	\begin{columns}[T]
+		\begin{column}{0.48\textwidth}
+			\begin{block}{Side-by-side numbers}
+				{\small
+				\resizebox{\linewidth}{!}{\begin{tabular}{@{}lcc@{}}
+					\toprule
+					              & \textbf{SE-CDT}                        & \textbf{CDT-MSW} \\ \midrule
+					Labels        & \textcolor{darkgreen}{\textbf{None}}   & Required           \\
+					CAT           & 80.1\%                                 & 87.0\%             \\
+					SUB           & 55.3\%                                 & 86.7\%             \\
+					Recall        & \textcolor{darkgreen}{\textbf{92.6\%}} & 82.5\%             \\
+					Effective     & \textbf{74.2\%}                        & 71.8\%             \\
+					\bottomrule
+				\end{tabular}}}
+				\vspace{0.2em}
+				{\scriptsize Effective $=$ CAT $\times$ Recall (probability of seeing a drift \emph{and} typing it correctly). CDT-MSW Recall $= 1 - \overline{\text{MDR}}$ from paper Table~5.}
+			\end{block}
+		\end{column}
+		\begin{column}{0.48\textwidth}
+			\textbf{Reading the numbers in context:}
+			\begin{itemize}
+				\item CDT-MSW reports CAT and SUB \textit{conditionally} on drifts it detects; with paper recall $\approx 82.5\%$ it still misses $\sim 17\%$ of events.
+				\item SE-CDT detects $92.6\%$ of drifts and types every one of them without any labels.
+				\item End-to-end, SE-CDT lands 2.4pp above CDT-MSW on effective accuracy ($74.2\%$ vs $71.8\%$); the contribution is reaching this on \textbf{unsupervised $P(X)$}.
+			\end{itemize}
+
+			\vspace{0.3em}
+			\begin{alertblock}{Trade-off}
+				\small
+				CDT-MSW is more accurate per detected event because it has access to ground-truth labels. SE-CDT achieves comparable end-to-end accuracy on the same task class without any label dependency --- a better fit for pipelines where labels arrive late or never.
+			\end{alertblock}
+		\end{column}
+	\end{columns}
+\end{frame}
+
+% --- Backup 5: Why not DL ---
+\begin{frame}[noframenumbering,shrink]{Backup: ``Why not deep learning?''}
+	\textbf{Question:} ``Couldn't a deep learning model solve this more accurately?''
+
+	\vspace{0.5em}
+	\begin{columns}[T]
+		\begin{column}{0.48\textwidth}
+			\begin{alertblock}{Deep models for drift detection --- limitations}
+				\begin{itemize}
+					\item Need a large labelled dataset to train --- the very thing we don't have on a streaming pipeline.
+					\item Higher inference latency per window than a kernel computation.
+					\item No closed-form theoretical bound on the test statistic.
+					\item Decision is hard to explain to a domain expert.
+				\end{itemize}
+			\end{alertblock}
+		\end{column}
+		\begin{column}{0.48\textwidth}
+			\begin{exampleblock}{Why MMD / ShapeDD fits this problem}
+				\begin{itemize}
+					\item Fully unsupervised --- no training run before deployment.
+					\item Theoretical guarantees: Triangle Shape Theorem, Type-I error from H0 calibration.
+					\item Decision rule is human-readable (a small tree of geometric features).
+					\item One mechanism works across $P(X)$ shifts of arbitrary type.
+				\end{itemize}
+			\end{exampleblock}
+
+			\vspace{0.3em}
+			\textbf{Future direction:} keep the kernel framework but plug in a learned feature extractor for high-dimensional inputs (Chapter 6).
+		\end{column}
+	\end{columns}
+\end{frame}
+
+% --- Backup 6: Mild drift behaviour ---
+\begin{frame}[noframenumbering,shrink]{Backup: behaviour on mild drift}
+	\textbf{Question:} ``On the mild-drift scenario (Random Mild, $\delta = 0.125$) SE-CDT scored F1 $= 0.511$ vs MMD $= 0.563$ --- where does the gap come from?''
+
+	\vspace{0.5em}
+	\begin{columns}[T]
+		\begin{column}{0.48\textwidth}
+			\textbf{Cause:}
+			\begin{itemize}
+				\item IDW down-weights points in dense (stable) regions.
+				\item Mild drift lives mostly inside those regions, shortening the IDW peak.
+				\item Net effect: some peaks fall under threshold, reducing recall.
+			\end{itemize}
+
+			\vspace{0.5em}
+			\textbf{This is the intended trade-off:}
+			\begin{itemize}
+				\item IDW-MMD biases toward fewer false alarms (FP $\sim 9.6$/run).
+				\item Cost: $\sim 5$pp F1 drop on the smallest shifts.
+			\end{itemize}
+		\end{column}
+		\begin{column}{0.48\textwidth}
+			\centering
+			\includegraphics[width=\linewidth,height=0.65\textheight,keepaspectratio]{vis_repeated_gradual_SE.png}
+
+			\vspace{0.3em}
+			\begin{exampleblock}{Possible mitigations (future work)}
+				\begin{itemize}
+					\item Combine IDW and Standard MMD test statistics.
+					\item Adapt thresholds based on rolling baseline noise.
+				\end{itemize}
+			\end{exampleblock}
+		\end{column}
+	\end{columns}
+\end{frame}
+
+% --- Backup 7: Permutation vs Gamma null ---
+\begin{frame}[noframenumbering,shrink]{Backup: Permutation test vs Gamma-null p-value}
+	\textbf{Question:} ``Removing the permutation test --- is the Gamma-null p-value still trustworthy?''
+
+	\vspace{0.5em}
+	\begin{columns}[T]
+		\begin{column}{0.48\textwidth}
+			\begin{alertblock}{Permutation test (original ShapeDD)}
+				\begin{itemize}
+					\item Reshuffles indices many times per window.
+					\item Empirical null, no distributional assumption.
+					\item Each shuffle re-builds the kernel matrix $\to$ heavy compute.
+				\end{itemize}
+			\end{alertblock}
+		\end{column}
+		\begin{column}{0.48\textwidth}
+			\begin{exampleblock}{Gamma-null p-value (IDW-MMD)}
+				\begin{itemize}
+					\item Moment-matched Gamma fit to the null MMD distribution (Gretton et al.\ 2009).
+					\item Estimates the first two moments from a small number of index shuffles, reusing the kernel matrix.
+					\item Complexity $O(n^2)$ for the kernel plus a few cheap shuffles.
+				\end{itemize}
+			\end{exampleblock}
+		\end{column}
+	\end{columns}
+
+	\vspace{0.5em}
+	\textbf{Verification:} The detection $F_1$ remains comparable to the permutation baseline; the H0-calibration on three stationary distributions reports Standard MMD and IDW-MMD inside the 95\% CI of $\alpha = 0.05$ ($0.025$--$0.075$), while the SE-CDT composite is anti-conservative at $0.080$--$0.140$ (up to $\approx 2.8\times\,\alpha$), reflecting peak-selection and sliding-window dependence rather than the per-candidate test itself. End-to-end runtime is slightly faster than the ShapeDD baseline.
+\end{frame}
+
+% --- Backup 8: Subcategory accuracy ---
+\begin{frame}[noframenumbering,shrink]{Backup: ``Subcategory accuracy 55.3\% --- is it close to random?''}
+	\textbf{Question:} ``With 5 classes, is $\sim 60\%$ close to random guessing?''
+
+	\vspace{0.5em}
+	\begin{columns}[T]
+		\begin{column}{0.48\textwidth}
+			\centering
+			\includegraphics[width=\linewidth,height=0.65\textheight,keepaspectratio]{confusion_matrix_se_cdt.png}
+		\end{column}
+		\begin{column}{0.48\textwidth}
+			\textbf{It is well above random:}
+			\begin{itemize}
+				\item Random baseline across 5 classes is 20\%.
+				\item Micro SUB $= 55.3\%$ is $\sim 2.8\times$ random and well above the 95\% CI of a random predictor ($\sim 23\%$).
+				\item Performance is \textbf{very uneven across classes}:
+			\end{itemize}
+
+			{\small
+			\resizebox{\linewidth}{!}{\begin{tabular}{@{}lc@{}}
+				\toprule
+				\textbf{Drift Type} & \textbf{Accuracy} \\ \midrule
+				Sudden              & \textbf{82.4\%}   \\
+				Incremental         & 30.3\%            \\
+				Recurrent           & \textbf{71.5\%}   \\
+				Blip                & \textbf{60.8\%}   \\
+				Gradual             & 27.2\%            \\
+				\bottomrule
+			\end{tabular}}}
+
+			\vspace{0.3em}
+			\textbf{Why the gap?} Sudden has the cleanest peaks; Recurrent uses Concept Memory; Blip benefits from the relaxed peak rule. The two slow types (Gradual, Incremental) are the hardest --- mechanism detailed in the next backup slide.
+		\end{column}
+	\end{columns}
+\end{frame}
+
+
+% --- Backup 10: Runtime analysis ---
+\begin{frame}[noframenumbering,shrink]{Backup: Computational Overhead \& Runtime Analysis}
+	\textbf{Question:} ``What is the computational overhead of IDW-MMD compared to standard methods?''
+
+	\vspace{0.5em}
+	\begin{columns}[T]
+		\begin{column}{0.48\textwidth}
+			\centering
+			\includegraphics[width=\linewidth,height=0.65\textheight,keepaspectratio]{figure_6_runtime.png}
+		\end{column}
+		\begin{column}{0.48\textwidth}
+			\textbf{Complexity \& Efficiency:}
+			\begin{itemize}
+				\item \textbf{Standard MMD / IDW-MMD:} $O(n^2)$ matrix computation, but IDW computes weights once per window step.
+				\item \textbf{Gamma-null Approximation} bypasses the permutation test entirely, running in constant extra shuffles.
+				\item \textbf{ShapeDD-IDW} is roughly \textbf{7$\times$ faster} than the original permutation-based ShapeDD (0.59s vs 4.26s per 10k samples).
+			\end{itemize}
+
+			\vspace{0.5em}
+			\begin{exampleblock}{\small Streaming Suitability}
+				\small
+				In online deployments, the detector easily processes streams at over \textbf{16k samples/sec}, making its latency negligible in streaming Kafka pipelines.
+			\end{exampleblock}
+		\end{column}
+	\end{columns}
+\end{frame}
+
+\begin{frame}[noframenumbering]{Backup: Kafka Deployment --- System Resource Usage}
+  \centering
+  \includegraphics[width=0.95\linewidth]{kafka_p4.png}\\[0.4em]
+  {\small Memory and CPU stay stable throughout the run --- SE-CDT's streaming overhead is negligible.}
+\end{frame}
+
+
+% --- Backup 12: Why the slow subtypes are low ---
+\begin{frame}[noframenumbering,shrink]{Backup: Why are Gradual (27.2\%) and Incremental (30.3\%) low?}
+	\textbf{Question:} ``The two slow types are the weak point --- what exactly goes wrong?''
+
+	\vspace{0.5em}
+	\begin{columns}[T]
+		\begin{column}{0.5\textwidth}
+			\textbf{Two systematic confusions:}
+			\begin{enumerate}
+				\small
+				\item \textbf{Gradual $\leftrightarrow$ Incremental overlap:} Both land in ambiguous Variance Ratio bands ($\sim$47\% of Incremental read as Gradual).
+				\item \textbf{Saturation $\to$ Recurrent:} In repeated slow drifts, $P(X)$ stops changing. The post-drift window matches stored snapshots, labelling it Recurrent ($\sim$57\% of Gradual events).
+			\end{enumerate}
+		\end{column}
+		\begin{column}{0.48\textwidth}
+			\begin{exampleblock}{\small Why CAT is unaffected}
+				\small
+				Both confusions stay \emph{inside} PCD, preserving TCD/PCD accuracy (CAT $=80.1\%$). Confusing Gradual with Incremental is low-cost for adaptation.
+			\end{exampleblock}
+
+			\vspace{0.3em}
+			\begin{alertblock}{\small Fix (future work)}
+				\scriptsize
+				Replace fixed VR thresholds with learned classifiers and separate Concept-Memory match step from shape classification.
+			\end{alertblock}
+		\end{column}
+	\end{columns}
+\end{frame}
+
+% --- Backup 13: Adaptation selection bias ---
+\begin{frame}[noframenumbering,shrink]{Backup: ``Is the adaptation gain Sudden-biased?''}
+	\textbf{Question:} ``Type-Specific wins +17pp --- but the classifier is only $\sim$55\% on subtypes. Does the gain depend on the easy scenarios?''
+
+	\vspace{0.5em}
+	\begin{columns}[T]
+		\begin{column}{0.5\textwidth}
+			\textbf{Honest answer --- yes, partly:}
+			\begin{itemize}
+				\small
+				\item The three adaptation scenarios (Stepping, Sudden, Mixed) are all \textbf{Sudden-dominated}, exactly where the classifier is strongest (Sudden 82.4\%).
+				\item So routing is correct \emph{most of the time in this region}, and any reset on a true sudden drift helps regardless.
+				\item We have \textbf{not} tested adaptation on Gradual/Incremental-heavy streams, where subtype accuracy drops to 27--30\%.
+			\end{itemize}
+		\end{column}
+		\begin{column}{0.48\textwidth}
+			\begin{exampleblock}{\small Why the gain still holds}
+				\small
+				The category decision (TCD vs PCD, 80.1\%) drives the adaptation policy, not the exact subtype. TCD$\to$reset and PCD$\to$fine-tune is the right call even when the subtype within PCD is wrong --- the operational cost of confusing Gradual with Incremental is small (same update family).
+			\end{exampleblock}
+
+			\vspace{0.3em}
+			\begin{alertblock}{\small Scope claim}
+				\scriptsize
+				We claim the adaptation benefit \emph{for the sudden/recurrent regime}, not universally. Gradual/Incremental-heavy adaptation is listed as future work (Ch.\ 6).
+			\end{alertblock}
+		\end{column}
+	\end{columns}
+\end{frame}
+
+
+\end{document}

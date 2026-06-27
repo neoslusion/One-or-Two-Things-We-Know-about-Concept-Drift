@@ -1,0 +1,6 @@
+The **Stacking Fast Hoeffding Drift Detection Method (FHDDMS)** extends the **Fast Hoeffding Drift Detection Method (FHDDM)** by maintaining **two superimposed sliding windows of different sizes**: a short window and a long window.
+
+*   **Purpose**: The short window is designed to **detect abrupt drifts faster**, while the long window aims to **detect gradual drifts with a lower false negative rate**.
+*   **Input**: For both windows, the algorithm inserts a '1' if a prediction is correct, and a '0' if it's incorrect.
+*   **Monitoring**: FHDDMS continuously calculates the **current mean (`µtl` for long, `µts` for short) of the elements within each window** and updates the **maximum mean observed so far (`µml` for long, `µms` for short)** if the current mean is higher.
+*   **Drift Detection**: A concept drift is signaled if the difference between the maximum observed mean and the current mean (`∆µ = µm − µt`) for *either* the long or the short window **exceeds a predefined threshold (`εl` or `εs`)**, which is determined using **Hoeffding’s inequality**. If a drift is detected, the parameters are reset.

@@ -1,0 +1,27 @@
+The **Dynamic Adapting Window Independence Drift Detection (DAWIDD)** method is a novel approach to concept drift detection that fundamentally redefines drift as a **statistical dependency between data and time**.
+
+*   **Core Principle: Drift as Dependency**
+    *   DAWIDD formalizes concept drift, which is typically understood as a change in underlying probability distributions over time, as an **equivalence to the statistical dependency between random variables representing data (X) and time (T)**.
+    *   In a drift-free scenario, data (X) should be statistically independent of the time (T) it was observed. If they are dependent, it signifies the presence of a "dependency drift," which is equivalent to concept drift.
+
+*   **Algorithmic Process**
+    *   **Data and Timestamps**: When processing a stream of data instances (x1, ..., xn), DAWIDD associates each sample with its clock-time of occurrence (t_i), effectively transforming the input into (X1, T1), ..., (Xn, Tn) pairs.
+    *   **Sliding Window**: It maintains a **sliding window (W)** that stores these (data, time) pairs [110, Algorithm 1].
+    *   **Independence Test**: At each step, after adding a new sample to the window, DAWIDD performs an **independence test** between the data (X_i) and time (T_i) within the window.
+    *   **Drift Alert**: If the independence test **rejects the null hypothesis (H0)**—meaning X and T are statistically dependent—DAWIDD outputs a "Drift Alert" [110, Algorithm 1].
+    *   **Window Management**:
+        *   Upon detecting a drift, the algorithm **drops elements from the tail of the window** until it reaches a minimum size (`n_min`) [110, Algorithm 1].
+        *   If the window grows beyond a maximum size (`n_max`), elements are dropped from the window while maintaining the distribution [110, Algorithm 1].
+
+*   **Key Characteristics and Advantages**
+    *   **Non-Parametric and Model-Free**: Unlike many other methods that rely on monitoring classification error or specific distributional assumptions, DAWIDD does not depend on an underlying machine learning model or assumptions about the form or rate of drift (e.g., mean, variance, or classification loss). This allows it to detect a broader range of drift types that might "fool" loss-based or simple distributional detectors.
+    *   **Detects Diverse Drift Types**: It can handle **abrupt, gradual, slow, and fast drifts** because its theoretical foundation (drift as dependency) is universal to all forms of distribution change.
+    *   **Dynamic Window Adaption**: While the experimental implementation uses a sliding window, the theoretical underpinning suggests it doesn't strictly need to successively split windows, as it doesn't rely on a two-sample test. The window size (`n_min`, `n_max`) can be adjusted [112, Algorithm 1].
+    *   **Rigorous Guarantees**: It provides mathematical substantiation and formal guarantees for its performance.
+
+*   **Parameters**
+    *   `p`: A p-value for the statistical independence test [112, Algorithm 1].
+    *   `n_min`: The minimal number of samples required in the window [112, Algorithm 1].
+    *   `n_max`: The maximal number of samples allowed in the window [112, Algorithm 1].
+
+In essence, DAWIDD translates the abstract problem of concept drift into the concrete, statistically testable problem of **detecting dependency between data and the time of its observation**, thereby offering a robust and versatile approach to drift detection.

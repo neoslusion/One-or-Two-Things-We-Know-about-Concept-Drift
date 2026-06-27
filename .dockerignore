@@ -1,0 +1,47 @@
+# Ignore common development files
+.git
+.gitignore
+*.md
+!DOCKER_README.md
+
+# Ignore build artifacts
+output/
+report/latex/*.aux
+report/latex/*.bbl
+report/latex/*.blg
+report/latex/*.log
+report/latex/*.out
+report/latex/*.toc
+report/latex/*.lof
+report/latex/*.lot
+report/latex/*.synctex.gz
+report/latex/*.fdb_latexmk
+report/latex/*.fls
+
+# Ignore Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+
+# Ignore temporary files
+*.tmp
+*.swp
+*.swo
+*~
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+
+# Ignore editor files
+.vscode/
+.idea/
+*.sublime-*
+
+# Ignore Docker files that shouldn't be in context
+docker-compose.override.yml
