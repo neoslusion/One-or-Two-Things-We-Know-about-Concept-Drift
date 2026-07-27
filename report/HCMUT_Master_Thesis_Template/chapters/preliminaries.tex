@@ -145,10 +145,10 @@ Kết quả lý thuyết trung tâm của ShapeDD được phát biểu chính t
 \end{equation}
 trong đó hàm hình dạng $h_l(t)$ được định nghĩa bởi:
 \begin{equation}
-	h_l(t) = \max\left( 0, \, 1 - \frac{|l - t|}{l} \right).
+	h_l(t) = \max\left( 0, \, 1 - \frac{|t|}{l} \right).
 \end{equation}
 
-Hàm $h_l(t)$ có dạng tam giác cân, đạt cực đại tại thời điểm xảy ra drift ($t=0$), và suy giảm tuyến tính về hai phía. Đặc tính này không phụ thuộc vào dạng phân phối hay độ đo khoảng cách sử dụng, mà chỉ tỷ lệ thuận với hệ số $\|P - Q\|$. Đây là cơ sở để ShapeDD có thể áp dụng cho nhiều miền dữ liệu khác nhau mà không cần thay đổi kernel hay metric.
+Hàm $h_l(t)$ có dạng tam giác cân trên khoảng $[-l, l]$, đạt cực đại $h_l(0) = 1$ tại thời điểm xảy ra drift ($t=0$), và suy giảm tuyến tính về hai phía cho tới khi triệt tiêu tại $t = \pm l$. Đặc tính này không phụ thuộc vào dạng phân phối hay độ đo khoảng cách sử dụng, mà chỉ tỷ lệ thuận với hệ số $\|P - Q\|$. Đây là cơ sở để ShapeDD có thể áp dụng cho nhiều miền dữ liệu khác nhau mà không cần thay đổi kernel hay metric.
 
 Tuy nhiên, Triangle Shape Property (\ref{thm:triangle_shape}) chỉ đúng trực tiếp cho sudden drift do tính chất tức thời của nó. Các loại drift khác (gradual, incremental, recurrent) không tạo ra hình dạng tam giác đặc trưng, đây là thiết kế gốc của ShapeDD để tập trung vào phát hiện abrupt drift, tuy nhiên có thể mở rộng để nhận biết các loại drift khác bằng cách phân tích hình dạng tín hiệu trôi dạt:
 \begin{itemize}
@@ -167,7 +167,7 @@ tổng tín hiệu trôi dạt được biểu diễn như:
 	= \sum_{i=1}^{n} \| P_{i-1} - P_i \| \, h_l(t - t_i).
 \end{equation}
 
-Như vậy, tín hiệu tổng thể $\sigma(t)$ có thể xem là tổng chập (linear superposition) của nhiều “hình tam giác” trôi dạt độc lập.
+Như vậy, tín hiệu tổng thể $\sigma(t)$ có thể xem là tổng chập (linear superposition) của nhiều ``hình tam giác'' trôi dạt độc lập.
 
 \subsection{Ứng dụng vào lọc nhiễu và phát hiện drift}
 
@@ -202,7 +202,7 @@ trong đó:
 	\item $\sup$ biểu thị giá trị lớn nhất có thể (supremum)
 \end{itemize}
 Trong không gian ban đầu, hai phân phối có thể khó phân biệt. Bằng cách ánh xạ vào RKHS thông qua hàm kernel~\cite{scholkopf2002learning},
-các cấu trúc phức tạp của phân phối trở nên rõ ràng hơn. MMD đo lường khoảng cách giữa "trung bình" (mean embedding) của hai phân phối trong không gian này.
+các cấu trúc phức tạp của phân phối trở nên rõ ràng hơn. MMD đo lường khoảng cách giữa ``trung bình'' (mean embedding) của hai phân phối trong không gian này.
 
 Việc tìm giá trị lớn nhất trên $\mathcal{F}$ là không khả thi về mặt tính toán, do đó MMD thường được triển khai trong
 RKHS~\cite{scholkopf2002learning} sử dụng kernel trick với hàm kernel $k(x, y)$:
@@ -239,7 +239,7 @@ Các phương pháp phát hiện drift cơ bản sẽ được trình bày chi t
 
 Các phương pháp dựa trên hiệu suất mô hình như DDM, EDDM, MDDM, FHDDMS theo dõi thống kê lỗi của mô hình và phát hiện drift khi hiệu suất giảm đáng kể. Các phương pháp này phụ thuộc vào nhãn ground truth và có thể bị trễ vì cần thu thập đủ lỗi.
 
-ADWIN đại diện cho nhóm cửa sổ thích ứng: thuật toán điều chỉnh động kích thước cửa sổ dựa trên sự thay đổi được quan sát, đạt cân bằng giữa độ nhạy và ổn định với đảm bảo lý thuyết $O(\log W)$ về bộ nhớ.
+ADWIN đại diện cho nhóm cửa sổ thích ứng: thuật toán điều chỉnh động kích thước cửa sổ dựa trên sự thay đổi được quan sát, đạt cân bằng giữa độ nhạy và ổn định với đảm bảo lý thuyết $O(\log W)$ về bộ nhớ~\cite{bifet2007learning}.
 
 DAWIDD phát hiện drift bằng cách đo sự phụ thuộc giữa đặc trưng và thời gian, cho phép phát hiện sớm mà không cần nhãn.
 
@@ -260,7 +260,9 @@ Giai đoạn đầu tiên bao gồm thu thập dữ liệu sử dụng kỹ thu�
 	W_t = \{x_{t-2l_1+1}, x_{t-2l_1+2}, \ldots, x_t\}
 \end{equation}
 
-Kích thước cửa sổ $l_1$ là tham số quan trọng nhất của ShapeDD. Cửa sổ nhỏ nhạy với drift nhanh nhưng dễ bị nhiễu; cửa sổ lớn ổn định hơn nhưng phát hiện trễ. Khi cần điều chỉnh tự động, có thể đặt $l_1$ tỉ lệ với độ dài luồng. Giá trị cụ thể dùng trong luận văn được liệt kê ở bảng cấu hình thực nghiệm (Chương~\ref{chap:experiments}).
+Kích thước cửa sổ $l_1$ là tham số quan trọng nhất của ShapeDD. Cửa sổ nhỏ nhạy với drift nhanh nhưng dễ bị nhiễu; cửa sổ lớn ổn định hơn nhưng phát hiện trễ. Khi cần điều chỉnh tự động, có thể đặt $l_1$ tỉ lệ với độ dài luồng.
+
+\textit{Lưu ý về cấu hình cửa sổ đối xứng và không đối xứng.} Cách trình bày ở trên dùng cửa sổ đôi đối xứng ($l_1$ mẫu cho mỗi nửa, tổng $2l_1$) vì đây là dạng đơn giản nhất để suy ra tính chất hình tam giác: khi hai nửa có cùng kích thước, tín hiệu MMD tăng và giảm cân đối quanh điểm drift. Tuy nhiên, phần triển khai và toàn bộ thực nghiệm của luận văn dùng cấu hình \emph{không đối xứng} với cửa sổ tham chiếu $l_1 = 50$ và cửa sổ kiểm tra $l_2 = 150$ (Chương~\ref{chap:experiments} và Phụ lục A.1). Cửa sổ kiểm tra dài hơn cho ước lượng phân phối mới ổn định hơn, đổi lại hình tam giác bị lệch (sườn lên dốc hơn sườn xuống) thay vì cân đối. Tính chất định vị đỉnh vẫn được giữ, nên các suy luận về hình dạng ở các mục sau vẫn áp dụng được; chỉ cần hiểu $l$ trong các công thức lý thuyết là kích thước nửa cửa sổ tham chiếu $l_1$.
 
 \subsubsection{Giai đoạn 2: Xây dựng feature (Feature Construction)}
 

@@ -21,7 +21,7 @@ nhằm tìm ra sự khác biệt có ý nghĩa.
 
 Một dấu mốc quan trọng trong nhóm này là phương pháp \textbf{ADWIN} (Adaptive Windowing) do Bifet và Gavaldà đề xuất
 năm 2007~\cite{bifet2007learning}. ADWIN sử dụng cửa sổ trượt có kích thước thay đổi một cách thích ứng: nó duy trì
-một cửa sổ dữ liệu với độ dài biến thiên sao cho giả thiết "không có sự thay đổi" được đảm bảo bên trong cửa sổ đó.
+một cửa sổ dữ liệu với độ dài biến thiên sao cho giả thiết ``không có sự thay đổi'' được đảm bảo bên trong cửa sổ đó.
 
 Tại mỗi thời điểm, ADWIN tách cửa sổ hiện tại thành hai phần $W_0$ và $W_1$ liên tiếp rồi so sánh
 sự khác biệt về giá trị trung bình giữa $W_0$ và $W_1$. Nếu chênh lệch trung bình vượt quá một ngưỡng thống kê (xác định
@@ -122,11 +122,11 @@ Nhóm phương pháp dựa trên hiệu năng mô hình bắt đầu từ DDM~\c
 
 \subsection{Các phương pháp học máy truyền thống}
 Bên cạnh việc dùng trực tiếp thống kê hoặc sai số mô hình, các nhà nghiên cứu còn phát triển những kỹ thuật phát hiện drift dựa trên
-mô hình học máy hoặc tổ hợp nhiều mô hình. Những phương pháp này thường có tính "chủ động" hơn: thay vì chờ hiệu năng giảm, chúng tìm
+mô hình học máy hoặc tổ hợp nhiều mô hình. Những phương pháp này thường có tính ``chủ động'' hơn: thay vì chờ hiệu năng giảm, chúng tìm
 dấu hiệu thay đổi trong cấu trúc dữ liệu hoặc trong phản ứng của nhiều mô hình khác nhau.
 
 \textbf{Paired Learners}~\cite{bach2008paired} là một ví dụ tiêu biểu, sử dụng hai mô hình học song song trên dòng dữ liệu: một mô
-hình "ổn định" (stable learner) được huấn luyện trên toàn bộ dữ liệu tích lũy (dài hạn), và một mô hình "nhanh" (reactive learner) liên
+hình ``ổn định'' (stable learner) được huấn luyện trên toàn bộ dữ liệu tích lũy (dài hạn), và một mô hình ``nhanh'' (reactive learner) liên
 tục huấn luyện trên cửa sổ ngắn hạn gần đây. Khi có concept drift, mô hình nhanh sẽ thích nghi sớm và phân phối dự đoán của nó sẽ khác
 biệt rõ so với mô hình ổn định. Paired Learners theo dõi mức độ bất đồng (disagreement) giữa hai mô hình này: nếu sai khác vượt ngưỡng, ta
 kết luận đã có drift. Cách tiếp cận này cho phép phát hiện cả drift đột ngột (mô hình nhanh thay đổi tức thời) lẫn drift dần dần (mô hình
@@ -136,8 +136,8 @@ Một hướng khác là tận dụng \textbf{ensemble learning}, dùng nhiều 
 
 \textbf{Learn++.NSE}~\cite{elwell2011learn} mở rộng theo hướng tương tự: gán trọng số thời gian cho từng classifier theo độ tuổi, để classifier mới học concept mới còn classifier cũ dần mờ nhạt. Cả hai phương pháp phát hiện drift gián tiếp qua thay đổi cấu trúc hoặc thành phần ensemble.
 
-Ngoài ra, một số phương pháp sử dụng \textbf{Classifier-based Drift Detection}: huấn luyện một mô hình phân loại nhằm phân biệt "dữ liệu cũ"
-và "dữ liệu mới"; nếu mô hình này đạt độ chính xác cao nghĩa là hai phân phối khác nhau rõ (drift lớn). Trong môi trường unsupervised, các
+Ngoài ra, một số phương pháp sử dụng \textbf{Classifier-based Drift Detection}: huấn luyện một mô hình phân loại nhằm phân biệt ``dữ liệu cũ''
+và ``dữ liệu mới''; nếu mô hình này đạt độ chính xác cao nghĩa là hai phân phối khác nhau rõ (drift lớn). Trong môi trường unsupervised, các
 phương pháp \textbf{one-class} như OCDD (One-Class Drift Detector)~\cite{gozuacik2021ocdd} dùng one-class SVM hoặc autoencoder để mô tả dữ liệu và khi reconstruction error
 tăng cao, đó là dấu hiệu drift.
 
@@ -158,7 +158,7 @@ biến (mô hình trở nên kém chắc chắn), một bộ phát hiện như A
 Jourdan và cộng sự~\cite{jourdan2023process} đã áp dụng thành công cách này để phát hiện drift trong hệ thống giám sát sản xuất công nghiệp: sử dụng ADWIN theo
 dõi độ lệch xác suất dự đoán của mạng CNN, khi ADWIN báo drift thì hệ thống kích hoạt huấn luyện lại mô hình trên dữ liệu mới.
 
-Tương tự, trong mô hình phát hiện bất thường dùng LSTM, các nghiên cứu trước đây cũng nhúng các detector như DDM hoặc Page-Hinkley để liên tục canh chừng lỗi dự đoán theo thời gian. Việc tích hợp này khai thác tính chất "model-agnostic" của các thuật toán drift detection truyền thống, biến chúng thành cảm biến giám sát bên ngoài cho các mô hình deep phức tạp.
+Tương tự, trong mô hình phát hiện bất thường dùng LSTM, các nghiên cứu trước đây cũng nhúng các detector như DDM hoặc Page-Hinkley để liên tục canh chừng lỗi dự đoán theo thời gian. Việc tích hợp này khai thác tính chất ``model-agnostic'' của các thuật toán drift detection truyền thống, biến chúng thành cảm biến giám sát bên ngoài cho các mô hình deep phức tạp.
 
 \textbf{Hướng (II): Self-adaptive architectures.} Các mạng neural tự điều chỉnh cấu trúc khi drift xảy ra đang trở thành một hướng nghiên cứu được quan tâm. \textbf{NADINE}~\cite{pratama2019automatic} là một mạng MLP nhiều lớp có khả năng tiến hóa cấu trúc: NADINE tích hợp cơ chế phát hiện drift chủ động dựa trên cửa sổ trượt thích ứng kết hợp bất đẳng thức Hoeffding (tương tự ý tưởng của FHDDM) để liên tục kiểm tra dữ liệu mới. Mỗi khi detector phát hiện tín hiệu drift, NADINE sẽ ``tiến hóa'' bằng cách thêm hoặc bớt các nút ẩn và tầng ẩn tương ứng để thích nghi với concept mới. Cơ chế này giúp mạng tự điều chỉnh độ phức tạp: tăng nếu concept mới phức tạp hơn, hoặc giảm nếu cần tránh overfitting.
 
@@ -256,7 +256,7 @@ Như bảng~\ref{tab:drift-history} tóm tắt, lĩnh vực phát hiện concept
 
 CDT-MSW~\cite{guo2022cdtmsw} là phương pháp \emph{có giám sát} phân loại loại drift dựa trên hành vi của độ chính xác mô hình trên nhiều cửa sổ trượt (Hình~\ref{fig:cdt_msw_overview}). Đây là nguồn cảm hứng trực tiếp cho SE-CDT (Chương~\ref{chap:proposed-model}); luận văn kế thừa hai ý chính sau và thay thế phần lõi tín hiệu, chi tiết kỹ thuật của ba giai đoạn xem trong bài báo gốc.
 
-\textbf{Phân nhóm TCD vs PCD theo độ dài trôi dạt:} CDT-MSW dùng phương sai độ chính xác trên cửa sổ phụ $W_R$ để ước lượng độ dài $m$ của sự trôi dạt. Khi độ dài $m=1$ (phân phối ổn định ngay lập tức), drift thuộc nhóm \textbf{Transient Concept Drift (TCD)} bao gồm Sudden, Blip và Recurrent. Khi $m>1$ (chuyển tiếp dần), drift thuộc nhóm \textbf{Progressive Concept Drift (PCD)} bao gồm Incremental và Gradual. Hai nhóm này được phân biệt tiếp ở giai đoạn theo dõi bằng hình dáng của đường cong Tracking Flow Ratio (TFR) và Micro TFR (MTFR).
+\textbf{Phân nhóm TCD vs PCD theo độ dài trôi dạt:} CDT-MSW dùng phương sai độ chính xác trên cửa sổ phụ $W_R$ để ước lượng độ dài $m$ của sự trôi dạt. Thủ tục ước lượng độ dài này được bài báo gốc gọi là \textbf{Growth process} (Algorithm 2 trong~\cite{guo2022cdtmsw}): sau khi phát hiện được vị trí drift, cửa sổ phụ được mở rộng dần cho tới khi phương sai độ chính xác trở lại mức ổn định, và số bước mở rộng chính là $m$. Thuật ngữ ``Growth process'' được dùng lại ở Chương~\ref{chap:proposed-model} và Chương~\ref{chap:conclusion} với đúng nghĩa này. Khi độ dài $m=1$ (phân phối ổn định ngay lập tức), drift thuộc nhóm \textbf{Transient Concept Drift (TCD)} bao gồm Sudden, Blip và Recurrent. Khi $m>1$ (chuyển tiếp dần), drift thuộc nhóm \textbf{Progressive Concept Drift (PCD)} bao gồm Incremental và Gradual. Hai nhóm này được phân biệt tiếp ở giai đoạn theo dõi bằng hình dáng của đường cong Tracking Flow Ratio (TFR) và Micro TFR (MTFR).
 
 \textbf{Hai mức đánh giá phân loại CAT và SUB:} Phân loại được đánh giá ở hai mức: nhóm chính TCD/PCD (gọi tắt là CAT) và tiểu loại Sudden/Blip/Recurrent/Incremental/Gradual (gọi tắt là SUB). Hai thuật ngữ CAT/SUB tái sử dụng trong các thí nghiệm phân loại của luận văn (Mục~\ref{sec:classification-eval}).
 

@@ -7,7 +7,7 @@
 
 ShapeDD gốc có nhiều ưu điểm về độ chính xác định vị vị trí xảy ra drift và khả năng khử nhiễu, nhưng khi triển khai trong các hệ thống thời gian thực quy mô lớn gặp ba hạn chế: chi phí permutation test cao, độ nhạy với kernel bandwidth và kích thước cửa sổ, và cần cơ chế thích ứng sau khi phát hiện drift~\cite{yuan2022advances} như một hệ thống hoàn chỉnh.
 
-Luận văn xây dựng hệ thống SE-CDT để xử lý ba hạn chế này. Về thuật toán, ShapeDD-IDW kết hợp tín hiệu Standard MMD với bước kiểm định IDW-MMD (Inverse Density-Weighted MMD) dựa trên xấp xỉ Gamma~\cite{gretton2009gamma}, vừa thay permutation test vừa giảm độ nhạy với bandwidth. Về chiến lược, luận văn xây dựng khung thích ứng theo loại drift, dùng kết quả phân loại từ SE-CDT để kích hoạt cách cập nhật phù hợp (Reset, Incremental, hoặc Reuse)~\cite{gama2014survey, lu2018learning}. Về kiến trúc, hệ thống được đề xuất triển khai trên nền tảng Apache Kafka cho phép xử lý luồng phân tán, độ trễ thấp và khả năng chịu lỗi.
+Luận văn xây dựng hệ thống SE-CDT để xử lý ba hạn chế này. Về thuật toán, ShapeDD-IDW kết hợp tín hiệu Standard MMD với bước kiểm định IDW-MMD (Inverse Density-Weighted MMD) dựa trên xấp xỉ Gamma~\cite{gretton2009gamma} để thay cho permutation test tốn kém. Băng thông kernel được xử lý bằng cách ước lượng $\gamma$ một lần bằng median heuristic và dùng chung cho toàn bộ tín hiệu trượt (Mục~\ref{sec:detection-hybrid}), thay vì để mỗi cửa sổ tự ước lượng; luận văn không tiến hành ablation riêng về độ nhạy với $\gamma$ nên không đưa ra kết luận định lượng về điểm này. Về chiến lược, luận văn xây dựng khung thích ứng theo loại drift, dùng kết quả phân loại từ SE-CDT để kích hoạt cách cập nhật phù hợp (Reset, Incremental, hoặc Reuse)~\cite{gama2014survey, lu2018learning}. Về kiến trúc, hệ thống được đề xuất triển khai trên nền tảng Apache Kafka cho phép xử lý luồng phân tán, độ trễ thấp và khả năng chịu lỗi.
 
 Trong pipeline sản xuất, mô hình cần bảo vệ là mô hình nghiệp vụ như bộ phân loại chất lượng sản phẩm, dự đoán lỗi, hoặc bảo trì dự đoán. SE-CDT chỉ quan sát luồng đặc trưng đầu vào và sinh sự kiện drift gồm thời điểm, loại drift và tín hiệu hỗ trợ. Adaptation Manager mới là thành phần quyết định hành động tiếp theo: bỏ qua cảnh báo, yêu cầu xác nhận, huấn luyện lại, cập nhật online hoặc chuyển sang mô hình đã lưu. Phân tách này giúp tránh hiểu nhầm rằng SE-CDT là mô hình dự đoán chất lượng; SE-CDT là lớp monitoring và điều phối phản ứng trước khi mô hình sản xuất suy giảm.
 
@@ -119,7 +119,7 @@ Trong phương pháp gốc, thống kê MMD được tính toán dựa trên tr�
 \begin{equation}
 	\text{MMD}^2_{\text{uniform}}(X, Y) = \frac{1}{n^2}\sum_{i,j} k(x_i, x_j) + \frac{1}{m^2}\sum_{p,q} k(y_p, y_q) - \frac{2}{nm}\sum_{i,p} k(x_i, y_p)
 \end{equation}
-trong đó các tổng chạy qua tất cả các cặp chỉ số, kể cả $i=j$. Với kernel RBF, thành phần tự đối sánh $k(x_i, x_i) = 1$, nghĩa là mỗi điểm đều đóng góp một giá trị bằng 1 vào tổng, làm giá trị MMD cao hơn thực tế một chút. Hạn chế này sẽ được khắc phục trong IDW-MMD (Mục~\ref{sec:idw-mmd}) bằng cách loại các cặp điểm trùng nhau khỏi phép tính.
+trong đó các tổng chạy qua tất cả các cặp chỉ số, kể cả $i=j$. Với kernel RBF, thành phần tự đối sánh $k(x_i, x_i) = 1$, nghĩa là mỗi điểm đều đóng góp một giá trị bằng 1 vào tổng, làm giá trị MMD cao hơn thực tế một chút. Hạn chế này sẽ được khắc phục trong công thức IDW-MMD trình bày ngay dưới đây, bằng cách loại các cặp điểm trùng nhau khỏi phép tính.
 
 Với cửa sổ nhỏ ($n, m < 200$), MMD dễ dao động và khó tách drift thật khỏi nhiễu mẫu. Bước permutation test của ShapeDD gốc cũng tốn thời gian vì phải lặp lại phép tính MMD nhiều lần để ước lượng p-value. Một nguyên nhân khác là trọng số đều coi mọi điểm trong cửa sổ như nhau, trong khi các thay đổi đột ngột thường xuất hiện rõ hơn ở vùng biên phân phối.
 
@@ -157,7 +157,7 @@ Dựa trên phân tích trên, công thức IDW-MMD được xây dựng như sa
 
 Thành phần so sánh chéo giữa hai cửa sổ giữ trọng số đồng nhất $1/(nm)$ vì đây là số hạng đo sự chồng chéo giữa hai phân phối. Nếu gán trọng số IDW cho cross-term, thống kê có thể tạo khoảng cách giả ngay cả khi hai cửa sổ có cùng phân phối, chỉ do cấu trúc mật độ cục bộ khác nhau. Cross-term vì vậy đóng vai trò trung lập, còn Weighted XX và YY làm rõ tín hiệu ở biên.
 
-Hệ quả của thiết kế này là $\text{MMD}^2_{\text{IDW}}$ có một độ lệch dương nhỏ ngay cả khi $P = Q$. Độ lệch này được xử lý ở bước tính p-value bằng xấp xỉ Gamma (Mục~\ref{sec:idw-mmd}), thay vì đặt ngưỡng thủ công trên giá trị MMD.
+Hệ quả của thiết kế này là $\text{MMD}^2_{\text{IDW}}$ có một độ lệch dương nhỏ ngay cả khi $P = Q$. Độ lệch này được xử lý ở bước tính p-value bằng xấp xỉ Gamma (trình bày ở phần phân tích độ phức tạp bên dưới), thay vì đặt ngưỡng thủ công trên giá trị MMD.
 
 \subsubsection{Ảnh hưởng đến tín hiệu phát hiện}
 Khi dùng MMD gốc, các cặp điểm ở vùng trung tâm thường chiếm phần lớn tổng thống kê, làm tín hiệu drift ở vùng biên dễ bị chìm. IDW-MMD giảm ảnh hưởng của vùng trung tâm và tăng trọng số cho các điểm vùng biên, nơi sudden drift thường biểu hiện sớm hơn.
@@ -339,7 +339,7 @@ Từ nhận xét này, ta định nghĩa \textbf{Variance Ratio (VR)} là tỉ s
 \end{equation}
 trong đó $X^{(d)}$ là chiều thứ $d$ của dữ liệu ($D$ chiều), cửa sổ trượt được dịch với bước $5$ mẫu để giảm chi phí. Theo phân tích trên: $\mathrm{VR}$ \emph{lớn} ($> \tau_{\mathrm{VR}}^{+}$) báo hiệu phương sai phình to do hỗn hợp $\Rightarrow$ \textbf{Gradual}; $\mathrm{VR}$ \emph{gần $1$} ($< \tau_{\mathrm{VR}}^{-}$) báo hiệu phương sai ổn định do dịch chuyển đơn $\Rightarrow$ \textbf{Incremental}. Khi $\mathrm{VR}$ rơi vào vùng trung gian $[\tau_{\mathrm{VR}}^{-}, \tau_{\mathrm{VR}}^{+}]$ (thường gặp với dữ liệu rời rạc/phân loại), hệ thống lùi về bộ quy tắc hình học LTS/MS/SDS để tránh quyết định thiếu cơ sở.
 
-Hình~\ref{fig:variance-ratio} minh hoạ trực quan cơ chế này trên dữ liệu thô. Hàng trên cho thấy: ở Gradual, do mẫu được rút từ hỗn hợp hai khái niệm nên dữ liệu trải rộng trên cả hai mức trong cửa sổ chuyển tiếp; còn ở Incremental, dữ liệu luôn là một dải hẹp bám theo trung bình đang trượt. Hàng dưới định lượng quan sát đó: phương sai cửa sổ trượt của Gradual \emph{nhô lên rõ rệt} so với baseline, trong khi của Incremental gần như đi ngang. Kết quả VR tương ứng ($\mathrm{VR}_{\text{Gradual}} = 1.48 > \tau_{\mathrm{VR}}^{+}$ và $\mathrm{VR}_{\text{Incremental}} = 1.20$) khẳng định khả năng phân tách của đặc trưng này.
+Hình~\ref{fig:variance-ratio} minh hoạ trực quan cơ chế này trên dữ liệu thô. Hàng trên cho thấy: ở Gradual, do mẫu được rút từ hỗn hợp hai khái niệm nên dữ liệu trải rộng trên cả hai mức trong cửa sổ chuyển tiếp; còn ở Incremental, dữ liệu luôn là một dải hẹp bám theo trung bình đang trượt. Hàng dưới định lượng quan sát đó: phương sai cửa sổ trượt của Gradual \emph{nhô lên rõ rệt} so với baseline, trong khi của Incremental gần như đi ngang. Kết quả VR tương ứng là $\mathrm{VR}_{\text{Gradual}} = 1.48$ và $\mathrm{VR}_{\text{Incremental}} = 1.20$. Trường hợp Gradual vượt $\tau_{\mathrm{VR}}^{+} = 1.3$ nên được VR gán trực tiếp là Gradual. Trường hợp Incremental lại minh hoạ đúng vùng khó: giá trị $1.20$ nằm trong vùng trung gian $[\tau_{\mathrm{VR}}^{-}, \tau_{\mathrm{VR}}^{+}] = [1.1, 1.3]$, tức VR \emph{không} tự kết luận được và hệ thống phải lùi về bộ quy tắc hình học LTS/MS/SDS. Ví dụ này vì vậy cho thấy VR tách được chiều phương sai theo đúng hướng lý thuyết dự đoán, nhưng biên độ tách trên dữ liệu mô phỏng còn hẹp --- đây chính là nguyên nhân của tỉ lệ nhầm lẫn Gradual/Incremental được phân tích ở Mục~\ref{sec:classification-by-type}.
 
 \begin{figure}[H]
 	\centering
@@ -388,27 +388,35 @@ Bảng~\ref{tab:se-cdt-params} liệt kê toàn bộ siêu tham số của thu�
 
 \begin{table}[H]
 	\centering
-	\caption{Hyperparameters of SE-CDT with default values}
+	\caption{Siêu tham số của SE-CDT và giá trị mặc định}
 	\label{tab:se-cdt-params}
-	\begin{tabular}{llll}
+	\begin{tabular}{lll}
 		\hline
-		\textbf{Parameter} & \textbf{Default} & \textbf{Role} \\
+		\textbf{Tham số} & \textbf{Giá trị mặc định} & \textbf{Vai trò} \\
 		\hline
-		$\sigma_g$ & 4 & Gaussian smoothing bandwidth \\
-		$\alpha$ & 0.3 & Peak detection threshold multiplier \\
-		$\tau_{\ell}$ & 1 & Duration threshold separating PCD from TCD \\
-		$\tau_{\mathrm{WR}}^{\mathrm{blip}}$ & 0.30 & WR upper bound for Blip \\
-		$\tau_{\mathrm{LTS}}$ & 0.5 & Strong linear trend threshold \\
-		$\tau_{\mathrm{LTS}}^{-}$ & 0.3 & Weak linear trend (combined condition) \\
-		$\tau_{\mathrm{MS}}$ & 0.6 & Monotonicity threshold \\
-		$\tau_{\mathrm{SDS}}$ & 0.12 & Step detection threshold \\
-		$\tau_{\mathrm{VR}}^{+}$ & 1.3 & Variance Ratio upper bound (above $\Rightarrow$ Gradual) \\
-		$\tau_{\mathrm{VR}}^{-}$ & 1.1 & Variance Ratio lower bound (below $\Rightarrow$ Incremental) \\
-		$\tau_{n}^{\mathrm{blip}}$ & 3 & Max peak count for Blip \\
-		$\tau_{n}^{\mathrm{sud}}$ & 3 & Max peak count for Sudden \\
-		$\tau_{n}^{\mathrm{rec}}$ & 4 & Min peak count for Recurrent \\
-		$\tau_{n}^{\mathrm{inc}}$ & 7 & Peak count fallback for Incremental \\
-		$\tau_{\mathrm{WR}}$, $\tau_{\mathrm{SNR}}$, $\tau_{\mathrm{CV}}$ & self-calibrated & See Section~\ref{sec:se-cdt-self-calibration} \\
+		$\sigma_g$ & 4 & Băng thông bộ lọc Gauss làm mượt tín hiệu \\
+		$\alpha$ & 0.3 & Hệ số nhân ngưỡng tìm đỉnh \\
+		$\tau_{\ell}$ & 1 & Ngưỡng độ dài tách PCD khỏi TCD \\
+		$\tau_{\mathrm{WR}}^{\mathrm{blip}}$ & 0.30 & Chặn trên WR cho Blip (nhánh compact) \\
+		$\tau_{\mathrm{PPR}}$ & 0.20 & Chặn trên Peak Proximity Ratio cho Blip \\
+		$\tau_{\mathrm{DPAR}}$ & 0.60 & Chặn dưới Dual-Peak Amplitude Ratio cho Blip \\
+		$\tau_{\mathrm{LTS}}$ & 0.5 & Ngưỡng xu hướng tuyến tính mạnh \\
+		$\tau_{\mathrm{LTS}}^{-}$ & 0.3 & Xu hướng tuyến tính yếu (điều kiện kết hợp) \\
+		$\tau_{\mathrm{MS}}$ & 0.6 & Ngưỡng độ đơn điệu \\
+		$\tau_{\mathrm{SDS}}$ & 0.12 & Ngưỡng phát hiện bước nhảy \\
+		$\tau_{\mathrm{VR}}^{+}$ & 1.3 & Chặn trên Variance Ratio (vượt $\Rightarrow$ Gradual) \\
+		$\tau_{\mathrm{VR}}^{-}$ & 1.1 & Chặn dưới Variance Ratio (thấp hơn $\Rightarrow$ Incremental) \\
+		$\tau_{n}^{\mathrm{blip}}$ & 3 & Số đỉnh tối đa cho Blip \\
+		$\tau_{n}^{\mathrm{sud}}$ & 3 & Số đỉnh tối đa cho Sudden \\
+		$\tau_{n}^{\mathrm{rec}}$ & 4 & Số đỉnh tối thiểu cho Recurrent \\
+		$\tau_{n}^{\mathrm{inc}}$ & 7 & Số đỉnh dự phòng cho Incremental \\
+		$\tau_{\mathrm{WR}}$ & 0.15$^{\dagger}$ & Ngưỡng Peak Width Ratio cho Sudden \\
+		$\tau_{\mathrm{SNR}}$ & 2.0$^{\dagger}$ & Ngưỡng Signal-to-Noise cho TCD \\
+		$\tau_{\mathrm{CV}}$ & 0.30$^{\dagger}$ & Ngưỡng Periodicity CV cho Recurrent \\
+		$\tau_{\mathrm{match}}$ & 0.15 & Ngưỡng so khớp Concept Memory (Mục~\ref{sec:se-cdt-concept-memory}) \\
+		\hline
+		\multicolumn{3}{l}{\footnotesize $^{\dagger}$Ba ngưỡng này là giá trị tĩnh mặc định; khi bật tự hiệu chỉnh chúng có thể} \\
+		\multicolumn{3}{l}{\footnotesize được nới lên theo phân vị quan sát trên cửa sổ không drift (Mục~\ref{sec:se-cdt-self-calibration}).} \\
 		\hline
 	\end{tabular}
 \end{table}
@@ -619,7 +627,7 @@ Thay vì áp dụng một chiến lược duy nhất (như huấn luyện lại 
 		\hline
 		\textbf{Recurrent}   & \textbf{Lưu và dùng lại mô hình:} Tìm kiếm trong kho lưu trữ mô hình cũ phù hợp và kích hoạt lại.                            & Tái sử dụng tri thức đã học, tiết kiệm chi phí huấn luyện lại.                          \\
 		\hline
-		\textbf{Blip}        & \textbf{Không cập nhật hoặc cập nhật rất nhẹ:} Bỏ qua hoặc cập nhật với trọng số rất thấp.                                            & Thay đổi chỉ là nhiễu tạm thời, tránh việc mô hình "quên" kiến thức ổn định.            \\
+		\textbf{Blip}        & \textbf{Không cập nhật hoặc cập nhật rất nhẹ:} Bỏ qua hoặc cập nhật với trọng số rất thấp.                                            & Thay đổi chỉ là nhiễu tạm thời, tránh việc mô hình ``quên'' kiến thức ổn định.            \\
 		\hline
 	\end{tabular}
 \end{table}
@@ -685,7 +693,7 @@ Producer được thiết kế để chịu lỗi và đảm bảo tính toàn v
 \subsubsection{Consumer và Cơ chế Windowing}
 Thành phần Consumer đóng vai trò quan trọng nhất, thực hiện phát hiện drift:
 \begin{itemize}
-	\item \textbf{Circular Buffer:} Duy trì một bộ đệm tuần hoàn (ví dụ: 1000 mẫu) trong bộ nhớ để phục vụ tính toán cửa sổ trượt mà không cần truy xuất lại Kafka quá nhiều.
+	\item \textbf{Circular Buffer:} Duy trì một bộ đệm tuần hoàn (750 mẫu trong nguyên mẫu, xem Phụ lục A.4) trong bộ nhớ để phục vụ tính toán cửa sổ trượt mà không cần truy xuất lại Kafka quá nhiều.
 	\item \textbf{4-Phase Lifecycle:}
 	      \begin{enumerate}
 		      \item \textit{Pre-training:} Thu thập dữ liệu ban đầu để huấn luyện mô hình gốc.
@@ -729,7 +737,7 @@ Trong môi trường phân tán, các sự cố là không thể tránh khỏi. 
 \subsection{Xử lý lỗi ở mức hạ tầng (Kafka)}
 \begin{itemize}
 	\item \textbf{Replication:} Các topic quan trọng được cấu hình \texttt{replication.factor=3} để đảm bảo không mất dữ liệu ngay cả khi 1-2 broker bị lỗi.
-	\item \textbf{Offset Management:} Consumer chỉ commit offset sau khi đã xử lý xong batch dữ liệu, đảm bảo ngữ nghĩa "at-least-once" (không bỏ sót dữ liệu).
+	\item \textbf{Offset Management:} Consumer chỉ commit offset sau khi đã xử lý xong batch dữ liệu, đảm bảo ngữ nghĩa ``at-least-once'' (không bỏ sót dữ liệu).
 	\item \textbf{Consumer Rebalancing:} Nếu một Consumer bị lỗi, Kafka sẽ tự động phân phối lại các partition cho các Consumer còn lại trong nhóm.
 \end{itemize}
 
