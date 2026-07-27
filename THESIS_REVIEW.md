@@ -171,9 +171,13 @@ Tier 1 is worth fixing regardless — those are literal mockups and the deviatio
 
 ## 3. P1 — Should fix (defense exposure)
 
-- [ ] **A whole table of other people's numbers with no citations**
+- [ ] **A whole table of other people's numbers with no citations** — *decided 2026-07-27: left as is, accepted risk*
   `related_work.tex:219-250` (`tab:accuracy_results`)
-  Every value is "tổng hợp từ các nghiên cứu gốc" with only a generic note — no per-row `\cite`. Reviewers target exactly this. Add a citation to each row.
+  Every value is "tổng hợp từ các nghiên cứu gốc" with only a generic note — no per-row `\cite`.
+
+  **Attempted and failed to source.** The ~20 values appear nowhere else in the repository — no notes, no script, no data file, only in this table. The D3 paper (`10.1145/3357384.3358144`) is the most likely single origin for the accuracy block, since it benchmarks D3 against exactly ADWIN / DDM / EDDM / HDDM-A / FHDDM, but ACM returns HTTP 403 so not one value could be confirmed. No citations were invented to fill the gap.
+
+  **Author's decision: keep the table unchanged.** If asked at the defence where a specific number comes from, the honest answer is that the table aggregates figures reported in the original publications and is included as indicative context rather than as measured evidence — and that the thesis's own measurements are in Chapter 5, which is fully reproducible from `results/tables/`. Worth rehearsing that answer rather than improvising it.
 
 - [x] **Math error in the theory chapter**
   `preliminaries.tex:148` defines `h_l(t) = max(0, 1 − |l − t| / l)`, but `:151` says it peaks at the drift moment `t = 0`.
