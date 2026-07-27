@@ -91,8 +91,27 @@ def export_all_tables(all_results, stream_size, output_dir=TABLES_DIR):
     f1_by_dataset["Mean"] = f1_by_dataset.mean(axis=1).round(3)
     f1_by_dataset = f1_by_dataset.sort_values("Mean", ascending=False)
 
-    # Dataset name simplifier
+    # Dataset name simplifier.
+    #
+    # Some generators are named after the classic benchmark that inspired them
+    # ("stagger") but do not implement it -- the thesis calls these GCS
+    # (Gaussian Concept Stream) and GRS (Gaussian Recurrent Stream) because they
+    # use continuous Gaussian features rather than STAGGER's discrete ones.
+    # Emitting "Stagger" here would contradict the text, so these labels are
+    # mapped explicitly and must stay in sync with chapters/experiments.tex.
+    EXPLICIT_LABELS = {
+        "stagger": "GCS",
+        "stagger_recurrent_explicit": "GRS",
+        "gaussian_shift_moderate": "Gaussian Shift",
+        "electricity_semisynthetic": "Electricity",
+        "rbfblips": "RBF Blips",
+        "led_abrupt": "LED Abrupt",
+    }
+
     def simplify_name(name):
+        key = str(name).strip().lower()
+        if key in EXPLICIT_LABELS:
+            return EXPLICIT_LABELS[key]
         name = name.replace("gen_random_", "Random ").replace("gaussian_shift_", "Gaussian ").replace("electricity_semisynthetic", "Electricity")
         name = name.replace("_", " ").title()
         name = name.replace("Mmd", "MMD").replace("Idw", "IDW").replace("Proper", "PROPER")

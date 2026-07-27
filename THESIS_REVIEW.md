@@ -188,7 +188,7 @@ Tier 1 is worth fixing regardless — those are literal mockups and the deviatio
   `VR_Incremental = 1.20` with `τ⁻ = 1.1` and `τ⁺ = 1.3` lands **inside the fallback band**, so VR does *not* fire the Incremental branch for that example. Yet the sentence says the result "khẳng định khả năng phân tách" of the feature.
   Fix: use an example below 1.1, or state plainly that this case falls back to the geometric rules.
 
-- [ ] **Dataset names in the prose don't match the tables**
+- [x] **Dataset names in the prose don't match the tables** — *done: table headers relabelled GCS/GRS/Gaussian Shift; generator patched*
   Prose (`experiments.tex:31,59`): `GCS` (Gaussian Concept Stream), `GRS` (Gaussian Recurrent Stream), `Gaussian Shift (Moderate)`.
   Tables: **`Stagger`**, **`Stagger Recurrent Explicit`**, **`Gaussian Moderate`**.
   A reader cannot map your claims to your results. Rename the generated columns to match the prose.
@@ -247,17 +247,18 @@ Tier 1 is worth fixing regardless — those are literal mockups and the deviatio
 - [x] **Parameter tables disagree** — appendix A.2 has `PPR = 0.20` and `DPAR = 0.60`, absent from `tab:se-cdt-params`; that table lists `τ_WR / τ_SNR / τ_CV` as "self-calibrated" with no static defaults, while the conclusion quotes them as hard numbers (`WR < 0.15`, `SNR > 2.0`, `CV < 0.3`). Make one table authoritative and cross-reference from the other.
 - [x] **"Growth process" is undefined** — `conclusion.tex:38` and `:46` use it as a CDT-MSW mechanism, and `:46` points at `sec:shaped-cdt`. Neither `related_work.tex` §CDT-MSW (which calls it "phương sai độ chính xác trên cửa sổ phụ `W_R`") nor `methodology.tex` defines the term.
 - [x] **Notations list incomplete** — *done: symbols added and descriptions translated* — `ext_pages/notations.tex` is missing `σ(t)` (the central signal), `h_l(t)`, `VR`, `τ_VR^±`, `M`, `n_s`, `σ_g`, `δ`, `N_perm`.
-- [ ] **Same quantity, two symbols** — `table_se_cdt_performance_by_type.tex` uses `\tau_{\text{match}} = 0.15`; `table_cdt_msw_vs_se_cdt_by_drift_type.tex` uses `\mu = 0.15`.
-- [ ] `table_statistical_tests.tex` — Overall Rank 2 / 3 / 4 assigned to three methods with an identical Average Rank of 3.893. Show as tied (2–4).
+- [x] **Same quantity, two symbols** — *done* — `table_se_cdt_performance_by_type.tex` uses `\tau_{\text{match}} = 0.15`; `table_cdt_msw_vs_se_cdt_by_drift_type.tex` uses `\mu = 0.15`.
+- [x] `table_statistical_tests.tex` — *done, now shown as 2--4.* Was assigning Overall Rank 2 / 3 / 4 assigned to three methods with an identical Average Rank of 3.893. Show as tied (2–4).
 - [x] **Cover details vs BIỂU MẪU 4** — `ext_pages/cover.tex:37` sets `MASTER'S THESIS` at 14pt (template says 20); `:41` sets city/date at 12pt (template says 13); missing the `--------------------` rule under `TRƯỜNG ĐẠI HỌC BÁCH KHOA`; template says "Trang bìa **và trang 1**" so the title page should appear twice.
 - [x] `ext_pages/committee.tex` — *done, back on one page.* Was spilling onto 2 pages because of `\vspace{10cm}`; BIỂU MẪU 4 puts it on page 2 alone.
-- [ ] **Two task sheets** — EN then VN. Template requires only BIỂU MẪU 5 (Vietnamese). EN numbers sections I–VI, VN numbers I–V.
+- [x] **Two task sheets** — *done: English copy removed (task_sheet_VN already prints both titles)* — EN then VN. Template requires only BIỂU MẪU 5 (Vietnamese). EN numbers sections I–VI, VN numbers I–V.
 - [x] **Abstract order** — *done: Vietnamese first* — BIỂU MẪU 4 lists "Tóm tắt … (tiếng Việt và tiếng Anh)"; `main.tex:45-46` has English first. Swap.
 - [x] **Front-matter heading sizes** — *done: unified* — 24pt (abbreviations, notations, publications) vs `\Large` ≈17pt (ack, abstract, commitment). Unify.
 - [ ] **Bib hygiene** — prune or wire up the 50 uncited entries; drop the `scott2015multivariate` / `scott1992multivariate` duplicate (same book, two editions, both unused); `tripathi2021ensuring` `pages={22}` → article number `576892`; `haug2024benchmark` key says 2024 for Lukats et al. 2025.
-- [ ] **Dead files** — `chapters/discussion.tex`, `chapters/results.tex` (commented out at `main.tex:80-81`), `ext_pages/ack.tex` (unused, empty), `results/tables/fair_comparison.tex` (never `\input`).
+- [x] **Dead files** — *done for the three unused `.tex` files and `build_thesis.sh`.*
+  **`results/tables/fair_comparison.tex` deliberately kept.** It is never `\input`, so it looks dead — but it is a *generated results artifact*, and since `results/raw/` no longer exists it is the only surviving record of those figures (CDT-MSW CAT 87.0 / SUB 86.7 / Recall 82.5). Deleting it would destroy data that cannot be regenerated. Leave it in place. — `chapters/discussion.tex`, `chapters/results.tex` (commented out at `main.tex:80-81`), `ext_pages/ack.tex` (unused, empty), `results/tables/fair_comparison.tex` (never `\input`).
 - [x] **Retire the duplicate thesis tree** — done 2026-07-27, see §1. `report/latex/` now holds only the presentation.
-- [ ] `build_thesis.sh` and `build_template_thesis.sh` now build the same document from the same directory, differing only in output filename (`…ThesisReport` vs `…ThesisReport_HCMUT`). Pick one and delete the other.
+- [x] `build_thesis.sh` removed; `build_template_thesis.sh` kept and docker-compose.yml repointed. Both had built the same document from the same directory, differing only in output filename (`…ThesisReport` vs `…ThesisReport_HCMUT`). Pick one and delete the other.
 
 ---
 

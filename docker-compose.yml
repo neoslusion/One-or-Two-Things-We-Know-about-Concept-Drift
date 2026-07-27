@@ -32,7 +32,7 @@ services:
       - no_proxy=${no_proxy:-}
     working_dir: /workspace
     # Default command builds the thesis
-    command: ["./build_thesis.sh", "--output", "output"]
+    command: ["./build_template_thesis.sh", "--output", "output"]
     
   # Interactive development service
   latex-dev:
