@@ -132,14 +132,13 @@ biệt rõ so với mô hình ổn định. Paired Learners theo dõi mức đ�
 kết luận đã có drift. Cách tiếp cận này cho phép phát hiện cả drift đột ngột (mô hình nhanh thay đổi tức thời) lẫn drift dần dần (mô hình
 nhanh dần dần thay đổi so với mô hình cũ).
 
-Một hướng khác là tận dụng \textbf{ensemble learning}, dùng nhiều mô hình phân loại chạy song song để nhận biết concept drift thông qua sự đa dạng (diversity) của ensemble. Phương pháp \textbf{ACE} (Adaptive Classifier Ensemble~\cite{nishida2007ace}, 2007) duy trì một tập phân loại và liên tục đánh giá mỗi mô hình trên luồng dữ liệu; mô hình suy giảm sẽ bị thay thế bởi mô hình mới huấn luyện trên dữ liệu gần đây, và chính việc thay thế này là tín hiệu drift.
+Một hướng khác là tận dụng \textbf{ensemble learning}, dùng nhiều mô hình phân loại chạy song song để nhận biết concept drift thông qua sự đa dạng (diversity) của ensemble. Phương pháp \textbf{ACE} (Adaptive Classifiers-Ensemble System~\cite{nishida2007ace}, 2007) duy trì một tập phân loại và liên tục đánh giá mỗi mô hình trên luồng dữ liệu; mô hình suy giảm sẽ bị thay thế bởi mô hình mới huấn luyện trên dữ liệu gần đây, và chính việc thay thế này là tín hiệu drift.
 
 \textbf{Learn++.NSE}~\cite{elwell2011learn} mở rộng theo hướng tương tự: gán trọng số thời gian cho từng classifier theo độ tuổi, để classifier mới học concept mới còn classifier cũ dần mờ nhạt. Cả hai phương pháp phát hiện drift gián tiếp qua thay đổi cấu trúc hoặc thành phần ensemble.
 
 Ngoài ra, một số phương pháp sử dụng \textbf{Classifier-based Drift Detection}: huấn luyện một mô hình phân loại nhằm phân biệt ``dữ liệu cũ''
 và ``dữ liệu mới''; nếu mô hình này đạt độ chính xác cao nghĩa là hai phân phối khác nhau rõ (drift lớn). Trong môi trường unsupervised, các
-phương pháp \textbf{one-class} như OCDD (One-Class Drift Detector)~\cite{gozuacik2021ocdd} dùng one-class SVM hoặc autoencoder để mô tả dữ liệu và khi reconstruction error
-tăng cao, đó là dấu hiệu drift.
+phương pháp \textbf{one-class} như OCDD (One-Class Drift Detector)~\cite{gozuacik2021ocdd} dùng một bộ phân lớp one-class huấn luyện trên cửa sổ dữ liệu cũ; khi tỉ lệ mẫu mới bị bộ phân lớp này xem là ngoại lai tăng vượt ngưỡng, đó là dấu hiệu drift.
 
 Nhóm phương pháp này phát triển mạnh khoảng 2008–2015, khi khả năng tính toán cho phép triển khai nhiều mô hình song song. Chúng tận
 dụng sức mạnh của ensemble và mô hình meta để phát hiện các thay đổi tinh vi, tạo bước chuyển từ các kỹ thuật thuần thống kê sang các
@@ -162,7 +161,7 @@ Tương tự, trong mô hình phát hiện bất thường dùng LSTM, các nghi
 
 \textbf{Hướng (II): Self-adaptive architectures.} Các mạng neural tự điều chỉnh cấu trúc khi drift xảy ra đang trở thành một hướng nghiên cứu được quan tâm. \textbf{NADINE}~\cite{pratama2019automatic} là một mạng MLP nhiều lớp có khả năng tiến hóa cấu trúc: NADINE tích hợp cơ chế phát hiện drift chủ động dựa trên cửa sổ trượt thích ứng kết hợp bất đẳng thức Hoeffding (tương tự ý tưởng của FHDDM) để liên tục kiểm tra dữ liệu mới. Mỗi khi detector phát hiện tín hiệu drift, NADINE sẽ ``tiến hóa'' bằng cách thêm hoặc bớt các nút ẩn và tầng ẩn tương ứng để thích nghi với concept mới. Cơ chế này giúp mạng tự điều chỉnh độ phức tạp: tăng nếu concept mới phức tạp hơn, hoặc giảm nếu cần tránh overfitting.
 
-\textbf{Hướng (III): Intrinsic detection.} Khai thác trực tiếp năng lực biểu diễn của mô hình deep để nhận biết drift. Ví dụ, một autoencoder có thể học nén dữ liệu đầu vào; nếu phân phối dữ liệu thay đổi, lỗi tái tạo (reconstruction error) của autoencoder sẽ tăng cao. \textbf{AEDetect}~\cite{jaworski2020aedetect} giám sát phân phối lỗi tái tạo của autoencoder, khi phân phối này dịch chuyển nhiều thì phát tín hiệu drift. Trong lĩnh vực chuỗi thời gian, \textbf{LSTM-NDT} (Neural Drift Detector dùng LSTM)~\cite{yuan2022advances} học mô hình chuỗi và dùng sai số dự báo của LSTM làm tiêu chí phát hiện drift. Các phương pháp này tận dụng được thông tin trong dữ liệu nhờ đặc trưng học được của network, nhưng khó tách bạch giữa ``drift'' và ``nhiễu'' bên trong mô hình.
+\textbf{Hướng (III): Intrinsic detection.} Khai thác trực tiếp năng lực biểu diễn của mô hình deep để nhận biết drift. Ví dụ, một autoencoder có thể học nén dữ liệu đầu vào; nếu phân phối dữ liệu thay đổi, lỗi tái tạo (reconstruction error) của autoencoder sẽ tăng cao. Jaworski và cộng sự~\cite{jaworski2020aedetect} giám sát phân phối lỗi tái tạo của autoencoder, khi phân phối này dịch chuyển nhiều thì phát tín hiệu drift. Trong lĩnh vực chuỗi thời gian, một hướng tương tự là học mô hình chuỗi bằng LSTM rồi dùng sai số dự báo làm tín hiệu phát hiện thay đổi~\cite{yuan2022advances}; kỹ thuật đặt ngưỡng động phi tham số (\textit{nonparametric dynamic thresholding}) cho loại tín hiệu sai số này được Hundman và cộng sự~\cite{hundman2018lstmndt} giới thiệu trong bài toán phát hiện bất thường trên dữ liệu viễn trắc, và về sau được vận dụng lại cho bài toán phát hiện drift. Các phương pháp này tận dụng được thông tin trong dữ liệu nhờ đặc trưng học được của network, nhưng khó tách bạch giữa ``drift'' và ``nhiễu'' bên trong mô hình.
 
 
 \begin{table}[H]
@@ -205,11 +204,11 @@ Các phương pháp cũng đã được thực nghiệm trên các tập dữ li
 		\addlinespace
 		\textbf{FHDDM}      & Sliding Window              & Hoeffding + Sliding Win. & Chỉ duy trì 2 biến số, cực nhẹ~\cite{pesaranghader2016fhddm}  & Cần chọn kích thước cửa sổ phù hợp~\cite{hinder2024survey_partA}         \\
 		\addlinespace
-		\textbf{D3}         & Virtual Classifier          & Unsupervised Separation  & Tốc độ nhanh, không cần nhãn~\cite{gozuacik2019d3}            & Chỉ phát hiện Covariate Shift (thay đổi $P(X)$)~\cite{hinder2024survey_partA} \\
+		\textbf{D3}         & Virtual Classifier          & Unsupervised Separation  & Tốc độ nhanh, không cần nhãn~\cite{gozuacik2019d3}            & Hiệu quả phụ thuộc mạnh vào lớp mô hình phân biệt được chọn~\cite{hinder2024survey_partA} \\
 		\addlinespace
 		\textbf{ShapeDD}    & Meta-Statistic              & Shape-based Filtering    & Định vị điểm drift chính xác~\cite{shapeDD2021}             & Độ trễ phụ thuộc kích thước cửa sổ~\cite{shapeDD2021}                    \\
 		\addlinespace
-		\textbf{DAWIDD}     & Block-Based                 & Independence Test (HSIC --- Hilbert-Schmidt Independence Criterion) & Phù hợp với gradual/reoccurring drift~\cite{hinder2020dawidd} & Tỷ lệ báo động giả khá cao~\cite{hinder2024survey_partA}                 \\
+		\textbf{DAWIDD}     & Block-Based                 & Independence Test (HSIC --- Hilbert-Schmidt Independence Criterion) & Ít giả định nhất về dữ liệu và dạng drift, nên bao phủ được nhiều loại drift~\cite{hinder2020dawidd, hinder2024survey_partA} & Cần nhiều dữ liệu hơn để đạt cùng độ tin cậy; chi phí tính toán cao (Bảng~\ref{tab:runtime_stats})~\cite{hinder2024survey_partA} \\
 		\bottomrule
 	\end{tabular}
 \end{table}

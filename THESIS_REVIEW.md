@@ -175,11 +175,11 @@ Tier 1 is worth fixing regardless — those are literal mockups and the deviatio
   `related_work.tex:219-250` (`tab:accuracy_results`)
   Every value is "tổng hợp từ các nghiên cứu gốc" with only a generic note — no per-row `\cite`. Reviewers target exactly this. Add a citation to each row.
 
-- [ ] **Math error in the theory chapter**
+- [x] **Math error in the theory chapter**
   `preliminaries.tex:148` defines `h_l(t) = max(0, 1 − |l − t| / l)`, but `:151` says it peaks at the drift moment `t = 0`.
   That formula gives `h_l(0) = 0` and peaks at `t = l`. Either write `max(0, 1 − |t|/l)` (peak at 0) or restate where the peak is. It is the central theoretical result of ShapeDD — expect it to be checked.
 
-- [ ] **The VR example undercuts the claim it supports**
+- [x] **The VR example undercuts the claim it supports**
   `methodology.tex:342`
   `VR_Incremental = 1.20` with `τ⁻ = 1.1` and `τ⁺ = 1.3` lands **inside the fallback band**, so VR does *not* fire the Incremental branch for that example. Yet the sentence says the result "khẳng định khả năng phân tách" of the feature.
   Fix: use an example below 1.1, or state plainly that this case falls back to the geometric rules.
@@ -189,28 +189,30 @@ Tier 1 is worth fixing regardless — those are literal mockups and the deviatio
   Tables: **`Stagger`**, **`Stagger Recurrent Explicit`**, **`Gaussian Moderate`**.
   A reader cannot map your claims to your results. Rename the generated columns to match the prose.
 
-- [ ] **"14 datasets" doesn't reconcile**
+- [x] **"14 datasets" doesn't reconcile**
   15 datasets are described (Stepping is described in the dataset section but excluded from detection, per `experiments.tex:35`); the F1 tables have 13 rows; stationary is held out for false-positive measurement. State the accounting once, explicitly, in `sec:dataset-config`.
 
-- [ ] **Caption describes data that isn't in its table**
+- [x] **Caption describes data that isn't in its table**
   `experiments.tex:377` explains an `EDR` column and the value `82.5%` — `tab:cdt-comparison-by-type` has neither. Those live in `results/tables/fair_comparison.tex`, which is never `\input`. Fix the caption or add the column.
 
-- [ ] **`li2010contextual` appears to be a fabricated entry**
+- [x] **`li2010contextual` appears to be a fabricated entry**
   Title *"Contextual multi-armed bandit algorithms for large-scale recommender systems"* with WWW 2010 pp 485–494 returns nothing in Crossref. The real Li / Chu / Langford / Schapire paper is **"A Contextual-Bandit Approach to Personalized News Article Recommendation", WWW 2010, pp 661–670**. Delete the entry or correct it.
 
-- [ ] **`LSTM-NDT` misattributed**
+- [x] **`LSTM-NDT` misattributed**
   `related_work.tex:165` — "LSTM-NDT (Neural Drift Detector dùng LSTM)`~\cite{yuan2022advances}`" cites a *survey* for a named method, and "NDT" in the literature is **Nonparametric Dynamic Thresholding** (Hundman et al. 2018, spacecraft telemetry anomaly detection), not a drift detector. Rename it or cite the primary source.
 
-- [ ] **`AEDetect` is an invented acronym**
+- [x] **`AEDetect` is an invented acronym**
   `related_work.tex:165` — `jaworski2020aedetect` ("Concept Drift Detection Using Autoencoders in Data Streams Processing") never names itself AEDetect.
 
-- [ ] **OCDD overstated**
+- [x] **OCDD overstated**
   `related_work.tex:141` — "dùng one-class SVM **hoặc autoencoder**". The OCDD paper is one-class SVM only.
 
-- [ ] **ACE expansion**
+- [x] **ACE expansion**
   `related_work.tex:135` — "Adaptive Classifier Ensemble" → the paper's title is "Adaptive Classifier**s-**Ensemble System for Tracking Concept Drift".
 
-- [ ] **Two claims sourced to a survey that may not contain them**
+- [x] **Two claims sourced to a survey that did not contain them** — *verified against the survey; one actively contradicted it*
+  Fetched `hinder2024survey_partA` directly. It does **not** say D3 detects only covariate shift — it says "the used model class is crucial in terms of which drift can be detected and how much data are necessary". And it does **not** say DAWIDD has a high false alarm rate; it says DAWIDD "makes the fewest assumptions on the data or the drift… but comes at the cost of needing more data" and calls it "universally valid and surely drift-detecting".
+  The DAWIDD claim was also contradicted by the thesis's own Table 5.1, where DAWIDD records **10.3 FP/run — below ShapeDD's 13.2**. Both cells rewritten to what the source actually supports.
   `related_work.tex:208` (D3 "chỉ phát hiện Covariate Shift") and `:212` (DAWIDD "Tỷ lệ báo động giả khá cao"), both attributed to `hinder2024survey_partA`. Verify both are actually in that survey. Sourcing DAWIDD's weakness to a survey co-authored by DAWIDD's own author is an easy question to get asked.
 
 - [x] **`VR` missing from the abbreviations list**
@@ -220,26 +222,26 @@ Tier 1 is worth fixing regardless — those are literal mockups and the deviatio
   `ext_pages/publication.tex:11` `\footnotemark[7]` vs `:27` `\footnotetext[8]` → renders as `**` in the body and `††` in the footnote. Confirmed on p94.
   Same file: a Vietnamese sentence (`:15`) on an otherwise English page, and a CRediT boilerplate footnote when there are no publications. Drop the footnote.
 
-- [ ] **Uncited quantitative claims in the opening**
+- [x] **Uncited quantitative claims in the opening**
   `introduction.tex:4-8` — "tỷ lệ cảnh báo sai tăng gấp ba lần" and the steel-factory anecdote. Specific numbers, no source. Several suitable motivation entries sit unused (`wuest2016machine`, `wu2021dependable`, `chui2021state`, `chui2022state`, `biegel2022combining`).
 
-- [ ] **ADWIN memory bound uncited**
+- [x] **ADWIN memory bound uncited**
   `preliminaries.tex:242` — `O(log W)` claim needs `bifet2007learning`.
 
-- [ ] **Unsupported bandwidth claim**
+- [x] **Unsupported bandwidth claim**
   `methodology.tex:10` — IDW-MMD "giảm độ nhạy với bandwidth". No Ch.5 experiment measures bandwidth sensitivity. Drop it or reframe as design intent rather than result.
 
 ---
 
 ## 4. P2 — Nice to have
 
-- [ ] **Straight double quotes render as `”x”` instead of `“x”`** — 10 places: `experiments.tex:191`; `methodology.tex:622,732`; `preliminaries.tex:205`; `related_work.tex:24,125,129,139,140,161`. Plus raw Unicode curly quotes at `preliminaries.tex:170`. Use `` ``…'' ``.
-- [ ] `methodology.tex:393` — `\begin{tabular}{llll}` with a 3-cell header row gives `tab:se-cdt-params` a spurious empty 4th column.
-- [ ] `methodology.tex:122` and `:160` — self-referential `\ref{sec:idw-mmd}` from inside `sec:idw-mmd` (label at `:115`).
-- [ ] **Window model inconsistent** — `preliminaries.tex:251-256` describes ShapeDD as a symmetric double window `2l₁` (both halves `l₁`); methodology and appendix use asymmetric `l₁ = 50, l₂ = 150`. Reconcile in the theory chapter.
-- [ ] **Four unreconciled window sizes** — classification `W = 50` (`experiments.tex:291`), Kafka `W = 250` (`:481`), H0 `W = 300` (`:219`), appendix A.4 buffer 750 / chunk 150 vs `methodology.tex:688` "Circular Buffer (ví dụ: 1000 mẫu)". Add a `W` column to `tab:eval-conventions`, which currently reconciles only `δ` and cooldown.
-- [ ] **Parameter tables disagree** — appendix A.2 has `PPR = 0.20` and `DPAR = 0.60`, absent from `tab:se-cdt-params`; that table lists `τ_WR / τ_SNR / τ_CV` as "self-calibrated" with no static defaults, while the conclusion quotes them as hard numbers (`WR < 0.15`, `SNR > 2.0`, `CV < 0.3`). Make one table authoritative and cross-reference from the other.
-- [ ] **"Growth process" is undefined** — `conclusion.tex:38` and `:46` use it as a CDT-MSW mechanism, and `:46` points at `sec:shaped-cdt`. Neither `related_work.tex` §CDT-MSW (which calls it "phương sai độ chính xác trên cửa sổ phụ `W_R`") nor `methodology.tex` defines the term.
+- [x] **Straight double quotes render as `”x”` instead of `“x”`** — 10 places: `experiments.tex:191`; `methodology.tex:622,732`; `preliminaries.tex:205`; `related_work.tex:24,125,129,139,140,161`. Plus raw Unicode curly quotes at `preliminaries.tex:170`. Use `` ``…'' ``.
+- [x] `methodology.tex:393` — `\begin{tabular}{llll}` with a 3-cell header row gives `tab:se-cdt-params` a spurious empty 4th column.
+- [x] `methodology.tex:122` and `:160` — self-referential `\ref{sec:idw-mmd}` from inside `sec:idw-mmd` (label at `:115`).
+- [x] **Window model inconsistent** — `preliminaries.tex:251-256` describes ShapeDD as a symmetric double window `2l₁` (both halves `l₁`); methodology and appendix use asymmetric `l₁ = 50, l₂ = 150`. Reconcile in the theory chapter.
+- [x] **Four unreconciled window sizes** — classification `W = 50` (`experiments.tex:291`), Kafka `W = 250` (`:481`), H0 `W = 300` (`:219`), appendix A.4 buffer 750 / chunk 150 vs `methodology.tex:688` "Circular Buffer (ví dụ: 1000 mẫu)". Add a `W` column to `tab:eval-conventions`, which currently reconciles only `δ` and cooldown.
+- [x] **Parameter tables disagree** — appendix A.2 has `PPR = 0.20` and `DPAR = 0.60`, absent from `tab:se-cdt-params`; that table lists `τ_WR / τ_SNR / τ_CV` as "self-calibrated" with no static defaults, while the conclusion quotes them as hard numbers (`WR < 0.15`, `SNR > 2.0`, `CV < 0.3`). Make one table authoritative and cross-reference from the other.
+- [x] **"Growth process" is undefined** — `conclusion.tex:38` and `:46` use it as a CDT-MSW mechanism, and `:46` points at `sec:shaped-cdt`. Neither `related_work.tex` §CDT-MSW (which calls it "phương sai độ chính xác trên cửa sổ phụ `W_R`") nor `methodology.tex` defines the term.
 - [x] **Notations list incomplete** — *done: symbols added and descriptions translated* — `ext_pages/notations.tex` is missing `σ(t)` (the central signal), `h_l(t)`, `VR`, `τ_VR^±`, `M`, `n_s`, `σ_g`, `δ`, `N_perm`.
 - [ ] **Same quantity, two symbols** — `table_se_cdt_performance_by_type.tex` uses `\tau_{\text{match}} = 0.15`; `table_cdt_msw_vs_se_cdt_by_drift_type.tex` uses `\mu = 0.15`.
 - [ ] `table_statistical_tests.tex` — Overall Rank 2 / 3 / 4 assigned to three methods with an identical Average Rank of 3.893. Show as tied (2–4).
