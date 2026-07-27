@@ -1,7 +1,7 @@
 # Thesis Final-Revision Review — SE-CDT
 
 **Date:** 2026-07-27
-**Subject:** `report/HCMUT_Master_Thesis_Template/` (the deliverable, 126 pp)
+**Subject:** `report/HCMUT_Master_Thesis_Template/` (the deliverable — 126 pp as reviewed, 127 pp after the P0 fixes)
 **Checked against:** `BIỂU MẪU 4` (layout / front-matter order) and `BIỂU MẪU 5` (task sheet)
 **Scope:** citation validity, format compliance, internal consistency of the methodology write-up
 
@@ -20,14 +20,14 @@
 
 ## 1. Verified state
 
-| Check | Result |
-|---|---|
-| Build | 0 errors, 0 undefined references, 0 undefined citations |
-| Output | 126 pages, A4 (595.276 × 841.89 pt) |
-| Typesetting warnings | 20 overfull hbox, 15 underfull hbox |
-| Printed references | 49 `\bibitem`s |
-| Bib entries defined | 99 (so **50 never print**) |
-| `\ref` integrity | all resolve; no duplicate labels |
+| Check | As reviewed | After P0 fixes |
+|---|---|---|
+| Build | 0 errors, 0 undefined refs, 0 undefined citations | unchanged |
+| Output | 126 pages, A4 (595.276 × 841.89 pt) | **127 pages**, A4 |
+| Typesetting warnings | 20 overfull hbox, 15 underfull hbox | unchanged |
+| Printed references | 49 `\bibitem`s | **56** (+Demšar, +6 Kafka) |
+| Bib entries defined | 99 (so 50 never printed) | 99 (43 still never print) |
+| `\ref` integrity | all resolve; no duplicate labels | unchanged |
 
 Structurally the document is sound. Everything below is content-level.
 
@@ -68,7 +68,7 @@ The two forms are not uniformly prescriptive. Some pages are reproduced **verbat
 | `TÊN ĐỀ TÀI` | 20 | English title, `\LARGE` ≈ 20 — ok |
 | `Chuyên ngành:` / `Mã ngành:` | 16 | `Major:` / `Major code:` at 13pt |
 | `ĐỀ ÁN TỐT NGHIỆP / LUẬN VĂN THẠC SĨ` | 20 | `MASTER'S THESIS` at **14pt** |
-| `Thành phố Hồ Chí Minh, tháng … năm …` | 13 | `HO CHI MINH CITY, January 2026` at **12pt** |
+| `Thành phố Hồ Chí Minh, tháng … năm …` | 13 | `HO CHI MINH CITY, May 2026` — *fixed:* now driven by `\submissiondate`, size corrected 12 → 13pt |
 
 Also `Trang bìa **và** trang 1` — the same page twice. Thesis has it once.
 
@@ -103,60 +103,65 @@ Tier 1 is worth fixing regardless — those are literal mockups and the deviatio
 
 ## 2. P0 — Must fix (compliance / factual)
 
-- [ ] **VITA page is blank**
+> **Status 2026-07-27:** 12 of 14 applied on branch `thesis-final-revisions` (commit "fix: correct P0 …"). Rebuild after the fixes: 0 errors, 0 undefined references, 0 undefined citations, 20 overfull / 15 underfull hbox (unchanged), bibliography **49 → 56** entries, **126 → 127** pages. Two items deliberately not applied — see the notes on VITA and on the Tier-1 pages below, plus the font-engine decision.
+
+- [ ] **VITA page is blank** — *blocked: needs your personal data, cannot be filled from the repo*
   `ext_pages/vita.tex:29` (Email), `:40-54` (Education Background), `:56-67` (Work Experience)
   Both tables contain header rows only; Email is a dotfill. Confirmed empty on rendered p126.
+  Supply: email to print, education history from undergraduate onward (year / degree / university), and work history (year / organisation / position). Then this is a five-minute fix.
   BIỂU MẪU 4 explicitly requires `QUÁ TRÌNH ĐÀO TẠO (Bắt đầu từ Đại học đến nay)` and `QUÁ TRÌNH CÔNG TÁC (Bắt đầu từ khi đi làm đến nay)` to be filled. This is required content left empty — a hard compliance failure.
 
-- [ ] **The four pages BIỂU MẪU 4 specifies verbatim are in English**
+- [ ] **The four pages BIỂU MẪU 4 specifies verbatim are in English** — *not applied, wants your go-ahead*
   `ext_pages/cover.tex`, `ext_pages/committee.tex`, `ext_pages/vita.tex`
   These are not ordering hints — the form reproduces the exact text. See §1a for the side-by-side. Cover, committee page, and lý lịch trích ngang must carry the Vietnamese wording the form prints.
+  **Held back deliberately.** Doing this replaces the English cover title with the Vietnamese one (`NGHIÊN CỨU VÀ PHÁT TRIỂN HỆ THỐNG…`) and relabels the committee page — a large, immediately visible change to the first three pages. It is also coupled to the unresolved Tier-3 question: Vietnamising only these pages while the TOC and captions stay English is defensible under the form, but you should know that is the outcome before it lands. Say the word and it goes in as its own commit, easy to revert alone.
 
   *Separate and weaker:* the `Mục lục` / `Tài liệu tham khảo` headings, and the English `CHAPTER`/`Table`/`Figure` caption words, are **not** verbatim-specified — see §1a before changing them. The English furniture came from the school's own template (`git show 370e98f`), not from your edits.
 
-- [ ] **PDF Vietnamese text layer is broken**
+- [ ] **PDF Vietnamese text layer is broken** — *decided 2026-07-27: not fixing, accepted risk*
   Searching the PDF for `Tóm tắt` returns **zero** hits; pure-ASCII strings like `BIBLIOGRAPHY` hit fine. `LÊ PHÚC ĐỨC` extracts as `L� PH�C C`.
   Cause: Type1 fonts without a usable ToUnicode CMap. Consequence: copy/paste is garbage, and any text-extraction plagiarism check (Turnitin/DoIT) will see mangled Vietnamese for the whole thesis.
-  Fix: compile with a Unicode engine — `lualatex` or `xelatex` + `fontspec` with Times New Roman. Verify acceptance on the school's submission portal before the deadline.
+  Fix would be `lualatex`/`xelatex` + `fontspec`. **Deliberately not applied** — different font metrics re-break every line and would shift the 127-page layout, which is not worth the risk this close to submission.
+  Residual risk to confirm with the school: if the submission portal runs text extraction or a similarity check on the PDF, the Vietnamese will come through mangled. Ask before submitting; if they do extract, this becomes a blocker and the engine switch has to happen with a full visual re-check.
 
-- [ ] **DAWIDD expansion is wrong**
+- [x] **DAWIDD expansion is wrong**
   `ext_pages/abbreviations.tex:41`
   Has: `Distance-Aware Windowed Drift Detection`
   Should be: `Dynamic Adapting Window Independence Drift Detection`
   Evidence: the thesis's own bib entry `hinder2020dawidd` reads *"Towards non-parametric drift detection via dynamic adapting window independence drift detection (DAWIDD)"*. The thesis contradicts its own bibliography, visibly, on p.xiv. Cheapest high-embarrassment fix — do it first.
 
-- [ ] **Six text-vs-table number mismatches** — full list in §5 below. All six are prose errors; the tables are correct.
+- [x] **Six text-vs-table number mismatches** — full list in §5 below. All six are prose errors; the tables are correct.
 
-- [ ] **`mahdi2020dmddm` authors are wrong** *(printed reference — cited at `related_work.tex:97`)*
+- [x] **`mahdi2020dmddm` authors are wrong** *(printed reference — cited at `related_work.tex:97`)*
   Crossref (doi 10.1016/j.knosys.2019.105227): Osama A. Mahdi, Eric Pardede, **Nawfal Ali**, **Jinli Cao**.
   Bib has `Ali, Norazlina` and `Cao, Jian`. Both wrong.
 
-- [ ] **`yan2020acddm` author is wrong** *(printed — cited at `related_work.tex:96`)*
+- [x] **`yan2020acddm` author is wrong** *(printed — cited at `related_work.tex:96`)*
   Crossref (doi 10.1016/j.icte.2020.05.011): `Yan, **Myuu Myuu** Wai`.
   Bib has `Yan, Myat Myat Wai`.
 
-- [ ] **`celik2020adaptation` cites a preprint that has been published** *(printed — cited at `preliminaries.tex:41`, `related_work.tex:281`)*
+- [x] **`celik2020adaptation` cites a preprint that has been published** *(printed — cited at `preliminaries.tex:41`, `related_work.tex:281`)*
   Currently `arXiv:2006.06480`. Published as **IEEE Transactions on Pattern Analysis and Machine Intelligence 43(9):3067–3078, 2021**, doi `10.1109/TPAMI.2021.3062900`. Cite the journal version.
 
-- [ ] **Friedman / Nemenyi / Critical-Difference diagram is uncited**
+- [x] **Friedman / Nemenyi / Critical-Difference diagram is uncited**
   `experiments.tex:126-142`
   The canonical reference for exactly that test and that figure — `demsar2006statistical` — is already in `main.bib` and never cited. Add it.
 
-- [ ] **The entire Kafka architecture section cites nothing**
+- [x] **The entire Kafka architecture section cites nothing**
   `methodology.tex:650-734`
   Eight relevant entries sit unused in `main.bib`: `kreps2011kafka`, `wang2015building`, `kleppmann2015kafka`, `goodhope2012building`, `hiraman2018apache`, `sax2018encyclopedia`, `jafarpour2019ksql`, `kafka2024documentation`.
 
-- [ ] **Figure caption contradicts the body on the same page**
+- [x] **Figure caption contradicts the body on the same page**
   `experiments.tex:131` says the rank gap to DAWIDD is `0.142`.
   `table_statistical_tests.tex`: 3.893 − 3.464 = **0.429**, which the body at `experiments.tex:142` states correctly.
 
-- [ ] **Three conflicting submission dates**
+- [x] **Three conflicting submission dates**
   `ext_pages/cover.tex:41` hardcodes `HO CHI MINH CITY, January 2026`; `main.tex:32` defines `\submissiondate{May 2026}`; the task sheet gives completion `11/05/2026`. Pick one and drive the cover from the macro.
 
-- [ ] **Typo in the official task sheet**
+- [x] **Typo in the official task sheet**
   `ext_pages/task_sheet_VN.tex:94` — `IV. NGÀY HOÀN **THANH** NHIỆM VỤ` → `HOÀN THÀNH`.
 
-- [ ] **Task-sheet signature date precedes completion**
+- [x] **Task-sheet signature date precedes completion**
   `ext_pages/task_sheet_VN.tex:110` — `Tp. HCM, ngày 15 tháng 12, 2025`, but completion is `11/05/2026`. Also BIỂU MẪU 5's format is `…………………, ngày… tháng … năm 20…`.
 
 ---
@@ -249,28 +254,30 @@ Tier 1 is worth fixing regardless — those are literal mockups and the deviatio
 
 ## 5. Reference — text vs generated tables
 
-The tables are auto-generated. **Fix the prose, not the tables.**
+The tables are auto-generated. **Fix the prose, not the tables.** All seven corrected 2026-07-27 and confirmed present in the rebuilt PDF.
 
-| Location | Prose says | Table says |
-|---|---|---|
-| `experiments.tex:117` | DAWIDD F1 highest at **0.531** | `table_I`: DAWIDD **0.532**, ShapeDD-IDW 0.531 — so they do not tie numerically |
-| `experiments.tex:119` | ShapeDD FP **13.1** | `table_I`: **13.2** |
-| `experiments.tex:185` | ShapeDD FP **13.1** (again) | `table_I`: **13.2** |
-| `experiments.tex:131` | CD gap to DAWIDD **0.142** | `table_statistical_tests`: 3.893 − 3.464 = **0.429** |
-| `experiments.tex:181` | Random Mild, MMD **0.563** | `table_II_part1`: **0.566** |
-| `experiments.tex:181` | Gaussian Gradual, MMD **0.459** | `table_II_part1`: **0.462** |
-| `experiments.tex:183` | RBF Blips, MMD **0.742** | `table_II_part3`: **0.747** — 0.742 is MMD's *Stagger* value, i.e. a column slip |
+| Location | Prose said | Table says | Status |
+|---|---|---|---|
+| `experiments.tex:117` | DAWIDD F1 highest at **0.531** | `table_I`: DAWIDD **0.532**, ShapeDD-IDW 0.531 — so they do not tie numerically | fixed; paragraph also reworded to state the 0.001 gap and redirect the claim to runtime + classification |
+| `experiments.tex:119` | ShapeDD FP **13.1** | `table_I`: **13.2** | fixed |
+| `experiments.tex:185` | ShapeDD FP **13.1** (again) | `table_I`: **13.2** | fixed |
+| `experiments.tex:131` | CD gap to DAWIDD **0.142** | `table_statistical_tests`: 3.893 − 3.464 = **0.429** | fixed |
+| `experiments.tex:181` | Random Mild, MMD **0.563** | `table_II_part1`: **0.566** | fixed |
+| `experiments.tex:181` | Gaussian Gradual, MMD **0.459** | `table_II_part1`: **0.462** | fixed |
+| `experiments.tex:183` | RBF Blips, MMD **0.742** | `table_II_part3`: **0.747** — 0.742 is MMD's *Stagger* value, i.e. a column slip | fixed |
+
+> Verification note: `0.742` and `0.459` still each appear once in the PDF — both in the legitimate `Stagger` row of `table_II_part3` (MMD 0.742, KS 0.459), not in prose. Don't "fix" those.
 
 Values confirmed correct and needing no change: `9.6` FP/run, `0.491` ShapeDD F1, `10.5` MMD FP, `27.2` KS FP, Hyperplane `0.179`, LED Abrupt `0.148`, Standard SEA `0.118`, D3 RBF Blips `1.000`, `7.18×`/`≈7.2×` speedup, `0.429` and `0.714` rank gaps at `:142`, all Type-I error figures at `:230-232`, CDT-MSW `96.9%`/`74.0%`/`83.9%`, and all prequential accuracy figures.
 
 ## 6. Reference — citation errors
 
-| Entry | Printed? | Problem | Source of truth |
-|---|---|---|---|
-| `mahdi2020dmddm` | **yes** | `Ali, Norazlina` → `Ali, Nawfal`; `Cao, Jian` → `Cao, Jinli` | Crossref `10.1016/j.knosys.2019.105227` |
-| `yan2020acddm` | **yes** | `Myat Myat Wai` → `Myuu Myuu Wai` | Crossref `10.1016/j.icte.2020.05.011` |
-| `celik2020adaptation` | **yes** | preprint cited; use IEEE TPAMI 43(9):3067–3078, 2021 | Crossref `10.1109/TPAMI.2021.3062900` |
-| `tripathi2021ensuring` | **yes** | `pages={22}` → article no. `576892` | Frontiers in AI 4 |
+| Entry | Printed? | Problem | Source of truth | Status |
+|---|---|---|---|---|
+| `mahdi2020dmddm` | **yes** | `Ali, Norazlina` → `Ali, Nawfal`; `Cao, Jian` → `Cao, Jinli` | Crossref `10.1016/j.knosys.2019.105227` | fixed |
+| `yan2020acddm` | **yes** | `Myat Myat Wai` → `Myuu Myuu Wai` | Crossref `10.1016/j.icte.2020.05.011` | fixed |
+| `celik2020adaptation` | **yes** | preprint cited; use IEEE TPAMI 43(9):3067–3078, 2021 | Crossref `10.1109/TPAMI.2021.3062900` | fixed (`@misc` → `@article`) |
+| `tripathi2021ensuring` | **yes** | `pages={22}` → article no. `576892` | Frontiers in AI 4 | fixed |
 | `schrab2023mmdagg` | no | `Albert, Mika` → `Albert, Mélisande`; **`Guedj, Benjamin` missing**; pages `1--72` → `1--81` | JMLR 24(194) |
 | `li2010contextual` | no | title and pages do not correspond to any real paper | Crossref returns no match |
 | `haug2024benchmark` | no | key says 2024; work is Lukats et al. **2025** (metadata otherwise correct) | Crossref `10.1007/s41060-024-00620-y` |
@@ -278,10 +285,11 @@ Values confirmed correct and needing no change: `9.6` FP/run, `0.491` ShapeDD F1
 
 ### Entries that exist but are never cited, where the text needs them
 
-| Needed at | Entry sitting unused |
-|---|---|
-| `experiments.tex:126-142` — Friedman/Nemenyi + CD diagram | `demsar2006statistical` |
-| `methodology.tex:650-734` — Kafka architecture | `kreps2011kafka`, `wang2015building`, `kleppmann2015kafka`, `goodhope2012building`, `hiraman2018apache`, `sax2018encyclopedia`, `jafarpour2019ksql`, `kafka2024documentation` |
+| Needed at | Entry sitting unused | Status |
+|---|---|---|
+| `experiments.tex:126` — Friedman/Nemenyi + CD diagram | `demsar2006statistical` | **cited** |
+| `methodology.tex:653` — Kafka architecture | `kreps2011kafka`, `kafka2024documentation`, `wang2015building`, `kleppmann2015kafka`, `goodhope2012building`, `hiraman2018apache` | **cited** — a short paragraph now justifies *why* Kafka (durable partitioned commit log, independent consumers at different cadences) rather than just naming it |
+| — | `sax2018encyclopedia`, `jafarpour2019ksql` | still unused; KSQL and the encyclopedia entry aren't needed by the current design |
 | `experiments.tex:401` — LogisticRegression + StandardScaler | `pedregosa2011scikit` |
 | Gaussian smoothing, FWHM, peak detection | `savitzky1964smoothing`, `canny1986computational`, `hamming1989digital` |
 | Permutation-test theory | `neyman1933problem`, `ramdas2023permutation` |
