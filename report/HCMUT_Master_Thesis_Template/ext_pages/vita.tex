@@ -2,13 +2,27 @@
 \pagestyle{plain}
 \thispagestyle{empty}
 
+% =============================================================================
+% BIEU MAU 4 calls this page "PHAN LY LICH TRICH NGANG" and specifies these
+% field labels verbatim, in Vietnamese:
+%     Ho va ten:                              -> Full name
+%     Ngay, thang, nam sinh:   Noi sinh:      -> Date of birth / Place of birth
+%     Dia chi lien lac:                        -> Address
+%     QUA TRINH DAO TAO (Bat dau tu Dai hoc den nay)   -> Education Background
+%     QUA TRINH CONG TAC (Bat dau tu khi di lam den nay) -> Work Experience
+% The English labels below match the school's LaTeX template as shipped. If you
+% decide to switch this page to the form's Vietnamese wording, replace the five
+% labels and the two section headings; the table structure stays as-is.
+% =============================================================================
+
 \begin{center}
     {\fontsize{18pt}{21pt}\selectfont \textbf{VITA}}
 \end{center}
 
+\vspace{2mm}
+
 % Personal information
 \noindent
-
 \begin{minipage}[t]{0.6\textwidth}
 \textbf{Full name:} Lê Phúc Đức
 
@@ -26,7 +40,8 @@
 
 \vspace{4mm}
 
-\textbf{Email:} \makebox[5cm]{\dotfill}
+% TODO fill in: email address to print on the submitted copy
+\textbf{Email:} \makebox[5.5cm]{\dotfill}
 \end{minipage}
 \hfill
 \begin{minipage}[t]{0.35\textwidth}
@@ -34,34 +49,55 @@
 \framebox[3.5cm]{\rule{0pt}{4.5cm}\hfill Photo\hfill}
 \end{minipage}
 
+\vspace{12mm}
+
+% -----------------------------------------------------------------------------
+% QUA TRINH DAO TAO -- start from undergraduate and work forward to the present.
+% TODO fill in one row per degree, e.g.
+%     2018 -- 2022 & Bachelor of Engineering, Computer Science
+%                  & Ho Chi Minh City University of Technology (HCMUT) \\
+% Add or delete rows as needed; leave the dotted rows blank to fill by hand.
+% -----------------------------------------------------------------------------
+\noindent\textbf{Education Background:}
+
+\vspace{3mm}
+
+\noindent
+{\fontsize{12pt}{14pt}\selectfont
+\begin{tabular}{|p{2.6cm}|p{5.4cm}|p{6.0cm}|}
+	\hline
+	\multicolumn{1}{|c|}{\textbf{Year}} & \multicolumn{1}{c|}{\textbf{Degree}} & \multicolumn{1}{c|}{\textbf{University}} \\
+	\hline
+	\dotfill & \dotfill & \dotfill \\[1.5mm]
+	\hline
+	\dotfill & \dotfill & \dotfill \\[1.5mm]
+	\hline
+	\dotfill & \dotfill & \dotfill \\[1.5mm]
+	\hline
+\end{tabular}}
+
 \vspace{10mm}
 
-\begin{flushleft}
-\textbf{Education Background:}
-\end{flushleft}
+% -----------------------------------------------------------------------------
+% QUA TRINH CONG TAC -- start from your first job and work forward to the present.
+% TODO fill in one row per position, e.g.
+%     2022 -- present & New Eagle & Software Engineer \\
+% Add or delete rows as needed; leave the dotted rows blank to fill by hand.
+% -----------------------------------------------------------------------------
+\noindent\textbf{Work Experience:}
 
-\begin{table}[h]
-\centering
-\fontsize{13pt}{15pt}\selectfont
-\begin{tabular}{cll} 
+\vspace{3mm}
 
-\multicolumn{1}{c}{\textbf{Year}} & \multicolumn{1}{c}{\textbf{Degree}}                                                                   & \multicolumn{1}{c}{\textbf{University}}  \vspace{4mm}                                           \\ 
-
-\end{tabular}
-\end{table}
-
-\vspace{5mm}
-
-\begin{flushleft}
-\textbf{Work Experience:}
-\end{flushleft}
-
-\begin{table}[h]
-\centering
-\fontsize{13pt}{15pt}\selectfont
-\begin{tabular}{cll} 
-
-\multicolumn{1}{c}{\textbf{Year}} & \multicolumn{1}{c}{\textbf{Organization / Company}}                                                                               & \multicolumn{1}{c}{\textbf{Position / Job Title}} \vspace{4mm}                            \\ 
-
-\end{tabular}
-\end{table}
+\noindent
+{\fontsize{12pt}{14pt}\selectfont
+\begin{tabular}{|p{2.6cm}|p{5.4cm}|p{6.0cm}|}
+	\hline
+	\multicolumn{1}{|c|}{\textbf{Year}} & \multicolumn{1}{c|}{\textbf{Organization / Company}} & \multicolumn{1}{c|}{\textbf{Position / Job Title}} \\
+	\hline
+	\dotfill & \dotfill & \dotfill \\[1.5mm]
+	\hline
+	\dotfill & \dotfill & \dotfill \\[1.5mm]
+	\hline
+	\dotfill & \dotfill & \dotfill \\[1.5mm]
+	\hline
+\end{tabular}}
