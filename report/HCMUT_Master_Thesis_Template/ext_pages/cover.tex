@@ -1,48 +1,66 @@
 \newpage
 
+% =============================================================================
+% Trang bia / trang 1, reproduced from BIEU MAU 4. The form prints this page
+% verbatim with point sizes attached, so the wording and the sizes below are
+% taken directly from it:
+%     DAI HOC QUOC GIA THANH PHO HO CHI MINH   (size 12)
+%     TRUONG DAI HOC BACH KHOA                 (size 13)
+%     --------------------
+%     HO VA TEN HOC VIEN                       (size 16)
+%     TEN DE TAI                               (size 20)
+%     Chuyen nganh: / Ma nganh:                (size 16)
+%     LUAN VAN THAC SI                         (size 20)
+%     Thanh pho Ho Chi Minh, thang ... nam ... (size 13)
+% =============================================================================
+
 \begin{titlepage}
     \centering
-    
+
     % Box around entire page content
     \fbox{
     \begin{minipage}[t][0.9\textheight]{0.95\textwidth}
         \vspace{1cm}
         \begin{center}
-            VIETNAM NATIONAL UNIVERSITY HO CHI MINH CITY
-            
+            {\fontsize{12pt}{14pt}\selectfont ĐẠI HỌC QUỐC GIA THÀNH PHỐ HỒ CHÍ MINH}
+
             \vspace{2mm}
-            \textbf{HO CHI MINH CITY UNIVERSITY OF TECHNOLOGY}
-            
+
+            {\fontsize{13pt}{15pt}\selectfont \textbf{TRƯỜNG ĐẠI HỌC BÁCH KHOA}}
+
+            \vspace{2mm}
+
+            \rule{4cm}{0.4pt}
+
             \vspace{2cm}
-            
-            \textbf{\Large \studentname}
-            
-            \vspace{4cm}
-            
+
+            {\fontsize{16pt}{19pt}\selectfont \textbf{\studentname}}
+
+            \vspace{2.5cm}
+
             % Title
-            \parbox{0.85\textwidth}{\centering \LARGE\bfseries \thesistitle\par}
-            
-            \vspace{2cm}
+            \parbox{0.85\textwidth}{\centering \fontsize{20pt}{24pt}\selectfont \bfseries \thesistitlevn \par}
 
-            \begin{flushleft}
-            \hspace*{5cm}{\fontsize{13pt}{15pt}\selectfont Major: \major}
-
-            \vspace{1mm}
-            
-            \hspace*{5cm}{\fontsize{13pt}{15pt}\selectfont Major code: \majorcode}
-            \end{flushleft}
-            
-            \vspace{2cm}
-
-            {\fontsize{14pt}{16pt}\selectfont \textbf{MASTER'S THESIS}}
-            
             \vfill
 
-            {\fontsize{13pt}{15pt}\selectfont HO CHI MINH CITY, \submissiondate}
-            
-            \vspace{1cm}
+            \begin{flushleft}
+            \hspace*{4cm}{\fontsize{16pt}{19pt}\selectfont Chuyên ngành: \majorvn}
+
+            \vspace{1mm}
+
+            \hspace*{4cm}{\fontsize{16pt}{19pt}\selectfont Mã ngành: \majorcode}
+            \end{flushleft}
+
+            \vspace{1.5cm}
+
+            {\fontsize{20pt}{24pt}\selectfont \textbf{LUẬN VĂN THẠC SĨ}}
+
+            \vfill
+
+            {\fontsize{13pt}{15pt}\selectfont Thành phố Hồ Chí Minh, \submissiondatevn}
+
+            \vspace{0.5cm}
         \end{center}
     \end{minipage}
     }
 \end{titlepage}
-

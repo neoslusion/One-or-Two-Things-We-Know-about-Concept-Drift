@@ -97,7 +97,13 @@ This is a contents/ordering list. It names each item in Vietnamese but never say
 - The caption words `Table` / `Figure` and the `CHAPTER n` line. **Zero mention in either form.** Pure internal consistency: Vietnamese body, English caption labels. If you want them to match the body: `\renewcommand{\tablename}{Bảng}`, `\renewcommand{\figurename}{Hình}`, `\renewcommand{\chaptername}{CHƯƠNG}`.
 - **The language of the thesis body.** Neither form states it. The only language requirement anywhere in BIỂU MẪU 4 is that the abstract appear in both — `Tóm tắt … (tiếng Việt và tiếng Anh)`.
 
-### Practical reading
+### Provenance correction (2026-07-27)
+
+An earlier draft of this review treated the English headings as school-sanctioned because `git show 370e98f` ("Add initial LaTeX template files for HCMUT Master's…") looked like an official import. **That was wrong.** The template came from a friend enrolled in the **English-taught** programme. The author studies in Vietnamese.
+
+So the English furniture carries no authority whatsoever — it is an artifact of borrowing an English-track template. There is no advisor question to resolve and no tier that is merely a "judgement call": all three tiers should be Vietnamese, because the thesis is Vietnamese. **All of §1a was applied on 2026-07-27** (commit "refactor: convert thesis front matter to Vietnamese").
+
+### Practical reading (superseded — kept for the record)
 
 Tier 1 is worth fixing regardless — those are literal mockups and the deviation is visible on the first three pages a committee member turns to. Tier 2 is cheap and makes the document coherent. **Tier 3 is a judgement call, not a compliance item** — the English furniture is what your school's own LaTeX template ships, so if an advisor has already seen a draft in this form, leave it. Worth one question to your advisor: *"the school LaTeX template prints English headings and captions but my thesis body is Vietnamese — do you want the headings Vietnamised?"*
 
@@ -111,12 +117,9 @@ Tier 1 is worth fixing regardless — those are literal mockups and the deviatio
   Supply: email to print, education history from undergraduate onward (year / degree / university), and work history (year / organisation / position). Then this is a five-minute fix.
   BIỂU MẪU 4 explicitly requires `QUÁ TRÌNH ĐÀO TẠO (Bắt đầu từ Đại học đến nay)` and `QUÁ TRÌNH CÔNG TÁC (Bắt đầu từ khi đi làm đến nay)` to be filled. This is required content left empty — a hard compliance failure.
 
-- [ ] **The four pages BIỂU MẪU 4 specifies verbatim are in English** — *not applied, wants your go-ahead*
-  `ext_pages/cover.tex`, `ext_pages/committee.tex`, `ext_pages/vita.tex`
-  These are not ordering hints — the form reproduces the exact text. See §1a for the side-by-side. Cover, committee page, and lý lịch trích ngang must carry the Vietnamese wording the form prints.
-  **Held back deliberately.** Doing this replaces the English cover title with the Vietnamese one (`NGHIÊN CỨU VÀ PHÁT TRIỂN HỆ THỐNG…`) and relabels the committee page — a large, immediately visible change to the first three pages. It is also coupled to the unresolved Tier-3 question: Vietnamising only these pages while the TOC and captions stay English is defensible under the form, but you should know that is the outcome before it lands. Say the word and it goes in as its own commit, easy to revert alone.
-
-  *Separate and weaker:* the `Mục lục` / `Tài liệu tham khảo` headings, and the English `CHAPTER`/`Table`/`Figure` caption words, are **not** verbatim-specified — see §1a before changing them. The English furniture came from the school's own template (`git show 370e98f`), not from your edits.
+- [x] **The four pages BIỂU MẪU 4 specifies verbatim were in English** — *applied in full*
+  `ext_pages/cover.tex`, `ext_pages/committee.tex`, `ext_pages/vita.tex`, plus `ext_pages/commitment.tex` and every structural heading.
+  The whole front matter is now Vietnamese, because the thesis is Vietnamese and the English template had no authority (see the provenance correction in §1a). Cover carries the Vietnamese title and the form's point sizes; the committee page is back on one page with the required `(Ghi rõ họ, tên, học hàm, học vị và chữ ký)` annotations; VITA is `PHẦN LÝ LỊCH TRÍCH NGANG` with the form's field labels.
 
 - [ ] **PDF Vietnamese text layer is broken** — *decided 2026-07-27: not fixing, accepted risk*
   Searching the PDF for `Tóm tắt` returns **zero** hits; pure-ASCII strings like `BIBLIOGRAPHY` hit fine. `LÊ PHÚC ĐỨC` extracts as `L� PH�C C`.
@@ -210,10 +213,10 @@ Tier 1 is worth fixing regardless — those are literal mockups and the deviatio
 - [ ] **Two claims sourced to a survey that may not contain them**
   `related_work.tex:208` (D3 "chỉ phát hiện Covariate Shift") and `:212` (DAWIDD "Tỷ lệ báo động giả khá cao"), both attributed to `hinder2024survey_partA`. Verify both are actually in that survey. Sourcing DAWIDD's weakness to a survey co-authored by DAWIDD's own author is an easy question to get asked.
 
-- [ ] **`VR` missing from the abbreviations list**
+- [x] **`VR` missing from the abbreviations list**
   `ext_pages/abbreviations.tex` — Variance Ratio is the thesis's own added feature and the only one absent.
 
-- [ ] **Footnote marker/text mismatch**
+- [x] **Footnote marker/text mismatch**
   `ext_pages/publication.tex:11` `\footnotemark[7]` vs `:27` `\footnotetext[8]` → renders as `**` in the body and `††` in the footnote. Confirmed on p94.
   Same file: a Vietnamese sentence (`:15`) on an otherwise English page, and a CRediT boilerplate footnote when there are no publications. Drop the footnote.
 
@@ -237,14 +240,14 @@ Tier 1 is worth fixing regardless — those are literal mockups and the deviatio
 - [ ] **Four unreconciled window sizes** — classification `W = 50` (`experiments.tex:291`), Kafka `W = 250` (`:481`), H0 `W = 300` (`:219`), appendix A.4 buffer 750 / chunk 150 vs `methodology.tex:688` "Circular Buffer (ví dụ: 1000 mẫu)". Add a `W` column to `tab:eval-conventions`, which currently reconciles only `δ` and cooldown.
 - [ ] **Parameter tables disagree** — appendix A.2 has `PPR = 0.20` and `DPAR = 0.60`, absent from `tab:se-cdt-params`; that table lists `τ_WR / τ_SNR / τ_CV` as "self-calibrated" with no static defaults, while the conclusion quotes them as hard numbers (`WR < 0.15`, `SNR > 2.0`, `CV < 0.3`). Make one table authoritative and cross-reference from the other.
 - [ ] **"Growth process" is undefined** — `conclusion.tex:38` and `:46` use it as a CDT-MSW mechanism, and `:46` points at `sec:shaped-cdt`. Neither `related_work.tex` §CDT-MSW (which calls it "phương sai độ chính xác trên cửa sổ phụ `W_R`") nor `methodology.tex` defines the term.
-- [ ] **Notations list incomplete** — `ext_pages/notations.tex` is missing `σ(t)` (the central signal), `h_l(t)`, `VR`, `τ_VR^±`, `M`, `n_s`, `σ_g`, `δ`, `N_perm`.
+- [x] **Notations list incomplete** — *done: symbols added and descriptions translated* — `ext_pages/notations.tex` is missing `σ(t)` (the central signal), `h_l(t)`, `VR`, `τ_VR^±`, `M`, `n_s`, `σ_g`, `δ`, `N_perm`.
 - [ ] **Same quantity, two symbols** — `table_se_cdt_performance_by_type.tex` uses `\tau_{\text{match}} = 0.15`; `table_cdt_msw_vs_se_cdt_by_drift_type.tex` uses `\mu = 0.15`.
 - [ ] `table_statistical_tests.tex` — Overall Rank 2 / 3 / 4 assigned to three methods with an identical Average Rank of 3.893. Show as tied (2–4).
-- [ ] **Cover details vs BIỂU MẪU 4** — `ext_pages/cover.tex:37` sets `MASTER'S THESIS` at 14pt (template says 20); `:41` sets city/date at 12pt (template says 13); missing the `--------------------` rule under `TRƯỜNG ĐẠI HỌC BÁCH KHOA`; template says "Trang bìa **và trang 1**" so the title page should appear twice.
-- [ ] `ext_pages/committee.tex` — spills onto 2 pages because of `\vspace{10cm}`; BIỂU MẪU 4 puts it on page 2 alone.
+- [x] **Cover details vs BIỂU MẪU 4** — `ext_pages/cover.tex:37` sets `MASTER'S THESIS` at 14pt (template says 20); `:41` sets city/date at 12pt (template says 13); missing the `--------------------` rule under `TRƯỜNG ĐẠI HỌC BÁCH KHOA`; template says "Trang bìa **và trang 1**" so the title page should appear twice.
+- [x] `ext_pages/committee.tex` — *done, back on one page.* Was spilling onto 2 pages because of `\vspace{10cm}`; BIỂU MẪU 4 puts it on page 2 alone.
 - [ ] **Two task sheets** — EN then VN. Template requires only BIỂU MẪU 5 (Vietnamese). EN numbers sections I–VI, VN numbers I–V.
-- [ ] **Abstract order** — BIỂU MẪU 4 lists "Tóm tắt … (tiếng Việt và tiếng Anh)"; `main.tex:45-46` has English first. Swap.
-- [ ] **Front-matter heading sizes** — 24pt (abbreviations, notations, publications) vs `\Large` ≈17pt (ack, abstract, commitment). Unify.
+- [x] **Abstract order** — *done: Vietnamese first* — BIỂU MẪU 4 lists "Tóm tắt … (tiếng Việt và tiếng Anh)"; `main.tex:45-46` has English first. Swap.
+- [x] **Front-matter heading sizes** — *done: unified* — 24pt (abbreviations, notations, publications) vs `\Large` ≈17pt (ack, abstract, commitment). Unify.
 - [ ] **Bib hygiene** — prune or wire up the 50 uncited entries; drop the `scott2015multivariate` / `scott1992multivariate` duplicate (same book, two editions, both unused); `tripathi2021ensuring` `pages={22}` → article number `576892`; `haug2024benchmark` key says 2024 for Lukats et al. 2025.
 - [ ] **Dead files** — `chapters/discussion.tex`, `chapters/results.tex` (commented out at `main.tex:80-81`), `ext_pages/ack.tex` (unused, empty), `results/tables/fair_comparison.tex` (never `\input`).
 - [x] **Retire the duplicate thesis tree** — done 2026-07-27, see §1. `report/latex/` now holds only the presentation.

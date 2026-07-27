@@ -1,11 +1,11 @@
 \newpage
 \pagestyle{fancy}
 
-\addcontentsline{toc}{chapter}{\textbf{LIST OF MATH NOTATIONS}}
+\addcontentsline{toc}{chapter}{\textbf{DANH MỤC KÝ HIỆU TOÁN HỌC}}
 \setcounter{tocdepth}{0}
 
 \begin{center}
-    {\fontsize{24pt}{28pt}\selectfont \textbf{LIST OF MATH NOTATIONS}}
+    \Large \textbf{DANH MỤC KÝ HIỆU TOÁN HỌC}
 \end{center}
 
 
@@ -13,18 +13,26 @@
 \centering
 \fontsize{13pt}{15pt}\selectfont
 \begin{tabular}{ll}
-$P(X, Y)$               & Joint probability distribution of features and labels \\
-$P(X)$                  & Marginal probability distribution of input features   \\
-$P(Y|X)$                & Conditional probability distribution of target labels \\
-$l_1$                   & Reference sliding window size                        \\
-$l_2$                   & Test sliding window size                             \\
-$s$                     & Sliding window stride step size                      \\
-$\alpha$                & Statistical significance level                        \\
-$\gamma$                & Kernel bandwidth parameter                           \\
-$\epsilon$              & Numerical stability constant                         \\
-$\tau_{\text{WR}}$      & Peak Width Ratio (WR) threshold                      \\
-$\tau_{\text{SNR}}$     & Signal-to-Noise Ratio (SNR) threshold                \\
-$\tau_{\text{CV}}$      & Coefficient of Variation (CV) threshold              \\
-$\tau_{\text{match}}$   & Concept memory match threshold                       \\
+$P(X, Y)$               & Phân phối xác suất đồng thời của đặc trưng và nhãn \\
+$P(X)$                  & Phân phối xác suất lề của đặc trưng đầu vào        \\
+$P(Y|X)$                & Phân phối xác suất có điều kiện của nhãn           \\
+$\sigma(t)$             & Tín hiệu độ lớn trôi dạt (drift magnitude signal)  \\
+$h_l(t)$                & Hàm hình dạng tam giác đặc trưng của ShapeDD       \\
+$l_1$                   & Kích thước cửa sổ tham chiếu                       \\
+$l_2$                   & Kích thước cửa sổ kiểm tra                         \\
+$s$                     & Bước trượt của cửa sổ                              \\
+$\delta$                & Độ trễ chấp nhận khi đối sánh với ground truth      \\
+$\alpha$                & Mức ý nghĩa thống kê                               \\
+$\gamma$                & Tham số băng thông của kernel                       \\
+$\epsilon$              & Hằng số ổn định số học                              \\
+$\sigma_g$              & Độ lệch chuẩn của bộ lọc Gauss làm mượt tín hiệu    \\
+$N_{\text{perm}}$       & Số vòng hoán vị trong permutation test              \\
+$\mathrm{VR}$           & Variance Ratio --- tỉ số phương sai trên dữ liệu thô \\
+$\tau_{\mathrm{VR}}^{+}$, $\tau_{\mathrm{VR}}^{-}$ & Ngưỡng trên/dưới của Variance Ratio \\
+$\tau_{\text{WR}}$      & Ngưỡng Peak Width Ratio (WR)                       \\
+$\tau_{\text{SNR}}$     & Ngưỡng Signal-to-Noise Ratio (SNR)                 \\
+$\tau_{\text{CV}}$      & Ngưỡng Periodicity CV                              \\
+$\tau_{\text{match}}$   & Ngưỡng so khớp của Concept Memory                  \\
+$M$, $n_s$              & Số snapshot và kích thước mỗi snapshot trong Concept Memory \\
 \end{tabular}
 \end{table}

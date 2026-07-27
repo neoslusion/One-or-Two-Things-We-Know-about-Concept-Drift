@@ -21,47 +21,67 @@
 \setlength{\parindent}{1cm}
 
 % Personal information (customize these)
+% Vietnamese forms are the ones printed on the official pages (cover, committee
+% page, task sheet, ly lich trich ngang); the English ones are used on the
+% courtesy English task sheet and the English abstract.
+\newcommand{\thesistitlevn}{NGHIÊN CỨU VÀ PHÁT TRIỂN HỆ THỐNG TỰ ĐỘNG PHÁT HIỆN HIỆN TƯỢNG TRÔI DẠT VÀ CẬP NHẬT MÔ HÌNH HỌC MÁY THÍCH ỨNG}
 \newcommand{\thesistitle}{RESEARCH AND DEVELOPMENT OF AN ADAPTIVE MACHINE LEARNING SYSTEM\\WITH AUTOMATIC CONCEPT DRIFT DETECTION AND MODEL UPDATING}
 \newcommand{\studentname}{LÊ PHÚC ĐỨC}
 \newcommand{\studentid}{2370116} % Add student ID here
+\newcommand{\majorvn}{Khoa học máy tính}
 \newcommand{\major}{Computer Science}
 \newcommand{\majorcode}{8480101}
-\newcommand{\supervisorone}{Assoc.~Prof.~Dr.~\textbf{Thoại Nam}}
-\newcommand{\supervisortwo}{Dr.~\textbf{Nguyễn Quang Hùng}}
-\newcommand{\defensedate}{2026}
+\newcommand{\supervisorone}{PGS.~TS.~\textbf{Thoại Nam}}
+\newcommand{\supervisortwo}{TS.~\textbf{Nguyễn Quang Hùng}}
+\newcommand{\supervisoroneen}{Assoc.~Prof.~Dr.~\textbf{Thoại Nam}}
+\newcommand{\supervisortwoen}{Dr.~\textbf{Nguyễn Quang Hùng}}
+% TODO fill in once the defence is scheduled; BIEU MAU 4 wants "ngay ... thang ... nam ..."
+\newcommand{\defensedate}{ngày \dotfill\ tháng \dotfill\ năm 20\dotfill}
+\newcommand{\submissiondatevn}{tháng 5 năm 2026}
 \newcommand{\submissiondate}{May 2026}
 
 \begin{document}
 
+% Vietnamese names for the structural elements. The thesis is written in
+% Vietnamese, so the furniture follows suit; BIEU MAU 4 names these sections
+% in Vietnamese ("Muc luc", "Tai lieu tham khao", ...).
+\renewcommand{\chaptername}{CHƯƠNG}
+\renewcommand{\tablename}{Bảng}
+\renewcommand{\figurename}{Hình}
+\renewcommand{\bibname}{TÀI LIỆU THAM KHẢO}
+\renewcommand{\appendixname}{Phụ lục}
+
+% Page order per BIEU MAU 4: cover (twice), committee page, task sheet.
 \input{ext_pages/cover}
+\input{ext_pages/cover}          % "Trang bia va trang 1" -- the form repeats it
 \input{ext_pages/committee}
-\input{ext_pages/task_sheet}
-\input{ext_pages/task_sheet_VN}
+\input{ext_pages/task_sheet_VN}  % BIEU MAU 5, the compliant task sheet
+\input{ext_pages/task_sheet}     % English courtesy copy, kept after the official one
 
 \justifying
 \clearpage
 \pagenumbering{roman}
 \input{ext_pages/ack_VN}
+\input{ext_pages/abstract_VN}    % BIEU MAU 4: "Tom tat ... (tieng Viet va tieng Anh)"
 \input{ext_pages/abstract}
-\input{ext_pages/abstract_VN}
 \input{ext_pages/commitment}
 
 \newpage
 \setcounter{tocdepth}{3}
-\addcontentsline{toc}{chapter}{CONTENTS}
-\renewcommand{\contentsname}{\hfill CONTENTS \hfill}
+\addcontentsline{toc}{chapter}{MỤC LỤC}
+\renewcommand{\contentsname}{\hfill MỤC LỤC \hfill}
 \tableofcontents
 
 \newpage
-\addcontentsline{toc}{chapter}{\textbf{LIST OF TABLES}}
+\addcontentsline{toc}{chapter}{\textbf{DANH SÁCH BẢNG BIỂU}}
 \setcounter{tocdepth}{0}
-\renewcommand{\listtablename}{\hfill LIST OF TABLES \hfill}
+\renewcommand{\listtablename}{\hfill DANH SÁCH BẢNG BIỂU \hfill}
 \listoftables
 
 \newpage
-\addcontentsline{toc}{chapter}{\textbf{LIST OF FIGURES}}
+\addcontentsline{toc}{chapter}{\textbf{DANH SÁCH HÌNH VẼ}}
 \setcounter{tocdepth}{0}
-\renewcommand{\listfigurename}{\hfill LIST OF FIGURES \hfill}
+\renewcommand{\listfigurename}{\hfill DANH SÁCH HÌNH VẼ \hfill}
 \listoffigures
 
 \newpage
@@ -87,7 +107,7 @@
 % A reference must comply with the policy. You must reconstruct each reference copied from Google Scholar to ensure it matches the requirements.
 {
     \newpage
-    \addcontentsline{toc}{chapter}{BIBLIOGRAPHY}
+    \addcontentsline{toc}{chapter}{TÀI LIỆU THAM KHẢO}
     \setcounter{tocdepth}{0}
     \fontsize{13pt}{15pt}\selectfont
     \bibliographystyle{IEEEtran}

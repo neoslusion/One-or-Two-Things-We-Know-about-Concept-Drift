@@ -1,96 +1,95 @@
 \newpage
 \thispagestyle{empty}
 
+% =============================================================================
+% "Trang 2" of BIEU MAU 4, reproduced from the form. The form keeps all of this
+% on a single page, including the approval block, so the vertical spacing below
+% is tuned to fit rather than pushing the approval onto a second page.
+% Each official carries the form's annotation:
+%     (Ghi ro ho, ten, hoc ham, hoc vi va chu ky)
+% =============================================================================
+
 \centering
 
-% Box around entire page content
+% Compact "(Ghi ro ho, ten, hoc ham, hoc vi va chu ky)" annotation. Uses a
+% zero-parskip centred box so the four annotations do not push the signature
+% block past the bottom of the frame.
+\newcommand{\sigannot}{%
+  \par\vspace{-1mm}%
+  {\centering\textit{\small (Ghi rõ họ, tên, học hàm, học vị và chữ ký)}\par}%
+  \vspace{1mm}%
+}
+
 \fbox{
 \begin{minipage}[t][0.9\textheight]{0.95\textwidth}
     \vspace{0.5cm}
-    
+
     \begin{center}
-        {\fontsize{13pt}{15pt}\selectfont \textbf{THIS THESIS IS COMPLETED AT}}
-        
+        {\fontsize{13pt}{15pt}\selectfont \textbf{CÔNG TRÌNH ĐƯỢC HOÀN THÀNH TẠI}}
+
         \vspace{1mm}
-        
-        {\fontsize{13pt}{15pt}\selectfont \textbf{HO CHI MINH CITY UNIVERSITY OF TECHNOLOGY -- VNU-HCM}}
+
+        {\fontsize{13pt}{15pt}\selectfont \textbf{TRƯỜNG ĐẠI HỌC BÁCH KHOA -- ĐHQG-HCM}}
     \end{center}
 
-    \vspace{5mm}
+    \vspace{4mm}
 
-    \noindent {\fontsize{13pt}{15pt}\selectfont \hspace{2mm} \textbf{Supervisor 1:} \supervisorone}
+    \raggedright
+    \fontsize{13pt}{15pt}\selectfont
 
-    \begin{flushright}
-        {\fontsize{13pt}{15pt}\selectfont \textit{Signature:} \makebox[5cm]{\dotfill}}
-    \end{flushright}
+    \noindent\hspace{2mm} \textbf{Cán bộ hướng dẫn khoa học 1:} \supervisorone
+    \sigannot
 
-    \noindent {\fontsize{13pt}{15pt}\selectfont \hspace{2mm} \textbf{Supervisor 2:} \supervisortwo}
+    \vspace{3mm}
 
-    \begin{flushright}
-        {\fontsize{13pt}{15pt}\selectfont \textit{Signature:} \makebox[5cm]{\dotfill}}
-    \end{flushright}
+    \noindent\hspace{2mm} \textbf{Cán bộ hướng dẫn khoa học 2:} \supervisortwo
+    \sigannot
 
-    \vspace{2cm}
+    \vspace{3mm}
 
-    \noindent {\fontsize{13pt}{15pt}\selectfont \hspace{2mm} \textbf{Examiner 1:} \makebox[6cm]{\dotfill}}
+    \noindent\hspace{2mm} \textbf{Cán bộ chấm nhận xét 1:} \makebox[6cm]{\dotfill}
+    \sigannot
 
-    \begin{flushright}
-        {\fontsize{13pt}{15pt}\selectfont \textit{Signature:} \makebox[5cm]{\dotfill}}
-    \end{flushright}
+    \vspace{3mm}
 
-    \noindent {\fontsize{13pt}{15pt}\selectfont \hspace{2mm} \textbf{Examiner 2:} \makebox[6cm]{\dotfill}}
+    \noindent\hspace{2mm} \textbf{Cán bộ chấm nhận xét 2:} \makebox[6cm]{\dotfill}
+    \sigannot
 
-    \begin{flushright}
-        {\fontsize{13pt}{15pt}\selectfont \textit{Signature:} \makebox[5cm]{\dotfill}}
-    \end{flushright}
+    \vspace{3mm}
 
-    \vspace{1cm}
+    \noindent\hspace{2mm} Luận văn thạc sĩ được bảo vệ tại Trường Đại học Bách Khoa -- ĐHQG-HCM \defensedate.
 
-    \noindent {\fontsize{13pt}{15pt}\selectfont \hspace{2mm} This master's thesis is defended at HCM City University of Technology, VNU-HCM City on \defensedate.}
+    \vspace{3mm}
 
-    \vspace{1.5cm}
+    \noindent\hspace{2mm} \textbf{Thành phần Hội đồng đánh giá Luận văn thạc sĩ gồm:}
 
-    \noindent {\fontsize{13pt}{15pt}\selectfont \hspace{2mm} \textbf{Master's Thesis Committee:}}
+    \noindent\hspace{2mm} \textit{\small (Ghi rõ họ, tên, học hàm, học vị của Hội đồng chấm bảo vệ Luận văn thạc sĩ)}
 
-    \fontsize{13pt}{15pt}\selectfont{
-    \begin{enumerate}
-        \item \textbf{Chair:} \makebox[6cm]{\dotfill}
-        \item \textbf{Secretary:} \makebox[6cm]{\dotfill}
-        \item \textbf{Member:} \makebox[6cm]{\dotfill}
-        \item \textbf{Reviewer 1:} \makebox[6cm]{\dotfill}
-        \item \textbf{Reviewer 2:} \makebox[6cm]{\dotfill}
+    \begin{enumerate}[itemsep=0.5mm, topsep=0.5mm]
+        \item \makebox[8cm]{\dotfill}
+        \item \makebox[8cm]{\dotfill}
+        \item \makebox[8cm]{\dotfill}
+        \item \makebox[8cm]{\dotfill}
+        \item \makebox[8cm]{\dotfill}
     \end{enumerate}
-    }
-    
-    \vspace{10cm}
-\end{minipage}
-}
 
-\newpage
-\thispagestyle{empty}
+    \vspace{3mm}
 
-\fbox{
-\begin{minipage}[t][0.9\textheight]{0.95\textwidth}
-    \vspace{1cm}
+    \noindent\hspace{2mm} Xác nhận của Chủ tịch Hội đồng đánh giá Luận văn và Trưởng khoa quản lý ngành sau khi luận văn đã được sửa chữa (nếu có).
 
-    \noindent {\fontsize{13pt}{15pt}\selectfont \hspace{2mm} Approval of the Chair of Master's Thesis Committee and Dean of Faculty of Computer Science and Engineering after the thesis being corrected.}
+    \vspace{10mm}
 
-    \vspace{1cm}
+    \noindent
+    \begin{minipage}[t]{0.47\textwidth}
+        \centering
+        {\fontsize{13pt}{15pt}\selectfont \textbf{CHỦ TỊCH HỘI ĐỒNG}}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[t]{0.47\textwidth}
+        \centering
+        {\fontsize{13pt}{15pt}\selectfont \textbf{TRƯỞNG KHOA}}
+    \end{minipage}
 
-    \begin{center}
-    \centering
-     {\fontsize{13pt}{15pt}\selectfont \textbf{CHAIR OF THESIS COMMITTEE}}\\
-    \large \textit{(Full name and signature)}
-
-    \vspace{5cm}
-
-    {\fontsize{13pt}{15pt}\selectfont \textbf{DEAN OF FACULTY}}\\
-    {\fontsize{13pt}{15pt}\selectfont \textbf{OF COMPUTER SCIENCE AND ENGINEERING}}\\
-    \large \textit{(Full name and signature)}
-
-    \end{center}
-
-    \vspace{10cm}
-
+    \vfill
 \end{minipage}
 }
