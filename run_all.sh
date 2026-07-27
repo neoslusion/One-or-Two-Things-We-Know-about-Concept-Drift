@@ -164,10 +164,14 @@ print_success "Tables and figures regenerated"
 
 if [ "$SKIP_BUILD" = false ]; then
     print_header "4. Build Thesis and Presentation"
-    cd report/latex
+    # Thesis lives in the official HCMUT template tree
+    cd report/HCMUT_Master_Thesis_Template
     rm -f main.aux main.bbl main.blg main.log main.out main.toc main.lof main.lot main.fdb_latexmk main.fls
-    rm -f presentation.aux presentation.log presentation.nav presentation.out presentation.snm presentation.toc presentation.fdb_latexmk presentation.fls
     run_logged latexmk -pdf -interaction=nonstopmode main.tex
+    cd "$PROJECT_ROOT"
+    # Presentation (Beamer) stays in report/latex
+    cd report/latex
+    rm -f presentation.aux presentation.log presentation.nav presentation.out presentation.snm presentation.toc presentation.fdb_latexmk presentation.fls
     run_logged latexmk -pdf -interaction=nonstopmode presentation.tex
     cd "$PROJECT_ROOT"
     print_success "PDF build complete"
@@ -177,5 +181,5 @@ print_header "Execution Summary"
 echo "Log file:      $LOG_FILE"
 echo "Tables:        results/tables/"
 echo "Plots:         results/plots/"
-echo "Thesis PDF:    report/latex/main.pdf"
+echo "Thesis PDF:    report/HCMUT_Master_Thesis_Template/main.pdf"
 echo "Slides PDF:    report/latex/presentation.pdf"

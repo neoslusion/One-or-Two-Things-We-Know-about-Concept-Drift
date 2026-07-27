@@ -25,6 +25,6 @@ def parse_log(log_path):
     return overfull_boxes
 
 if __name__ == "__main__":
-    boxes = parse_log("report/latex/main.log")
+    boxes = parse_log("report/HCMUT_Master_Thesis_Template/main.log")
     for file, msg in boxes:
         print(f"{file}: {msg}")

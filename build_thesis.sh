@@ -13,7 +13,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Configuration
-LATEX_DIR="report/latex"
+LATEX_DIR="report/HCMUT_Master_Thesis_Template"
 MAIN_FILE="main"
 TARGET_NAME="2370116_LePhucDuc_ThesisReport"
 OUTPUT_DIR="output"
