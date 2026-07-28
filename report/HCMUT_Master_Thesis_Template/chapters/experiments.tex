@@ -20,7 +20,9 @@ Các tham số môi trường và thuật toán được mô tả gắn với t�
 
 Hệ thống được đánh giá trên bộ \textbf{14 tập dữ liệu}, gồm các tập tổng hợp (synthetic), một tập gradual drift được thiết kế thủ công, một tập recurrent drift dạng đối xứng (Gaussian Recurrent Stream) và một tập bán thực tế (Electricity semi-synthetic).
 
-\textit{Cách đếm 14 tập dữ liệu.} Mục này mô tả tổng cộng 15 tập, nhưng benchmark phát hiện chỉ dùng 14. Cụ thể: Stepping Drift được mô tả cùng nhóm Sudden cho liền mạch nhưng \emph{chỉ} phục vụ đánh giá thích ứng (Mục~\ref{sec:adaptation-eval}), nên không nằm trong 14 tập của benchmark phát hiện. Trong 14 tập còn lại, tập Gaussian Stationary không chứa drift nên được tách riêng để đo báo động giả và không xuất hiện trong các bảng F1 theo dataset; vì vậy các bảng F1 (Bảng~\ref{tab:f1_by_dataset_part1}--\ref{tab:f1_by_dataset_part4}) liệt kê 13 dòng dataset. Ba con số 15, 14 và 13 do đó nhất quán với nhau, chỉ khác phạm vi sử dụng. Các tập tổng hợp được sinh bằng bộ sinh chuẩn của thư viện River~\cite{river2021}, một framework mã nguồn mở phổ biến trong cộng đồng data stream mining. Lý do dùng dữ liệu tổng hợp thay vì dữ liệu thực tế thuần là vì với dữ liệu thực, thời điểm xảy ra concept drift (ground truth) hầu như không biết được, nên không thể đo F1-Score hay Detection Delay. Bộ sinh chuẩn cho phép kiểm soát vị trí, cường độ và loại drift, giúp kết quả có thể tái lập.
+Mục này mô tả tổng cộng 15 tập, nhưng benchmark phát hiện chỉ dùng 14. Trong đó, cụ thể là tập Stepping Drift được mô tả cùng nhóm Sudden cho liền mạch nhưng \emph{chỉ} phục vụ đánh giá thích ứng (Mục~\ref{sec:adaptation-eval}), nên không nằm trong 14 tập của benchmark phát hiện. Trong 14 tập còn lại, tập Gaussian Stationary không chứa drift nên được tách riêng để đo báo động giả và không xuất hiện trong các bảng F1 theo dataset; vì vậy các bảng F1 (Bảng~\ref{tab:f1_by_dataset_part1}--\ref{tab:f1_by_dataset_part4}) liệt kê 13 dòng dataset.
+
+Các tập tổng hợp được sinh bằng bộ sinh chuẩn của thư viện River~\cite{river2021}, một framework mã nguồn mở phổ biến trong cộng đồng data stream mining. Lý do dùng dữ liệu tổng hợp thay vì dữ liệu thực tế thuần là vì với dữ liệu thực, thời điểm xảy ra concept drift (ground truth) hầu như không biết được, nên không thể đo F1-Score hay Detection Delay. Bộ sinh chuẩn cho phép kiểm soát vị trí, cường độ và loại drift, giúp kết quả có thể tái lập.
 
 \textit{Cấu hình đánh giá phát hiện.} Bộ đánh giá gồm 14 tập dữ liệu, mỗi tập chạy 30 seed độc lập. Hai tập được thêm để định nghĩa drift một cách chặt chẽ (dữ liệu recurrent dạng đối xứng A$\to$B$\to$A$\to$B\dots, đúng định nghĩa của Lu et al.~\cite{lu2018learning}) và dữ liệu chuyển tiếp tuyến tính trên một khoảng xác định trước. Một tập dữ liệu tĩnh đóng vai trò đo báo động giả. Số lần chạy là 30 lần đủ để chạy kiểm định Friedman/Nemenyi tại $\alpha = 0.05$ với độ ổn định cao hơn cho các chỉ số trung bình.
 
@@ -74,7 +76,7 @@ Các mục thực nghiệm dưới đây trả lời những câu hỏi khác nh
 
 \begin{table}[H]
 	\centering
-	\caption{Quy ước thiết lập ở các mục đánh giá. Cùng một detector nhưng được đo dưới những cấu hình cửa sổ và dung sai khác nhau tùy câu hỏi mà mục đó trả lời; bảng này là nơi đối chiếu duy nhất cho các giá trị $W$, $\delta$ và cooldown xuất hiện rải rác trong chương.}
+	\caption{Quy ước thiết lập ở các mục đánh giá. Cùng một detector nhưng được đo dưới những cấu hình cửa sổ và dung sai khác nhau tùy câu hỏi mà mục đó trả lời; các giá trị $W$, $\delta$ và cooldown dùng trong chương được tổng hợp tại đây.}
 	\label{tab:eval-conventions}
 	\resizebox{\textwidth}{!}{%
 	\begin{tabular}{lcccp{4.2cm}l}
@@ -118,7 +120,7 @@ Bảng~\ref{tab:comprehensive_performance} trình bày kết quả tổng hợp 
 	\input{../../results/tables/table_I_comprehensive_performance.tex}
 \end{table}
 
-DAWIDD có F1 cao nhất về mặt số học ($0.532$), còn ShapeDD-IDW (cùng cấu hình IDW-MMD đứng riêng làm ablation) đạt $F_1 = 0.531$ với Precision $=0.432$, Recall/EDR $=0.737$ và $9.6$ báo động giả trung bình mỗi run. Chênh lệch $0.001$ này nhỏ hơn nhiều so với độ phân giải của benchmark; theo kiểm định Nemenyi ở Mục~\ref{sec:statistical-analysis}, khác biệt thứ hạng giữa hai phương pháp không đạt mức ý nghĩa thống kê. Đóng góp chính của ShapeDD-IDW vì vậy không nằm ở F1 mà ở chi phí tính toán (nhanh hơn ShapeDD gốc khoảng $7\times$, Bảng~\ref{tab:runtime_stats}) và ở khả năng phân loại loại drift được đánh giá ở Mục~\ref{sec:classification-eval}.
+DAWIDD có F1 cao nhất về mặt số học ($0.532$), còn ShapeDD-IDW (cùng cấu hình IDW-MMD đứng riêng làm ablation) đạt $F_1 = 0.531$ với Precision $=0.432$, Recall/EDR $=0.737$ và $9.6$ báo động giả trung bình mỗi run. Chênh lệch $0.001$ là không đáng kể; theo kiểm định Nemenyi ở Mục~\ref{sec:statistical-analysis}, khác biệt thứ hạng giữa hai phương pháp không đạt mức ý nghĩa thống kê. Đóng góp chính của ShapeDD-IDW vì vậy không nằm ở F1 mà ở chi phí tính toán (nhanh hơn ShapeDD gốc khoảng $7\times$, Bảng~\ref{tab:runtime_stats}) và ở khả năng phân loại loại drift được đánh giá ở Mục~\ref{sec:classification-eval}.
 
 So với ShapeDD gốc, ShapeDD-IDW giữ F1 cao hơn ($0.531$ so với $0.491$) và giảm FP từ $13.2$ xuống $9.6$. Cải tiến này đến từ cơ chế trọng số nghịch biến mật độ (Thuật toán~\ref{alg:idw_mmd}) kết hợp xấp xỉ Gamma thay cho permutation test. Về thời gian chạy, benchmark cho thấy ShapeDD-IDW nhanh hơn khoảng $7\times$ so với ShapeDD gốc (Bảng~\ref{tab:runtime_stats}). D3 có Precision cao nhất và FP thấp nhất nhưng Recall thấp hơn, còn KS-Test có Recall cao nhưng tạo quá nhiều báo động giả để phù hợp với hệ thống giám sát tự động.
 
