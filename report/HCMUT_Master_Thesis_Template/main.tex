@@ -39,7 +39,7 @@
 \newcommand{\supervisortwoen}{Dr.~\textbf{Nguyễn Quang Hùng}}
 % TODO fill in once the defence is scheduled; BIEU MAU 4 wants "ngay ... thang ... nam ..."
 \newcommand{\defensedate}{ngày 17 tháng 6 năm 2026}
-\newcommand{\submissiondatevn}{tháng 5 năm 2026}
+\newcommand{\submissiondatevn}{tháng 6 năm 2026}
 \newcommand{\submissiondate}{May 2026}
 
 \begin{document}
@@ -56,7 +56,7 @@
 
 % Page order per BIEU MAU 4: cover (twice), committee page, task sheet.
 \input{ext_pages/cover}
-\input{ext_pages/cover}          % "Trang bia va trang 1" -- the form repeats it
+% \input{ext_pages/cover}          % "Trang bia va trang 1" -- the form repeats it
 \input{ext_pages/committee}
 \input{ext_pages/task_sheet_VN}  % BIEU MAU 5 -- the only task sheet the form asks for.
                                  % The English copy was dropped: task_sheet_VN already
@@ -80,12 +80,19 @@
 \addcontentsline{toc}{chapter}{\textbf{DANH SÁCH BẢNG BIỂU}}
 \setcounter{tocdepth}{0}
 \renewcommand{\listtablename}{\hfill DANH SÁCH BẢNG BIỂU \hfill}
+% Prefix each entry with "Bảng" (e.g. "Bảng 2.1") and widen the number box to fit.
+\renewcommand{\cfttabpresnum}{\bfseries Bảng\space}
+\setlength{\cfttabnumwidth}{5.5em}
 \listoftables
 
 \newpage
 \addcontentsline{toc}{chapter}{\textbf{DANH SÁCH HÌNH VẼ}}
 \setcounter{tocdepth}{0}
 \renewcommand{\listfigurename}{\hfill DANH SÁCH HÌNH VẼ \hfill}
+% Prefix each entry with bold "Hình x.x"; \bfseries inside the presnum also
+% bolds the number since both sit in the same \numberline box.
+\renewcommand{\cftfigpresnum}{\bfseries Hình\space}
+\setlength{\cftfignumwidth}{5.5em}
 \listoffigures
 
 \newpage
@@ -95,7 +102,12 @@
 % keep tocdepth >= 1 here or the list renders empty.
 \setcounter{tocdepth}{1}
 \renewcommand{\listalgorithmname}{\hfill DANH SÁCH GIẢI THUẬT \hfill}
-\listofalgorithms
+% float.sty lists ignore tocloft's presnum, so prefix via a group-local
+% \numberline override; the fixed-width box keeps the dot leaders aligned.
+{
+  \renewcommand{\numberline}[1]{\makebox[7.5em][l]{\bfseries Giải thuật~#1}}%
+  \listofalgorithms
+}
 
 \newpage
 \input{ext_pages/abbreviations}

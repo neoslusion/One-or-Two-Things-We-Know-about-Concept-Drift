@@ -33,7 +33,7 @@
 
 % Algorithm
 % \usepackage[linesnumbered, ruled, vlined]{algorithm2e}%
-\usepackage{algorithm}%
+\usepackage[chapter]{algorithm}% number algorithms per chapter (Giải thuật 2.1, 4.1, ...)
 \usepackage{algorithmicx}%
 \usepackage{algpseudocode}%
 
@@ -83,7 +83,17 @@
 \usepackage[hypertexnames=false]{hyperref}
 \usepackage{ragged2e}  % đặt ở preamble
 
-\usepackage[explicit]{titlesec}
+% sectsty must load BEFORE titlesec: it redefines the sectioning internals and
+% would silently wipe every \titleformat below (sections were falling back to
+% the 10pt class defaults). It stays only for \chapterfont, which titlesec
+% leaves alone.
+\usepackage{sectsty}
+\chapterfont{\centering\MakeUppercase}
+
+% NOTE: no [explicit] option -- with it, the title only prints where #1 appears
+% in the last \titleformat argument, and these blocks leave it empty, which
+% silently drops every heading's text.
+\usepackage{titlesec}
 \titleformat{\section}       % command to redefine
   {\fontsize{16pt}{19pt}\selectfont\bfseries}          % format: size + bold
   {\thesection}              % label
@@ -91,8 +101,16 @@
   {}                         % code before title (empty here)
 
 \titleformat{\subsection}
-  {\fontsize{13pt}{15pt}\selectfont\bfseries}          % slightly smaller than section
+  {\fontsize{14pt}{17pt}\selectfont\bfseries}          % between body (13pt) and section (16pt)
   {\thesubsection}
+  {1em}
+  {}
+
+% Without an explicit size the class default leaves subsubsection at 10pt
+% (book has no real 13pt option), smaller than the body text.
+\titleformat{\subsubsection}
+  {\fontsize{13pt}{15pt}\selectfont\bfseries}          % body size, bold
+  {\thesubsubsection}
   {1em}
   {}
 
@@ -121,8 +139,7 @@
 \usepackage[symbol]{footmisc}%
 \usepackage{bbm}%
 \usepackage{pdflscape}
-\usepackage{sectsty}
-\chapterfont{\centering\MakeUppercase}
+% (sectsty moved above titlesec -- see the section-format block.)
 \usepackage{caption}
 \DeclareCaptionLabelSeparator{customspace}{\hspace{0.2cm}}
 \captionsetup{labelsep=customspace}
