@@ -12,6 +12,8 @@
     colorlinks=true,
     linkcolor=black,
     filecolor=black,      
+    urlcolor=black,
+    citecolor=black,
     pdftitle={Master's Thesis},
     pdfauthor={Lê Phúc Đức},
 }
@@ -36,7 +38,7 @@
 \newcommand{\supervisoroneen}{Assoc.~Prof.~Dr.~\textbf{Thoại Nam}}
 \newcommand{\supervisortwoen}{Dr.~\textbf{Nguyễn Quang Hùng}}
 % TODO fill in once the defence is scheduled; BIEU MAU 4 wants "ngay ... thang ... nam ..."
-\newcommand{\defensedate}{ngày \dotfill\ tháng \dotfill\ năm 20\dotfill}
+\newcommand{\defensedate}{ngày 17 tháng 6 năm 2026}
 \newcommand{\submissiondatevn}{tháng 5 năm 2026}
 \newcommand{\submissiondate}{May 2026}
 
@@ -86,12 +88,26 @@
 \listoffigures
 
 \newpage
+\addcontentsline{toc}{chapter}{\textbf{DANH SÁCH GIẢI THUẬT}}
+\setcounter{tocdepth}{0}
+\renewcommand{\listalgorithmname}{\hfill DANH SÁCH GIẢI THUẬT \hfill}
+\listofalgorithms
+
+\newpage
 \input{ext_pages/abbreviations}
 \input{ext_pages/notations}
 
 
 \mainmatter
 \pagenumbering{arabic}
+
+% TOC: prefix chapter entries with "CHUONG n." and widen the number field so the
+% table of contents matches the chapter headings (\chaptername = CHUONG).
+\addtocontents{toc}{
+    \protect\renewcommand{\protect\cftchappresnum}{CHƯƠNG\space}
+    \protect\renewcommand{\protect\cftchapaftersnum}{.}
+    \protect\setlength{\cftchapnumwidth}{7em}
+}
 
 \input{chapters/introduction}      % Chapter 1
 \input{chapters/preliminaries}      % Chapter 2

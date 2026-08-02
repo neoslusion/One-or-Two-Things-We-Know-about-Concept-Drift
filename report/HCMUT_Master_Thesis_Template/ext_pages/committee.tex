@@ -2,26 +2,18 @@
 \thispagestyle{empty}
 
 % =============================================================================
-% "Trang 2" of BIEU MAU 4, reproduced from the form. The form keeps all of this
-% on a single page, including the approval block, so the vertical spacing below
-% is tuned to fit rather than pushing the approval onto a second page.
-% Each official carries the form's annotation:
-%     (Ghi ro ho, ten, hoc ham, hoc vi va chu ky)
+% "Trang 2" of BIEU MAU 4. Layout mirrors the library-approved template
+% (full-width framed box, signatory lines with a right-aligned "Chu ky" column,
+% default enumerate for the council, and a two-column signature footer with
+% signing space). Only the layout follows the template; the wording and names
+% stay as the Vietnamese form requires.
 % =============================================================================
 
 \centering
 
-% Compact "(Ghi ro ho, ten, hoc ham, hoc vi va chu ky)" annotation. Uses a
-% zero-parskip centred box so the four annotations do not push the signature
-% block past the bottom of the frame.
-\newcommand{\sigannot}{%
-  \par\vspace{-1mm}%
-  {\centering\textit{\small (Ghi rõ họ, tên, học hàm, học vị và chữ ký)}\par}%
-  \vspace{1mm}%
-}
-
+% Box around entire page content
 \fbox{
-\begin{minipage}[t][0.9\textheight]{0.95\textwidth}
+\begin{minipage}[t][0.9\textheight]{\textwidth}
     \vspace{0.5cm}
 
     \begin{center}
@@ -32,64 +24,44 @@
         {\fontsize{13pt}{15pt}\selectfont \textbf{TRƯỜNG ĐẠI HỌC BÁCH KHOA -- ĐHQG-HCM}}
     \end{center}
 
-    \vspace{4mm}
+    \vspace{5mm}
 
-    \raggedright
-    \fontsize{13pt}{15pt}\selectfont
+    \noindent {\fontsize{13pt}{15pt}\selectfont \hspace{2mm} Cán bộ hướng dẫn khoa học 1: \textbf{\supervisorone}} \hfill \fontsize{13pt}{15pt}\selectfont \textit{Chữ ký:} \makebox[2cm]{\dotfill}
 
-    \noindent\hspace{2mm} \textbf{Cán bộ hướng dẫn khoa học 1:} \supervisorone
-    \sigannot
+    \noindent {\fontsize{13pt}{15pt}\selectfont \hspace{2mm} Cán bộ hướng dẫn khoa học 2: \textbf{\supervisortwo}} \hfill \fontsize{13pt}{15pt}\selectfont \textit{Chữ ký:} \makebox[2cm]{\dotfill}
 
-    \vspace{3mm}
+    \noindent {\fontsize{13pt}{15pt}\selectfont \hspace{2mm} Cán bộ chấm nhận xét 1: \textbf{TS. Hà Minh Tân}} \hfill \fontsize{13pt}{15pt}\selectfont \textit{Chữ ký:} \makebox[2cm]{\dotfill}
 
-    \noindent\hspace{2mm} \textbf{Cán bộ hướng dẫn khoa học 2:} \supervisortwo
-    \sigannot
+    \vspace{1cm}
 
-    \vspace{3mm}
+    {\fontsize{13pt}{15pt}\selectfont\raggedright\noindent Luận văn thạc sĩ được bảo vệ tại Trường Đại học Bách Khoa -- ĐHQG-HCM \defensedate.\par}
 
-    \noindent\hspace{2mm} \textbf{Cán bộ chấm nhận xét 1:} \makebox[6cm]{\dotfill}
-    \sigannot
+    \vspace{2mm}
 
-    \vspace{3mm}
+    {\centering\fontsize{13pt}{15pt}\selectfont\textbf{Thành phần Hội đồng đánh giá Luận văn thạc sĩ gồm:}\par}
 
-    \noindent\hspace{2mm} \textbf{Cán bộ chấm nhận xét 2:} \makebox[6cm]{\dotfill}
-    \sigannot
-
-    \vspace{3mm}
-
-    \noindent\hspace{2mm} Luận văn thạc sĩ được bảo vệ tại Trường Đại học Bách Khoa -- ĐHQG-HCM \defensedate.
-
-    \vspace{3mm}
-
-    \noindent\hspace{2mm} \textbf{Thành phần Hội đồng đánh giá Luận văn thạc sĩ gồm:}
-
-    \noindent\hspace{2mm} \textit{\small (Ghi rõ họ, tên, học hàm, học vị của Hội đồng chấm bảo vệ Luận văn thạc sĩ)}
-
-    \begin{enumerate}[itemsep=0.5mm, topsep=0.5mm]
-        \item \makebox[8cm]{\dotfill}
-        \item \makebox[8cm]{\dotfill}
-        \item \makebox[8cm]{\dotfill}
-        \item \makebox[8cm]{\dotfill}
-        \item \makebox[8cm]{\dotfill}
+    \fontsize{13pt}{15pt}\selectfont{
+    \begin{enumerate}
+        \item Chủ tịch hội đồng: \textbf{TS. Nguyễn Lê Duy Lai}
+        \item Thư ký: \textbf{TS. Diệp Thanh Đăng}
+        \item Phản biện: \textbf{TS. Hà Minh Tân}
     \end{enumerate}
+    }
 
-    \vspace{3mm}
+    {\fontsize{13pt}{15pt}\selectfont\raggedright\noindent Xác nhận của Chủ tịch Hội đồng đánh giá Luận văn và Trưởng khoa quản lý ngành sau khi luận văn đã được sửa chữa (nếu có).\par}
 
-    \noindent\hspace{2mm} Xác nhận của Chủ tịch Hội đồng đánh giá Luận văn và Trưởng khoa quản lý ngành sau khi luận văn đã được sửa chữa (nếu có).
-
-    \vspace{10mm}
+    \vspace{1cm}
 
     \noindent
     \begin{minipage}[t]{0.47\textwidth}
-        \centering
-        {\fontsize{13pt}{15pt}\selectfont \textbf{CHỦ TỊCH HỘI ĐỒNG}}
+    \centering {\fontsize{13pt}{15pt}\selectfont CHỦ TỊCH HỘI ĐỒNG}\\
+    \vspace{3cm} % Space for signature
     \end{minipage}
     \hfill
     \begin{minipage}[t]{0.47\textwidth}
-        \centering
-        {\fontsize{13pt}{15pt}\selectfont \textbf{TRƯỞNG KHOA}}
+    \centering {\fontsize{13pt}{15pt}\selectfont TRƯỞNG KHOA}\\
+    \vspace{3cm} % Space for signature
     \end{minipage}
 
-    \vfill
 \end{minipage}
 }
