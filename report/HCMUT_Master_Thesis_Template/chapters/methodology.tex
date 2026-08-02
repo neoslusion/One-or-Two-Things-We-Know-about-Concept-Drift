@@ -421,7 +421,7 @@ Bảng~\ref{tab:se-cdt-params} liệt kê toàn bộ siêu tham số của thu�
 	\end{tabular}
 \end{table}
 
-Algorithm~\ref{alg:se-cdt} trình bày toàn bộ quy trình phân loại theo từng bước:
+Giải thuật~\ref{alg:se-cdt} trình bày toàn bộ quy trình phân loại theo từng bước:
 
 \begin{algorithm}[H]
 	\caption{SE-CDT --- Unsupervised Drift Type Classification}
@@ -473,7 +473,7 @@ Algorithm~\ref{alg:se-cdt} trình bày toàn bộ quy trình phân loại theo t
 
 Trong thuật toán, $\text{BlipProfile}$ gồm hai trường hợp: cặp peak gần nhau với DPAR đủ cao, hoặc profile nhiễu ngắn hạn có WR nhỏ, SNR trung bình, DPAR ở mức vừa phải và LTS thấp. Điều kiện này được kiểm tra trước nhánh PCD vì nhiều blip có FWHM hơi rộng do nhiễu, nếu xét $\ell > 1$ trước sẽ dễ bị gán nhầm thành Gradual.
 
-Hình~\ref{fig:se-cdt-flowchart} minh họa trực quan luồng quyết định phân loại drift của SE-CDT (tương ứng với Algorithm~\ref{alg:se-cdt}):
+Hình~\ref{fig:se-cdt-flowchart} minh họa trực quan luồng quyết định phân loại drift của SE-CDT (tương ứng với Giải thuật~\ref{alg:se-cdt}):
 
 \begin{figure}[H]
 	\centering
@@ -522,7 +522,7 @@ Hình~\ref{fig:se-cdt-flowchart} minh họa trực quan luồng quyết định 
 		\draw [arrow] (fb_dec) -- node[above, font=\scriptsize] {Yes} (r_inc2);
 		\draw [arrow] (fb_dec) -- node[left, font=\scriptsize] {No} (r_grad2);
 	\end{tikzpicture}}
-	\caption[Lưu đồ phân loại drift của SE-CDT]{Lưu đồ quyết định phân loại drift của SE-CDT (Algorithm~\ref{alg:se-cdt}). Điều kiện Blip được kiểm tra trước để tránh peak nhiễu ngắn bị chuyển nhầm vào nhánh PCD. Tín hiệu có đỉnh rộng ($\ell > \tau_\ell$) được phân loại trực tiếp là PCD; các trường hợp còn lại được kiểm tra lần lượt Sudden, Recurrent, trước khi fallback về PCD theo đặc trưng thời gian (Bảng~\ref{tab:se-cdt-features}).}
+	\caption[Lưu đồ phân loại drift của SE-CDT]{Lưu đồ quyết định phân loại drift của SE-CDT (Giải thuật~\ref{alg:se-cdt}). Điều kiện Blip được kiểm tra trước để tránh peak nhiễu ngắn bị chuyển nhầm vào nhánh PCD. Tín hiệu có đỉnh rộng ($\ell > \tau_\ell$) được phân loại trực tiếp là PCD; các trường hợp còn lại được kiểm tra lần lượt Sudden, Recurrent, trước khi fallback về PCD theo đặc trưng thời gian (Bảng~\ref{tab:se-cdt-features}).}
 	\label{fig:se-cdt-flowchart}
 \end{figure}
 
@@ -553,10 +553,10 @@ Về độ phức tạp tính toán của toàn bộ quy trình:
 Vì vậy, bước phân loại chỉ thêm một phần chi phí nhỏ so với phép tính MMD trong bước phát hiện.
 
 \subsection{Giải thích lựa chọn ngưỡng}
-Các ngưỡng trong Algorithm~\ref{alg:se-cdt} được xác định trên synthetic datasets với cửa sổ chuẩn $n, m \approx 200$, dựa trên các quan sát sau:
+Các ngưỡng trong Giải thuật~\ref{alg:se-cdt} được xác định trên synthetic datasets với cửa sổ chuẩn $n, m \approx 200$, dựa trên các quan sát sau:
 Blip được nhận diện bằng hai hoặc ba peak ngắn hạn, trong đó hai peak nổi bật nhất có quan hệ đủ gần về vị trí hoặc có profile phù hợp với một xung ngắn bị nhiễu. Sudden thường có ít peak, đỉnh hẹp và SNR cao. Recurrent có nhiều peak tương đối đều, còn incremental và gradual được tách bằng các đặc trưng thời gian như LTS, SDS và MS. Gradual là trường hợp mặc định khi tín hiệu kéo dài nhưng không có xu hướng tuyến tính đủ rõ.
 
-Toàn bộ giá trị ngưỡng cụ thể nằm trong Algorithm~\ref{alg:se-cdt} và được tối ưu cho cửa sổ chuẩn $n, m \approx 200$. Nếu thay đổi kích thước cửa sổ, các ngưỡng về độ rộng đỉnh, SNR, hay khoảng cách peak cần được hiệu chỉnh lại; với dữ liệu thực tế, khuyến nghị tinh chỉnh trên một tập dữ liệu nhỏ đặc thù cho từng miền ứng dụng.
+Toàn bộ giá trị ngưỡng cụ thể nằm trong Giải thuật~\ref{alg:se-cdt} và được tối ưu cho cửa sổ chuẩn $n, m \approx 200$. Nếu thay đổi kích thước cửa sổ, các ngưỡng về độ rộng đỉnh, SNR, hay khoảng cách peak cần được hiệu chỉnh lại; với dữ liệu thực tế, khuyến nghị tinh chỉnh trên một tập dữ liệu nhỏ đặc thù cho từng miền ứng dụng.
 
 Các ngưỡng trên là heuristic thực nghiệm, không phải kết quả suy diễn lý thuyết. Để giảm phụ thuộc vào các con số cứng, Mục~\ref{sec:se-cdt-self-calibration} bổ sung cơ chế tự điều chỉnh ngưỡng theo mức nhiễu nền quan sát được, vẫn không cần nhãn. Các hạn chế còn lại được thảo luận trong Chương~\ref{chap:conclusion}.
 

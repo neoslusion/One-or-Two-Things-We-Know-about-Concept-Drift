@@ -39,7 +39,7 @@ Nguyên nhân gốc là CDT-MSW~\cite{guo2022cdtmsw} dùng Growth process dựa 
 
 \subsection{Ngưỡng phân loại vẫn còn yếu tố heuristic}
 \label{sec:limitation-heuristic}
-Các ngưỡng cứng trong luật phân loại SE-CDT (Algorithm~\ref{alg:se-cdt}) như WR $< 0.15$, SNR $> 2.0$, CV $< 0.3$, LTS $> 0.5$, v.v. vẫn được chọn dựa trên quan sát thực nghiệm chứ chưa suy ra từ phân tích thống kê lý thuyết. So với bước phát hiện (dùng p-value dựa trên xấp xỉ Gamma có cơ sở từ~\cite{gretton2009gamma}), bước phân loại chưa có công cụ lý thuyết tương đương ở mức từng đặc trưng đơn lẻ. Các biện pháp đã áp dụng để giảm phụ thuộc heuristic.
+Các ngưỡng cứng trong luật phân loại SE-CDT (Giải thuật~\ref{alg:se-cdt}) như WR $< 0.15$, SNR $> 2.0$, CV $< 0.3$, LTS $> 0.5$, v.v. vẫn được chọn dựa trên quan sát thực nghiệm chứ chưa suy ra từ phân tích thống kê lý thuyết. So với bước phát hiện (dùng p-value dựa trên xấp xỉ Gamma có cơ sở từ~\cite{gretton2009gamma}), bước phân loại chưa có công cụ lý thuyết tương đương ở mức từng đặc trưng đơn lẻ. Các biện pháp đã áp dụng để giảm phụ thuộc heuristic.
 \begin{enumerate}
 	\item \textbf{Tự hiệu chỉnh ngưỡng SNR/WR/CV} (Mục~\ref{sec:se-cdt-self-calibration}): nới ngưỡng cứng theo phân vị quan sát trên cửa sổ không drift, giúp SE-CDT chịu được nền nhiễu cao hơn mà không cần tinh chỉnh thủ công cho từng dataset.
 	\item \textbf{Kiểm tra Type-I error} (Mục~\ref{sec:h0-calibration}): kiểm chứng IDW-MMD với xấp xỉ Gamma có Type-I error gần mức danh nghĩa trên ba phân phối tĩnh; đồng thời chỉ ra SE-CDT composite có thể cao hơn nhẹ do kiểm định nhiều đỉnh ứng viên.

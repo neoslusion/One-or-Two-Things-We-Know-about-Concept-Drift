@@ -50,6 +50,7 @@
 \renewcommand{\chaptername}{CHƯƠNG}
 \renewcommand{\tablename}{Bảng}
 \renewcommand{\figurename}{Hình}
+\floatname{algorithm}{Giải thuật}
 \renewcommand{\bibname}{TÀI LIỆU THAM KHẢO}
 \renewcommand{\appendixname}{Phụ lục}
 
@@ -89,7 +90,10 @@
 
 \newpage
 \addcontentsline{toc}{chapter}{\textbf{DANH SÁCH GIẢI THUẬT}}
-\setcounter{tocdepth}{0}
+% \l@algorithm (float.sty) is a depth-1 \@dottedtocline gated by tocdepth, unlike
+% the LoT/LoF whose depth comes from tocloft's own lotdepth/lofdepth counters --
+% keep tocdepth >= 1 here or the list renders empty.
+\setcounter{tocdepth}{1}
 \renewcommand{\listalgorithmname}{\hfill DANH SÁCH GIẢI THUẬT \hfill}
 \listofalgorithms
 
