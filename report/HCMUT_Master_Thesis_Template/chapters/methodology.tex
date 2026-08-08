@@ -5,7 +5,11 @@ Trên cơ sở lý thuyết ShapeDD ở Chương~\ref{chap:theoretical-foundatio
 
 \section{Động lực và tổng quan cách tiếp cận}
 
+\subsection{Ba hạn chế của ShapeDD gốc}
+
 ShapeDD gốc có nhiều ưu điểm về độ chính xác định vị vị trí xảy ra drift và khả năng khử nhiễu, nhưng khi triển khai trong các hệ thống thời gian thực quy mô lớn gặp ba hạn chế: chi phí permutation test cao, độ nhạy với kernel bandwidth và kích thước cửa sổ, và cần cơ chế thích ứng sau khi phát hiện drift~\cite{yuan2022advances} như một hệ thống hoàn chỉnh.
+
+\subsection{Hướng giải quyết của SE-CDT}
 
 Luận văn xây dựng hệ thống SE-CDT để xử lý ba hạn chế này. Về thuật toán, ShapeDD-IDW kết hợp tín hiệu Standard MMD với bước kiểm định IDW-MMD (Inverse Density-Weighted MMD) dựa trên xấp xỉ Gamma~\cite{gretton2009gamma} để thay cho permutation test tốn kém. Băng thông kernel được xử lý bằng cách ước lượng $\gamma$ một lần bằng median heuristic và dùng chung cho toàn bộ tín hiệu trượt (Mục~\ref{sec:detection-hybrid}), thay vì để mỗi cửa sổ tự ước lượng; luận văn không thực hiện ablation riêng về độ nhạy với $\gamma$. Về chiến lược, luận văn xây dựng khung thích ứng theo loại drift, dùng kết quả phân loại từ SE-CDT để kích hoạt cách cập nhật phù hợp (Reset, Incremental, hoặc Reuse)~\cite{gama2014survey, lu2018learning}. Về kiến trúc, hệ thống được đề xuất triển khai trên nền tảng Apache Kafka cho phép xử lý luồng phân tán, độ trễ thấp và khả năng chịu lỗi.
 
@@ -238,7 +242,7 @@ Trong thực nghiệm ở Chương~\ref{chap:experiments}, ShapeDD-IDW chạy nh
 Mặc dù IDW-MMD giúp bước kiểm định ổn định hơn trên các thay đổi rõ ở biên phân phối, điều này đặc biệt hiệu quả đối với sudden drift, nơi mà các thay đổi xảy ra đột ngột và rõ ràng, phương pháp có hai giới hạn cần lưu ý:
 Vì giảm trọng số vùng trung tâm, IDW-MMD có thể kém nhạy với các thay đổi nhẹ xảy ra chủ yếu trong vùng này. Cơ chế weighting cũng không phù hợp để phân loại loại drift, vì nó có thể làm mờ các đặc trưng hình dạng cần thiết cho gradual hoặc incremental drift. Do đó, SE-CDT (Mục~\ref{sec:shaped-cdt}) phân tích hình dạng của tín hiệu Standard MMD thay vì dùng trực tiếp tín hiệu IDW-MMD.
 
-\subsubsection{Kiến trúc kết hợp của Detection Module}
+\subsection{Kiến trúc kết hợp của Detection Module}
 \label{sec:detection-hybrid}
 
 Trong triển khai cuối cùng, Detection Module ShapeDD-IDW không dùng IDW-MMD ở mọi bước mà sử dụng kiến trúc kết hợp hai vai trò, tận dụng điểm mạnh của cả Standard MMD và IDW-MMD:
