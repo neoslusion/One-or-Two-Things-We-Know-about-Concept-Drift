@@ -697,7 +697,7 @@ Producer được thiết kế để chịu lỗi và đảm bảo tính toàn v
 \subsubsection{Consumer và Cơ chế Windowing}
 Thành phần Consumer đóng vai trò quan trọng nhất, thực hiện phát hiện drift:
 \begin{itemize}
-	\item \textbf{Circular Buffer:} Duy trì một bộ đệm tuần hoàn (750 mẫu trong nguyên mẫu, xem Phụ lục A.4) trong bộ nhớ để phục vụ tính toán cửa sổ trượt mà không cần truy xuất lại Kafka quá nhiều.
+	\item \textbf{Circular Buffer:} Duy trì một bộ đệm tuần hoàn (750 mẫu trong nguyên mẫu, xem Phụ lục PL.4) trong bộ nhớ để phục vụ tính toán cửa sổ trượt mà không cần truy xuất lại Kafka quá nhiều.
 	\item \textbf{4-Phase Lifecycle:}
 	      \begin{enumerate}
 		      \item \textit{Pre-training:} Thu thập dữ liệu ban đầu để huấn luyện mô hình gốc.

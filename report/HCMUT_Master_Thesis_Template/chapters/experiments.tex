@@ -296,7 +296,7 @@ Trong đó, mỗi sự kiện Sudden, Gradual và Incremental dịch chuyển m�
 \begin{itemize}
 	\item \textbf{Cửa sổ ShapeDD:} $W = 50$, stride $s = 10$.
 	\item \textbf{Tín hiệu phân loại:} Standard MMD. Các thử nghiệm so sánh cho thấy IDW-MMD không phù hợp làm tín hiệu phân loại vì dễ làm mờ các drift chậm như Gradual/Incremental. Vì vậy hệ thống dùng mô hình kết hợp: bước kiểm định ứng viên dùng IDW-MMD, còn bước phân loại dùng Standard MMD để giữ lại thông tin hình dạng toàn cục.
-	\item \textbf{Ngưỡng phát hiện:} hiệu chỉnh trên một tập validation riêng (xem Bảng A.1 và A.2 ở Phụ lục). Ngưỡng mặc định của thư viện gốc quá bảo thủ trong điều kiện streaming nên đã được nới xuống cho phù hợp.
+	\item \textbf{Ngưỡng phát hiện:} hiệu chỉnh trên một tập validation riêng (xem Bảng PL.1 và PL.2 ở Phụ lục). Ngưỡng mặc định của thư viện gốc quá bảo thủ trong điều kiện streaming nên đã được nới xuống cho phù hợp.
 \end{itemize}
 
 Trước khi đọc kết quả số, Hình~\ref{fig:signal_sudden} và Hình~\ref{fig:signal_incremental} minh họa trực quan lý do Sudden drift dễ phân loại hơn Incremental: SE-CDT dựa vào sự khác biệt hình dạng của tín hiệu $\sigma(t)$ để phân biệt các loại drift.
